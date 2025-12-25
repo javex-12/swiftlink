@@ -71,6 +71,11 @@
             from { opacity: 0; transform: translateY(30px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes slide-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-slide-shine { animation: slide-shine 3s infinite; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -233,15 +238,32 @@
 
     <!-- Live Sale Overlay -->
     <div id="live-overlay" class="fixed inset-0 z-[100] bg-black hidden">
-        <div class="absolute inset-0 bg-slate-900"><img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover opacity-60"></div>
-        <div class="absolute inset-0 flex flex-col justify-between p-6 pb-10">
-            <div class="flex justify-between items-start pt-8">
-                <div class="flex items-center space-x-2 bg-red-600 text-white px-3 py-1 rounded-lg animate-pulse"><span class="text-[10px] font-black uppercase">Live Sale</span></div>
-                <button onclick="toggleLiveView(false)" class="w-10 h-10 bg-black/20 backdrop-blur text-white rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+        <div class="absolute inset-0 bg-slate-900"><img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover opacity-40"></div>
+        <div class="absolute inset-0 flex flex-col justify-between p-6 pb-10 safe-area-inset-bottom">
+            <!-- Header -->
+            <div class="flex justify-between items-start pt-4 md:pt-8">
+                <div>
+                    <div class="flex items-center space-x-2 bg-red-600 text-white px-3 py-1.5 rounded-lg animate-pulse shadow-lg shadow-red-900/50 inline-flex">
+                        <i class="fas fa-circle text-[8px]"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Live Shopping</span>
+                    </div>
+                    <p class="text-white/80 text-[10px] font-bold mt-2 ml-1 uppercase tracking-wider backdrop-blur-md bg-black/30 px-2 py-1 rounded inline-block">Watching Product Showcase</p>
+                </div>
+                <button onclick="toggleLiveView(false)" class="w-10 h-10 bg-black/20 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"><i class="fas fa-times"></i></button>
             </div>
-            <div class="w-full space-y-4">
-                <div id="live-chat-stream" class="h-32 overflow-hidden flex flex-col justify-end space-y-2 chat-overlay"></div>
-                <div id="live-featured-product" class="bg-white p-4 rounded-2xl shadow-2xl flex items-center space-x-4 animate-slide-up"></div>
+            
+            <!-- Content -->
+            <div class="w-full max-w-md mx-auto space-y-4">
+                <div class="flex justify-center mb-4">
+                    <span class="bg-black/40 backdrop-blur text-white/90 px-4 py-1.5 rounded-full text-[10px] font-bold border border-white/10 flex items-center gap-2">
+                        <i class="fas fa-lightbulb text-yellow-400"></i>
+                        Items shown here are exclusive!
+                    </span>
+                </div>
+                <div id="live-chat-stream" class="h-40 overflow-hidden flex flex-col justify-end space-y-2 chat-overlay px-2"></div>
+                <div id="live-featured-product" class="bg-white/95 backdrop-blur-xl p-4 rounded-2xl shadow-2xl flex items-center space-x-4 animate-slide-up border border-white/50 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -449,7 +471,22 @@
                         <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-emerald-50/50 to-transparent pointer-events-none"></div>
                         <div class="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-12 relative z-10">
                             <div class="space-y-6 md:space-y-8 text-center lg:text-left animate-fade-in-up">
-                                ${state.isLive ? '<span class="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold animate-pulse shadow-lg shadow-red-200">LIVE SALE ACTIVE</span>' : ''}
+                                ${state.isLive ? `
+                                <div class="inline-flex flex-col items-center lg:items-start space-y-2 mb-2">
+                                    <button onclick="toggleLiveView(true)" class="group relative bg-red-600 hover:bg-red-700 text-white pl-4 pr-6 py-2.5 rounded-full text-xs font-black shadow-xl shadow-red-200 flex items-center gap-3 transform transition-all hover:scale-105 cursor-pointer overflow-hidden">
+                                        <div class="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-red-600 animate-slide-shine opacity-50"></div>
+                                        <span class="relative flex h-3 w-3">
+                                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                          <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                        </span>
+                                        <span class="relative z-10 tracking-wider">JOIN LIVE STREAM</span>
+                                        <i class="fas fa-play relative z-10 text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                                    </button>
+                                    <div class="flex items-center gap-1.5 text-slate-400 bg-white/50 backdrop-blur-sm px-3 py-1 rounded-lg border border-slate-100">
+                                        <i class="fas fa-video text-emerald-500 text-[10px]"></i>
+                                        <span class="text-[10px] font-bold uppercase tracking-wide">Watch Demos • Shop Real-time</span>
+                                    </div>
+                                </div>` : ''}
                                 <h1 class="text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 leading-[1.1] transition-all hover:tracking-wide duration-500">${state.bizName}<br><span class="text-emerald-500">${state.tagline}</span></h1>
                                 <p class="text-base md:text-xl text-slate-500 font-medium max-w-lg mx-auto lg:mx-0 leading-relaxed">${state.aboutUs}</p>
                                 ${state.minOrderNote ? `<div class="bg-amber-50 border border-amber-100 text-amber-700 px-4 py-2 rounded-xl text-xs md:text-sm font-bold inline-block transform hover:scale-105 transition-transform">${state.minOrderNote}</div>` : ''}
