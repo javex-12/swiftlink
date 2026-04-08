@@ -147,7 +147,7 @@ export function SwiftLinkProvider({
 
   const navigateTo = useCallback(
     (view: TourStepView) => {
-      if (view === "launcher") router.push("/");
+      if (view === "launcher") router.push("/pro");
       if (view === "dispatch") router.push("/dispatch");
       if (view === "business") router.push("/business");
     },
@@ -280,7 +280,20 @@ export function SwiftLinkProvider({
   }, [trackId, state.deliveries]);
 
   useEffect(() => {
-    if (!isOwner || pathname !== "/" || typeof window === "undefined") return;
+    if (typeof window === "undefined" || pathname !== "/pro") return;
+    
+    // If no business name is set and it's not a temporary session, 
+    // we consider them a "new user" who should see the landing page first.
+    const saved = localStorage.getItem("swiftlink_state");
+    const hasBiz = saved ? (JSON.parse(saved) as ShopState).bizName : false;
+    
+    if (!hasBiz && !localStorage.getItem("swiftlink_tour_done")) {
+      router.push("/signup");
+    }
+  }, [pathname, router]);
+
+  useEffect(() => {
+    if (!isOwner || pathname !== "/pro" || typeof window === "undefined") return;
     if (!localStorage.getItem("swiftlink_tour_done")) {
       const t = setTimeout(() => {
         setCurrentTourStep(0);
@@ -484,7 +497,7 @@ export function SwiftLinkProvider({
     setTourOpen(false);
     setHandHidden(true);
     localStorage.setItem("swiftlink_tour_done", "true");
-    router.push("/");
+    router.push("/pro");
   }, [router]);
 
   const nextTourStep = useCallback(() => {
@@ -495,7 +508,7 @@ export function SwiftLinkProvider({
         setTourOpen(false);
         setHandHidden(true);
         localStorage.setItem("swiftlink_tour_done", "true");
-        router.push("/");
+        router.push("/pro");
         return s;
       }
       return n;

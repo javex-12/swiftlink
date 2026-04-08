@@ -24,21 +24,21 @@ export const metadata: Metadata = {
     "SwiftLink Pro",
     "e-commerce",
   ],
-  icons: [{ rel: "icon", url: "/logo.svg" }],
+  icons: [{ rel: "icon", url: "/logo.png" }],
   openGraph: {
     type: "website",
     url: site,
     title: "SwiftLink Pro | Professional WhatsApp Storefront",
     description:
       "Launch your online catalog in 60 seconds. Real-time live commerce for WhatsApp business.",
-    images: [`${site}/logo.svg`],
+    images: [`${site}/logo.png`],
   },
   twitter: {
     card: "summary_large_image",
     title: "SwiftLink Pro | Professional WhatsApp Storefront",
     description:
       "Launch your online catalog in 60 seconds. Real-time live commerce for WhatsApp business.",
-    images: [`${site}/logo.svg`],
+    images: [`${site}/logo.png`],
   },
 };
 
@@ -55,7 +55,7 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         />
       </head>
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
           <SwiftLinkProvider>
             <AppChrome>{children}</AppChrome>

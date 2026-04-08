@@ -11,7 +11,7 @@
 
 body {
   font-family: var(--font-plus-jakarta), system-ui, sans-serif;
-  background-color: #f8fafc;
+  background-color: #ffffff;
   color: var(--text-main);
   overflow-x: hidden;
 }
@@ -52,6 +52,15 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
+}
+
+/* Hide scrollbar for category strips */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 .btn-primary {

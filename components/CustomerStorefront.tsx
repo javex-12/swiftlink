@@ -162,7 +162,7 @@ export function CustomerStorefront() {
           </section>
           <footer className="bg-slate-900 text-white py-16 px-6 text-center border-t border-white/5 mt-auto">
             <img
-              src="/logo.svg"
+              src="/logo.png"
               className="w-12 h-12 mx-auto mb-6"
               alt=""
               width={48}

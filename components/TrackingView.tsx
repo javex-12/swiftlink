@@ -19,7 +19,7 @@ export function TrackingView() {
           </p>
         </div>
         <div className="mt-8 opacity-30 flex items-center justify-center space-x-2">
-          <img src="/logo.svg" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
+          <img src="/logo.png" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
           <span className="font-black text-slate-900 tracking-tight text-xl">
             SwiftLink<span className="text-emerald-500">Pro</span>
           </span>
@@ -87,7 +87,7 @@ export function TrackingView() {
         </div>
       </div>
       <div className="mt-8 opacity-30 flex items-center justify-center space-x-2">
-        <img src="/logo.svg" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
+        <img src="/logo.png" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
         <span className="font-black text-slate-900 tracking-tight text-xl">
           SwiftLink<span className="text-emerald-500">Pro</span>
         </span>

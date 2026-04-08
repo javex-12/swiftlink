@@ -1,10 +1,17 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import type { ShopState } from "./types";
 import { defaultShopState } from "./types";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const RESERVED_FIRST_SEGMENTS = new Set([
   "dispatch",
   "business",
   "tracking",
+  "pro",
   "_next",
   "api",
 ]);

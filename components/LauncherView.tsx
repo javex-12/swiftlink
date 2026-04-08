@@ -10,7 +10,7 @@ export function LauncherView() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative">
       <div className="mb-10 text-center animate-fade-in-up">
         <img
-          src="/logo.svg"
+          src="/logo.png"
           className="w-20 h-20 mx-auto mb-4 drop-shadow-xl"
           alt="Logo"
           width={80}
