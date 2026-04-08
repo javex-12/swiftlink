@@ -774,6 +774,7 @@ export function SwiftLinkProvider({
             description: "",
             image: "",
             outOfStock: false,
+            category: "",
           },
           ...prev.products,
         ],

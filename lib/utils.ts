@@ -30,6 +30,21 @@ export function slugifyStoreName(name: string): string {
 }
 
 /** Normalize handle for URLs: lowercase a-z, digits, hyphen only. */
+export function normalizeCategoryLabel(raw: string): string {
+  return String(raw || "").trim();
+}
+
+export function collectProductCategories(
+  products: { category?: string }[],
+): string[] {
+  const set = new Set<string>();
+  for (const p of products) {
+    const c = normalizeCategoryLabel(p.category ?? "");
+    if (c) set.add(c);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
 export function normalizeStoreUsername(raw: string): string {
   return String(raw || "")
     .toLowerCase()

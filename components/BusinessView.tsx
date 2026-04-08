@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import {
+  collectProductCategories,
   getPublicStoreSlug,
   getShopPath,
   normalizeStoreUsername,
@@ -131,6 +132,33 @@ export function BusinessView() {
               className="w-full bg-slate-50 rounded-2xl p-4 font-bold outline-none"
               placeholder="Hero Tagline"
             />
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-2">
+              <label
+                htmlFor="featured-category"
+                className="block text-[10px] font-bold uppercase tracking-widest text-emerald-800"
+              >
+                Featured collection (storefront)
+              </label>
+              <p className="text-[11px] text-emerald-900/70 leading-snug">
+                Pick a category to pin above your catalog. Create categories by
+                typing them on each product below.
+              </p>
+              <select
+                id="featured-category"
+                value={state.featuredCategory ?? ""}
+                onChange={(e) =>
+                  updateState("featuredCategory", e.target.value)
+                }
+                className="w-full bg-white rounded-xl p-3 font-bold text-sm text-slate-900 outline-none border border-emerald-100"
+              >
+                <option value="">None — no featured block</option>
+                {collectProductCategories(state.products).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
           </section>
           <section className="space-y-6">
             <div className="flex justify-between items-end px-2">
@@ -218,6 +246,28 @@ export function BusinessView() {
                           className="w-24 bg-slate-50 rounded px-2 py-1 text-slate-900 outline-none"
                           placeholder="Price"
                         />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black text-slate-400 uppercase">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          list={`biz-cat-suggest-${p.id}`}
+                          value={p.category ?? ""}
+                          onChange={(e) =>
+                            updateProduct(p.id, "category", e.target.value)
+                          }
+                          className="w-full bg-slate-50 rounded-lg px-2 py-1.5 text-sm font-bold text-slate-900 outline-none mt-0.5"
+                          placeholder="e.g. Tops, Shoes, Phones"
+                        />
+                        <datalist id={`biz-cat-suggest-${p.id}`}>
+                          {collectProductCategories(
+                            state.products.filter((x) => x.id !== p.id),
+                          ).map((c) => (
+                            <option key={c} value={c} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
                   </div>
@@ -313,6 +363,11 @@ export function BusinessView() {
                         <h4 className="font-black text-[11px] text-slate-900 truncate">
                           {p.name}
                         </h4>
+                        {(p.category || "").trim() ? (
+                          <span className="text-[8px] font-bold uppercase tracking-wide text-slate-400 truncate mt-0.5">
+                            {(p.category || "").trim()}
+                          </span>
+                        ) : null}
                         <div className="font-black text-emerald-600 text-[11px] mt-0.5">
                           {state.currency}
                           {Number(p.price).toLocaleString()}

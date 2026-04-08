@@ -5,6 +5,8 @@ export type Product = {
   description: string;
   image: string;
   outOfStock: boolean;
+  /** e.g. Tops, Shoes — used for filters and featured collection */
+  category?: string;
 };
 
 export type Delivery = {
@@ -31,6 +33,8 @@ export type ShopState = {
   deliveries: Delivery[];
   tagline: string;
   aboutUs: string;
+  /** When set, matching products appear in a featured block above the catalog */
+  featuredCategory?: string;
   isLive?: boolean;
 };
 
