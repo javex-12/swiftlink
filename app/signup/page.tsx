@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase-client";
+import { getPublicStoreSlug } from "@/lib/utils";
 
 type Mode = "signup" | "login";
 
@@ -56,8 +57,30 @@ export default function SignupPage() {
     if (!db) return;
     const ref = doc(db, "swiftlink_stores", uid);
     const snap = await getDoc(ref);
+    const bizName = extra?.bizName || "";
+    const slug = getPublicStoreSlug({ storeUsername: undefined, bizName });
     if (!snap.exists()) {
-      await setDoc(ref, { id: uid, bizName: extra?.bizName || "", phone: extra?.phone || "", products: [], deliveries: [], currency: "₦", bizImage: "", bizDesc: "", bizColor: "#10b981", createdAt: new Date().toISOString() });
+      await setDoc(ref, {
+        id: uid,
+        bizName,
+        phone: extra?.phone || "",
+        products: [],
+        deliveries: [],
+        currency: "₦",
+        bizImage: "",
+        bizDesc: "",
+        bizColor: "#10b981",
+        createdAt: new Date().toISOString(),
+        publishedStoreSlug: slug,
+      });
+      await setDoc(
+        doc(db, "swiftlink_slugs", slug),
+        {
+          shopId: uid,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
     }
     if (typeof window !== "undefined") {
       const d = snap.exists() ? snap.data() : {};

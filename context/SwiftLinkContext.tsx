@@ -10,7 +10,15 @@ import React, {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { doc, onSnapshot, setDoc, type Unsubscribe } from "firebase/firestore";
+import {
+  doc,
+  deleteDoc,
+  getDoc,
+  onSnapshot,
+  setDoc,
+  type Firestore,
+  type Unsubscribe,
+} from "firebase/firestore";
 import {
   signInAnonymously,
   onAuthStateChanged,
@@ -18,11 +26,48 @@ import {
 } from "firebase/auth";
 import { getFirebase } from "@/lib/firebase-client";
 import {
+  getPublicStoreSlug,
   getShopPath,
   loadStateLocal,
   parseShopFromPathname,
 } from "@/lib/utils";
 import { defaultShopState, type Delivery, type ShopState } from "@/lib/types";
+
+async function writeOwnerStoreAndSlug(
+  db: Firestore,
+  uid: string,
+  prevSnapshot: ShopState,
+  next: ShopState,
+) {
+  const oldSlug =
+    prevSnapshot.publishedStoreSlug || getPublicStoreSlug(prevSnapshot);
+  const newSlug = getPublicStoreSlug(next);
+  const withPublish: ShopState = { ...next, publishedStoreSlug: newSlug };
+  try {
+    if (oldSlug && oldSlug !== newSlug) {
+      await deleteDoc(doc(db, "swiftlink_slugs", oldSlug));
+    }
+    if (newSlug) {
+      await setDoc(
+        doc(db, "swiftlink_slugs", newSlug),
+        { shopId: uid, updatedAt: new Date().toISOString() },
+        { merge: true },
+      );
+    }
+    await setDoc(doc(db, "swiftlink_stores", uid), withPublish, {
+      merge: true,
+    });
+  } catch (e) {
+    console.warn("SwiftLink slug / store write failed:", e);
+    try {
+      await setDoc(doc(db, "swiftlink_stores", uid), withPublish, {
+        merge: true,
+      });
+    } catch (e2) {
+      console.warn("SwiftLink store write fallback failed:", e2);
+    }
+  }
+}
 
 type CartMap = Record<number, number>;
 
@@ -124,6 +169,9 @@ export function SwiftLinkProvider({
   const [trackingDisplay, setTrackingDisplay] = useState<Delivery | null>(
     null,
   );
+  const [resolvedSlugShopId, setResolvedSlugShopId] = useState<string | null>(
+    null,
+  );
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
@@ -133,13 +181,18 @@ export function SwiftLinkProvider({
 
   const trackId = searchParams.get("track");
   const shopFromQuery = searchParams.get("shop");
-  const pathShop = parseShopFromPathname(pathname);
+  const parsedPath = parseShopFromPathname(pathname);
+  const slugFromPath = parsedPath?.kind === "slug" ? parsedPath.slug : null;
+  const uidFromPath = parsedPath?.kind === "uid" ? parsedPath.shopId : null;
   const trackQ = trackId;
   const shopQ = shopFromQuery;
 
   const isTrackingMode = Boolean(trackId);
-  const customerShopId = shopFromQuery || pathShop?.shopId || null;
-  const isCustomerMode = Boolean(customerShopId);
+  const customerShopId =
+    shopFromQuery || uidFromPath || resolvedSlugShopId || null;
+  const isCustomerMode = Boolean(
+    shopFromQuery || uidFromPath || slugFromPath,
+  );
   const isOwner = !isTrackingMode && !isCustomerMode;
 
   isOwnerRef.current = isOwner;
@@ -156,22 +209,25 @@ export function SwiftLinkProvider({
 
   const persistState = useCallback(
     (next: ShopState) => {
+      const prev = stateRef.current;
+      const withPublish: ShopState = {
+        ...next,
+        publishedStoreSlug: getPublicStoreSlug(next),
+      };
+
       if (typeof window !== "undefined") {
-        localStorage.setItem("swiftlink_state", JSON.stringify(next));
+        localStorage.setItem("swiftlink_state", JSON.stringify(withPublish));
       }
       const { db } = getFirebase();
       if (
-        db &&
-        isFirebaseActive &&
-        isOwnerRef.current &&
-        userRef.current?.uid
+        !db ||
+        !isFirebaseActive ||
+        !isOwnerRef.current ||
+        !userRef.current?.uid
       ) {
-        void setDoc(
-          doc(db, "swiftlink_stores", userRef.current.uid),
-          next,
-          { merge: true },
-        );
+        return;
       }
+      void writeOwnerStoreAndSlug(db, userRef.current.uid, prev, next);
     },
     [isFirebaseActive],
   );
@@ -219,6 +275,33 @@ export function SwiftLinkProvider({
   }, [isCustomerMode, customerShopId, isTrackingMode]);
 
   useEffect(() => {
+    if (!slugFromPath) {
+      setResolvedSlugShopId(null);
+      return;
+    }
+    setResolvedSlugShopId(null);
+    const { db } = getFirebase();
+    if (!db) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const snap = await getDoc(doc(db, "swiftlink_slugs", slugFromPath));
+        if (cancelled) return;
+        const shopId = (snap.data() as { shopId?: string } | undefined)
+          ?.shopId;
+        setResolvedSlugShopId(
+          shopId && typeof shopId === "string" ? shopId : null,
+        );
+      } catch {
+        if (!cancelled) setResolvedSlugShopId(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slugFromPath]);
+
+  useEffect(() => {
     shopUnsubRef.current?.();
     shopUnsubRef.current = null;
     const { auth, db } = getAuthFirestore();
@@ -241,19 +324,23 @@ export function SwiftLinkProvider({
         if (isOwnerRef.current) {
           setState((prev) => {
             const next = { ...prev, id: u.uid };
+            const newSlug = getPublicStoreSlug(next);
+            const withPublish: ShopState = {
+              ...next,
+              publishedStoreSlug: newSlug,
+            };
             if (typeof window !== "undefined") {
-              localStorage.setItem("swiftlink_state", JSON.stringify(next));
+              localStorage.setItem(
+                "swiftlink_state",
+                JSON.stringify(withPublish),
+              );
             }
-            void setDoc(
-              doc(db, "swiftlink_stores", u.uid),
-              next,
-              { merge: true },
-            );
-            return next;
+            void writeOwnerStoreAndSlug(db, u.uid, prev, next);
+            return withPublish;
           });
         }
         const tid = trackQ;
-        const sid = shopQ || pathShop?.shopId;
+        const sid = shopQ || uidFromPath || resolvedSlugShopId;
         if (!tid && sid && !isOwnerRef.current) {
           shopUnsubRef.current = onSnapshot(
             doc(db, "swiftlink_stores", sid),
@@ -272,7 +359,7 @@ export function SwiftLinkProvider({
       unsubAuth?.();
       shopUnsubRef.current?.();
     };
-  }, [pathname, trackQ, shopQ, pathShop?.shopId]);
+  }, [pathname, trackQ, shopQ, uidFromPath, resolvedSlugShopId]);
 
   useEffect(() => {
     if (!trackId) return;

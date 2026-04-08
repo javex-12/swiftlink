@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import {
+  getPublicStoreSlug,
+  getShopPath,
+  normalizeStoreUsername,
+} from "@/lib/utils";
 
 export function BusinessView() {
   const {
@@ -81,6 +86,32 @@ export function BusinessView() {
               className="w-full bg-slate-50 rounded-2xl p-4 font-bold outline-none"
               placeholder="Store Name"
             />
+            <div>
+              <label
+                htmlFor="store-username"
+                className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+              >
+                Store URL handle
+              </label>
+              <input
+                type="text"
+                id="store-username"
+                value={state.storeUsername ?? ""}
+                onChange={(e) =>
+                  updateState(
+                    "storeUsername",
+                    normalizeStoreUsername(e.target.value),
+                  )
+                }
+                className="w-full bg-slate-50 rounded-2xl p-4 font-bold outline-none lowercase placeholder:normal-case"
+                placeholder="fashionbyada"
+                autoComplete="off"
+              />
+              <p className="mt-2 text-xs text-slate-500 leading-relaxed break-all">
+                <span className="font-bold text-slate-700">Public link:</span>{" "}
+                {state.id ? getShopPath(state) : `/store/${getPublicStoreSlug(state) || "your-handle"}`}
+              </p>
+            </div>
             <input
               type="text"
               id="biz-phone"
