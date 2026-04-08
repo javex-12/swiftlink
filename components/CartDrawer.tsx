@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { resolveStorefrontTheme } from "@/lib/utils";
 
 export function CartDrawer({
   open,
@@ -15,6 +17,8 @@ export function CartDrawer({
     sendWhatsAppOrder,
     cartItemCount,
   } = useSwiftLink();
+
+  const theme = useMemo(() => resolveStorefrontTheme(state), [state]);
 
   let total = 0;
   const lines = Object.entries(cart).map(([id, q]) => {
@@ -33,7 +37,10 @@ export function CartDrawer({
             {Number(p.price).toLocaleString()}
           </div>
         </div>
-        <div className="font-black text-lg text-emerald-600">
+        <div
+          className="font-black text-lg"
+          style={{ color: theme.primaryColor }}
+        >
           {state.currency}
           {Number(p.price * q).toLocaleString()}
         </div>
@@ -98,7 +105,11 @@ export function CartDrawer({
           <button
             type="button"
             onClick={sendWhatsAppOrder}
-            className="w-full btn-primary text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all"
+            className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105"
+          style={{
+            backgroundColor: theme.primaryColor,
+            boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
+          }}
           >
             <i className="fab fa-whatsapp text-2xl" />
             <span>WhatsApp Order</span>

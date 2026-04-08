@@ -10,7 +10,7 @@ export function LauncherView() {
 
   const nav = [
     { href: "/pro", label: "Command Center", icon: "fa-gauge-high" },
-    { href: "/business", label: "Set up Business", icon: "fa-store" },
+    { href: "/business", label: "Edit store", icon: "fa-store" },
     { href: "/dispatch", label: "Dispatch", icon: "fa-truck-fast" },
   ] as const;
 
