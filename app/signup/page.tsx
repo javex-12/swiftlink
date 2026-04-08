@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, updateProfile
+  signInWithEmailAndPassword, updateProfile, sendEmailVerification
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase-client";
@@ -42,6 +42,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
+  const [step, setStep] = useState<"form" | "verify">("form");
   
   const [form, setForm] = useState({ bizName: "", phone: "", email: "", password: "" });
 
@@ -93,6 +94,13 @@ export default function SignupPage() {
         const { auth } = getFirebase();
         if (!auth) throw new Error("Firebase not ready");
         const cred = await signInWithEmailAndPassword(auth, form.email, form.password);
+        
+        if (!cred.user.emailVerified) {
+          await sendEmailVerification(cred.user);
+          setError("Please verify your email address. We resent a new link to your inbox.");
+          return;
+        }
+
         await saveUserStore(cred.user.uid);
         router.push("/pro");
       } catch (e: unknown) {
@@ -120,7 +128,9 @@ export default function SignupPage() {
       await updateProfile(userCred.user, { displayName: form.bizName });
       await saveUserStore(userCred.user.uid, { bizName: form.bizName, phone: formattedPhone });
       
-      router.push("/pro");
+      await sendEmailVerification(userCred.user);
+      setStep("verify");
+      
     } catch (e: any) {
       console.error(e);
       setError(e.message || "Failed to create account. Email might be in use.");
@@ -192,10 +202,10 @@ export default function SignupPage() {
 
           <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/[0.08] rounded-[2rem] p-6 sm:p-8 shadow-2xl overflow-hidden relative">
             <AnimatePresence mode="wait">
-
-              <motion.div key="form" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                
-                {/* Mode toggle */}
+              {step === "form" && (
+                <motion.div key="form" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                  
+                  {/* Mode toggle */}
                 <div className="flex bg-white/[0.05] rounded-xl p-1 mb-7">
                   {(["signup", "login"] as Mode[]).map((m) => (
                     <button
@@ -308,6 +318,29 @@ export default function SignupPage() {
                   <Link href="/terms">Terms & Privacy Policy</Link>
                 </p>
               </motion.div>
+              )}
+              
+              {step === "verify" && (
+                <motion.div key="verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="pt-2 pb-6">
+                  <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+                    <MessageSquare size={20} className="text-emerald-400" />
+                  </div>
+                  <h2 className="text-xl font-black text-white text-center mb-1">Check your inbox</h2>
+                  <p className="text-xs text-slate-400 text-center mb-6 px-4">
+                    We just sent a secure verification link to<br/><span className="text-white font-bold">{form.email}</span>
+                  </p>
+
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
+                    <p className="text-[10px] text-slate-400 leading-relaxed text-center font-medium">
+                      Click the link in the email to activate your account. Once verified, you can return here and safely log in to open your storefront.
+                    </p>
+                  </div>
+                  
+                  <button type="button" onClick={() => { setStep("form"); setMode("login"); setError(null); }} className="w-full py-4 bg-emerald-500 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-emerald-500/20">
+                    I've verified my email
+                  </button>
+                </motion.div>
+              )}
 
             </AnimatePresence>
           </div>
