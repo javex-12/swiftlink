@@ -48,6 +48,7 @@ export default function SignupPage() {
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [otpCode, setOtpCode] = useState("");
   const recaptchaWrapperRef = useRef<HTMLDivElement>(null);
+  const [countryCode, setCountryCode] = useState("+234");
 
   const [form, setForm] = useState({ bizName: "", phone: "", email: "", password: "" });
 
@@ -122,7 +123,7 @@ export default function SignupPage() {
 
     // Signup Flow: Must have phone, must be international format
     if (!form.bizName || !form.phone) return;
-    let formattedPhone = form.phone.trim();
+    let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
     if (!formattedPhone.startsWith("+")) {
        setError("Phone number must include country code (e.g. +23480...)");
        return;
@@ -317,11 +318,30 @@ export default function SignupPage() {
                           </div>
                           <div>
                             <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">WhatsApp Number <span className="text-emerald-500">*</span></label>
-                            <div className="relative">
-                              <Phone size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                              <input required type="tel" value={form.phone} onChange={setField("phone")} placeholder="+234..." className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 pl-9 pr-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
+                            <div className="flex gap-2 relative">
+                              <div className="relative w-[110px] sm:w-28 flex-shrink-0">
+                                <select 
+                                  value={countryCode} 
+                                  onChange={(e) => setCountryCode(e.target.value)}
+                                  className="w-full h-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white pl-3.5 pr-2 py-3.5 rounded-xl outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
+                                >
+                                  <option className="bg-slate-900" value="+234">🇳🇬 +234</option>
+                                  <option className="bg-slate-900" value="+1">🇺🇸 +1</option>
+                                  <option className="bg-slate-900" value="+44">🇬🇧 +44</option>
+                                  <option className="bg-slate-900" value="+27">🇿🇦 +27</option>
+                                  <option className="bg-slate-900" value="+254">🇰🇪 +254</option>
+                                  <option className="bg-slate-900" value="+233">🇬🇭 +233</option>
+                                  <option className="bg-slate-900" value="+91">🇮🇳 +91</option>
+                                  <option className="bg-slate-900" value="+971">🇦🇪 +971</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▼</div>
+                              </div>
+                              <div className="relative flex-1 min-w-0">
+                                <Phone size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input required type="tel" value={form.phone} onChange={setField("phone")} placeholder="801 234..." className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 pl-9 pr-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
+                              </div>
                             </div>
-                            <p className="text-[9px] text-slate-500 mt-1 ml-0.5 font-medium">Must include country code for verification (+234...).</p>
+                            <p className="text-[9px] text-slate-500 mt-1 ml-0.5 font-medium">Select your code. Do not include leading zeros.</p>
                           </div>
                         </motion.div>
                       )}
