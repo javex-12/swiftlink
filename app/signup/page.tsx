@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, updateProfile, sendEmailVerification
+  signInWithEmailAndPassword, updateProfile, sendEmailVerification, signOut
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase-client";
@@ -96,6 +96,7 @@ export default function SignupPage() {
         const cred = await signInWithEmailAndPassword(auth, form.email, form.password);
         
         if (!cred.user.emailVerified) {
+          await signOut(auth);
           await sendEmailVerification(cred.user);
           setError("Please verify your email address. We resent a new link to your inbox.");
           return;
@@ -129,6 +130,7 @@ export default function SignupPage() {
       await saveUserStore(userCred.user.uid, { bizName: form.bizName, phone: formattedPhone });
       
       await sendEmailVerification(userCred.user);
+      await signOut(auth);
       setStep("verify");
       
     } catch (e: any) {
