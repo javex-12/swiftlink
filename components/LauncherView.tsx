@@ -373,7 +373,9 @@ export function LauncherView() {
             <section className="rounded-3xl border border-white/15 bg-white/10 p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
               <h3 className="text-sm font-black uppercase tracking-wider text-white">Customer Activity Feed</h3>
               <ul className="mt-3 space-y-2 text-sm text-slate-200">
-                <li className="rounded-xl border border-white/10 bg-white/5 p-3">New review from Chika: "Fast delivery."</li>
+                <li className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  {`New review from Chika: \u201CFast delivery.\u201D`}
+                </li>
                 <li className="rounded-xl border border-white/10 bg-white/5 p-3">Support ticket #104 marked resolved.</li>
                 <li className="rounded-xl border border-white/10 bg-white/5 p-3">Returning customer placed 3rd order.</li>
               </ul>

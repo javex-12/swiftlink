@@ -20,6 +20,10 @@ export type Delivery = {
 export type ShopState = {
   id: string | null;
   bizName: string;
+  /** Public handle for /store/your-handle (lowercase, a-z 0-9 hyphen). */
+  storeUsername?: string;
+  /** Last slug written to swiftlink_slugs (for index cleanup when the handle changes). */
+  publishedStoreSlug?: string;
   bizImage: string;
   phone: string;
   currency: string;
