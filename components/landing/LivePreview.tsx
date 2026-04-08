@@ -443,7 +443,7 @@ export const LivePreview = () => {
                   {query && PRODUCTS.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())).length === 0 && (
                     <div className="text-center py-8 text-gray-300">
                       <Search size={24} className="mx-auto mb-2" />
-                      <p className="text-[9px] font-bold">No results for "{query}"</p>
+                      <p className="text-[9px] font-bold">No results for &quot;{query}&quot;</p>
                     </div>
                   )}
                 </div>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900 py-20 px-6 sm:px-12 max-w-4xl mx-auto">
@@ -41,7 +43,7 @@ export default function TermsPage() {
         </section>
         
         <div className="pt-10 border-t border-slate-100 mt-12">
-          <a href="/signup" className="text-emerald-500 font-bold hover:underline">← Back to Registration</a>
+          <Link href="/signup" className="text-emerald-500 font-bold hover:underline">← Back to Registration</Link>
         </div>
       </div>
     </main>
