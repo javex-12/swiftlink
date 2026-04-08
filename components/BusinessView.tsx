@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import {
   getPublicStoreSlug,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/utils";
 
 export function BusinessView() {
+  const router = useRouter();
   const {
     state,
     updateState,
@@ -30,12 +31,14 @@ export function BusinessView() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-100">
-        <Link
-          href="/"
-          className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500"
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors"
+          aria-label="Go back"
         >
           <i className="fas fa-arrow-left" />
-        </Link>
+        </button>
         <span className="font-black text-slate-900 uppercase tracking-widest text-[10px]">
           Store Manager
         </span>
