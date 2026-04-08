@@ -267,7 +267,7 @@ export const LivePreview = () => {
                   <div className="grid grid-cols-2 gap-2.5">
                     {filtered.map((p) => (
                       <motion.div key={p.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <button onClick={() => { setSelected(p); setScreen("product"); }} className="w-full text-left">
+                        <div onClick={() => { setSelected(p); setScreen("product"); }} className="w-full text-left cursor-pointer">
                           <div className="bg-white rounded-2xl overflow-hidden shadow-sm relative">
                             <div className="aspect-square overflow-hidden relative">
                               <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
@@ -315,7 +315,7 @@ export const LivePreview = () => {
                               </div>
                             </div>
                           </div>
-                        </button>
+                        </div>
                       </motion.div>
                     ))}
                   </div>

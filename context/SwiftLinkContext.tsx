@@ -229,8 +229,10 @@ export function SwiftLinkProvider({
     const run = async () => {
       try {
         await signInAnonymously(auth);
-      } catch (e) {
-        console.error(e);
+      } catch (e: any) {
+        if (e?.code !== "auth/admin-restricted-operation") {
+           console.warn("Firebase anonymous auth fallback:", e?.message || e);
+        }
       }
       unsubAuth = onAuthStateChanged(auth, (u) => {
         if (!u) return;

@@ -54,6 +54,9 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#10b981" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
