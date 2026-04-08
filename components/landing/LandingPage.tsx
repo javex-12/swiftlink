@@ -359,6 +359,119 @@ const HowItWorks = () => {
   );
 };
 
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+const Pricing = () => {
+  const plans = [
+    {
+      name: "Tier 1 - Free",
+      subtitle: "Hook",
+      price: "Free",
+      description: "Perfect for getting started.",
+      featured: false,
+      features: ["5 products max", "1 delivery slot", "SwiftLink branding"],
+    },
+    {
+      name: "Tier 2 - Pro",
+      subtitle: "Most Popular",
+      price: "₦3,000-₦5,000/month",
+      description: "For growing stores that need full control.",
+      featured: true,
+      features: [
+        "Unlimited products",
+        "Custom storefront colors",
+        "No branding",
+        "Delivery history export",
+      ],
+    },
+    {
+      name: "Tier 3 - Business",
+      subtitle: "Scale",
+      price: "₦10,000-₦15,000/month",
+      description: "For teams running advanced operations.",
+      featured: false,
+      features: [
+        "Multi-store",
+        "Analytics",
+        "Paystack payment links embedded in cart",
+        "Flutterwave payment links embedded in cart",
+      ],
+    },
+  ];
+
+  return (
+    <section id="pricing" className="py-24 sm:py-32 px-4 sm:px-6 bg-slate-50/60">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16 sm:mb-20">
+          <motion.span
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block"
+          >
+            Pricing
+          </motion.span>
+          <AnimatedText
+            text="Choose the plan that fits your growth stage."
+            className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 tracking-tight justify-center text-center"
+          />
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
+          {plans.map((plan, index) => (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className={cn(
+                "rounded-[2rem] border p-8 sm:p-10 bg-white relative",
+                plan.featured
+                  ? "border-emerald-400 shadow-2xl shadow-emerald-500/10"
+                  : "border-slate-100 shadow-lg shadow-slate-100/80"
+              )}
+            >
+              {plan.featured && (
+                <span className="absolute -top-3 left-8 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-emerald-500 text-white">
+                  Recommended
+                </span>
+              )}
+
+              <div className="mb-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">{plan.subtitle}</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{plan.name}</h3>
+                <p className="text-emerald-500 font-black text-xl sm:text-2xl">{plan.price}</p>
+                <p className="text-slate-500 text-sm font-medium mt-3">{plan.description}</p>
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-slate-600 font-medium">
+                    <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/signup"
+                className={cn(
+                  "inline-flex items-center justify-center w-full rounded-2xl px-5 py-3.5 text-sm font-black transition-all active:scale-95",
+                  plan.featured
+                    ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                    : "bg-slate-900 text-white hover:bg-emerald-500"
+                )}
+              >
+                Get Started
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 const CTASection = () => (
   <section className="py-16 sm:py-20 px-4 sm:px-6">
@@ -419,6 +532,7 @@ export default function LandingPage() {
       <Hero />
       <Features />
       <HowItWorks />
+      <Pricing />
       <CTASection />
       <Footer />
     </main>
