@@ -588,7 +588,7 @@ export const LivePreview = () => {
             { tab: "search", Icon: Search, label: "Search" },
             { tab: "cart", Icon: ShoppingCart, label: "Cart", badge: totalItems },
             { tab: "profile", Icon: User, label: "Profile" },
-          ] as const).map(({ tab, Icon, label, badge }) => (
+          ] as any[]).map(({ tab, Icon, label, badge }) => (
             <button
               key={tab}
               onClick={() => goTab(tab)}
