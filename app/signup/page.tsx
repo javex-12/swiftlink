@@ -337,7 +337,7 @@ export default function SignupPage() {
                   </div>
                   
                   <button type="button" onClick={() => { setStep("form"); setMode("login"); setError(null); }} className="w-full py-4 bg-emerald-500 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-emerald-500/20">
-                    I've verified my email
+                    I&apos;ve verified my email
                   </button>
                 </motion.div>
               )}
