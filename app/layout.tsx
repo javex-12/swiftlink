@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Suspense } from "react";
 import { AppChrome } from "@/components/AppChrome";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -63,6 +64,7 @@ export default function RootLayout({
           <SwiftLinkProvider>
             <AppChrome>{children}</AppChrome>
           </SwiftLinkProvider>
+          <PWAInstallPrompt />
         </Suspense>
       </body>
     </html>

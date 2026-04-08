@@ -139,6 +139,12 @@ export default function SignupPage() {
       setStep("otp");
     } catch (e: any) {
       console.error(e);
+      // Clear the verifier so a retry doesn't trigger 'reCAPTCHA Timeout'
+      if ((window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier.clear();
+        (window as any).recaptchaVerifier = null;
+      }
+      
       if (e.code === "auth/invalid-phone-number") {
         setError("Invalid phone number format.");
       } else {
