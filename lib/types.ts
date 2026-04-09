@@ -19,6 +19,19 @@ export type Delivery = {
   ref: string;
 };
 
+/** Merchant-facing storefront appearance (customer site). */
+export type StorefrontTheme = {
+  /** Brand accent (hex). Buttons, badges, links. */
+  primaryColor: string;
+  /** Page mood */
+  background: "light" | "dark";
+  /** Hero: split (image beside text) or centered stack */
+  heroLayout: "split" | "centered";
+  /** Product card corners */
+  cardRadius: "pill" | "subtle";
+  showHeroBadge: boolean;
+};
+
 export type ShopState = {
   id: string | null;
   bizName: string;
@@ -35,6 +48,8 @@ export type ShopState = {
   aboutUs: string;
   /** When set, matching products appear in a featured block above the catalog */
   featuredCategory?: string;
+  /** Customize colors, layout, and hero on the public storefront */
+  storefrontTheme?: Partial<StorefrontTheme>;
   isLive?: boolean;
 };
 

@@ -2,24 +2,60 @@
 
 import { useRouter } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import type { StorefrontTheme } from "@/lib/types";
 import {
   collectProductCategories,
   getPublicStoreSlug,
   getShopPath,
+  normalizeHexColor,
   normalizeStoreUsername,
+  resolveStorefrontTheme,
 } from "@/lib/utils";
+
+const STOREFRONT_PRESETS: { name: string; patch: Partial<StorefrontTheme> }[] =
+  [
+    {
+      name: "Emerald",
+      patch: { primaryColor: "#10b981", background: "light" },
+    },
+    {
+      name: "Ocean",
+      patch: { primaryColor: "#0ea5e9", background: "light" },
+    },
+    {
+      name: "Violet",
+      patch: { primaryColor: "#8b5cf6", background: "light" },
+    },
+    {
+      name: "Coral",
+      patch: { primaryColor: "#f43f5e", background: "light" },
+    },
+    {
+      name: "Midnight",
+      patch: { primaryColor: "#34d399", background: "dark" },
+    },
+  ];
 
 export function BusinessView() {
   const router = useRouter();
   const {
     state,
     updateState,
+    setStateMerge,
     copyShopLink,
     addProduct,
     updateProduct,
     removeProduct,
     handleImageUpload,
   } = useSwiftLink();
+
+  const resolvedTheme = resolveStorefrontTheme(state);
+
+  const patchStorefrontTheme = (patch: Partial<StorefrontTheme>) => {
+    setStateMerge({
+      storefrontTheme: { ...(state.storefrontTheme || {}), ...patch },
+    });
+  };
 
   const initials = state.bizName
     ? state.bizName
@@ -41,7 +77,7 @@ export function BusinessView() {
           <i className="fas fa-arrow-left" />
         </button>
         <span className="font-black text-slate-900 uppercase tracking-widest text-[10px]">
-          Store Manager
+          Edit store
         </span>
         <button
           type="button"
@@ -132,6 +168,22 @@ export function BusinessView() {
               className="w-full bg-slate-50 rounded-2xl p-4 font-bold outline-none"
               placeholder="Hero Tagline"
             />
+            <div>
+              <label
+                htmlFor="biz-about"
+                className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+              >
+                Store intro
+              </label>
+              <textarea
+                id="biz-about"
+                value={state.aboutUs}
+                onChange={(e) => updateState("aboutUs", e.target.value)}
+                rows={4}
+                className="w-full bg-slate-50 rounded-2xl p-4 text-sm font-bold outline-none resize-y min-h-[100px]"
+                placeholder="Welcome message shown on your public storefront…"
+              />
+            </div>
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-2">
               <label
                 htmlFor="featured-category"
@@ -160,6 +212,163 @@ export function BusinessView() {
               </select>
             </div>
           </section>
+
+          <section className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 space-y-5">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Storefront design
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Colors and layout for your public shop — customers see these
+                changes live.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                Quick looks
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {STOREFRONT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => patchStorefrontTheme(preset.patch)}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStateMerge({ storefrontTheme: {} })
+                  }
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-400 hover:text-slate-700"
+                >
+                  Reset defaults
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label
+                  htmlFor="store-primary"
+                  className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+                >
+                  Brand color
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="store-primary"
+                    type="color"
+                    value={normalizeHexColor(resolvedTheme.primaryColor)}
+                    onChange={(e) =>
+                      patchStorefrontTheme({ primaryColor: e.target.value })
+                    }
+                    className="h-11 w-14 rounded-lg border border-slate-200 cursor-pointer bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={resolvedTheme.primaryColor}
+                    onChange={(e) =>
+                      patchStorefrontTheme({
+                        primaryColor: normalizeHexColor(
+                          e.target.value,
+                          resolvedTheme.primaryColor,
+                        ),
+                      })
+                    }
+                    className="w-28 bg-slate-50 rounded-xl px-3 py-2 font-mono text-sm font-bold uppercase"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="store-bg"
+                  className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+                >
+                  Page background
+                </label>
+                <select
+                  id="store-bg"
+                  value={resolvedTheme.background}
+                  onChange={(e) =>
+                    patchStorefrontTheme({
+                      background: e.target.value as StorefrontTheme["background"],
+                    })
+                  }
+                  className="w-full bg-slate-50 rounded-xl p-3 font-bold text-sm outline-none"
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="store-hero"
+                  className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+                >
+                  Hero layout
+                </label>
+                <select
+                  id="store-hero"
+                  value={resolvedTheme.heroLayout}
+                  onChange={(e) =>
+                    patchStorefrontTheme({
+                      heroLayout: e.target.value as StorefrontTheme["heroLayout"],
+                    })
+                  }
+                  className="w-full bg-slate-50 rounded-xl p-3 font-bold text-sm outline-none"
+                >
+                  <option value="split">Split — image beside text</option>
+                  <option value="centered">Centered — stacked</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="store-cards"
+                  className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2"
+                >
+                  Product cards
+                </label>
+                <select
+                  id="store-cards"
+                  value={resolvedTheme.cardRadius}
+                  onChange={(e) =>
+                    patchStorefrontTheme({
+                      cardRadius: e.target.value as StorefrontTheme["cardRadius"],
+                    })
+                  }
+                  className="w-full bg-slate-50 rounded-xl p-3 font-bold text-sm outline-none"
+                >
+                  <option value="pill">Soft — large rounded corners</option>
+                  <option value="subtle">Tight — smaller corners</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <label className="flex items-center gap-3 cursor-pointer w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    checked={resolvedTheme.showHeroBadge}
+                    onChange={(e) =>
+                      patchStorefrontTheme({ showHeroBadge: e.target.checked })
+                    }
+                  />
+                  <span className="text-xs font-bold text-slate-700">
+                    Show &quot;Live catalog&quot; badge on hero
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
           <section className="space-y-6">
             <div className="flex justify-between items-end px-2">
               <h2 className="text-2xl font-black text-slate-900">Inventory</h2>
@@ -310,8 +519,14 @@ export function BusinessView() {
               id="preview-frame-content"
               className="h-full overflow-y-auto bg-white relative custom-scrollbar"
             >
-              <div className="bg-white pb-20">
-                <div className="h-32 bg-slate-900 relative">
+              <div
+                className={`pb-20 ${resolvedTheme.background === "dark" ? "bg-slate-900" : "bg-white"}`}
+              >
+                <div className="h-32 bg-slate-900 relative overflow-hidden">
+                  <div
+                    className="absolute inset-0 opacity-35"
+                    style={{ backgroundColor: resolvedTheme.primaryColor }}
+                  />
                   <div
                     className="absolute inset-0 bg-center bg-cover opacity-40"
                     style={{
@@ -338,10 +553,15 @@ export function BusinessView() {
                   </div>
                 </div>
                 <div className="mt-12 text-center px-4">
-                  <h2 className="font-black text-lg text-slate-900">
+                  <h2
+                    className={`font-black text-lg ${resolvedTheme.background === "dark" ? "text-white" : "text-slate-900"}`}
+                  >
                     {state.bizName || "My Store"}
                   </h2>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-wider"
+                    style={{ color: resolvedTheme.primaryColor }}
+                  >
                     {state.tagline}
                   </p>
                 </div>
@@ -368,7 +588,10 @@ export function BusinessView() {
                             {(p.category || "").trim()}
                           </span>
                         ) : null}
-                        <div className="font-black text-emerald-600 text-[11px] mt-0.5">
+                        <div
+                          className="font-black text-[11px] mt-0.5"
+                          style={{ color: resolvedTheme.primaryColor }}
+                        >
                           {state.currency}
                           {Number(p.price).toLocaleString()}
                         </div>
