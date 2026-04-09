@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 
 export function LauncherView() {
@@ -40,7 +41,11 @@ export function LauncherView() {
           aria-controls="pro-command-sidebar"
           aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
         >
-          <i className={`fas text-lg ${mobileNavOpen ? "fa-xmark" : "fa-bars"}`} />
+          {mobileNavOpen ? (
+            <X aria-hidden="true" className="h-5 w-5" />
+          ) : (
+            <Menu aria-hidden="true" className="h-5 w-5" />
+          )}
         </button>
         <div className="min-w-0 flex-1 text-center">
           <span className="text-sm font-black tracking-tight text-slate-900 block truncate">
@@ -77,7 +82,7 @@ export function LauncherView() {
             className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
             aria-label="Close sidebar"
           >
-            <i className="fas fa-xmark" />
+            <X aria-hidden="true" className="h-5 w-5" />
           </button>
           <Link
             href="/pro"
