@@ -145,4 +145,6 @@ export const defaultShopState = (): ShopState => ({
 
   showHero: true,
   showAbout: true,
+
+  isLive: true,
 });

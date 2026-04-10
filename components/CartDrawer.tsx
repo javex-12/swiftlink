@@ -21,6 +21,7 @@ export function CartDrawer({
   } = useSwiftLink();
 
   const theme = useMemo(() => resolveStorefrontTheme(state), [state]);
+  const storeAcceptingOrders = state.isLive !== false;
 
   let total = 0;
   const lines = Object.entries(cart).map(([id, q]) => {
@@ -135,14 +136,17 @@ export function CartDrawer({
           <button
             type="button"
             onClick={sendWhatsAppOrder}
-            className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105"
+            disabled={!storeAcceptingOrders}
+            className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
           style={{
             backgroundColor: theme.primaryColor,
             boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
           }}
           >
             <i className="fab fa-whatsapp text-2xl" />
-            <span>WhatsApp Order</span>
+            <span>
+              {storeAcceptingOrders ? "WhatsApp Order" : "Orders paused"}
+            </span>
           </button>
         </div>
       </div>

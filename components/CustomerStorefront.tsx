@@ -40,7 +40,9 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
   const categories: string[] = ["All", ...Array.from(new Set(state.products.map(p => p.category).filter((c): c is string => Boolean(c))))];
 
   const accentStr = state.accentColor || "#10b981";
+  const storeAcceptingOrders = state.isLive !== false;
   const canAddToCart = (outOfStock: boolean) =>
+    storeAcceptingOrders &&
     !(outOfStock && state.outOfStockDisplay !== "hide");
 
   // Filter products
@@ -97,6 +99,14 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
         isPreview ? "min-h-[100%]" : "min-h-screen"
     )} id={isPreview ? undefined : "customer-view"}>
       
+      {!isPreview && !storeAcceptingOrders && (
+        <div className="bg-amber-50 border-b border-amber-100 px-4 py-2.5 text-center z-30 relative">
+          <p className="text-[11px] font-bold text-amber-950 leading-snug">
+            Storefront is paused — you can browse products, but ordering is turned off for now.
+          </p>
+        </div>
+      )}
+
       {/* ── TOP NAV HEADER ── */}
       <nav className={cn(
           "bg-white z-40 sticky top-0 border-b border-slate-100 shadow-sm w-full",
@@ -114,9 +124,30 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                      <span className="font-black text-slate-900 text-base md:text-lg leading-tight tracking-tight">
                          {state.bizName || "My Store"}
                      </span>
-                     <div className="flex items-center gap-1 mt-0.5">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Store</span>
+                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap min-w-0">
+                         <div
+                           className={cn(
+                             "w-1.5 h-1.5 rounded-full shrink-0",
+                             storeAcceptingOrders
+                               ? "bg-emerald-500 animate-pulse"
+                               : "bg-amber-500",
+                           )}
+                         />
+                         <span
+                           className={cn(
+                             "text-[10px] font-bold uppercase tracking-widest",
+                             storeAcceptingOrders ? "text-slate-500" : "text-amber-800",
+                           )}
+                         >
+                           {storeAcceptingOrders
+                             ? "Live · open for orders"
+                             : "Paused · orders off"}
+                         </span>
+                         {Boolean(state.storeHours?.trim()) && (
+                           <span className="text-[10px] font-semibold text-slate-400 truncate max-w-[140px] sm:max-w-[220px]">
+                             · {state.storeHours}
+                           </span>
+                         )}
                      </div>
                  </div>
              </div>
@@ -515,7 +546,11 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                               className="flex-1 py-5 rounded-[2rem] text-white font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                               style={{ backgroundColor: accentStr }}
                           >
-                             {canAddToCart(selectedProduct.outOfStock) ? "Add to Collection" : "Sold out"}
+                             {!storeAcceptingOrders
+                               ? "Orders paused"
+                               : canAddToCart(selectedProduct.outOfStock)
+                                 ? "Add to Collection"
+                                 : "Sold out"}
                           </button>
                       </div>
                   </div>

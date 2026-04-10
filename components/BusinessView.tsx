@@ -384,6 +384,21 @@ export function BusinessView() {
                           </div>
 
                           <div>
+                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Public storefront</h3>
+                              <PillSelector
+                                  options={[
+                                    { label: "Live — accepting orders", value: "live" },
+                                    { label: "Paused — browse only", value: "paused" },
+                                  ]}
+                                  value={state.isLive === false ? "paused" : "live"}
+                                  onChange={(v) => updateState("isLive", v === "live")}
+                              />
+                              <p className="text-[10px] text-slate-400 mt-2 font-medium leading-relaxed">
+                                Paused turns off add-to-cart and WhatsApp checkout on your shared store link.
+                              </p>
+                          </div>
+
+                          <div>
                               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex justify-between">Min Cart Value <span className="font-bold text-slate-900 bg-slate-100 px-2 rounded">{state.currency}{state.minOrder || 0}</span></h3>
                               <input type="range" min="0" max="50000" step="1000" value={state.minOrder || 0} onChange={(e) => updateState("minOrder", Number(e.target.value))} className="w-full accent-emerald-500" />
                           </div>

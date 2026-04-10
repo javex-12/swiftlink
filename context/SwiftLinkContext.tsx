@@ -903,6 +903,10 @@ export function SwiftLinkProvider({
       alert("This store has no WhatsApp number configured yet.");
       return;
     }
+    if (state.isLive === false) {
+      alert("This store is not accepting orders right now.");
+      return;
+    }
     const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     let msg = `*NEW ORDER ${ref}*\n━━━━━━━━━━\n\n`;
     let total = 0;
