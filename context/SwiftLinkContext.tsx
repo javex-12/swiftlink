@@ -148,7 +148,8 @@ export function SwiftLinkProvider({
   const shopQ = shopFromQuery;
 
   const isTrackingMode = Boolean(trackId);
-  const customerShopId = shopFromQuery || pathShop?.shopId || null;
+  const pathShopId = pathShop?.kind === "uid" ? pathShop.shopId : null;
+  const customerShopId = shopFromQuery || pathShopId || null;
   const isCustomerMode = Boolean(customerShopId);
   const isOwner = !isTrackingMode && !isCustomerMode;
 
@@ -263,7 +264,7 @@ export function SwiftLinkProvider({
           });
         }
         const tid = trackQ;
-        const sid = shopQ || pathShop?.shopId;
+        const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
         if (!tid && sid && !isOwnerRef.current) {
           shopUnsubRef.current = onSnapshot(
             doc(db, "swiftlink_stores", sid),
@@ -282,7 +283,7 @@ export function SwiftLinkProvider({
       unsubAuth?.();
       shopUnsubRef.current?.();
     };
-  }, [pathname, trackQ, shopQ, pathShop?.shopId]);
+  }, [pathname, trackQ, shopQ, pathShop?.kind === "uid" ? pathShop.shopId : null]);
 
   useEffect(() => {
     if (!trackId) return;

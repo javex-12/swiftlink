@@ -13,6 +13,14 @@ export type Product = {
   badge?: "hot" | "new" | "sale" | string;
 };
 
+export type StorefrontTheme = {
+  primaryColor: string;
+  background: "light" | "dark";
+  heroLayout: "split" | "banner";
+  cardRadius: "rounded" | "pill" | "sharp";
+  showHeroBadge: boolean;
+};
+
 export type Delivery = {
   id: string;
   status: "dispatched" | "delivered";
@@ -33,6 +41,7 @@ export type ShopState = {
   id: string | null;
   bizName: string;
   bizImage: string;
+  storeUsername?: string; // unique slug for URLs
   phone: string;
   currency: string;
   products: Product[];
@@ -84,6 +93,9 @@ export type ShopState = {
   // Toggles
   showHero?: boolean;
   showAbout?: boolean;
+
+  // Legacy compatibility for components not yet overhauled
+  storefrontTheme?: Partial<StorefrontTheme>;
 };
 
 export const defaultShopState = (): ShopState => ({

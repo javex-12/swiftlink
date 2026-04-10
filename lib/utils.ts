@@ -25,18 +25,18 @@ export function normalizeHexColor(input: string, fallback = "#10b981"): string {
 }
 
 export function resolveStorefrontTheme(
-  state: Pick<ShopState, "storefrontTheme">,
+  state: Partial<ShopState>,
 ): StorefrontTheme {
   const t = state.storefrontTheme || {};
   return {
     ...DEFAULT_STOREFRONT_THEME,
     ...t,
     primaryColor: normalizeHexColor(
-      t.primaryColor ?? DEFAULT_STOREFRONT_THEME.primaryColor,
+      state.accentColor ?? t.primaryColor ?? DEFAULT_STOREFRONT_THEME.primaryColor,
     ),
     background: t.background ?? DEFAULT_STOREFRONT_THEME.background,
-    heroLayout: t.heroLayout ?? DEFAULT_STOREFRONT_THEME.heroLayout,
-    cardRadius: t.cardRadius ?? DEFAULT_STOREFRONT_THEME.cardRadius,
+    heroLayout: state.heroStyle === "banner" || state.heroStyle === "split" ? state.heroStyle : (t.heroLayout ?? DEFAULT_STOREFRONT_THEME.heroLayout),
+    cardRadius: state.buttonRadius ?? t.cardRadius ?? DEFAULT_STOREFRONT_THEME.cardRadius,
     showHeroBadge:
       t.showHeroBadge ?? DEFAULT_STOREFRONT_THEME.showHeroBadge,
   };
