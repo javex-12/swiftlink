@@ -10,64 +10,21 @@ import React, {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  doc,
-  deleteDoc,
-  getDoc,
-  onSnapshot,
-  setDoc,
-  type Firestore,
-  type Unsubscribe,
-} from "firebase/firestore";
+import { doc, onSnapshot, setDoc, type Unsubscribe } from "firebase/firestore";
 import {
   signInAnonymously,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   type User,
 } from "firebase/auth";
 import { getFirebase } from "@/lib/firebase-client";
 import {
-  getPublicStoreSlug,
   getShopPath,
   loadStateLocal,
   parseShopFromPathname,
 } from "@/lib/utils";
 import { defaultShopState, type Delivery, type ShopState } from "@/lib/types";
-
-async function writeOwnerStoreAndSlug(
-  db: Firestore,
-  uid: string,
-  prevSnapshot: ShopState,
-  next: ShopState,
-) {
-  const oldSlug =
-    prevSnapshot.publishedStoreSlug || getPublicStoreSlug(prevSnapshot);
-  const newSlug = getPublicStoreSlug(next);
-  const withPublish: ShopState = { ...next, publishedStoreSlug: newSlug };
-  try {
-    if (oldSlug && oldSlug !== newSlug) {
-      await deleteDoc(doc(db, "swiftlink_slugs", oldSlug));
-    }
-    if (newSlug) {
-      await setDoc(
-        doc(db, "swiftlink_slugs", newSlug),
-        { shopId: uid, updatedAt: new Date().toISOString() },
-        { merge: true },
-      );
-    }
-    await setDoc(doc(db, "swiftlink_stores", uid), withPublish, {
-      merge: true,
-    });
-  } catch (e) {
-    console.warn("SwiftLink slug / store write failed:", e);
-    try {
-      await setDoc(doc(db, "swiftlink_stores", uid), withPublish, {
-        merge: true,
-      });
-    } catch (e2) {
-      console.warn("SwiftLink store write fallback failed:", e2);
-    }
-  }
-}
 
 type CartMap = Record<number, number>;
 
@@ -118,6 +75,8 @@ type SwiftLinkContextValue = {
   copyShopLink: () => void;
   copyTrackingPortalLink: () => void;
   handleSignOut: () => void;
+  emailSignIn: (e: string, p: string) => Promise<void>;
+  emailSignUp: (e: string, p: string) => Promise<void>;
   addProduct: () => void;
   updateProduct: (id: number, field: string, value: unknown) => void;
   removeProduct: (id: number) => void;
@@ -126,12 +85,17 @@ type SwiftLinkContextValue = {
     field: "bizImage" | "image",
     productId?: number,
   ) => void;
+  addProductImage: (productId: number, file: File) => void;
+  removeProductImage: (productId: number, index: number) => void;
+  setPrimaryImage: (productId: number, index: number) => void;
   updateCart: (id: number, delta: number) => void;
   toggleCartDrawer: (open: boolean) => void;
   sendWhatsAppOrder: () => void;
   renderDeliveryCount: () => number;
   trackingDisplay: Delivery | null;
   cartItemCount: number;
+  currentLocation: { lat: number; lng: number } | null;
+  startLocationTracking: () => void;
 };
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
@@ -169,9 +133,7 @@ export function SwiftLinkProvider({
   const [trackingDisplay, setTrackingDisplay] = useState<Delivery | null>(
     null,
   );
-  const [resolvedSlugShopId, setResolvedSlugShopId] = useState<string | null>(
-    null,
-  );
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
@@ -181,18 +143,13 @@ export function SwiftLinkProvider({
 
   const trackId = searchParams.get("track");
   const shopFromQuery = searchParams.get("shop");
-  const parsedPath = parseShopFromPathname(pathname);
-  const slugFromPath = parsedPath?.kind === "slug" ? parsedPath.slug : null;
-  const uidFromPath = parsedPath?.kind === "uid" ? parsedPath.shopId : null;
+  const pathShop = parseShopFromPathname(pathname);
   const trackQ = trackId;
   const shopQ = shopFromQuery;
 
   const isTrackingMode = Boolean(trackId);
-  const customerShopId =
-    shopFromQuery || uidFromPath || resolvedSlugShopId || null;
-  const isCustomerMode = Boolean(
-    shopFromQuery || uidFromPath || slugFromPath,
-  );
+  const customerShopId = shopFromQuery || pathShop?.shopId || null;
+  const isCustomerMode = Boolean(customerShopId);
   const isOwner = !isTrackingMode && !isCustomerMode;
 
   isOwnerRef.current = isOwner;
@@ -209,25 +166,22 @@ export function SwiftLinkProvider({
 
   const persistState = useCallback(
     (next: ShopState) => {
-      const prev = stateRef.current;
-      const withPublish: ShopState = {
-        ...next,
-        publishedStoreSlug: getPublicStoreSlug(next),
-      };
-
       if (typeof window !== "undefined") {
-        localStorage.setItem("swiftlink_state", JSON.stringify(withPublish));
+        localStorage.setItem("swiftlink_state", JSON.stringify(next));
       }
       const { db } = getFirebase();
       if (
-        !db ||
-        !isFirebaseActive ||
-        !isOwnerRef.current ||
-        !userRef.current?.uid
+        db &&
+        isFirebaseActive &&
+        isOwnerRef.current &&
+        userRef.current?.uid
       ) {
-        return;
+        void setDoc(
+          doc(db, "swiftlink_stores", userRef.current.uid),
+          next,
+          { merge: true },
+        );
       }
-      void writeOwnerStoreAndSlug(db, userRef.current.uid, prev, next);
     },
     [isFirebaseActive],
   );
@@ -275,33 +229,6 @@ export function SwiftLinkProvider({
   }, [isCustomerMode, customerShopId, isTrackingMode]);
 
   useEffect(() => {
-    if (!slugFromPath) {
-      setResolvedSlugShopId(null);
-      return;
-    }
-    setResolvedSlugShopId(null);
-    const { db } = getFirebase();
-    if (!db) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const snap = await getDoc(doc(db, "swiftlink_slugs", slugFromPath));
-        if (cancelled) return;
-        const shopId = (snap.data() as { shopId?: string } | undefined)
-          ?.shopId;
-        setResolvedSlugShopId(
-          shopId && typeof shopId === "string" ? shopId : null,
-        );
-      } catch {
-        if (!cancelled) setResolvedSlugShopId(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [slugFromPath]);
-
-  useEffect(() => {
     shopUnsubRef.current?.();
     shopUnsubRef.current = null;
     const { auth, db } = getAuthFirestore();
@@ -324,23 +251,19 @@ export function SwiftLinkProvider({
         if (isOwnerRef.current) {
           setState((prev) => {
             const next = { ...prev, id: u.uid };
-            const newSlug = getPublicStoreSlug(next);
-            const withPublish: ShopState = {
-              ...next,
-              publishedStoreSlug: newSlug,
-            };
             if (typeof window !== "undefined") {
-              localStorage.setItem(
-                "swiftlink_state",
-                JSON.stringify(withPublish),
-              );
+              localStorage.setItem("swiftlink_state", JSON.stringify(next));
             }
-            void writeOwnerStoreAndSlug(db, u.uid, prev, next);
-            return withPublish;
+            void setDoc(
+              doc(db, "swiftlink_stores", u.uid),
+              next,
+              { merge: true },
+            );
+            return next;
           });
         }
         const tid = trackQ;
-        const sid = shopQ || uidFromPath || resolvedSlugShopId;
+        const sid = shopQ || pathShop?.shopId;
         if (!tid && sid && !isOwnerRef.current) {
           shopUnsubRef.current = onSnapshot(
             doc(db, "swiftlink_stores", sid),
@@ -359,7 +282,7 @@ export function SwiftLinkProvider({
       unsubAuth?.();
       shopUnsubRef.current?.();
     };
-  }, [pathname, trackQ, shopQ, uidFromPath, resolvedSlugShopId]);
+  }, [pathname, trackQ, shopQ, pathShop?.shopId]);
 
   useEffect(() => {
     if (!trackId) return;
@@ -391,6 +314,29 @@ export function SwiftLinkProvider({
       return () => clearTimeout(t);
     }
   }, [isOwner, pathname]);
+
+  const processImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const src = r.result as string;
+        const img = new window.Image();
+        img.src = src;
+        img.onload = () => {
+          const cvs = document.createElement("canvas");
+          const ctx = cvs.getContext("2d");
+          if (!ctx) return reject("No canvas context");
+          cvs.width = 500;
+          cvs.height = 500;
+          ctx.drawImage(img, 0, 0, 500, 500);
+          resolve(cvs.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = () => reject("Image load error");
+      };
+      r.onerror = () => reject("FileReader error");
+      r.readAsDataURL(file);
+    });
+  };
 
   const sleep = (ms: number) =>
     new Promise<void>((r) => {
@@ -773,8 +719,8 @@ export function SwiftLinkProvider({
             price: 0,
             description: "",
             image: "",
+            images: [],
             outOfStock: false,
-            category: "",
           },
           ...prev.products,
         ],
@@ -816,37 +762,116 @@ export function SwiftLinkProvider({
   const handleImageUpload = useCallback(
     (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
       if (!file) return;
-      const r = new FileReader();
-      r.onload = () => {
-        const src = r.result as string;
-        const img = new window.Image();
-        img.src = src;
-        img.onload = () => {
-          const cvs = document.createElement("canvas");
-          const ctx = cvs.getContext("2d");
-          if (!ctx) return;
-          cvs.width = 500;
-          cvs.height = 500;
-          ctx.drawImage(img, 0, 0, 500, 500);
-          const cmp = cvs.toDataURL("image/jpeg", 0.7);
-          setState((prev) => {
-            let next = { ...prev };
-            if (productId != null) {
-              const products = prev.products.map((p) =>
-                p.id === productId ? { ...p, image: cmp } : p,
-              );
-              next = { ...next, products };
-            } else {
-              next = { ...next, bizImage: cmp };
-            }
-            persistState(next);
-            return next;
-          });
-        };
-      };
-      r.readAsDataURL(file);
+      processImageFile(file).then((cmp) => {
+        setState((prev) => {
+          let next = { ...prev };
+          if (productId != null) {
+            const products = prev.products.map((p) => {
+              if (p.id === productId) {
+                // Backward compat: set primary image `image`, and add/ensure it is in `images` array
+                const newImages = p.images?.length ? [...p.images] : (p.image ? [p.image] : []);
+                if (newImages.length === 0) newImages.push(cmp);
+                else newImages[0] = cmp; // replace the primary if it already had one
+                return { ...p, image: cmp, images: newImages };
+              }
+              return p;
+            });
+            next = { ...next, products };
+          } else {
+            next = { ...next, bizImage: cmp };
+          }
+          persistState(next);
+          return next;
+        });
+      }).catch(console.error);
     },
     [persistState],
+  );
+
+  const addProductImage = useCallback(
+    (productId: number, file: File) => {
+      processImageFile(file).then((cmp) => {
+        setState((prev) => {
+          const products = prev.products.map((p) => {
+            if (p.id === productId) {
+              const currentImgs = p.images || (p.image ? [p.image] : []);
+              const nextImgs = [...currentImgs, cmp];
+              return { ...p, images: nextImgs, image: nextImgs[0] };
+            }
+            return p;
+          });
+          const next = { ...prev, products };
+          persistState(next);
+          return next;
+        });
+      }).catch(console.error);
+    },
+    [persistState]
+  );
+
+  const emailSignIn = useCallback(async (email: string, pass: string) => {
+      const { auth } = getFirebase();
+      if (!auth) return;
+      await signInWithEmailAndPassword(auth, email, pass);
+  }, []);
+
+  const emailSignUp = useCallback(async (email: string, pass: string) => {
+      const { auth } = getFirebase();
+      if (!auth) return;
+      await createUserWithEmailAndPassword(auth, email, pass);
+  }, []);
+
+  const startLocationTracking = useCallback(() => {
+      if (typeof window !== 'undefined' && navigator.geolocation) {
+          navigator.geolocation.watchPosition((pos) => {
+              setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          }, (err) => console.warn("Geo error:", err), { enableHighAccuracy: true });
+      }
+  }, []);
+
+  const removeProductImage = useCallback(
+    (productId: number, index: number) => {
+      setState((prev) => {
+        const products = prev.products.map((p) => {
+          if (p.id === productId) {
+            const nextImgs = [...(p.images || [])];
+            nextImgs.splice(index, 1);
+            return {
+              ...p,
+              images: nextImgs,
+              image: nextImgs.length > 0 ? nextImgs[0] : "",
+            };
+          }
+          return p;
+        });
+        const next = { ...prev, products };
+        persistState(next);
+        return next;
+      });
+    },
+    [persistState]
+  );
+
+  const setPrimaryImage = useCallback(
+    (productId: number, index: number) => {
+      setState((prev) => {
+        const products = prev.products.map((p) => {
+          if (p.id === productId) {
+            const imgs = p.images || [];
+            if (index < 0 || index >= imgs.length) return p;
+            const nextImgs = [...imgs];
+            const [selected] = nextImgs.splice(index, 1);
+            nextImgs.unshift(selected); // Put it at the beginning
+            return { ...p, images: nextImgs, image: selected };
+          }
+          return p;
+        });
+        const next = { ...prev, products };
+        persistState(next);
+        return next;
+      });
+    },
+    [persistState]
   );
 
   const updateCart = useCallback(
@@ -928,6 +953,8 @@ export function SwiftLinkProvider({
     copyShopLink,
     copyTrackingPortalLink,
     handleSignOut,
+    emailSignIn,
+    emailSignUp,
     addProduct,
     updateProduct,
     removeProduct,
@@ -938,6 +965,11 @@ export function SwiftLinkProvider({
     renderDeliveryCount,
     trackingDisplay,
     cartItemCount,
+    addProductImage,
+    removeProductImage,
+    setPrimaryImage,
+    currentLocation,
+    startLocationTracking,
   };
 
   return (
