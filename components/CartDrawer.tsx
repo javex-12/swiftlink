@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/utils";
+import { Minus, Plus, Trash2 } from "lucide-react";
 
 export function CartDrawer({
   open,
@@ -14,6 +15,7 @@ export function CartDrawer({
   const {
     state,
     cart,
+    updateCart,
     sendWhatsAppOrder,
     cartItemCount,
   } = useSwiftLink();
@@ -30,19 +32,47 @@ export function CartDrawer({
         key={id}
         className="flex justify-between items-center p-5 bg-slate-50 rounded-3xl border border-slate-100"
       >
-        <div>
+        <div className="min-w-0">
           <h4 className="font-black text-sm text-slate-900">{p.name}</h4>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             {q} x {state.currency}
             {Number(p.price).toLocaleString()}
           </div>
         </div>
-        <div
-          className="font-black text-lg"
-          style={{ color: theme.primaryColor }}
-        >
-          {state.currency}
-          {Number(p.price * q).toLocaleString()}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-white rounded-2xl border border-slate-200 p-1">
+            <button
+              type="button"
+              aria-label={`Decrease quantity for ${p.name}`}
+              onClick={() => updateCart(p.id, -1)}
+              className="w-7 h-7 rounded-xl text-slate-700 hover:bg-slate-100 flex items-center justify-center"
+            >
+              <Minus size={14} />
+            </button>
+            <button
+              type="button"
+              aria-label={`Increase quantity for ${p.name}`}
+              onClick={() => updateCart(p.id, 1)}
+              className="w-7 h-7 rounded-xl text-slate-700 hover:bg-slate-100 flex items-center justify-center"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              type="button"
+              aria-label={`Remove ${p.name} from cart`}
+              onClick={() => updateCart(p.id, -q)}
+              className="w-7 h-7 rounded-xl text-red-500 hover:bg-red-50 flex items-center justify-center"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+          <div
+            className="font-black text-lg text-right min-w-20"
+            style={{ color: theme.primaryColor }}
+          >
+            {state.currency}
+            {Number(p.price * q).toLocaleString()}
+          </div>
         </div>
       </div>
     );

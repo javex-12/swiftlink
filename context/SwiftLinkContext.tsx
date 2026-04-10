@@ -894,6 +894,15 @@ export function SwiftLinkProvider({
   }, []);
 
   const sendWhatsAppOrder = useCallback(() => {
+    if (Object.keys(cart).length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+    const phone = state.phone.replace(/\D/g, "");
+    if (!phone) {
+      alert("This store has no WhatsApp number configured yet.");
+      return;
+    }
     const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     let msg = `*NEW ORDER ${ref}*\n━━━━━━━━━━\n\n`;
     let total = 0;
@@ -906,7 +915,7 @@ export function SwiftLinkProvider({
     const totalStr = `${state.currency}${total.toLocaleString()}`;
     msg += `━━━━━━━━━━\n💰 *Total: ${totalStr}*\n\n_Store: ${state.bizName}_`;
     window.open(
-      `https://wa.me/${state.phone.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`,
+      `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
     );
   }, [cart, state]);
 

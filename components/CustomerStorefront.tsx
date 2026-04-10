@@ -40,6 +40,8 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
   const categories: string[] = ["All", ...Array.from(new Set(state.products.map(p => p.category).filter((c): c is string => Boolean(c))))];
 
   const accentStr = state.accentColor || "#10b981";
+  const canAddToCart = (outOfStock: boolean) =>
+    !(outOfStock && state.outOfStockDisplay !== "hide");
 
   // Filter products
   const visibleProducts = state.products.filter(p => {
@@ -192,6 +194,11 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                                        {p.badge}
                                    </div>
                                )}
+                               {p.outOfStock && state.outOfStockDisplay !== "hide" && (
+                                   <div className="mt-2 bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm">
+                                       Sold out
+                                   </div>
+                               )}
                            </div>
                            
                            <button onClick={(e) => { e.stopPropagation(); }} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center z-10 text-slate-300 hover:text-red-500 transition-colors shadow-sm active:scale-90 opacity-0 group-hover:opacity-100">
@@ -211,8 +218,12 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                                        {state.currency}{Number(p.price).toLocaleString()}
                                    </span>
                                    <button 
-                                       onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }}
-                                       className={cn("w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90", cart[p.id] ? "bg-emerald-500 text-white" : "bg-slate-900 text-white shadow-lg")}
+                                       onClick={(e) => { e.stopPropagation(); if (!canAddToCart(p.outOfStock)) return; updateCart(p.id, 1); }}
+                                       disabled={!canAddToCart(p.outOfStock)}
+                                       className={cn(
+                                           "w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50",
+                                           cart[p.id] ? "bg-emerald-500 text-white" : "bg-slate-900 text-white shadow-lg"
+                                       )}
                                    >
                                        {cart[p.id] ? <CheckCircle2 size={18} /> : <Plus size={18} strokeWidth={3} />}
                                    </button>
@@ -493,8 +504,18 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                       </div>
                       
                       <div className="mt-auto flex gap-4">
-                          <button onClick={() => { updateCart(selectedProduct.id, 1); toggleCartDrawer(true); setSelectedProduct(null); }} className="flex-1 py-5 rounded-[2rem] text-white font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all" style={{ backgroundColor: accentStr }}>
-                             Add to Collection
+                          <button
+                              onClick={() => {
+                                  if (!canAddToCart(selectedProduct.outOfStock)) return;
+                                  updateCart(selectedProduct.id, 1);
+                                  toggleCartDrawer(true);
+                                  setSelectedProduct(null);
+                              }}
+                              disabled={!canAddToCart(selectedProduct.outOfStock)}
+                              className="flex-1 py-5 rounded-[2rem] text-white font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                              style={{ backgroundColor: accentStr }}
+                          >
+                             {canAddToCart(selectedProduct.outOfStock) ? "Add to Collection" : "Sold out"}
                           </button>
                       </div>
                   </div>
