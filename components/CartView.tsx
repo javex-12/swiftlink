@@ -3,12 +3,17 @@
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, Zap, CreditCard, MessageSquare } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, Zap, CreditCard, MessageSquare, XCircle } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function CartView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const shopId = searchParams.get("shop");
+  
   const {
     state,
     cart,
@@ -28,8 +33,17 @@ export function CartView() {
   }).filter(Boolean) as any[];
 
   const total = cartLines.reduce((acc, p) => acc + p.price * p.quantity, 0);
-  const deliveryFee = 1500; // Placeholder
-  const grandTotal = total + (total > 0 ? deliveryFee : 0);
+  const deliveryFee = total > 0 ? 1500 : 0; 
+  const grandTotal = total + deliveryFee;
+
+  const returnUrl = shopId ? `/store/default?shop=${shopId}` : "/";
+
+  const clearCart = async () => {
+      const ok = await (window as any).customConfirm("Clear Bag?", "Are you sure you want to remove all items?");
+      if (ok) {
+          cartLines.forEach(p => updateCart(p.id, -p.quantity));
+      }
+  };
 
   if (cartItemCount === 0) {
     return (
@@ -39,7 +53,7 @@ export function CartView() {
          </div>
          <h2 className="text-3xl font-black text-slate-900 italic tracking-tight mb-4 uppercase">Your bag is empty</h2>
          <p className="text-slate-500 font-medium mb-10 max-w-xs">Looks like you haven&apos;t added anything to your collection yet.</p>
-         <Link href="/store/default" className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+         <Link href={returnUrl} className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
             Return to Store
          </Link>
       </div>
@@ -50,22 +64,25 @@ export function CartView() {
     <div className="min-h-screen bg-[#f8fafc] font-sans">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-5 flex items-center justify-between">
-         <Link href="/store/default" className="flex items-center gap-3 group">
+         <Link href={returnUrl} className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100 transition-all border border-slate-100">
                <ArrowLeft size={20} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 transition-colors">Continue Shopping</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 transition-colors hidden sm:block">Back to Catalog</span>
          </Link>
          
          <div className="flex flex-col items-center">
-            <h1 className="text-lg font-black text-slate-900 tracking-tight italic uppercase">Checkout</h1>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight italic uppercase">My Selection</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
                <div className="w-1 h-1 rounded-full bg-emerald-500" />
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Secure Protocol</span>
+               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Checkout Protocol</span>
             </div>
          </div>
          
-         <div className="w-10 md:w-32" />
+         <button onClick={clearCart} className="flex items-center gap-2 text-rose-500 hover:text-rose-600 transition-colors">
+            <XCircle size={18} />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Cancel Order</span>
+         </button>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
@@ -73,11 +90,6 @@ export function CartView() {
             
             {/* Left Column: Cart Items */}
             <div className="lg:col-span-7 space-y-8">
-               <div className="flex items-center justify-between px-2">
-                  <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tight">Your Selection</h2>
-                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{cartItemCount} Items</span>
-               </div>
-
                <div className="space-y-4">
                   {cartLines.map((p) => (
                      <motion.div 
@@ -91,7 +103,7 @@ export function CartView() {
                         
                         <div className="flex-1 min-w-0 py-2">
                            <div className="flex justify-between items-start mb-2">
-                              <div>
+                              <div className="text-left">
                                  <h3 className="text-base md:text-xl font-black text-slate-900 truncate leading-tight uppercase italic">{p.name}</h3>
                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{p.category}</p>
                               </div>
@@ -110,7 +122,7 @@ export function CartView() {
                                     <Plus size={14} />
                                  </button>
                               </div>
-                              <span className="text-lg md:text-2xl font-black text-slate-900 italic">
+                              <span className="text-lg md:text-2xl font-black text-slate-900 italic text-right">
                                  {state.currency}{(p.price * p.quantity).toLocaleString()}
                               </span>
                            </div>
@@ -141,15 +153,15 @@ export function CartView() {
                   <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
                      
-                     <h3 className="text-xl font-black italic tracking-tight mb-8 uppercase">Order Summary</h3>
+                     <h3 className="text-xl font-black italic tracking-tight mb-8 uppercase text-left">Order Summary</h3>
                      
                      <div className="space-y-4 mb-10">
                         <div className="flex justify-between items-center text-sm">
-                           <span className="font-bold text-slate-500">Subtotal</span>
+                           <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Subtotal</span>
                            <span className="font-black italic">{state.currency}{total.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                           <span className="font-bold text-slate-500">Estimated Delivery</span>
+                           <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Estimated Delivery</span>
                            <span className="font-black italic text-emerald-400">{state.currency}{deliveryFee.toLocaleString()}</span>
                         </div>
                         <div className="h-px bg-white/5 my-2" />
@@ -197,7 +209,6 @@ export function CartView() {
                      </div>
                   </div>
 
-                  {/* Payment Methods */}
                   <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                      <div className="flex items-center gap-3 mb-6">
                         <CreditCard className="text-slate-400" size={18} />
