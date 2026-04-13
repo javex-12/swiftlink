@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { ShopState } from "@/lib/types";
+import { ShopState } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { CustomerStorefront } from "./CustomerStorefront";
 import { AnimatePresence, motion } from "framer-motion";
@@ -155,66 +155,71 @@ export function BusinessView() {
                 <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight italic uppercase">Store Editor</h1>
                 <p className="text-slate-400 font-bold text-sm mt-1 uppercase tracking-widest">Customize your digital storefront in real-time.</p>
              </div>
-             <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 shrink-0">
-                <button
-                  className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
-                  onClick={() => setActiveTab("store")}
+             <div className="flex items-center gap-4 shrink-0">
+                <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
+                    <button
+                    className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
+                    onClick={() => setActiveTab("store")}
+                    >
+                    Inventory
+                    </button>
+                    <button
+                    className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
+                    onClick={() => setActiveTab("appearance")}
+                    >
+                    Design
+                    </button>
+                </div>
+                <button 
+                    onClick={() => setShowMobilePreview(true)}
+                    className="flex items-center gap-3 px-8 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
                 >
-                  Inventory
-                </button>
-                <button
-                  className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
-                  onClick={() => setActiveTab("appearance")}
-                >
-                  Design
+                    <Eye size={16} />
+                    Live Preview
                 </button>
              </div>
           </div>
 
           <AnimatePresence mode="wait">
             {activeTab === "store" && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
                 
                 {/* Store Profile Card */}
-                <section className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5">
-                     <FileText size={120} />
+                <section className="bg-white rounded-[3rem] p-8 md:p-12 shadow-sm border border-slate-100 space-y-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                     <FileText size={200} />
                   </div>
-                  <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400 mb-1 flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                     Store Identity
-                  </h3>
-                  <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start relative z-10">
+                  <div className="flex flex-col sm:flex-row gap-10 items-center sm:items-start relative z-10">
                       <label
                         htmlFor="biz-img-upload"
-                        className="relative block w-32 h-32 rounded-[2.5rem] bg-slate-50 border-2 border-slate-100 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
+                        className="relative block w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-slate-50 border-2 border-slate-100 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
                         style={ state.bizImage ? { backgroundImage: `url(${state.bizImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined }
                       >
-                        {!state.bizImage && !isSyncing && <i className="fas fa-camera text-slate-300 text-3xl group-hover:text-emerald-500 transition-colors" />}
-                        {isSyncing && <RefreshCw size={24} className="text-emerald-500 animate-spin" />}
-                        {state.bizImage && !isSyncing && <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"><i className="fas fa-sync" /></div>}
+                        {!state.bizImage && !isSyncing && <i className="fas fa-camera text-slate-200 text-4xl group-hover:text-emerald-500 transition-colors" />}
+                        {isSyncing && <RefreshCw size={32} className="text-emerald-500 animate-spin" />}
+                        {state.bizImage && !isSyncing && <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"><i className="fas fa-sync text-2xl" /></div>}
                         <input type="file" id="biz-img-upload" accept="image/*" disabled={isSyncing} className="hidden" onChange={(e) => { handleImageUpload(e.target.files?.[0], "bizImage"); } } />
                       </label>
-                      <div className="flex-1 space-y-4 w-full">
-                          <div className="space-y-1.5">
-                             <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Business Name</label>
+                      <div className="flex-1 space-y-6 w-full">
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Business Name</label>
                              <input
                                type="text"
                                id="biz-name"
                                value={state.bizName || ""}
                                onChange={(e) => { updateState("bizName", e.target.value); }}
-                               className="w-full bg-slate-50 rounded-2xl p-4 font-black text-lg text-slate-900 outline-none border border-slate-100 focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
+                               className="w-full bg-slate-50 rounded-2xl p-5 font-black text-xl text-slate-900 outline-none border border-slate-100 focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
                                placeholder="Elite Fashion"
                              />
                           </div>
-                          <div className="space-y-1.5">
-                             <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Hero Tagline</label>
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Hero Tagline</label>
                              <input
                                type="text"
                                id="biz-tagline"
                                value={state.tagline || ""}
                                onChange={(e) => { updateState("tagline", e.target.value); }}
-                               className="w-full bg-slate-50 rounded-2xl p-4 font-bold text-sm text-slate-600 outline-none border border-slate-100 focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
+                               className="w-full bg-slate-50 rounded-2xl p-5 font-bold text-sm text-slate-600 outline-none border border-slate-100 focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
                                placeholder="Redefining Your Lifestyle."
                              />
                           </div>
@@ -223,80 +228,83 @@ export function BusinessView() {
                 </section>
 
                 {/* Categories Manager */}
-                <section className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 space-y-6">
-                   <div className="flex justify-between items-center">
-                      <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400">Your Categories</h3>
-                      <button onClick={addCategory} className="text-emerald-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-50 px-3 py-1.5 rounded-xl transition-all">
+                <section className="bg-white rounded-[3rem] p-8 md:p-10 shadow-sm border border-slate-100 space-y-8">
+                   <div className="flex justify-between items-center px-2">
+                      <div>
+                         <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900">Your Categories</h3>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Organize your inventory for customers</p>
+                      </div>
+                      <button onClick={addCategory} className="bg-slate-50 text-slate-900 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-slate-100 px-5 py-3 rounded-xl transition-all border border-slate-100">
                          <Plus size={14} /> Add New
                       </button>
                    </div>
                    <div className="flex flex-wrap gap-3">
                       {state.categories?.map(cat => (
-                         <div key={cat} className="group bg-slate-50 border border-slate-100 pl-4 pr-2 py-2 rounded-2xl flex items-center gap-3">
-                            <span className="text-xs font-black text-slate-700">{cat}</span>
-                            <button onClick={() => removeCategory(cat)} className="w-6 h-6 rounded-lg bg-white text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center">
+                         <div key={cat} className="group bg-white border border-slate-100 pl-5 pr-2 py-2.5 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+                            <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">{cat}</span>
+                            <button onClick={() => removeCategory(cat)} className="w-7 h-7 rounded-xl bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center">
                                <X size={12} strokeWidth={3} />
                             </button>
                          </div>
                       ))}
                       {(!state.categories || state.categories.length === 0) && (
-                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">Using default system categories (Tops, Bottoms...)</p>
+                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic py-4">No categories added yet. Default ones will be used.</p>
                       )}
                    </div>
                 </section>
 
-                <section className="space-y-6">
-                  <div className="flex justify-between items-end px-2">
-                    <h2 className="text-2xl font-black text-slate-900">Products</h2>
+                <section className="space-y-8">
+                  <div className="flex justify-between items-center px-4">
+                    <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tight">Products</h2>
                     <button
                       type="button"
                       disabled={isSyncing}
                       onClick={onAddProduct}
-                      className="text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg transition-transform active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: accentStr }}
+                      className="text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-transform active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                      style={{ backgroundColor: accentStr, boxShadow: `0 20px 40px -10px ${accentStr}66` }}
                     >
                       {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={3} />}
-                      Add Product
+                      New Product Entry
                     </button>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {state.products.map((p) => {
                       const imgs = p.images || (p.image ? [p.image] : []);
                       return (
-                      <div key={p.id} className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-sm relative group transition-all hover:border-emerald-500 hover:shadow-xl">
+                      <div key={p.id} className="bg-white rounded-[3.5rem] p-8 md:p-10 border border-slate-100 shadow-sm relative group transition-all hover:border-emerald-500/20 hover:shadow-2xl">
                         
-                        <button onClick={() => removeProduct(p.id)} className="absolute top-6 right-6 w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all z-20">
-                           <Trash2 size={18} />
+                        <button onClick={() => removeProduct(p.id)} className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all z-20 border border-slate-100">
+                           <Trash2 size={20} />
                         </button>
 
-                        <div className="flex flex-col sm:flex-row gap-8">
+                        <div className="flex flex-col md:flex-row gap-10">
                           {/* Image Manager */}
-                          <div className="w-full sm:w-40 shrink-0 flex flex-col gap-3">
+                          <div className="w-full md:w-48 shrink-0 flex flex-col gap-4">
                               <label
                                   className={cn(
                                       "w-full aspect-square bg-slate-50 border-2 border-slate-100 flex items-center justify-center overflow-hidden cursor-pointer relative group transition-all shadow-inner",
-                                      state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-[2rem]"
+                                      state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-[2.5rem]"
                                   )}
                                   style={imgs.length > 0 ? { backgroundImage: `url(${imgs[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
                               >
-                                  {!imgs.length && <i className="fas fa-image text-slate-200 text-4xl" />}
-                                  {imgs.length > 0 && <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><i className="fas fa-plus text-white text-xl" /></div>}
+                                  {!imgs.length && <i className="fas fa-image text-slate-200 text-5xl" />}
+                                  {imgs.length > 0 && <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><i className="fas fa-plus text-white text-2xl" /></div>}
                                   <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) { imgs.length > 0 ? handleImageUpload(e.target.files[0], "image", p.id) : addProductImage(p.id, e.target.files[0]); } }} />
                               </label>
                               
                               {imgs.length > 0 && (
-                                  <div className="flex gap-2.5 overflow-x-auto pb-1 px-1" style={{ scrollbarWidth: "none" }}>
+                                  <div className="flex gap-3 overflow-x-auto pb-2 px-1 no-scrollbar">
                                       {imgs.slice(1).map((img, idx) => (
-                                          <div key={idx} className={cn("w-12 h-12 overflow-hidden relative group shrink-0 border-2 border-slate-50 shadow-sm", state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-xl" )}>
+                                          <div key={idx} className={cn("w-14 h-14 overflow-hidden relative group shrink-0 border-2 border-slate-100 shadow-sm", state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-xl" )}>
                                               <img src={img} className="w-full h-full object-cover" alt="" />
-                                              <div className="absolute inset-0 bg-black/60 opacity-0 md:group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity">
-                                                  <button onClick={() => { setPrimaryImage(p.id, idx + 1); }} className="text-[10px] text-white hover:text-emerald-400" title="Make Primary"><i className="fas fa-star" /></button>
-                                                  <button onClick={() => { removeProductImage(p.id, idx + 1); }} className="text-[10px] text-white hover:text-red-400" title="Delete"><i className="fas fa-times" /></button>
+                                              <div className="absolute inset-0 bg-black/60 opacity-0 md:group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                                  <button onClick={() => { setPrimaryImage(p.id, idx + 1); }} className="text-xs text-white hover:text-emerald-400"><i className="fas fa-star" /></button>
+                                                  <button onClick={() => { removeProductImage(p.id, idx + 1); }} className="text-xs text-white hover:text-red-400"><i className="fas fa-times" /></button>
                                               </div>
                                           </div>
                                       ))}
-                                      <label className={cn("w-12 h-12 bg-slate-50 border-2 border-slate-200 border-dashed flex items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 transition-all shrink-0 text-slate-400 hover:text-emerald-500", state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-xl")}>
+                                      <label className={cn("w-14 h-14 bg-slate-50 border-2 border-slate-200 border-dashed flex items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 transition-all shrink-0 text-slate-400 hover:text-emerald-500", state.imageShape === "circle" ? "rounded-full" : state.imageShape === "square" ? "rounded-none" : "rounded-xl")}>
                                           <i className="fas fa-plus text-xs" />
                                           <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) { addProductImage(p.id, e.target.files[0]); } }} />
                                       </label>
@@ -304,79 +312,81 @@ export function BusinessView() {
                               )}
                           </div>
 
-                          <div className="flex-1 space-y-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Product Name</label>
+                          <div className="flex-1 space-y-6 min-w-0">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Product Name</label>
                                 <input
                                   data-product-name={p.id}
                                   value={p.name || ""}
                                   onChange={(e) => { updateProduct(p.id, "name", e.target.value); }}
-                                  className="w-[90%] font-black text-2xl md:text-3xl outline-none bg-transparent placeholder:text-slate-200 tracking-tight text-slate-900 border-b-2 border-transparent focus:border-emerald-500 transition-all"
-                                  placeholder="New Arrival Item"
+                                  className="w-[95%] font-black text-2xl md:text-3xl outline-none bg-transparent placeholder:text-slate-200 tracking-tight text-slate-900 border-b-2 border-transparent focus:border-emerald-500 transition-all truncate italic uppercase"
+                                  placeholder="New Premium Item"
                                 />
                             </div>
                             
-                            <div className="flex flex-wrap gap-3 items-center">
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Price</label>
-                                    <div className="bg-slate-50 px-5 py-3 rounded-2xl border-2 border-slate-100 flex items-center gap-2 focus-within:border-emerald-500 transition-all shadow-inner">
-                                        <span className="text-slate-400 font-black text-lg">{state.currency}</span>
+                            <div className="flex flex-wrap gap-6 items-center">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Price</label>
+                                    <div className="bg-slate-50 px-6 py-3.5 rounded-2xl border-2 border-slate-100 flex items-center gap-3 focus-within:border-emerald-500 transition-all shadow-inner">
+                                        <span className="text-slate-400 font-black text-xl">{state.currency}</span>
                                         <input 
                                            data-product-price={p.id}
                                            type="number" value={p.price || ''} onChange={(e) => { updateProduct(p.id, "price", Number(e.target.value)); }} 
-                                           className="w-28 bg-transparent font-black text-slate-900 outline-none placeholder:text-slate-300 text-xl" placeholder="0" 
+                                           className="w-28 md:w-32 bg-transparent font-black text-slate-900 outline-none text-xl" placeholder="0" 
                                         />
                                     </div>
                                 </div>
                                 
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Category</label>
-                                    <div className="bg-slate-50 px-4 py-3 rounded-2xl border-2 border-slate-100 flex items-center focus-within:border-emerald-500 transition-all shadow-inner">
-                                        <select value={p.category || "All"} onChange={(e) => { updateProduct(p.id, "category", e.target.value); }} className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer">
-                                            <option value="All">Select Category</option>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Category</label>
+                                    <div className="bg-slate-50 px-4 py-3.5 rounded-2xl border-2 border-slate-100 flex items-center focus-within:border-emerald-500 transition-all shadow-inner relative">
+                                        <select value={p.category || "All"} onChange={(e) => { updateProduct(p.id, "category", e.target.value); }} className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer max-w-[140px] truncate uppercase tracking-widest">
+                                            <option value="All">Uncategorized</option>
                                             {categories.map(cat => (
                                                 <option key={cat} value={cat}>{cat}</option>
                                             ))}
                                         </select>
+                                        <div className="absolute right-4 pointer-events-none text-slate-400 text-[10px]">▼</div>
                                     </div>
                                 </div>
                                 
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Badge</label>
-                                    <div className="bg-slate-50 px-4 py-3 rounded-2xl border-2 border-slate-100 flex items-center focus-within:border-emerald-500 transition-all shadow-inner">
-                                        <select value={p.badge || "none"} onChange={(e) => { updateProduct(p.id, "badge", e.target.value === "none" ? undefined : e.target.value); }} className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer">
-                                            <option value="none">No Badge</option>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Live Status</label>
+                                    <div className="bg-slate-50 px-4 py-3.5 rounded-2xl border-2 border-slate-100 flex items-center focus-within:border-emerald-500 transition-all shadow-inner relative">
+                                        <select value={p.badge || "none"} onChange={(e) => { updateProduct(p.id, "badge", e.target.value === "none" ? undefined : e.target.value); }} className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer uppercase tracking-widest">
+                                            <option value="none">Standard</option>
                                             <option value="hot">🔥 Hot</option>
                                             <option value="new">✨ New</option>
-                                            <option value="sale">📉 Sale</option>
+                                            <option value="sale">🏷️ Sale</option>
                                         </select>
+                                        <div className="absolute right-4 pointer-events-none text-slate-400 text-[10px]">▼</div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black uppercase text-slate-400 ml-1">Product Story (Description)</label>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Product Story (Description)</label>
                                 <textarea
                                     value={p.description || ""}
                                     onChange={(e) => { updateProduct(p.id, "description", e.target.value); }}
-                                    className="w-full bg-slate-50 rounded-[1.5rem] p-5 text-sm font-bold text-slate-600 outline-none h-28 border-2 border-slate-100 focus:border-emerald-500 focus:bg-white resize-none transition-all shadow-inner placeholder:text-slate-300"
-                                    placeholder="Tell the story of this premium product..."
+                                    className="w-full bg-slate-50 rounded-[2rem] p-6 text-sm font-bold text-slate-600 outline-none h-32 border-2 border-slate-100 focus:border-emerald-500 focus:bg-white resize-none transition-all shadow-inner placeholder:text-slate-300 leading-relaxed overflow-y-auto"
+                                    placeholder="Describe the quality and details of this product..."
                                 />
                             </div>
                             
-                            <div className="flex items-center justify-between pt-2">
+                            <div className="flex items-center justify-between pt-4">
                                 <label className="flex items-center cursor-pointer group/toggle">
                                   <div className="relative">
                                     <input type="checkbox" className="sr-only peer" checked={p.outOfStock || false} onChange={(e) => { updateProduct(p.id, "outOfStock", e.target.checked); }} />
-                                    <div className="w-11 h-6 bg-slate-100 rounded-full transition-all peer-checked:bg-red-500 border border-slate-200" />
-                                    <div className="absolute left-[3px] top-[3px] bg-white w-4.5 h-4.5 rounded-full transition-all peer-checked:translate-x-5 shadow-md" />
+                                    <div className="w-12 h-6.5 bg-slate-100 rounded-full transition-all peer-checked:bg-rose-500 border border-slate-200" />
+                                    <div className="absolute left-[3px] top-[3px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5.5 shadow-md" />
                                   </div>
-                                  <span className={cn("ml-3 text-[10px] font-black uppercase tracking-[0.2em] transition-colors", p.outOfStock ? "text-red-500" : "text-slate-400 group-hover/toggle:text-slate-600")}>
-                                    {p.outOfStock ? "Sold Out" : "In Stock"}
+                                  <span className={cn("ml-4 text-[10px] font-black uppercase tracking-[0.25em] transition-colors", p.outOfStock ? "text-rose-500" : "text-slate-400 group-hover/toggle:text-slate-600")}>
+                                    {p.outOfStock ? "Inventory Depleted" : "In Stock & Ready"}
                                   </span>
                                 </label>
                                 
-                                <div className="text-[10px] font-black text-slate-200 uppercase tracking-widest italic select-none">ID: {p.id}</div>
+                                <div className="text-[10px] font-black text-slate-100 uppercase tracking-[0.3em] italic select-none">SKU: {p.id}</div>
                             </div>
                           </div>
                         </div>
@@ -388,240 +398,147 @@ export function BusinessView() {
             )}
 
             {activeTab === "appearance" && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-6">
                   {/* Themes */}
-                  <Accordion id="themes" title="Theme Engine" subtitle="1-Click Rebrand" icon={Sparkles}>
-                      <div className="grid grid-cols-2 gap-3 pb-3">
+                  <Accordion id="themes" title="Theme Engine" subtitle="Instant Brand Transformation" icon={Sparkles}>
+                      <div className="grid grid-cols-2 gap-4 pb-4">
                           {[
-                              { id: "fresh", name: "Fresh", accent: "#10b981", bg: "white", preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff" },
-                              { id: "bold", name: "Bold", accent: "#f59e0b", bg: "#1e293b", preview: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba" },
-                              { id: "minimal", name: "Minimal", accent: "#475569", bg: "#f8fafc", preview: "https://images.unsplash.com/photo-1491553895911-0055eca6402d" },
-                              { id: "playful", name: "Playful", accent: "#d946ef", bg: "#fff0f5", preview: "https://images.unsplash.com/photo-1512496015851-a1c8cebc41e7" },
+                              { id: "fresh", name: "Fresh Emerald", accent: "#10b981", bg: "white", preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff" },
+                              { id: "bold", name: "Midnight Gold", accent: "#f59e0b", bg: "#1e293b", preview: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba" },
+                              { id: "minimal", name: "Clean Slate", accent: "#475569", bg: "#f8fafc", preview: "https://images.unsplash.com/photo-1491553895911-0055eca6402d" },
+                              { id: "playful", name: "Bubblegum", accent: "#d946ef", bg: "#fff0f5", preview: "https://images.unsplash.com/photo-1512496015851-a1c8cebc41e7" },
                           ].map(t => (
                               <button
                                   key={t.id}
                                   onClick={() => applyThemePreset(t.id as any)}
                                   className={cn(
-                                      "relative rounded-[2rem] overflow-hidden border-4 transition-all hover:scale-105 group text-left",
-                                      state.themePreset === t.id ? "border-slate-900 shadow-xl z-10" : "border-slate-100 shadow-sm"
+                                      "relative rounded-[2.5rem] overflow-hidden border-4 transition-all hover:scale-105 group text-left",
+                                      state.themePreset === t.id ? "border-slate-900 shadow-2xl z-10" : "border-white shadow-sm"
                                   )}
                               >
                                   <div className="aspect-[4/3] relative">
                                      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${t.preview})` }} />
-                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                     <div className="absolute bottom-4 left-4 text-white font-black text-xs md:text-sm">{t.name}</div>
-                                     <div className="absolute top-4 right-4 w-4 h-4 rounded-full border border-white/50 shadow-sm" style={{ backgroundColor: t.accent }} />
+                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                                     <div className="absolute bottom-5 left-5 text-white font-black text-[10px] uppercase tracking-widest">{t.name}</div>
+                                     <div className="absolute top-5 right-5 w-5 h-5 rounded-full border-2 border-white/50 shadow-sm" style={{ backgroundColor: t.accent }} />
                                   </div>
                               </button>
                           ))}
                       </div>
                   </Accordion>
-
-                  <Accordion id="visual" title="Design System" subtitle="Colors, Layouts & Shapes" icon={Palette}>
-                      <div className="space-y-8 pb-4">
+                  <Accordion id="visual" title="Design System" subtitle="Micro-Customization" icon={Palette}>
+                      <div className="space-y-10 pb-6">
                           <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Accent Color</h3>
-                              <div className="flex items-center gap-4 bg-slate-50 p-2 pl-4 rounded-2xl w-fit border border-slate-100">
-                                  <span className="font-bold text-sm text-slate-900 uppercase">{state.accentColor || "#10B981"}</span>
-                                  <div className="relative w-10 h-10 rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer shrink-0 inline-flex">
+                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Primary Brand Color</h3>
+                              <div className="flex items-center gap-5 bg-white p-3 pl-6 rounded-2xl w-fit border border-slate-100 shadow-sm">
+                                  <span className="font-black text-sm text-slate-900 uppercase tracking-tighter">{state.accentColor || "#10B981"}</span>
+                                  <div className="relative w-10 h-10 rounded-xl shadow-lg border border-slate-200 overflow-hidden cursor-pointer shrink-0 inline-flex">
                                       <input type="color" className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" value={state.accentColor || "#10b981"} onChange={(e) => { updateState("accentColor", e.target.value); updateState("themePreset", "custom"); }} />
                                   </div>
                               </div>
                           </div>
-
                           <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Product Layout</h3>
+                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Grid Configuration</h3>
                               <PillSelector 
-                                  options={[{label: "Grid Layout", value: "grid"}, {label: "List Layout", value: "list"}]}
+                                  options={[{label: "Standard Grid", value: "grid"}, {label: "Vertical List", value: "list"}]}
                                   value={state.layoutStyle || "grid"}
                                   onChange={(v) => { updateState("layoutStyle", v); updateState("themePreset", "custom"); }}
+                                  className="mb-4"
                               />
-                          </div>
-                          
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Shape & Corners</h3>
                               <PillSelector 
-                                  options={[{label: "Square", value: "square"}, {label: "Rounded", value: "rounded"}]}
+                                  options={[{label: "Sharp Corners", value: "square"}, {label: "Curved Soft", value: "rounded"}]}
                                   value={state.imageShape || "square"}
                                   onChange={(v) => { updateState("imageShape", v); updateState("themePreset", "custom"); }}
                               />
                           </div>
-                          
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Typography & Buttons</h3>
-                              <PillSelector 
-                                  options={[{label: "Modern Core", value: "modern"}, {label: "Bold & Heavy", value: "bold"}]}
-                                  value={state.fontStyle || "modern"}
-                                  onChange={(v) => { updateState("fontStyle", v); updateState("themePreset", "custom"); }}
-                                  className="mb-3"
-                              />
-                              <PillSelector 
-                                  options={[{label: "Rounded", value: "rounded"}, {label: "Pill Buttons", value: "pill"}]}
-                                  value={state.buttonRadius || "rounded"}
-                                  onChange={(v) => { updateState("buttonRadius", v); updateState("themePreset", "custom"); }}
-                              />
-                          </div>
                       </div>
                   </Accordion>
-
-                  <Accordion id="behaviour" title="Shopping Cart" subtitle="Orders & Stock Rules" icon={ShoppingCart}>
-                     <div className="space-y-6 pb-2">
+                  <Accordion id="behaviour" title="Behaviour" subtitle="Store Workflow" icon={ShoppingCart}>
+                     <div className="space-y-8 pb-4">
                           <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Order Processing</h3>
-                              <PillSelector 
-                                  options={[{label: "WhatsApp Only", value: "whatsapp"}, {label: "Paystack (Pro)", value: "paystack"}, {label: "Both", value: "both"}]}
-                                  value={state.orderMethod || "whatsapp"}
-                                  onChange={(v) => handleUpdate("orderMethod", v)}
-                              />
-                          </div>
-
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Public storefront</h3>
+                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Operational Mode</h3>
                               <PillSelector
-                                  options={[
-                                    { label: "Live — accepting orders", value: "live" },
-                                    { label: "Paused — browse only", value: "paused" },
-                                  ]}
+                                  options={[{ label: "Live Commerce", value: "live" }, { label: "Paused / Catalog Only", value: "paused" }]}
                                   value={state.isLive === false ? "paused" : "live"}
                                   onChange={(v) => updateState("isLive", v === "live")}
                               />
-                              <p className="text-[10px] text-slate-400 mt-2 font-medium leading-relaxed">
-                                Paused turns off add-to-cart and WhatsApp checkout on your shared store link.
-                              </p>
                           </div>
-
                           <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex justify-between">Min Cart Value <span className="font-bold text-slate-900 bg-slate-100 px-2 rounded">{state.currency}{state.minOrder || 0}</span></h3>
-                              <input type="range" min="0" max="50000" step="1000" value={state.minOrder || 0} onChange={(e) => updateState("minOrder", Number(e.target.value))} className="w-full accent-emerald-500" />
-                          </div>
-
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Out of Stock Rules</h3>
-                              <PillSelector 
-                                  options={[{label: "Show as Sold Out", value: "show-sold-out"}, {label: "Hide entirely", value: "hide"}]}
-                                  value={state.outOfStockDisplay || "show-sold-out"}
-                                  onChange={(v) => updateState("outOfStockDisplay", v)}
-                              />
+                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1 flex justify-between">Min Checkout Value <span className="font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">{state.currency}{state.minOrder || 0}</span></h3>
+                              <input type="range" min="0" max="100000" step="5000" value={state.minOrder || 0} onChange={(e) => updateState("minOrder", Number(e.target.value))} className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-900" />
                           </div>
                      </div>
                   </Accordion>
-
-                  <Accordion id="info" title="Business Info" subtitle="Socials, Location, Bio" icon={User}>
-                      <div className="space-y-6 pb-2">
-                          <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Currency</h3>
-                                  <PillSelector 
-                                      options={[{label: "₦ NGN", value: "₦"}, {label: "$ USD", value: "$"}, {label: "£ GBP", value: "£"}]}
-                                      value={state.currency || "₦"}
-                                      onChange={(v) => updateState("currency", v)}
-                                  />
-                              </div>
-                              <div>
-                                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">WhatsApp Contact</h3>
-                                  <input type="text" value={state.phone || ""} onChange={(e) => updateState("phone", e.target.value)} className="w-full bg-slate-50 rounded-xl p-3 font-bold text-sm outline-none border border-slate-100" placeholder="+234..." />
-                              </div>
-                          </div>
-
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location</h3>
-                              <input type="text" value={state.location || ""} onChange={(e) => updateState("location", e.target.value)} className="w-full bg-slate-50 rounded-xl p-3 font-bold text-sm outline-none border border-slate-100" placeholder="Lagos, Nigeria" />
-                          </div>
-
-                          <div>
-                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Social Hub</h3>
-                              <div className="space-y-3">
-                                  {["instagram", "twitter", "tiktok"].map(social => (
-                                      <div key={social} className="flex flex-1 items-center bg-slate-50 rounded-2xl border border-slate-100 px-4 focus-within:border-slate-300 transition-colors">
-                                          <i className={`fab fa-${social} text-slate-400 text-lg`} />
-                                          <input type="url" value={(state.socials as any)?.[social] || ""} onChange={(e) => setStateMerge({ socials: { ...(state.socials || {}), [social]: e.target.value } })} className="flex-1 bg-transparent p-3 text-xs font-bold outline-none" placeholder={`@your${social}`} />
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                      </div>
-                  </Accordion>
-                  
               </motion.div>
             )}
           </AnimatePresence>
         </div>
         
-        {/* Right Pane: High-Fidelity Phone Preview */}
-        <div className="lg:col-span-4 hidden lg:flex items-start justify-center sticky top-28 h-[calc(100vh-140px)]">
-           <div className="relative mx-auto group" style={{ width: 300, aspectRatio: "9/19.5" }}>
-              {/* Premium Phone Shell */}
-              <div className="absolute inset-0 rounded-[3.5rem] bg-gradient-to-b from-[#1c1c1e] to-[#0a0a0a] shadow-[0_80px_160px_-20px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden flex flex-col border-[7px] border-[#2a2a2e] transition-all duration-700 group-hover:scale-[1.03] group-hover:rotate-1">
-                
-                {/* Hardware Bezel Glare */}
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-tr from-white/[0.03] via-transparent to-white/[0.08] z-[55]" />
-
-                {/* Physical Side Buttons */}
-                <div className="absolute -left-[7px] top-[100px] w-1.5 h-10 bg-[#3a3a3e] rounded-l-md border-y border-l border-white/5" />
-                <div className="absolute -left-[7px] top-[160px] w-1.5 h-14 bg-[#3a3a3e] rounded-l-md border-y border-l border-white/5" />
-                <div className="absolute -right-[7px] top-[140px] w-1.5 h-20 bg-[#3a3a3e] rounded-r-md border-y border-r border-white/5" />
-
-                {/* Status bar */}
-                <div className="flex-shrink-0 h-10 flex items-end pb-1 justify-between px-7 relative z-[60]">
-                  <span className="text-[10px] font-black text-white/90">9:41</span>
-                  {/* Realistic Dynamic Island */}
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full border border-white/10 flex items-center justify-center">
-                     <div className="w-1 h-1 bg-blue-500/20 rounded-full ml-auto mr-3" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-[1.5px] items-end h-3">
-                      {[3, 5, 7, 9].map(h => <div key={h} className="w-[2px] rounded-sm bg-white/90" style={{ height: h }} />)}
-                    </div>
-                    <div className="w-5 h-2.5 rounded-[3px] border border-white/30 flex items-center p-[1px] relative">
-                       <div className="h-full w-[80%] bg-emerald-400 rounded-[1.5px]" />
-                       <div className="absolute -right-1 w-1 h-1 bg-white/30 rounded-r-full" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Screen Content Window */}
-                <div className="flex-1 bg-[#f8fafc] overflow-hidden relative flex flex-col m-1 rounded-[2.8rem] border border-black/20 shadow-inner">
-                   <div className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth">
-                      <div className="scale-[0.85] origin-top w-[117.6%] h-[117.6%]">
-                         <CustomerStorefront isPreview={true} />
-                      </div>
-                   </div>
-                </div>
-
-                {/* Home Indicator */}
-                <div className="flex-shrink-0 flex items-center justify-center h-6 bg-transparent relative z-[60]">
-                  <div className="w-24 h-1 bg-white/20 rounded-full" />
-                </div>
-              </div>
-           </div>
-        </div>
       </main>
 
-      {/* Mobile Preview Trigger */}
-      <div className="lg:hidden fixed bottom-8 left-6 right-6 z-40">
+      {/* Global Preview Trigger */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40">
          <button 
             onClick={() => setShowMobilePreview(true)} 
-            className="w-full py-5 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10"
+            className="px-10 py-5 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-full shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 border border-white/10 ring-8 ring-slate-50/50"
          >
-            <Smartphone size={16} className="text-emerald-400" />
-            Inspect Mobile Store
+            <Smartphone size={18} className="text-emerald-400 animate-pulse" />
+            Live Production Preview
          </button>
       </div>
 
       {/* Fullscreen Inspector */}
       <AnimatePresence>
           {showMobilePreview && (
-              <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-2xl flex flex-col">
-                  <div className="pt-safe px-6 py-6 flex justify-between items-center shrink-0 border-b border-white/5">
-                      <div className="flex items-center gap-3">
-                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> 
-                         <span className="text-white font-black uppercase tracking-[0.3em] text-[10px]">Production Preview</span>
-                      </div>
-                      <button onClick={() => setShowMobilePreview(false)} className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all border border-white/10"><X size={24} /></button>
+              <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 md:p-10">
+                  <div className="absolute top-8 right-8 z-[210]">
+                      <button onClick={() => setShowMobilePreview(false)} className="w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90 transition-all border border-white/10 hover:bg-red-500 hover:border-red-500"><X size={28} /></button>
                   </div>
-                  <div className="flex-1 bg-white overflow-y-auto max-w-2xl mx-auto w-full md:my-8 md:rounded-[3rem] shadow-2xl overflow-hidden border border-black/10">
-                      <CustomerStorefront isPreview={true} />
+                  
+                  <div className="relative mx-auto group shrink-0" style={{ width: 320, aspectRatio: "9/19.5" }}>
+                      {/* Premium Phone Shell */}
+                      <div className="absolute inset-0 rounded-[3.5rem] bg-gradient-to-b from-[#1c1c1e] to-[#0a0a0a] shadow-[0_80px_160px_-20px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden flex flex-col border-[8px] border-[#2a2a2e]">
+                        
+                        {/* Hardware Bezel Glare */}
+                        <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-tr from-white/[0.03] via-transparent to-white/[0.08] z-[55]" />
+
+                        {/* Physical Side Buttons */}
+                        <div className="absolute -left-[8px] top-[100px] w-1.5 h-10 bg-[#3a3a3e] rounded-l-md" />
+                        <div className="absolute -left-[8px] top-[160px] w-1.5 h-14 bg-[#3a3a3e] rounded-l-md" />
+                        <div className="absolute -right-[8px] top-[140px] w-1.5 h-20 bg-[#3a3a3e] rounded-r-md" />
+
+                        {/* Status bar */}
+                        <div className="flex-shrink-0 h-10 flex items-end pb-1 justify-between px-7 relative z-[60]">
+                          <span className="text-[10px] font-black text-white/90">9:41</span>
+                          {/* Realistic Dynamic Island */}
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full border border-white/10 flex items-center justify-center">
+                             <div className="w-1 h-1 bg-blue-500/20 rounded-full ml-auto mr-3" />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex gap-[1.5px] items-end h-3">
+                              {[3, 5, 7, 9].map(h => <div key={h} className="w-[2px] rounded-sm bg-white/90" style={{ height: h }} />)}
+                            </div>
+                            <div className="w-5 h-2.5 rounded-[3px] border border-white/30 flex items-center p-[1px] relative">
+                               <div className="h-full w-[80%] bg-emerald-400 rounded-[1.5px]" />
+                               <div className="absolute -right-1 w-1 h-1 bg-white/30 rounded-r-full" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Screen Content Window */}
+                        <div className="flex-1 bg-[#f8fafc] overflow-hidden relative flex flex-col m-1 rounded-[2.8rem] border border-black/20 shadow-inner">
+                           <div className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth">
+                              <div className="scale-[0.85] origin-top w-[117.6%] h-[117.6%]">
+                                 <CustomerStorefront isPreview={true} />
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Home Indicator */}
+                        <div className="flex-shrink-0 flex items-center justify-center h-6 bg-transparent relative z-[60]">
+                          <div className="w-24 h-1 bg-white/20 rounded-full" />
+                        </div>
+                      </div>
                   </div>
               </motion.div>
           )}

@@ -299,10 +299,10 @@ export function SwiftLinkProvider({
         setIsFirebaseActive(true);
         
         const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
-        const isCustomer = Boolean(sid);
-
-        // If I am an OWNER and NOT viewing someone else's shop
-        if (isOwnerRef.current && !isCustomer) {
+        
+        // IMPORTANT: We only update the state ID to the user's UID 
+        // if we are NOT currently viewing a specific customer shop.
+        if (isOwnerRef.current && !sid) {
           setState((prev) => {
             const next = { ...prev, id: u.uid };
             if (typeof window !== "undefined") {
@@ -317,14 +317,13 @@ export function SwiftLinkProvider({
           });
         }
         
-        // If I am viewing a CUSTOMER shop (even if I am an owner of another shop)
+        // If I am viewing a CUSTOMER shop
         if (sid) {
           shopUnsubRef.current = onSnapshot(
             doc(db, "swiftlink_stores", sid),
             (snap) => {
               if (snap.exists()) {
                 const data = snap.data() as Partial<ShopState>;
-                // We keep the ID of the shop being viewed
                 setState((prev) => ({ ...prev, ...data, id: sid }));
               } else {
                 console.warn("Shop not found:", sid);
