@@ -21,23 +21,15 @@ export function DispatchView() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-100">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors"
-          aria-label="Go back"
-        >
-          <i className="fas fa-arrow-left" />
-        </button>
-        <span className="font-black text-slate-900 uppercase tracking-widest text-[10px]">
-          Logistics Console
-        </span>
-        <div className="w-10" />
-      </nav>
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-8">
-        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 space-y-4">
+    <div className="pb-20 w-full">
+      <main className="max-w-4xl mx-auto space-y-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <h2 className="text-xl font-black text-slate-900 px-2 uppercase italic tracking-tight flex items-center gap-3">
+               <div className="w-2 h-8 bg-slate-900 rounded-full" />
+               New Dispatch
+            </h2>
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 space-y-5">
           <input
             type="text"
             id="disp-sender"
@@ -103,16 +95,18 @@ export function DispatchView() {
                 ref,
               })
             }
-            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-lg"
+            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
           >
-            GENERATE TRACKING
-          </button>
-        </div>
-        <div>
-          <h2 className="text-lg font-black text-slate-900 px-2 mb-4">
-            Active Deliveries (<span id="delivery-count">{activeCount}</span>)
+                        GENERATE TRACKING
+                      </button>
+                    </div>
+                  </div>
+            
+                    <div className="space-y-6">          <h2 className="text-xl font-black text-slate-900 px-2 uppercase italic tracking-tight flex items-center gap-3">
+            <div className="w-2 h-8 bg-emerald-500 rounded-full" />
+            Live Queue (<span id="delivery-count">{activeCount}</span>)
           </h2>
-          <div id="delivery-list" className="space-y-3">
+          <div id="delivery-list" className="space-y-4">
             {state.deliveries.length === 0 ? (
               <div className="text-center py-12 text-slate-300 font-bold bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
                 No deliveries.
@@ -157,7 +151,8 @@ export function DispatchView() {
             )}
           </div>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
 }

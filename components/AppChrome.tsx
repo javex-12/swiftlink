@@ -5,8 +5,38 @@ import { TourOverlay } from "@/components/TourOverlay";
 import { CartDrawer } from "@/components/CartDrawer";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { X, Check, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
+  const [modal, setModal] = useState<{ title: string, message: string, onConfirm: (val?: string) => void, onCancel: () => void, isPrompt?: boolean } | null>(null);
+  const [promptValue, setPromptValue] = useState("");
+
+  useEffect(() => {
+    (window as any).customConfirm = (title: string, message: string) => {
+        return new Promise((resolve) => {
+            setModal({
+                title,
+                message,
+                onConfirm: () => { setModal(null); resolve(true); },
+                onCancel: () => { setModal(null); resolve(false); }
+            });
+        });
+    };
+
+    (window as any).customPrompt = (title: string, message: string, defaultValue = "") => {
+        setPromptValue(defaultValue);
+        return new Promise((resolve) => {
+            setModal({
+                title,
+                message,
+                isPrompt: true,
+                onConfirm: (val) => { setModal(null); resolve(val); },
+                onCancel: () => { setModal(null); resolve(null); }
+            });
+        });
+    };
+  }, []);
   const pathname = usePathname();
   const isLandingRoute = pathname === "/" || pathname === "/signup";
   const {
@@ -75,6 +105,54 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <TourOverlay />
 
       {children}
+
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl border border-slate-100"
+            >
+              <div className="p-8 pb-0 text-center">
+                 <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <AlertTriangle size={32} />
+                 </div>
+                 <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tight mb-2">{modal.title}</h3>
+                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-6">{modal.message}</p>
+                 
+                 {modal.isPrompt && (
+                    <div className="mb-6">
+                       <input 
+                         autoFocus
+                         type="text" 
+                         value={promptValue} 
+                         onChange={(e) => setPromptValue(e.target.value)}
+                         className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-black text-slate-900 focus:outline-none focus:border-emerald-500 transition-all"
+                         onKeyDown={(e) => { if (e.key === 'Enter') modal.onConfirm(promptValue); }}
+                       />
+                    </div>
+                 )}
+              </div>
+              <div className="p-8 flex gap-3">
+                 <button 
+                   onClick={modal.onCancel}
+                   className="flex-1 py-4 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                   onClick={() => modal.onConfirm(modal.isPrompt ? promptValue : undefined)}
+                   className="flex-1 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                 >
+                   {modal.isPrompt ? "Save" : "Confirm"}
+                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {showCustomerCart && (
         <CartDrawer open={cartOpen} onToggle={toggleCartDrawer} />

@@ -1,257 +1,150 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { Store, Truck, BarChart3, Settings, Link as LinkIcon, ExternalLink, Zap, Users, Package, MessageSquare, Bell } from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export function LauncherView() {
-  const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut } = useSwiftLink();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { copyShopLink, copyTrackingPortalLink, state, updateState } = useSwiftLink();
 
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileNavOpen(false);
+  const addSampleNotification = () => {
+    const newNotif: any = {
+        id: Date.now().toString(),
+        title: "New Order #SL-9921",
+        message: "You have a new order from Ada Obi for ₦45,000.",
+        type: "order",
+        timestamp: "Just now",
+        read: false
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileNavOpen]);
+    updateState("notifications", [newNotif, ...(state.notifications || [])]);
+  };
 
-  const nav = [
-    { href: "/pro", label: "Command Center", icon: "fa-gauge-high" },
-    { href: "/business", label: "Edit store", icon: "fa-store" },
-    { href: "/dispatch", label: "Dispatch", icon: "fa-truck-fast" },
-  ] as const;
+  const cards = [
+    {
+      title: "Storefront",
+      description: "Manage your products, themes, and ordering rules.",
+      href: "/business",
+      icon: Store,
+      color: "bg-emerald-500",
+      accent: "emerald",
+      badge: "LIVE",
+    },
+    {
+      title: "Logistics",
+      description: "Generate tracking links and manage active deliveries.",
+      href: "/dispatch",
+      icon: Truck,
+      color: "bg-blue-500",
+      accent: "blue",
+      badge: state.deliveries.length.toString(),
+    },
+    {
+      title: "Analytics",
+      description: "Deep dive into your sales, traffic, and growth.",
+      href: "/pro/analytics",
+      icon: BarChart3,
+      color: "bg-slate-900",
+      accent: "slate",
+      badge: "NEW",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
-      <header className="lg:hidden sticky top-0 z-[60] flex items-center justify-between gap-3 px-4 py-3 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <button
-          type="button"
-          onClick={() => setMobileNavOpen((open) => !open)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors"
-          aria-expanded={mobileNavOpen}
-          aria-controls="pro-command-sidebar"
-          aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
-        >
-          {mobileNavOpen ? (
-            <X aria-hidden="true" className="h-5 w-5" />
-          ) : (
-            <Menu aria-hidden="true" className="h-5 w-5" />
-          )}
-        </button>
-        <div className="min-w-0 flex-1 text-center">
-          <span className="text-sm font-black tracking-tight text-slate-900 block truncate">
-            SwiftLink<span className="text-emerald-500">Pro</span>
-          </span>
-          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
-            Command Center
-          </span>
-        </div>
-        <div className="w-11 shrink-0" aria-hidden />
-      </header>
-
-      {mobileNavOpen ? (
-        <button
-          type="button"
-          className="lg:hidden fixed inset-0 top-14 z-40 bg-slate-900/45 backdrop-blur-[2px]"
-          aria-label="Close menu"
-          onClick={() => setMobileNavOpen(false)}
-        />
-      ) : null}
-
-      <aside
-        id="pro-command-sidebar"
-        className={`flex flex-col overflow-y-auto border-slate-200 bg-white/98 backdrop-blur-md transition-transform duration-300 ease-out motion-reduce:transition-none max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-14 max-lg:z-50 max-lg:w-[min(20rem,88vw)] max-lg:max-h-[calc(100dvh-3.5rem)] max-lg:shadow-xl max-lg:border-r-0 lg:sticky lg:top-0 lg:z-30 lg:min-h-screen lg:w-64 lg:shrink-0 lg:translate-x-0 lg:border-r lg:shadow-none ${
-          mobileNavOpen
-            ? "max-lg:translate-x-0"
-            : "max-lg:-translate-x-full"
-        }`}
-      >
-        <div className="p-5 border-b border-slate-100 relative pr-12 lg:pr-5">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(false)}
-            className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-            aria-label="Close sidebar"
-          >
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-          <Link
-            href="/pro"
-            className="flex items-center gap-3 group"
-            onClick={() => setMobileNavOpen(false)}
-          >
-            <img
-              src="/logo.png"
-              className="w-11 h-11 rounded-xl shadow-md ring-1 ring-slate-100 group-hover:ring-emerald-200 transition-all"
-              alt="SwiftLink Pro"
-              width={44}
-              height={44}
-            />
-            <div>
-              <span className="text-sm font-black tracking-tight text-slate-900 leading-tight block">
-                SwiftLink<span className="text-emerald-500">Pro</span>
-              </span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Command Center
-              </span>
+    <div className="space-y-10 max-w-7xl mx-auto w-full">
+      {/* Welcome Section */}
+      <section className="relative overflow-hidden bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-20 -mt-20 blur-3xl animate-pulse" />
+         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="max-w-xl">
+               <motion.span 
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-4 block"
+               >
+                 Powering Your Vision
+               </motion.span>
+               <motion.h2 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 0.1 }}
+                 className="text-3xl md:text-5xl font-black italic tracking-tight leading-[1.1] mb-6"
+               >
+                 READY TO SCALE, <br/>{state.bizName?.toUpperCase() || "SWIFTLINK"} BOSS?
+               </motion.h2>
+               <div className="flex flex-wrap gap-4">
+                  <button onClick={copyShopLink} className="px-6 py-3 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg">
+                     <LinkIcon size={14} /> Copy Shop Link
+                  </button>
+                  <button onClick={addSampleNotification} className="px-6 py-3 bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white/20 active:scale-95 transition-all border border-white/10">
+                     <Bell size={14} /> Test System Alerts
+                  </button>
+                  <Link href="/business" className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">
+                     <Zap size={14} /> Open Store Editor
+                  </Link>
+               </div>
             </div>
-          </Link>
-        </div>
+            
+            <div className="grid grid-cols-2 gap-4 w-full md:w-auto shrink-0">
+               <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black italic mb-1">08</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Orders Today</span>
+               </div>
+               <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black italic mb-1">4.2K</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Views</span>
+               </div>
+            </div>
+         </div>
+      </section>
 
-        <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-          <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Navigate
-          </p>
-          {nav.map((item) => {
-            const active =
-              item.href === "/pro"
-                ? pathname === "/pro"
-                : pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileNavOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all ${
-                  active
-                    ? "bg-emerald-50 text-emerald-800 shadow-sm ring-1 ring-emerald-100"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <i
-                  className={`fas ${item.icon} w-5 text-center ${active ? "text-emerald-600" : "text-slate-400"}`}
-                />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-3 border-t border-slate-100 space-y-1">
-          <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Quick actions
-          </p>
-          <button
-            type="button"
-            onClick={copyShopLink}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <i className="fas fa-link w-5 text-center text-slate-400" />
-            Copy shop link
-          </button>
-          <button
-            type="button"
-            onClick={copyTrackingPortalLink}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <i className="fas fa-link w-5 text-center text-slate-400" />
-            Copy tracking portal
-          </button>
-          <a
-            href="https://wa.me/2348085741430?text=Hi, I have a feedback about SwiftLink..."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <i className="fas fa-comment-dots w-5 text-center text-slate-400" />
-            Send feedback
-          </a>
-        </div>
-
-        <div className="p-3 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <i className="fas fa-arrow-right-from-bracket" />
-            Sign out / Reset
-          </button>
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 relative min-h-0 w-full min-w-0">
-        <div className="hidden lg:block mb-10 text-center animate-fade-in-up">
-          <span className="text-3xl font-black tracking-tight text-slate-900 block leading-none">
-            SwiftLink<span className="text-emerald-500">Pro</span>
-          </span>
-          <p className="text-slate-400 font-bold text-[10px] mt-2 uppercase tracking-[0.2em]">
-            Business Command Center
-          </p>
-        </div>
-
-        <div className="w-full max-w-md grid gap-6 animate-fade-in-up">
-          <div className="relative">
-            <Link
-              href="/business"
-              id="tour-business"
-              className="bg-white text-slate-900 border-2 border-slate-100 p-8 rounded-[2.5rem] shadow-sm active:scale-95 transition-all relative overflow-hidden group cursor-pointer h-48 flex flex-col justify-end hover:border-emerald-500 hover:shadow-emerald-100/50 block"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
-                <i className="fas fa-store text-4xl mb-3 block text-emerald-500" />
-                <span className="text-xs font-bold uppercase tracking-widest opacity-40 block mb-1">
-                  Configuration
-                </span>
-                <h2 className="text-2xl font-black tracking-tight leading-none uppercase">
-                  Set up Business
-                </h2>
-              </div>
+      {/* Management Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+         {cards.map((card, i) => (
+            <Link key={card.title} href={card.href} className="group relative block bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-200 transition-all hover:-translate-y-2 flex flex-col h-full overflow-hidden">
+               <div className={cn("absolute top-0 right-0 w-32 h-32 opacity-5 rounded-full -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150 group-hover:opacity-10", card.color)} />
+               
+               <div className="flex justify-between items-start mb-10">
+                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", card.color)}>
+                     <card.icon size={24} />
+                  </div>
+                  <div className={cn("px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase", 
+                     card.accent === "emerald" ? "bg-emerald-50 text-emerald-600" : 
+                     card.accent === "blue" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-600"
+                  )}>
+                     {card.badge}
+                  </div>
+               </div>
+               
+               <div className="mt-auto">
+                  <h3 className="text-xl font-black text-slate-900 mb-3 uppercase italic tracking-tight">{card.title}</h3>
+                  <p className="text-sm font-medium text-slate-500 leading-relaxed">{card.description}</p>
+               </div>
+               
+               <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Launch Module</span>
+                  <ExternalLink size={14} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
+               </div>
             </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                copyShopLink();
-              }}
-              className="absolute top-6 right-6 w-10 h-10 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-500 rounded-full flex items-center justify-center transition-colors z-20"
-              aria-label="Copy shop link"
-            >
-              <i className="fas fa-link text-xs" />
-            </button>
-          </div>
+         ))}
+      </section>
 
-          <div className="relative">
-            <Link
-              href="/dispatch"
-              id="tour-dispatch"
-              className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 active:scale-95 transition-all relative overflow-hidden group cursor-pointer h-48 flex flex-col justify-end block"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
-                <i className="fas fa-truck-fast text-4xl mb-3 block text-white/90" />
-                <span className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-1">
-                  Operations
-                </span>
-                <h2 className="text-2xl font-black tracking-tight leading-none uppercase">
-                  Dispatch Item
-                </h2>
-              </div>
-            </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                copyTrackingPortalLink();
-              }}
-              className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur rounded-full flex items-center justify-center z-20"
-              aria-label="Copy portal link"
-            >
-              <i className="fas fa-link text-white text-xs" />
-            </button>
-          </div>
-        </div>
-      </main>
+      {/* Quick Stats / Feedback Section */}
+      <section className="bg-emerald-50 rounded-[3rem] p-8 md:p-12 border border-emerald-100 flex flex-col md:flex-row items-center gap-8 justify-between">
+         <div className="max-w-md text-center md:text-left">
+            <h3 className="text-2xl font-black text-slate-900 italic mb-2 tracking-tight">NEED A CUSTOM FEATURE?</h3>
+            <p className="text-sm font-medium text-emerald-800/70">Our dev team is live. Send us a message on WhatsApp and we&apos;ll help you scale your operations.</p>
+         </div>
+         <a 
+           href="https://wa.me/2348085741430?text=Hi, I want to request a feature for SwiftLink..."
+           target="_blank"
+           rel="noopener noreferrer"
+           className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2"
+         >
+            <MessageSquare size={16} /> Contact Support
+         </a>
+      </section>
     </div>
   );
 }

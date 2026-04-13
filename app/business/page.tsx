@@ -1,5 +1,10 @@
+import { ProLayout } from "@/components/ProLayout";
 import { BusinessView } from "@/components/BusinessView";
 
 export default function BusinessPage() {
-  return <BusinessView />;
+  return (
+    <ProLayout>
+      <BusinessView />
+    </ProLayout>
+  );
 }

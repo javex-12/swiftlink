@@ -1,5 +1,10 @@
+import { ProLayout } from "@/components/ProLayout";
 import { DispatchView } from "@/components/DispatchView";
 
 export default function DispatchPage() {
-  return <DispatchView />;
+  return (
+    <ProLayout>
+      <DispatchView />
+    </ProLayout>
+  );
 }

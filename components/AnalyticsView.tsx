@@ -1,0 +1,179 @@
+"use client";
+
+import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { TrendingUp, BarChart3, Users, DollarSign, Package, MapPin, Zap, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+
+export function AnalyticsView() {
+  const { state } = useSwiftLink();
+  const accentStr = state.accentColor || "#10b981";
+
+  const stats = [
+    { label: "Gross Volume", value: `${state.currency}1.2M`, change: "+12.5%", icon: DollarSign, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
+    { label: "Total Orders", value: "842", change: "+5.2%", icon: Package, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
+    { label: "Store Visitors", value: "4.8K", change: "-2.1%", icon: Users, trend: "down", color: "text-rose-500", bg: "bg-rose-50" },
+    { label: "Dispatch Rate", value: "94.2%", change: "+0.8%", icon: Zap, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
+  ];
+
+  const categories = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
+
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto w-full">
+      
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, i) => (
+          <motion.div 
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all"
+          >
+             <div className="flex items-center justify-between mb-4">
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+                   <stat.icon size={24} />
+                </div>
+                <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase", stat.trend === "up" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
+                   {stat.trend === "up" ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                   {stat.change}
+                </div>
+             </div>
+             <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
+                <h3 className="text-2xl font-black text-slate-900 italic tracking-tight">{stat.value}</h3>
+             </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         {/* Main Chart Section */}
+         <div className="lg:col-span-2 bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col">
+            <div className="flex items-center justify-between mb-10">
+               <div>
+                  <h3 className="text-xl font-black text-slate-900 italic tracking-tight">GROWTH TRAJECTORY</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Order Volume vs Market Avg</p>
+               </div>
+               <div className="flex gap-2">
+                  <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">WEEKS</button>
+                  <button className="px-4 py-2 bg-slate-50 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900">MONTHS</button>
+               </div>
+            </div>
+
+            <div className="flex-1 min-h-[300px] flex items-end gap-3 px-2">
+               {[40, 65, 30, 85, 55, 95, 75, 45, 80, 90, 60, 100].map((h, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-3">
+                     <div className="w-full relative group">
+                        <motion.div 
+                          initial={{ height: 0 }} 
+                          animate={{ height: `${h}%` }} 
+                          transition={{ delay: i * 0.05, duration: 1 }} 
+                          className="w-full rounded-t-[10px] bg-slate-100 group-hover:bg-slate-900 transition-colors shadow-sm relative overflow-hidden"
+                        >
+                           <motion.div 
+                             initial={{ opacity: 0 }}
+                             animate={{ opacity: [0, 1, 0] }}
+                             transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                             className="absolute inset-0 bg-emerald-400/20"
+                           />
+                        </motion.div>
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                           {h}%
+                        </div>
+                     </div>
+                     <span className="text-[9px] font-black text-slate-300 uppercase">W{i+1}</span>
+                  </div>
+               ))}
+            </div>
+         </div>
+
+         {/* Secondary Insights Section */}
+         <div className="space-y-8">
+            <div className="bg-slate-900 p-8 rounded-[3rem] shadow-xl text-white flex flex-col h-full relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
+               <div className="relative z-10">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8">Performance Mix</h3>
+                  <div className="space-y-6">
+                     {categories.slice(0, 4).map((cat, i) => (
+                        <div key={cat} className="space-y-2">
+                           <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
+                              <span>{cat}</span>
+                              <span style={{ color: accentStr }}>{94 - i * 15}%</span>
+                           </div>
+                           <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }} 
+                                animate={{ width: `${94 - i * 15}%` }} 
+                                transition={{ duration: 1, delay: 0.5 }} 
+                                className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                              />
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+                  
+                  <div className="mt-12 p-6 bg-white/5 rounded-[2rem] border border-white/10">
+                     <div className="flex items-center gap-3 mb-4">
+                        <Activity className="text-emerald-400" size={18} />
+                        <span className="text-xs font-black uppercase tracking-widest">Active Store Pulse</span>
+                     </div>
+                     <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
+                        Store interaction is up 42% this week. Your &quot;Footwear&quot; category is driving the highest conversion rate.
+                     </p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      {/* Top Products Table */}
+      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+         <h3 className="text-xl font-black text-slate-900 italic tracking-tight mb-8 px-2 uppercase">Vibe Check: Top Performers</h3>
+         <div className="overflow-x-auto">
+            <table className="w-full text-left">
+               <thead>
+                  <tr className="border-b border-slate-50">
+                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Product Details</th>
+                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Units Sold</th>
+                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Revenue</th>
+                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-50">
+                  {state.products.slice(0, 5).map((p, i) => (
+                     <tr key={p.id} className="group">
+                        <td className="py-5 px-2">
+                           <div className="flex items-center gap-4">
+                              <span className="text-xl font-black text-slate-100 italic group-hover:text-slate-200 transition-colors">0{i+1}</span>
+                              <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shrink-0 shadow-inner">
+                                 <img src={p.image} className="w-full h-full object-cover" alt="" />
+                              </div>
+                              <div className="min-w-0">
+                                 <p className="text-sm font-black text-slate-900 truncate">{p.name}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{p.category}</p>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="py-5 px-2">
+                           <span className="text-sm font-black text-slate-700">{124 - i * 18} Units</span>
+                        </td>
+                        <td className="py-5 px-2 font-black text-slate-900 italic">
+                           {state.currency}{(Number(p.price) * (124 - i * 18)).toLocaleString()}
+                        </td>
+                        <td className="py-5 px-2">
+                           <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Trending</span>
+                           </div>
+                        </td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+      </div>
+    </div>
+  );
+}

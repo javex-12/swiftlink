@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, setDoc, type Unsubscribe } from "firebase/firestore";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   signInAnonymously,
   onAuthStateChanged,
@@ -24,7 +25,8 @@ import {
   loadStateLocal,
   parseShopFromPathname,
 } from "@/lib/utils";
-import { defaultShopState, type Delivery, type ShopState } from "@/lib/types";
+import { defaultShopState, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
+import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
 
@@ -96,6 +98,10 @@ type SwiftLinkContextValue = {
   cartItemCount: number;
   currentLocation: { lat: number; lng: number } | null;
   startLocationTracking: () => void;
+  isSyncing: boolean;
+  toasts: any[];
+  addToast: (msg: string, type?: ToastType) => void;
+  removeToast: (id: string) => void;
 };
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
@@ -134,6 +140,17 @@ export function SwiftLinkProvider({
     null,
   );
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  const addToast = useCallback((message: string, type: ToastType = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
@@ -170,19 +187,33 @@ export function SwiftLinkProvider({
       if (typeof window !== "undefined") {
         localStorage.setItem("swiftlink_state", JSON.stringify(next));
       }
-      const { db } = getFirebase();
-      if (
-        db &&
-        isFirebaseActive &&
-        isOwnerRef.current &&
-        userRef.current?.uid
-      ) {
-        void setDoc(
-          doc(db, "swiftlink_stores", userRef.current.uid),
-          next,
-          { merge: true },
-        );
-      }
+      
+      // Debounce Firebase writes
+      if (window.firebaseSyncTimeout) clearTimeout(window.firebaseSyncTimeout);
+      setIsSyncing(true);
+      
+      window.firebaseSyncTimeout = setTimeout(() => {
+          const { db } = getFirebase();
+          if (
+            db &&
+            isFirebaseActive &&
+            isOwnerRef.current &&
+            userRef.current?.uid
+          ) {
+            setDoc(
+              doc(db, "swiftlink_stores", userRef.current.uid),
+              next,
+              { merge: true },
+            ).then(() => {
+                setIsSyncing(false);
+            }).catch((err) => {
+                console.error("Firebase Sync Error:", err);
+                setIsSyncing(false);
+            });
+          } else {
+            setIsSyncing(false);
+          }
+      }, 1000);
     },
     [isFirebaseActive],
   );
@@ -249,7 +280,12 @@ export function SwiftLinkProvider({
         if (!u) return;
         setUser(u);
         setIsFirebaseActive(true);
-        if (isOwnerRef.current) {
+        
+        const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
+        const isCustomer = Boolean(sid);
+
+        // If I am an OWNER and NOT viewing someone else's shop
+        if (isOwnerRef.current && !isCustomer) {
           setState((prev) => {
             const next = { ...prev, id: u.uid };
             if (typeof window !== "undefined") {
@@ -263,15 +299,18 @@ export function SwiftLinkProvider({
             return next;
           });
         }
-        const tid = trackQ;
-        const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
-        if (!tid && sid && !isOwnerRef.current) {
+        
+        // If I am viewing a CUSTOMER shop (even if I am an owner of another shop)
+        if (sid) {
           shopUnsubRef.current = onSnapshot(
             doc(db, "swiftlink_stores", sid),
             (snap) => {
               if (snap.exists()) {
                 const data = snap.data() as Partial<ShopState>;
-                setState((prev) => ({ ...prev, ...data }));
+                // We keep the ID of the shop being viewed
+                setState((prev) => ({ ...prev, ...data, id: sid }));
+              } else {
+                console.warn("Shop not found:", sid);
               }
             },
           );
@@ -558,7 +597,7 @@ export function SwiftLinkProvider({
 
   const copyShopLinkInternal = useCallback(() => {
     if (!state.id) {
-      alert("Store ID not ready yet. Try again in a moment.");
+      addToast("Store ID not ready yet. Try again.", "error");
       return;
     }
     const url =
@@ -566,8 +605,8 @@ export function SwiftLinkProvider({
         ? `${window.location.origin}${getShopPath(state)}`
         : "";
     void navigator.clipboard.writeText(url);
-    alert("Shop Link Copied!");
-  }, [state]);
+    addToast("Shop Link Copied to Clipboard!");
+  }, [state, addToast]);
 
   const copyShopLink = useCallback(() => {
     copyShopLinkInternal();
@@ -578,8 +617,8 @@ export function SwiftLinkProvider({
     const url =
       typeof window !== "undefined" ? `${window.location.origin}/` : "";
     void navigator.clipboard.writeText(url);
-    alert("Portal Link Copied!");
-  }, []);
+    addToast("Portal Link Copied!");
+  }, [addToast]);
 
   const copyTrackLink = useCallback((id: string) => {
     const url =
@@ -587,11 +626,12 @@ export function SwiftLinkProvider({
         ? `${window.location.origin}/?track=${id}`
         : "";
     void navigator.clipboard.writeText(url);
-    alert("Link Copied!");
-  }, []);
+    addToast("Tracking Link Copied!");
+  }, [addToast]);
 
-  const handleSignOut = useCallback(() => {
-    if (confirm("Reset system? All local data will be lost.")) {
+  const handleSignOut = useCallback(async () => {
+    const ok = await (window as any).customConfirm("Reset system?", "All local data will be lost.");
+    if (ok) {
       localStorage.clear();
       window.location.reload();
     }
@@ -652,8 +692,9 @@ export function SwiftLinkProvider({
     [],
   );
 
-  const removeDelivery = useCallback((id: string) => {
-    if (!confirm("Delete record?")) return;
+  const removeDelivery = useCallback(async (id: string) => {
+    const ok = await (window as any).customConfirm("Delete record?", "Are you sure you want to remove this delivery?");
+    if (!ok) return;
     setState((prev) => {
       const next = {
         ...prev,
@@ -705,9 +746,10 @@ export function SwiftLinkProvider({
       }
       const d = next.deliveries.find((x) => x.id === tid) ?? null;
       setTrackingDisplay(d);
+      addToast("Delivery Confirmed. Thank you!", "success");
       return next;
     });
-  }, [currentTrackId]);
+  }, [currentTrackId, addToast]);
 
   const addProduct = useCallback(() => {
     setState((prev) => {
@@ -746,8 +788,9 @@ export function SwiftLinkProvider({
   );
 
   const removeProduct = useCallback(
-    (id: number) => {
-      if (!confirm("Delete?")) return;
+    async (id: number) => {
+      const ok = await (window as any).customConfirm("Delete Item?", "Are you sure you want to remove this product?");
+      if (!ok) return;
       setState((prev) => {
         const next = {
           ...prev,
@@ -763,40 +806,67 @@ export function SwiftLinkProvider({
   const handleImageUpload = useCallback(
     (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
       if (!file) return;
-      processImageFile(file).then((cmp) => {
+      const { storage } = getFirebase();
+      if (!storage || !userRef.current) {
+          alert("Storage not ready or user not logged in.");
+          return;
+      }
+
+      setIsSyncing(true);
+      const path = productId != null 
+        ? `stores/${userRef.current.uid}/products/${productId}/${Date.now()}_${file.name}`
+        : `stores/${userRef.current.uid}/branding/${Date.now()}_${file.name}`;
+      
+      const sRef = storageRef(storage, path);
+      uploadBytes(sRef, file).then((snapshot) => {
+          return getDownloadURL(snapshot.ref);
+      }).then((url) => {
         setState((prev) => {
           let next = { ...prev };
           if (productId != null) {
             const products = prev.products.map((p) => {
               if (p.id === productId) {
-                // Backward compat: set primary image `image`, and add/ensure it is in `images` array
                 const newImages = p.images?.length ? [...p.images] : (p.image ? [p.image] : []);
-                if (newImages.length === 0) newImages.push(cmp);
-                else newImages[0] = cmp; // replace the primary if it already had one
-                return { ...p, image: cmp, images: newImages };
+                if (newImages.length === 0) newImages.push(url);
+                else newImages[0] = url; 
+                return { ...p, image: url, images: newImages };
               }
               return p;
             });
             next = { ...next, products };
           } else {
-            next = { ...next, bizImage: cmp };
+            next = { ...next, bizImage: url };
           }
           persistState(next);
           return next;
         });
-      }).catch(console.error);
+        setIsSyncing(false);
+      }).catch((err) => {
+          console.error("Upload failed:", err);
+          setIsSyncing(false);
+          alert("Upload failed. Check your connection.");
+      });
     },
     [persistState],
   );
 
   const addProductImage = useCallback(
     (productId: number, file: File) => {
-      processImageFile(file).then((cmp) => {
+      const { storage } = getFirebase();
+      if (!storage || !userRef.current) return;
+
+      setIsSyncing(true);
+      const path = `stores/${userRef.current.uid}/products/${productId}/${Date.now()}_${file.name}`;
+      const sRef = storageRef(storage, path);
+
+      uploadBytes(sRef, file).then((snapshot) => {
+          return getDownloadURL(snapshot.ref);
+      }).then((url) => {
         setState((prev) => {
           const products = prev.products.map((p) => {
             if (p.id === productId) {
               const currentImgs = p.images || (p.image ? [p.image] : []);
-              const nextImgs = [...currentImgs, cmp];
+              const nextImgs = [...currentImgs, url];
               return { ...p, images: nextImgs, image: nextImgs[0] };
             }
             return p;
@@ -805,7 +875,11 @@ export function SwiftLinkProvider({
           persistState(next);
           return next;
         });
-      }).catch(console.error);
+        setIsSyncing(false);
+      }).catch(err => {
+          console.error(err);
+          setIsSyncing(false);
+      });
     },
     [persistState]
   );
@@ -984,11 +1058,16 @@ export function SwiftLinkProvider({
     setPrimaryImage,
     currentLocation,
     startLocationTracking,
+    isSyncing,
+    toasts,
+    addToast,
+    removeToast,
   };
 
   return (
     <SwiftLinkContext.Provider value={value}>
       {children}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </SwiftLinkContext.Provider>
   );
 }

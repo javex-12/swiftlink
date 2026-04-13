@@ -1,10 +1,14 @@
 import { Suspense } from "react";
 import { HomeClient } from "@/components/HomeClient";
+import { ProLayout } from "@/components/ProLayout";
+import { LauncherView } from "@/components/LauncherView";
 
 export default function ProPage() {
   return (
-    <Suspense fallback={null}>
-      <HomeClient defaultView="launcher" />
-    </Suspense>
+    <ProLayout>
+      <Suspense fallback={null}>
+        <LauncherView />
+      </Suspense>
+    </ProLayout>
   );
 }

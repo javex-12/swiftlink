@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 /** Default config preserves behavior when env vars are not set (public client keys). */
 const FALLBACK_CONFIG = {
@@ -33,16 +34,18 @@ function getFirebaseConfig() {
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 export function getFirebase() {
   if (typeof window === "undefined") {
-    return { app: null, auth: null, db: null };
+    return { app: null, auth: null, db: null, storage: null };
   }
   if (!app) {
     const cfg = getFirebaseConfig();
     app = getApps().length ? getApps()[0]! : initializeApp(cfg);
     auth = getAuth(app);
     db = getFirestore(app);
+    storage = getStorage(app);
   }
-  return { app, auth, db };
+  return { app, auth, db, storage };
 }

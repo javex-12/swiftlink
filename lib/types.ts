@@ -37,6 +37,15 @@ export type StoreSocials = {
   twitter?: string;
 };
 
+export type AppNotification = {
+    id: string;
+    title: string;
+    message: string;
+    type: "order" | "message" | "trend";
+    timestamp: string;
+    read: boolean;
+};
+
 export type ShopState = {
   id: string | null;
   bizName: string;
@@ -49,6 +58,11 @@ export type ShopState = {
   tagline: string;
   aboutUs: string;
   isLive?: boolean;
+  storeHours?: string;
+  
+  // Custom categories for this store
+  categories: string[];
+  notifications: AppNotification[];
   
   // Theme Presets
   themePreset?: "custom" | "fresh" | "bold" | "minimal" | "playful";
@@ -65,7 +79,7 @@ export type ShopState = {
   priceStyle?: "plain" | "bold" | "strikethrough";
 
   // Store Behaviour
-  orderMethod?: "whatsapp" | "paystack" | "both";
+  orderMethod: "whatsapp" | "paystack" | "both";
   waTemplate?: string;
   minOrder?: number;
   outOfStockDisplay?: "hide" | "show-sold-out" | "show-badge";
@@ -74,7 +88,7 @@ export type ShopState = {
   showProductShare?: boolean;
 
   // Marketing
-  announcement?: string;
+  announcement: string;
   announcementEnabled?: boolean;
   featuredProductId?: number | null;
   promoTimer?: string; // ISO date string for countdown
@@ -84,7 +98,6 @@ export type ShopState = {
 
   // Business Info
   socials?: StoreSocials;
-  storeHours?: string;
   location?: string;
   deliveryAreas?: string;
   deliveryFee?: string;
@@ -147,4 +160,45 @@ export const defaultShopState = (): ShopState => ({
   showAbout: true,
 
   isLive: true,
+  categories: [],
+  notifications: [],
 });
+
+export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = {
+  primaryColor: "#10b981",
+  background: "light",
+  heroLayout: "split",
+  cardRadius: "pill",
+  showHeroBadge: true,
+};
+
+/** Clamp hex for CSS; invalid values fall back to default emerald. */
+export function normalizeHexColor(input: string, fallback = "#10b981"): string {
+  const s = String(input || "").trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s.toLowerCase();
+  if (/^#[0-9A-Fa-f]{3}$/.test(s)) {
+    const r = s[1]!,
+      g = s[2]!,
+      b = s[3]!;
+    return (`#${r}${r}${g}${g}${b}${b}`).toLowerCase();
+  }
+  return fallback;
+}
+
+export function resolveStorefrontTheme(
+  state: Partial<ShopState>,
+): StorefrontTheme {
+  const t = state.storefrontTheme || {};
+  return {
+    ...DEFAULT_STOREFRONT_THEME,
+    ...t,
+    primaryColor: normalizeHexColor(
+      state.accentColor ?? t.primaryColor ?? DEFAULT_STOREFRONT_THEME.primaryColor,
+    ),
+    background: t.background ?? DEFAULT_STOREFRONT_THEME.background,
+    heroLayout: state.heroStyle === "banner" || state.heroStyle === "split" ? state.heroStyle : (t.heroLayout ?? DEFAULT_STOREFRONT_THEME.heroLayout),
+    cardRadius: (state.buttonRadius as any) ?? t.cardRadius ?? DEFAULT_STOREFRONT_THEME.cardRadius,
+    showHeroBadge:
+      t.showHeroBadge ?? DEFAULT_STOREFRONT_THEME.showHeroBadge,
+  };
+}

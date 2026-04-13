@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { resolveStorefrontTheme } from "@/lib/utils";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { resolveStorefrontTheme } from "@/lib/types";
+import { Minus, Plus, Trash2, ArrowRight, CreditCard } from "lucide-react";
+import Link from "next/link";
 
 export function CartDrawer({
   open,
@@ -133,21 +134,48 @@ export function CartDrawer({
               {total.toLocaleString()}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={sendWhatsAppOrder}
-            disabled={!storeAcceptingOrders}
-            className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
-          style={{
-            backgroundColor: theme.primaryColor,
-            boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
-          }}
-          >
-            <i className="fab fa-whatsapp text-2xl" />
-            <span>
-              {storeAcceptingOrders ? "WhatsApp Order" : "Orders paused"}
-            </span>
-          </button>
+          
+          <div className="flex flex-col gap-3">
+             <Link
+               href="/cart"
+               onClick={() => onToggle(false)}
+               className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+             >
+               View Full Bag <ArrowRight size={14} />
+             </Link>
+
+             {(state.orderMethod === "whatsapp" || state.orderMethod === "both" || !state.orderMethod) && (
+                <button
+                  type="button"
+                  onClick={sendWhatsAppOrder}
+                  disabled={!storeAcceptingOrders}
+                  className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                  style={{
+                    backgroundColor: theme.primaryColor,
+                    boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
+                  }}
+                >
+                  <i className="fab fa-whatsapp text-2xl" />
+                  <span>
+                    {storeAcceptingOrders ? "WhatsApp Order" : "Orders paused"}
+                  </span>
+                </button>
+             )}
+
+             {(state.orderMethod === "paystack" || state.orderMethod === "both") && (
+                <button
+                  type="button"
+                  onClick={() => alert("Paystack Integration Coming Soon")}
+                  disabled={!storeAcceptingOrders}
+                  className="w-full bg-white text-slate-900 border border-slate-200 py-5 rounded-2xl font-black shadow-sm flex items-center justify-center space-x-3 active:scale-95 transition-all hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CreditCard size={20} />
+                  <span>
+                    {storeAcceptingOrders ? "Pay with Paystack" : "Orders paused"}
+                  </span>
+                </button>
+             )}
+          </div>
         </div>
       </div>
     </>

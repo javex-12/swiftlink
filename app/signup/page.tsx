@@ -102,7 +102,15 @@ export default function SignupPage() {
     } catch (e: unknown) {
       console.error(e);
       const code = (e as { code?: string })?.code;
-      setError(code === "auth/popup-closed-by-user" ? "Sign-in cancelled." : "Google sign-in failed. Try again.");
+      const message = (e as { message?: string })?.message || "";
+      
+      if (code === "auth/popup-closed-by-user") {
+        setError("Sign-in cancelled.");
+      } else if (message.includes("requests-from-referer")) {
+        setError("Firebase Error: Domain 'localhost:3000' is not authorized in your Firebase Console. Go to Authentication -> Settings -> Authorized Domains and add it.");
+      } else {
+        setError("Google sign-in failed. Check your Firebase Console settings.");
+      }
     } finally { setLoading(null); }
   };
 
