@@ -101,6 +101,7 @@ type SwiftLinkContextValue = {
   toasts: any[];
   addToast: (msg: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
+  addSystemNotification: (title: string, message: string, type?: "order" | "message" | "trend") => void;
 };
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
@@ -246,6 +247,23 @@ export function SwiftLinkProvider({
     },
     [persistState],
   );
+
+  const addSystemNotification = useCallback((title: string, message: string, type: "order" | "message" | "trend" = "message") => {
+    const id = Date.now().toString();
+    const newNotif: AppNotification = {
+        id,
+        title,
+        message,
+        type,
+        timestamp: "Just now",
+        read: false
+    };
+    setState(prev => {
+        const next = { ...prev, notifications: [newNotif, ...(prev.notifications || [])].slice(0, 20) };
+        persistState(next);
+        return next;
+    });
+  }, [persistState]);
 
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
@@ -1061,6 +1079,7 @@ export function SwiftLinkProvider({
     toasts,
     addToast,
     removeToast,
+    addSystemNotification,
   };
 
   return (

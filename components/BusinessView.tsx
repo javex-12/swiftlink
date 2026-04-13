@@ -27,11 +27,17 @@ export function BusinessView() {
     removeProductImage,
     setPrimaryImage,
     isFirebaseActive,
-    isSyncing
+    isSyncing,
+    addSystemNotification
   } = useSwiftLink();
 
   const handleUpdate = (field: keyof ShopState, value: any) => {
     updateState(field, value);
+  };
+
+  const onAddProduct = () => {
+    addProduct();
+    addSystemNotification("Product Draft Created", "A new item has been added to your inventory. Don't forget to add a name and price.", "message");
   };
 
   const addCategory = async () => {
@@ -122,35 +128,50 @@ export function BusinessView() {
   );
 
   return (
-    <div className="pb-[100px] font-sans">
+    <div className="pb-32 font-sans bg-slate-50/50 min-h-screen">
       
-      {/* Dynamic Sync Status bar */}
-      <div className={cn("fixed top-20 right-8 z-[100] bg-white border border-slate-100 rounded-full px-4 py-2 flex items-center gap-3 shadow-2xl transition-all duration-500", isSyncing ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-         <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Syncing to Cloud</span>
-      </div>
+      {/* Real-time Sync Indicator */}
+      <AnimatePresence>
+        {isSyncing && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-2xl"
+          >
+             <RefreshCw size={14} className="animate-spin text-emerald-400" />
+             <span className="text-[10px] font-black uppercase tracking-widest">Saving Changes...</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 px-4">
+      <main className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-12 px-6 lg:px-12 pt-8">
         
         {/* Left Pane: Editor Tools */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="flex-1 min-w-0 space-y-10">
           
-          <div className="flex bg-white p-1.5 rounded-[1.5rem] shadow-sm border border-slate-100 sticky top-[72px] z-30 mb-8 backdrop-blur-md bg-white/80">
-            <button
-              className={cn("flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-2xl transition-all", activeTab === "store" ? "bg-slate-900 text-white shadow-md scale-[1.02]" : "text-slate-400 hover:text-slate-900")}
-              onClick={() => setActiveTab("store")}
-            >
-              Inventory
-            </button>
-            <button
-              className={cn("flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-2xl transition-all", activeTab === "appearance" ? "bg-slate-900 text-white shadow-md scale-[1.02]" : "text-slate-400 hover:text-slate-900")}
-              onClick={() => setActiveTab("appearance")}
-            >
-              Design
-            </button>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
+             <div>
+                <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight italic uppercase">Store Editor</h1>
+                <p className="text-slate-400 font-bold text-sm mt-1 uppercase tracking-widest">Customize your digital storefront in real-time.</p>
+             </div>
+             <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+                <button
+                  className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
+                  onClick={() => setActiveTab("store")}
+                >
+                  Inventory
+                </button>
+                <button
+                  className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 text-white shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900")}
+                  onClick={() => setActiveTab("appearance")}
+                >
+                  Design
+                </button>
+             </div>
           </div>
 
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="wait">
             {activeTab === "store" && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                 
@@ -230,7 +251,7 @@ export function BusinessView() {
                     <button
                       type="button"
                       disabled={isSyncing}
-                      onClick={addProduct}
+                      onClick={onAddProduct}
                       className="text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg transition-transform active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ backgroundColor: accentStr }}
                     >
@@ -527,61 +548,79 @@ export function BusinessView() {
           </AnimatePresence>
         </div>
         
-        {/* Right Pane: Desktop Phone Preview */}
-        <div className="lg:col-span-5 hidden lg:flex items-start justify-center sticky top-28 h-[calc(100vh-140px)]">
-          <div className="relative w-[300px] xl:w-[340px] aspect-[9/19.5] bg-slate-900 rounded-[3rem] p-3 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border-[8px] border-slate-800 ring-1 ring-slate-700 overflow-hidden">
-            {/* Realistic Notch / Dynamic Island */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-slate-900 rounded-b-2xl z-[60] flex items-center justify-center border-x border-b border-slate-800/50">
-               <div className="w-8 h-1 bg-slate-800 rounded-full" />
-            </div>
-            
-            {/* Screen Content */}
-            <div className="h-full w-full rounded-[2.2rem] overflow-hidden bg-white relative shadow-inner border border-slate-800">
-                <div className="w-full h-full overflow-y-auto no-scrollbar scroll-smooth relative bg-[#f8fafc]">
-                    <div className="scale-[0.9] origin-top w-[111.11%] h-[111.11%]">
-                        <CustomerStorefront isPreview={true} />
-                    </div>
-                </div>
-            </div>
+        {/* Right Pane: High-Fidelity Phone Preview */}
+        <div className="lg:col-span-4 hidden lg:flex items-start justify-center sticky top-28 h-[calc(100vh-140px)]">
+           <div className="relative mx-auto group" style={{ width: 300, aspectRatio: "9/19.5" }}>
+              {/* Premium Phone Shell */}
+              <div className="absolute inset-0 rounded-[3.5rem] bg-gradient-to-b from-[#1c1c1e] to-[#0a0a0a] shadow-[0_80px_160px_-20px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden flex flex-col border-[7px] border-[#2a2a2e] transition-all duration-700 group-hover:scale-[1.03] group-hover:rotate-1">
+                
+                {/* Hardware Bezel Glare */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-tr from-white/[0.03] via-transparent to-white/[0.08] z-[55]" />
 
-            {/* Physical Buttons (CSS) */}
-            <div className="absolute left-[-9px] top-24 w-1.5 h-8 bg-slate-800 rounded-l-md border-y border-l border-slate-700" />
-            <div className="absolute left-[-9px] top-36 w-1.5 h-12 bg-slate-800 rounded-l-md border-y border-l border-slate-700" />
-            <div className="absolute left-[-9px] top-52 w-1.5 h-12 bg-slate-800 rounded-l-md border-y border-l border-slate-700" />
-            <div className="absolute right-[-9px] top-40 w-1.5 h-16 bg-slate-800 rounded-r-md border-y border-r border-slate-700" />
-            
-            {/* Reflection Shine */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-tr from-white/5 via-transparent to-white/10 z-[55]" />
-          </div>
+                {/* Physical Side Buttons */}
+                <div className="absolute -left-[7px] top-[100px] w-1.5 h-10 bg-[#3a3a3e] rounded-l-md border-y border-l border-white/5" />
+                <div className="absolute -left-[7px] top-[160px] w-1.5 h-14 bg-[#3a3a3e] rounded-l-md border-y border-l border-white/5" />
+                <div className="absolute -right-[7px] top-[140px] w-1.5 h-20 bg-[#3a3a3e] rounded-r-md border-y border-r border-white/5" />
+
+                {/* Status bar */}
+                <div className="flex-shrink-0 h-10 flex items-end pb-1 justify-between px-7 relative z-[60]">
+                  <span className="text-[10px] font-black text-white/90">9:41</span>
+                  {/* Realistic Dynamic Island */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full border border-white/10 flex items-center justify-center">
+                     <div className="w-1 h-1 bg-blue-500/20 rounded-full ml-auto mr-3" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-[1.5px] items-end h-3">
+                      {[3, 5, 7, 9].map(h => <div key={h} className="w-[2px] rounded-sm bg-white/90" style={{ height: h }} />)}
+                    </div>
+                    <div className="w-5 h-2.5 rounded-[3px] border border-white/30 flex items-center p-[1px] relative">
+                       <div className="h-full w-[80%] bg-emerald-400 rounded-[1.5px]" />
+                       <div className="absolute -right-1 w-1 h-1 bg-white/30 rounded-r-full" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Screen Content Window */}
+                <div className="flex-1 bg-[#f8fafc] overflow-hidden relative flex flex-col m-1 rounded-[2.8rem] border border-black/20 shadow-inner">
+                   <div className="absolute inset-0 overflow-y-auto no-scrollbar scroll-smooth">
+                      <div className="scale-[0.85] origin-top w-[117.6%] h-[117.6%]">
+                         <CustomerStorefront isPreview={true} />
+                      </div>
+                   </div>
+                </div>
+
+                {/* Home Indicator */}
+                <div className="flex-shrink-0 flex items-center justify-center h-6 bg-transparent relative z-[60]">
+                  <div className="w-24 h-1 bg-white/20 rounded-full" />
+                </div>
+              </div>
+           </div>
         </div>
       </main>
 
-      {/* Mobile Sticky CTA for bringing up Preview Modal */}
-      {/* Keeps "Preview Live" constantly accessible while scrolling settings */}
-      <div className="lg:hidden fixed bottom-0 w-full bg-white border-t border-slate-100 p-4 pb-safe z-40 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+      {/* Mobile Preview Trigger */}
+      <div className="lg:hidden fixed bottom-8 left-6 right-6 z-40">
          <button 
-             onClick={() => setShowMobilePreview(true)}
-             className="w-full py-4 text-white font-black text-sm uppercase tracking-widest rounded-3xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform" 
-             style={{ backgroundColor: accentStr }}
+            onClick={() => setShowMobilePreview(true)} 
+            className="w-full py-5 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10"
          >
-            Preview Mobile Store <i className="fas fa-eye text-xs opacity-70" />
+            <Smartphone size={16} className="text-emerald-400" />
+            Inspect Mobile Store
          </button>
       </div>
 
-      {/* Mobile Fullscreen Preview Modal Layer */}
+      {/* Fullscreen Inspector */}
       <AnimatePresence>
           {showMobilePreview && (
-              <motion.div 
-                 initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 250 }}
-                 className="fixed inset-0 z-50 bg-slate-900 flex flex-col"
-              >
-                  <div className="bg-slate-900 pt-safe px-4 py-3 flex justify-between items-center z-10 shrink-0 border-b border-slate-800">
-                      <span className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> Live Preview</span>
-                      <button onClick={() => setShowMobilePreview(false)} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90 transition-transform">
-                          <i className="fas fa-times" />
-                      </button>
+              <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-2xl flex flex-col">
+                  <div className="pt-safe px-6 py-6 flex justify-between items-center shrink-0 border-b border-white/5">
+                      <div className="flex items-center gap-3">
+                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> 
+                         <span className="text-white font-black uppercase tracking-[0.3em] text-[10px]">Production Preview</span>
+                      </div>
+                      <button onClick={() => setShowMobilePreview(false)} className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center active:scale-90 transition-all border border-white/10"><X size={24} /></button>
                   </div>
-                  <div className="flex-1 bg-white overflow-y-auto w-full max-w-lg mx-auto">
+                  <div className="flex-1 bg-white overflow-y-auto max-w-2xl mx-auto w-full md:my-8 md:rounded-[3rem] shadow-2xl overflow-hidden border border-black/10">
                       <CustomerStorefront isPreview={true} />
                   </div>
               </motion.div>
