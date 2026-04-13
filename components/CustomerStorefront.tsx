@@ -435,7 +435,7 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h2 className="text-2xl font-black text-slate-900 leading-none tracking-tighter uppercase italic truncate">{user.email?.split('@')[0]}</h2>
-                                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Verified Member</p>
+                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Verified Member</div>
                             </div>
                             <button onClick={handleSignOut} className="w-12 h-12 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center shadow-sm border border-slate-100"><X size={20} strokeWidth={3} /></button>
                         </div>

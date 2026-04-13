@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ShopState } from "./types";
-import { defaultShopState } from "./types";
+import type { ShopState } from "./schema";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -97,15 +96,4 @@ export function parseShopFromPathname(pathname: string): ParsedShopPath | null {
   if (parts.length === 1 && parts[0].length >= 20)
     return { kind: "uid", shopId: parts[0], storeSlug: null };
   return null;
-}
-
-export function loadStateLocal(): ShopState {
-  const base = defaultShopState();
-  try {
-    const s = localStorage.getItem("swiftlink_state");
-    if (s) return { ...base, ...JSON.parse(s) };
-  } catch {
-    /* ignore */
-  }
-  return base;
 }

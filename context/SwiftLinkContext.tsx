@@ -22,10 +22,9 @@ import {
 import { getFirebase } from "@/lib/firebase-client";
 import {
   getShopPath,
-  loadStateLocal,
   parseShopFromPathname,
 } from "@/lib/utils";
-import { defaultShopState, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
+import { defaultShopState, loadStateLocal, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
