@@ -146,23 +146,35 @@ export function BusinessView() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-5xl mx-auto space-y-10 px-6 pt-8">
+      <main className="max-w-5xl mx-auto space-y-10 px-4 md:px-6 pt-4 md:pt-8">
         
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
-            <div>
+        {!isSyncing && !state.id && (
+           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-3xl p-6 flex flex-col md:flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                 <Shield size={24} />
+              </div>
+              <div className="text-center md:text-left">
+                 <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Firebase Not Configured</h4>
+                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Global sync and public store links require Firebase environment variables. Check your .env file.</p>
+              </div>
+           </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-4">
+            <div className="text-center lg:text-left">
                 <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight italic uppercase">Store Editor</h1>
                 <p className="text-slate-400 dark:text-slate-500 font-bold text-sm mt-1 uppercase tracking-widest">Manage your products and brand identity.</p>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
-                <div className="flex bg-white dark:bg-slate-950 p-1.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+                <div className="flex bg-white dark:bg-slate-950 p-1.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 w-full sm:w-auto">
                     <button
-                    className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white")}
+                    className={cn("flex-1 sm:px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white")}
                     onClick={() => setActiveTab("store")}
                     >
                     Inventory
                     </button>
                     <button
-                    className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white")}
+                    className={cn("flex-1 sm:px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg scale-[1.05]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white")}
                     onClick={() => setActiveTab("appearance")}
                     >
                     Design
@@ -170,7 +182,7 @@ export function BusinessView() {
                 </div>
                 <button 
                     onClick={openLivePreview}
-                    className="flex items-center gap-3 px-8 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
                 >
                     <ExternalLink size={16} />
                     View Live Store
@@ -183,14 +195,14 @@ export function BusinessView() {
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
             
             {/* Store Profile Card */}
-            <section className="bg-white dark:bg-slate-950 rounded-[3rem] p-8 md:p-12 shadow-sm border border-slate-100 dark:border-slate-800 space-y-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] pointer-events-none text-slate-900 dark:text-white">
+            <section className="bg-white dark:bg-slate-950 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 shadow-sm border border-slate-100 dark:border-slate-800 space-y-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] pointer-events-none text-slate-900 dark:text-white hidden md:block">
                     <FileText size={200} />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-10 items-center sm:items-start relative z-10">
+                <div className="flex flex-col md:flex-row gap-8 md:gap-10 items-center md:items-start relative z-10">
                     <label
                     htmlFor="biz-img-upload"
-                    className="relative block w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
+                    className="relative block w-28 h-28 md:w-40 md:h-40 rounded-[2rem] md:rounded-[3.5rem] bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
                     style={ state.bizImage ? { backgroundImage: `url(${state.bizImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined }
                     >
                     {!state.bizImage && !isSyncing && <i className="fas fa-camera text-slate-200 dark:text-slate-700 text-4xl group-hover:text-emerald-500 transition-colors" />}
@@ -204,9 +216,10 @@ export function BusinessView() {
                             <input
                             type="text"
                             id="biz-name"
+                            data-tour-biz-name
                             value={state.bizName || ""}
                             onChange={(e) => { updateState("bizName", e.target.value); }}
-                            className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 font-black text-xl text-slate-900 dark:text-white outline-none border border-slate-100 dark:border-slate-800 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner"
+                            className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 md:p-5 font-black text-lg md:text-xl text-slate-900 dark:text-white outline-none border border-slate-100 dark:border-slate-800 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner"
                             placeholder="Elite Fashion"
                             />
                         </div>
@@ -215,9 +228,10 @@ export function BusinessView() {
                             <input
                             type="tel"
                             id="biz-phone"
+                            data-tour-biz-phone
                             value={state.phone || ""}
                             onChange={(e) => { updateState("phone", e.target.value); }}
-                            className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 font-bold text-sm text-slate-600 dark:text-slate-400 outline-none border border-slate-100 dark:border-slate-800 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner"
+                            className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-slate-400 outline-none border border-slate-100 dark:border-slate-800 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-950 transition-all shadow-inner"
                             placeholder="+234..."
                             />
                         </div>
@@ -266,15 +280,15 @@ export function BusinessView() {
                 </div>
             </section>
 
-            <section className="space-y-8">
-                <div className="flex justify-between items-center px-4">
+            <section className="space-y-6 md:space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">Products</h2>
                 <button
                     type="button"
                     data-tour-add-product
                     disabled={isSyncing}
                     onClick={onAddProduct}
-                    className="text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-transform active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                    className="w-full sm:w-auto text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-transform active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                     style={{ backgroundColor: accentStr, boxShadow: `0 20px 40px -10px ${accentStr}66` }}
                 >
                     {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={3} />}
@@ -282,17 +296,17 @@ export function BusinessView() {
                 </button>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6 md:space-y-8">
                 {state.products.map((p) => {
                     const imgs = p.images || (p.image ? [p.image] : []);
                     return (
-                    <div key={p.id} className="bg-white dark:bg-slate-950 rounded-[3.5rem] p-8 md:p-10 border border-slate-100 dark:border-slate-800 shadow-sm relative group transition-all hover:border-emerald-500/20 hover:shadow-2xl">
+                    <div key={p.id} className="bg-white dark:bg-slate-950 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-10 border border-slate-100 dark:border-slate-800 shadow-sm relative group transition-all hover:border-emerald-500/20 hover:shadow-2xl">
                     
-                    <button onClick={() => removeProduct(p.id)} className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all z-20 border border-slate-100 dark:border-slate-800">
-                        <Trash2 size={20} />
+                    <button onClick={() => removeProduct(p.id)} className="absolute top-6 right-6 md:top-8 md:right-8 w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all z-20 border border-slate-100 dark:border-slate-800">
+                        <Trash2 size={18} />
                     </button>
 
-                    <div className="flex flex-col md:flex-row gap-10">
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-10">
                         {/* Image Manager */}
                         <div className="w-full md:w-48 shrink-0 flex flex-col gap-4">
                             <label
@@ -457,10 +471,21 @@ export function BusinessView() {
                     <div className="space-y-10 pb-6">
                         <div>
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Primary Brand Color</h3>
-                            <div className="flex items-center gap-5 bg-white p-3 pl-6 rounded-2xl w-fit border border-slate-100 shadow-sm">
-                                <span className="font-black text-sm text-slate-900 uppercase tracking-tighter">{state.accentColor || "#10B981"}</span>
-                                <div className="relative w-10 h-10 rounded-xl shadow-lg border border-slate-200 overflow-hidden cursor-pointer shrink-0 inline-flex">
-                                    <input type="color" className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" value={state.accentColor || "#10b981"} onChange={(e) => { updateState("accentColor", e.target.value); updateState("themePreset", "custom"); }} />
+                            <div className="flex items-center gap-5 bg-white dark:bg-slate-900 p-3 pl-6 rounded-2xl w-full sm:w-fit border border-slate-100 dark:border-slate-800 shadow-sm">
+                                <span className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tighter">{state.accentColor || "#10B981"}</span>
+                                <div 
+                                    className="relative w-10 h-10 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden cursor-pointer shrink-0 inline-flex"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <input 
+                                        type="color" 
+                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer bg-transparent border-none" 
+                                        value={state.accentColor || "#10b981"} 
+                                        onChange={(e) => { 
+                                            updateState("accentColor", e.target.value); 
+                                            updateState("themePreset", "custom"); 
+                                        }} 
+                                    />
                                 </div>
                             </div>
                         </div>

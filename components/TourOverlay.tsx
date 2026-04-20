@@ -15,7 +15,12 @@ const TOUR_STEP_META = [
   {
     title: "Brand Identity",
     desc: "Define your store name and connect your WhatsApp number.",
-    selector: "#biz-name",
+    selector: "[data-tour-biz-name]",
+  },
+  {
+    title: "WhatsApp Channel",
+    desc: "Connect your business number so customers can reach you directly.",
+    selector: "[data-tour-biz-phone]",
   },
   {
     title: "Inventory",
