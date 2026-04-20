@@ -41,21 +41,21 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "flex flex-col border-slate-200 bg-white/98 backdrop-blur-md transition-all duration-300 ease-in-out max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-14 max-lg:z-50 max-lg:w-[min(20rem,88vw)] max-lg:shadow-xl lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:border-r overflow-hidden",
+          "flex flex-col border-slate-200 bg-white transition-all duration-300 ease-in-out max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-0 max-lg:z-50 max-lg:w-72 max-lg:shadow-2xl lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:border-r overflow-hidden",
           mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
           isHovered ? "lg:w-64" : "lg:w-20"
         )}
       >
-        <div className="p-5 border-b border-slate-100 flex items-center gap-3 h-20 shrink-0 overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center gap-3 h-20 shrink-0 overflow-hidden bg-slate-50/50">
           <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg overflow-hidden shrink-0">
-             {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <span className="font-black text-xs uppercase italic">SL</span>}
+             {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <img src="/logo.png" className="w-6 h-6 object-contain" alt="SL" />}
           </div>
           <div className={cn("min-w-0 transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
             <span className="text-sm font-black tracking-tight text-slate-900 leading-tight block truncate uppercase italic">
               {state.bizName || "SwiftLink Pro"}
             </span>
             <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-500">
-              Command Center
+              Control Panel
             </span>
           </div>
         </div>
@@ -98,6 +98,7 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           </p>
           <button
             onClick={copyShopLink}
+            data-tour-copy-shop
             className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors group"
           >
             <LinkIcon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-500" />
@@ -106,10 +107,12 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           
           <button
             onClick={() => { setMobileOpen(false); startTour(); }}
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-black text-emerald-600 hover:bg-emerald-50 transition-colors group"
+            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-black text-slate-700 hover:bg-slate-50 transition-colors group"
           >
-            <HelpCircle className="w-4 h-4 shrink-0 text-emerald-500 animate-pulse" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>Support Guide</span>
+            <div className="w-5 h-5 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+               <HelpCircle className="w-3 h-3 text-white" />
+            </div>
+            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-black uppercase tracking-widest text-[10px]", isHovered ? "opacity-100" : "lg:opacity-0")}>Support Guide</span>
           </button>
         </div>
 

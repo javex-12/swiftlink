@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const TOUR_STEP_META = [
   {
@@ -50,27 +52,29 @@ export function TourOverlay() {
   const isLast = currentTourStep >= TOUR_STEP_META.length - 1;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[90%] max-w-sm">
-      <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] p-5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.2)] border border-emerald-100 reveal">
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[120] w-[95%] max-w-md">
+      <div className="bg-slate-900 rounded-[2.5rem] p-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 reveal relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+        
         <div>
-          <div className="flex items-center space-x-4 text-left">
-            <div className="w-12 h-12 flex-shrink-0 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center">
-              <i className="fas fa-magic" />
+          <div className="flex items-start space-x-5 text-left relative z-10">
+            <div className="w-14 h-14 flex-shrink-0 bg-white/5 rounded-[1.25rem] flex items-center justify-center border border-white/10 shadow-inner">
+              <img src="/logo.png" className="w-8 h-8 object-contain" alt="SwiftLink" />
             </div>
-            <div>
-              <h3 className="text-sm font-black text-slate-900">{meta.title}</h3>
-              <p className="text-slate-500 font-bold text-[10px] leading-relaxed">
+            <div className="pt-1">
+              <h3 className="text-base font-black text-white italic uppercase tracking-tight">{meta.title}</h3>
+              <p className="text-slate-400 font-bold text-xs leading-relaxed mt-1">
                 {meta.desc}
               </p>
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-50">
-          <div className="flex items-center space-x-3">
+        <div className="flex items-center justify-between mt-8 pt-5 border-t border-white/5 relative z-10">
+          <div className="flex items-center space-x-4">
             <button
               type="button"
               onClick={closeTour}
-              className="text-[9px] font-black text-slate-300 uppercase tracking-widest hover:text-slate-400"
+              className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-white transition-colors"
             >
               Skip
             </button>
@@ -78,19 +82,27 @@ export function TourOverlay() {
               type="button"
               onClick={prevTourStep}
               disabled={currentTourStep === 0 || isSimulating}
-              className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-emerald-500 disabled:opacity-20"
+              className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-emerald-400 disabled:opacity-20 transition-colors"
             >
-              Prev
+              Back
             </button>
           </div>
           <button
             type="button"
             onClick={nextTourStep}
             disabled={isSimulating}
-            className={`bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 active:scale-95 transition-all ${isSimulating ? "opacity-50" : ""}`}
+            className={`bg-emerald-500 text-white px-7 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 ${isSimulating ? "opacity-50 cursor-wait" : "hover:bg-emerald-400"}`}
           >
-            {isLast ? "Finish" : "Next Step"}
+            {isSimulating && <RefreshCw size={12} className="animate-spin" />}
+            {isLast ? "Launch Center" : "Continue"}
           </button>
+        </div>
+
+        {/* Progress Dots */}
+        <div className="flex justify-center gap-1.5 mt-6">
+           {TOUR_STEP_META.map((_, i) => (
+             <div key={i} className={cn("h-1 rounded-full transition-all duration-300", i === currentTourStep ? "w-6 bg-emerald-500" : "w-1.5 bg-white/10")} />
+           ))}
         </div>
       </div>
     </div>

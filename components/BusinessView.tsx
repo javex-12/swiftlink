@@ -211,6 +211,17 @@ export function BusinessView() {
                             />
                         </div>
                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">WhatsApp Number</label>
+                            <input
+                            type="tel"
+                            id="biz-phone"
+                            value={state.phone || ""}
+                            onChange={(e) => { updateState("phone", e.target.value); }}
+                            className="w-full bg-slate-50 rounded-2xl p-5 font-bold text-sm text-slate-600 outline-none border border-slate-100 focus:border-emerald-500 focus:bg-white transition-all shadow-inner"
+                            placeholder="+234..."
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Hero Tagline</label>
                             <input
                             type="text"
@@ -260,6 +271,7 @@ export function BusinessView() {
                 <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tight">Products</h2>
                 <button
                     type="button"
+                    data-tour-add-product
                     disabled={isSyncing}
                     onClick={onAddProduct}
                     className="text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-transform active:scale-95 flex items-center gap-3 disabled:opacity-50"

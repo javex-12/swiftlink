@@ -42,12 +42,12 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         
         {/* Unified Top Header */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center justify-between shadow-sm shrink-0">
+        <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex items-center justify-between shadow-sm shrink-0">
           <div className="flex items-center gap-4">
              <button
                type="button"
                onClick={() => setMobileOpen(true)}
-               className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
+               className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-lg"
              >
                <Menu className="h-5 w-5" />
              </button>

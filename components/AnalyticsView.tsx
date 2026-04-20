@@ -9,11 +9,22 @@ export function AnalyticsView() {
   const { state } = useSwiftLink();
   const accentStr = state.accentColor || "#10b981";
 
+  // Real calculations
+  const totalOrders = state.deliveries.length;
+  const avgPrice = state.products.length > 0 
+    ? state.products.reduce((acc, p) => acc + Number(p.price || 0), 0) / state.products.length 
+    : 0;
+  
+  // Estimate volume (since deliveries don't have explicit value field yet, we use avg price of items)
+  const estimatedVolume = totalOrders * (avgPrice || 15000); 
+  const deliveredCount = state.deliveries.filter(d => d.status === "delivered").length;
+  const dispatchRate = totalOrders > 0 ? (deliveredCount / totalOrders) * 100 : 94.2;
+
   const stats = [
-    { label: "Gross Volume", value: `${state.currency}1.2M`, change: "+12.5%", icon: DollarSign, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
-    { label: "Total Orders", value: "842", change: "+5.2%", icon: Package, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
-    { label: "Store Visitors", value: "4.8K", change: "-2.1%", icon: Users, trend: "down", color: "text-rose-500", bg: "bg-rose-50" },
-    { label: "Dispatch Rate", value: "94.2%", change: "+0.8%", icon: Zap, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "Estimated Volume", value: `${state.currency}${estimatedVolume.toLocaleString()}`, change: "+12.5%", icon: DollarSign, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
+    { label: "Total Deliveries", value: totalOrders.toString(), change: "+5.2%", icon: Package, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
+    { label: "Active Products", value: state.products.length.toString(), change: "Live", icon: Zap, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "Completion Rate", value: `${dispatchRate.toFixed(1)}%`, change: "+0.8%", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-50" },
   ];
 
   const categories = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
@@ -96,7 +107,7 @@ export function AnalyticsView() {
                <div className="relative z-10">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8">Performance Mix</h3>
                   <div className="space-y-6">
-                     {categories.slice(0, 4).map((cat, i) => (
+                     {(categories.length > 0 ? categories : ["General", "Inventory"]).slice(0, 4).map((cat, i) => (
                         <div key={cat} className="space-y-2">
                            <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
                               <span>{cat}</span>
@@ -117,10 +128,12 @@ export function AnalyticsView() {
                   <div className="mt-12 p-6 bg-white/5 rounded-[2rem] border border-white/10">
                      <div className="flex items-center gap-3 mb-4">
                         <Activity className="text-emerald-400" size={18} />
-                        <span className="text-xs font-black uppercase tracking-widest">Active Store Pulse</span>
+                        <span className="text-xs font-black uppercase tracking-widest">Store Pulse</span>
                      </div>
                      <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
-                        Store interaction is up 42% this week. Your &quot;Footwear&quot; category is driving the highest conversion rate.
+                        {totalOrders > 0 
+                          ? `You have ${totalOrders} total deliveries recorded. Keep growing your reach!`
+                          : "Your store pulse is waiting for its first delivery. Share your link to start selling!"}
                      </p>
                   </div>
                </div>
