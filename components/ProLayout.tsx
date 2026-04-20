@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { ProSidebar } from "./ProSidebar";
 import { Menu, X, Bell, User, Search, Zap, Package, MessageSquare, TrendingUp } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
@@ -122,9 +123,14 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
                 </AnimatePresence>
              </div>
 
-             <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-black shadow-lg overflow-hidden border-2 border-slate-100">
-                {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <User size={16} />}
-             </div>
+             <Link
+               href="/account"
+               className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-black shadow-lg overflow-hidden border-2 border-slate-100"
+               aria-label="Account"
+               title="Account"
+             >
+               {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <User size={16} />}
+             </Link>
           </div>
         </header>
 

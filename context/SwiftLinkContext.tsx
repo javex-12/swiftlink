@@ -17,6 +17,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
 import { getFirebase } from "@/lib/firebase-client";
@@ -78,6 +79,7 @@ type SwiftLinkContextValue = {
   copyShopLink: () => void;
   copyTrackingPortalLink: () => void;
   handleSignOut: () => void;
+  authSignOut: () => Promise<void>;
   emailSignIn: (e: string, p: string) => Promise<void>;
   emailSignUp: (e: string, p: string) => Promise<void>;
   addProduct: () => void;
@@ -682,6 +684,17 @@ export function SwiftLinkProvider({
     }
   }, []);
 
+  const authSignOut = useCallback(async () => {
+    const { auth } = getFirebase();
+    if (!auth) {
+      addToast("Auth not ready yet.", "error");
+      return;
+    }
+    await firebaseSignOut(auth);
+    addToast("Signed out.", "success");
+    router.push("/signup?mode=login");
+  }, [addToast, router]);
+
   const handleDispatchSubmit = useCallback(
     (form: {
       sender: string;
@@ -848,9 +861,13 @@ export function SwiftLinkProvider({
     (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
       if (!file) return;
       const { storage } = getFirebase();
-      if (!storage || !userRef.current) {
-          addToast("Storage not ready. Please log in again.", "error");
-          return;
+      if (!storage) {
+        addToast("Uploads unavailable (Firebase not configured).", "error");
+        return;
+      }
+      if (!userRef.current) {
+        addToast("Connecting… please wait a moment and try again.", "error");
+        return;
       }
 
       setIsSyncing(true);
@@ -1082,6 +1099,7 @@ export function SwiftLinkProvider({
     copyShopLink,
     copyTrackingPortalLink,
     handleSignOut,
+    authSignOut,
     emailSignIn,
     emailSignUp,
     addProduct,

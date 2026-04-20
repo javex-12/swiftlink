@@ -5,8 +5,8 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, updateProfile, sendEmailVerification, signOut
@@ -38,6 +38,7 @@ function GoogleIcon() {
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("signup");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +47,13 @@ export default function SignupPage() {
   const [step, setStep] = useState<"form" | "verify">("form");
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
+
+  // Allow deep-linking directly into login mode: /signup?mode=login
+  useEffect(() => {
+    const m = (searchParams.get("mode") || "").toLowerCase();
+    if (m === "login") setMode("login");
+    if (m === "signup") setMode("signup");
+  }, [searchParams]);
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));

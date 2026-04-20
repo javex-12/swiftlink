@@ -393,8 +393,8 @@ export function BusinessView() {
                             <label className="flex items-center cursor-pointer group/toggle">
                                 <div className="relative">
                                 <input type="checkbox" className="sr-only peer" checked={p.outOfStock || false} onChange={(e) => { updateProduct(p.id, "outOfStock", e.target.checked); }} />
-                                <div className="w-12 h-6.5 bg-slate-100 rounded-full transition-all peer-checked:bg-rose-500 border border-slate-200" />
-                                <div className="absolute left-[3px] top-[3px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-5.5 shadow-md" />
+                                <div className="w-12 h-7 bg-slate-100 rounded-full transition-all peer-checked:bg-rose-500 border border-slate-200" />
+                                <div className="absolute left-[3px] top-[3px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-6 shadow-md" />
                                 </div>
                                 <span className={cn("ml-4 text-[10px] font-black uppercase tracking-[0.25em] transition-colors", p.outOfStock ? "text-rose-500" : "text-slate-400 group-hover/toggle:text-slate-600")}>
                                 {p.outOfStock ? "Inventory Depleted" : "In Stock & Ready"}

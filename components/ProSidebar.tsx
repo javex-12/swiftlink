@@ -17,6 +17,7 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
     { href: "/business", label: "Store Editor", icon: Store },
     { href: "/dispatch", label: "Logistics", icon: Truck },
     { href: "/pro/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/account", label: "Account", icon: Settings },
   ];
 
   const isActive = (href: string) => {
