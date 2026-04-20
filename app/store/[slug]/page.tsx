@@ -7,24 +7,36 @@ import { doc, getDoc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase-client";
 import { normalizeStoreUsername } from "@/lib/utils";
 import { CustomerStorefront } from "@/components/CustomerStorefront";
+import { Loader2 } from "lucide-react";
 
-function StoreNotFound({ slug }: { slug: string }) {
+function StoreNotFound({ slug, error }: { slug: string, error?: string }) {
+  const isPermissionError = error?.toLowerCase().includes("permission") || error?.toLowerCase().includes("access");
+  
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white px-6">
+    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 px-6">
       <div className="max-w-md w-full text-center">
-        <div className="text-2xl font-black text-slate-900 tracking-tight">
-          Store not found
+        <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight italic uppercase">
+          {isPermissionError ? "Database Access Denied" : "Store not found"}
         </div>
-        <p className="mt-3 text-sm text-slate-500 font-medium">
-          We couldn&apos;t find a SwiftLink store with the handle{" "}
-          <span className="font-black text-slate-800">{slug}</span>.
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
+          {isPermissionError 
+            ? "Your Firebase Security Rules are blocking public access. Please set your rules to allow public reads."
+            : `We couldn't find a SwiftLink store with the handle "${slug}".`}
         </p>
-        <Link
-          href="/"
-          className="inline-flex mt-6 items-center justify-center rounded-2xl px-6 py-3 bg-slate-900 text-white font-black text-sm"
-        >
-          Back to SwiftLink
-        </Link>
+        <div className="flex flex-col gap-3 mt-8">
+            <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-2xl px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-[11px] uppercase tracking-widest shadow-xl"
+            >
+            Back to SwiftLink
+            </Link>
+            {isPermissionError && (
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 leading-relaxed">
+                    Fix: Firebase Console -&gt; Firestore -&gt; Rules -&gt; <br/>
+                    <code className="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded text-emerald-600">allow read: if true;</code>
+                </p>
+            )}
+        </div>
       </div>
     </main>
   );
@@ -32,8 +44,11 @@ function StoreNotFound({ slug }: { slug: string }) {
 
 function StoreResolving() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white">
-      <div className="text-slate-500 font-bold text-sm">Loading store…</div>
+    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
+      <div className="flex flex-col items-center gap-4">
+         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+         <div className="text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">Resolving Handle…</div>
+      </div>
     </main>
   );
 }
@@ -52,6 +67,7 @@ export default function StoreByHandlePage() {
   const [status, setStatus] = useState<"idle" | "resolving" | "not_found">(
     shopFromQuery ? "idle" : "resolving",
   );
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     if (shopFromQuery) return;
@@ -62,23 +78,30 @@ export default function StoreByHandlePage() {
     const { db } = getFirebase();
     if (!db) {
       setStatus("not_found");
+      setErrorMsg("Firebase not initialized");
       return;
     }
 
     let cancelled = false;
     setStatus("resolving");
     (async () => {
-      const snap = await getDoc(doc(db, "swiftlink_slugs", slug));
-      const shopId = snap.exists() ? (snap.data() as any)?.shopId : null;
-      if (cancelled) return;
-      if (shopId) {
-        router.replace(`/store/${slug}?shop=${encodeURIComponent(shopId)}`);
-        return;
+      try {
+        const snap = await getDoc(doc(db, "swiftlink_slugs", slug));
+        const shopId = snap.exists() ? (snap.data() as any)?.shopId : null;
+        if (cancelled) return;
+        if (shopId) {
+          router.replace(`/store/${slug}?shop=${encodeURIComponent(shopId)}`);
+          return;
+        }
+        setStatus("not_found");
+      } catch (err: any) {
+        console.error("Slug Resolution Error:", err);
+        if (!cancelled) {
+            setStatus("not_found");
+            setErrorMsg(err.message || "Access Denied");
+        }
       }
-      setStatus("not_found");
-    })().catch(() => {
-      if (!cancelled) setStatus("not_found");
-    });
+    })();
 
     return () => {
       cancelled = true;
@@ -86,6 +109,6 @@ export default function StoreByHandlePage() {
   }, [router, shopFromQuery, slug]);
 
   if (shopFromQuery) return <CustomerStorefront shopId={shopFromQuery} />;
-  if (status === "not_found") return <StoreNotFound slug={slug || "unknown"} />;
+  if (status === "not_found") return <StoreNotFound slug={slug || "unknown"} error={errorMsg} />;
   return <StoreResolving />;
 }

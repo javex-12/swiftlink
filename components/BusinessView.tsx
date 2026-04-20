@@ -442,7 +442,7 @@ export function BusinessView() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-6">
                 {/* Themes */}
                 <Accordion id="themes" title="Theme Engine" subtitle="Instant Brand Transformation" icon={Sparkles}>
-                    <div className="grid grid-cols-2 gap-4 pb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
                         {[
                             { id: "fresh", name: "Fresh Emerald", accent: "#10b981", bg: "white", preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff" },
                             { id: "bold", name: "Midnight Gold", accent: "#f59e0b", bg: "#1e293b", preview: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba" },
@@ -453,24 +453,24 @@ export function BusinessView() {
                                 key={t.id}
                                 onClick={() => applyThemePreset(t.id as any)}
                                 className={cn(
-                                    "relative rounded-[2.5rem] overflow-hidden border-4 transition-all hover:scale-105 group text-left",
-                                    state.themePreset === t.id ? "border-slate-900 shadow-2xl z-10" : "border-white shadow-sm"
+                                    "relative rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border-4 transition-all hover:scale-105 group text-left",
+                                    state.themePreset === t.id ? "border-slate-900 dark:border-white shadow-2xl z-10" : "border-white dark:border-slate-800 shadow-sm"
                                 )}
                             >
-                                <div className="aspect-[4/3] relative">
+                                <div className="aspect-video sm:aspect-[4/3] relative">
                                     <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${t.preview})` }} />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
-                                    <div className="absolute bottom-5 left-5 text-white font-black text-[10px] uppercase tracking-widest">{t.name}</div>
-                                    <div className="absolute top-5 right-5 w-5 h-5 rounded-full border-2 border-white/50 shadow-sm" style={{ backgroundColor: t.accent }} />
+                                    <div className="absolute bottom-4 left-4 text-white font-black text-[10px] uppercase tracking-widest">{t.name}</div>
+                                    <div className="absolute top-4 right-4 w-4 h-4 rounded-full border-2 border-white/50 shadow-sm" style={{ backgroundColor: t.accent }} />
                                 </div>
                             </button>
                         ))}
                     </div>
                 </Accordion>
                 <Accordion id="visual" title="Design System" subtitle="Micro-Customization" icon={Palette}>
-                    <div className="space-y-10 pb-6">
+                    <div className="space-y-8 md:space-y-10 pb-6">
                         <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Primary Brand Color</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Primary Brand Color</h3>
                             <div className="flex items-center gap-5 bg-white dark:bg-slate-900 p-3 pl-6 rounded-2xl w-full sm:w-fit border border-slate-100 dark:border-slate-800 shadow-sm">
                                 <span className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tighter">{state.accentColor || "#10B981"}</span>
                                 <div 
@@ -479,7 +479,7 @@ export function BusinessView() {
                                 >
                                     <input 
                                         type="color" 
-                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer bg-transparent border-none" 
+                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer bg-transparent border-none outline-none" 
                                         value={state.accentColor || "#10b981"} 
                                         onChange={(e) => { 
                                             updateState("accentColor", e.target.value); 
@@ -489,19 +489,24 @@ export function BusinessView() {
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">Grid Configuration</h3>
-                            <PillSelector 
-                                options={[{label: "Standard Grid", value: "grid"}, {label: "Vertical List", value: "list"}]}
-                                value={state.layoutStyle || "grid"}
-                                onChange={(v) => { updateState("layoutStyle", v); updateState("themePreset", "custom"); }}
-                                className="mb-4"
-                            />
-                            <PillSelector 
-                                options={[{label: "Sharp Corners", value: "square"}, {label: "Curved Soft", value: "rounded"}]}
-                                value={state.imageShape || "square"}
-                                onChange={(v) => { updateState("imageShape", v); updateState("themePreset", "custom"); }}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Grid Configuration</h3>
+                                <PillSelector 
+                                    options={[{label: "Standard Grid", value: "grid"}, {label: "Vertical List", value: "list"}]}
+                                    value={state.layoutStyle || "grid"}
+                                    onChange={(v) => { updateState("layoutStyle", v); updateState("themePreset", "custom"); }}
+                                    className="mb-4"
+                                />
+                            </div>
+                            <div>
+                                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Image Styling</h3>
+                                <PillSelector 
+                                    options={[{label: "Sharp Corners", value: "square"}, {label: "Curved Soft", value: "rounded"}]}
+                                    value={state.imageShape || "square"}
+                                    onChange={(v) => { updateState("imageShape", v); updateState("themePreset", "custom"); }}
+                                />
+                            </div>
                         </div>
                     </div>
                 </Accordion>
