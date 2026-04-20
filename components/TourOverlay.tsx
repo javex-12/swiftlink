@@ -1,34 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowRight, ArrowLeft, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TOUR_STEP_META = [
   {
-    title: "Welcome",
-    desc: "SwiftLink Pro is your Command Center. We'll show you how it works.",
+    title: "Welcome to SwiftLink",
+    desc: "Your command center for WhatsApp commerce. Let's get you set up in seconds.",
+    selector: null,
   },
   {
-    title: "1. Business identity",
-    desc: "First, give your store a name and a WhatsApp number.",
+    title: "Brand Identity",
+    desc: "Define your store name and connect your WhatsApp number.",
+    selector: "#biz-name",
   },
   {
-    title: "2. Add products",
-    desc: "Add items to your inventory so customers can shop.",
+    title: "Inventory",
+    desc: "Add your first product to start taking orders.",
+    selector: "[data-tour-add-product]",
   },
   {
-    title: "3. Share store link",
-    desc: "Tap the link icon to copy your shop link. Click it now!",
+    title: "Share & Earn",
+    desc: "Copy your unique store link and share it on your WhatsApp Status.",
+    selector: "[data-tour-copy-shop]",
   },
   {
-    title: "4. Create a dispatch",
-    desc: "Sold something? Fill the dispatch form instantly.",
-  },
-  {
-    title: "All set",
-    desc: "You're ready to build and share your storefront.",
+    title: "Logistics",
+    desc: "Manage your deliveries and track dispatches in real-time.",
+    selector: "#disp-name", // Placeholder for dispatch view
   },
 ];
 
@@ -42,69 +44,115 @@ export function TourOverlay() {
     closeTour,
   } = useSwiftLink();
 
+  const [spotlight, setSpotlight] = useState<{ top: number, left: number, width: number, height: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const meta = useMemo(
     () => TOUR_STEP_META[currentTourStep],
     [currentTourStep],
   );
+
+  useEffect(() => {
+    if (!tourOpen || !meta?.selector) {
+      setSpotlight(null);
+      return;
+    }
+
+    const updateSpotlight = () => {
+      const el = document.querySelector(meta.selector!);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const rect = el.getBoundingClientRect();
+        setSpotlight({
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height
+        });
+      }
+    };
+
+    const timer = setTimeout(updateSpotlight, 600);
+    window.addEventListener('resize', updateSpotlight);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSpotlight);
+    };
+  }, [tourOpen, currentTourStep, meta]);
 
   if (!tourOpen || !meta) return null;
 
   const isLast = currentTourStep >= TOUR_STEP_META.length - 1;
 
   return (
-    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[120] w-[95%] max-w-md">
-      <div className="bg-slate-900 rounded-[2.5rem] p-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 reveal relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
-        
-        <div>
-          <div className="flex items-start space-x-5 text-left relative z-10">
-            <div className="w-14 h-14 flex-shrink-0 bg-white/5 rounded-[1.25rem] flex items-center justify-center border border-white/10 shadow-inner">
-              <img src="/logo.png" className="w-8 h-8 object-contain" alt="SwiftLink" />
-            </div>
-            <div className="pt-1">
-              <h3 className="text-base font-black text-white italic uppercase tracking-tight">{meta.title}</h3>
-              <p className="text-slate-400 font-bold text-xs leading-relaxed mt-1">
-                {meta.desc}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-8 pt-5 border-t border-white/5 relative z-10">
-          <div className="flex items-center space-x-4">
-            <button
-              type="button"
-              onClick={closeTour}
-              className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-white transition-colors"
-            >
-              Skip
-            </button>
-            <button
-              type="button"
-              onClick={prevTourStep}
-              disabled={currentTourStep === 0 || isSimulating}
-              className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-emerald-400 disabled:opacity-20 transition-colors"
-            >
-              Back
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={nextTourStep}
-            disabled={isSimulating}
-            className={`bg-emerald-500 text-white px-7 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 ${isSimulating ? "opacity-50 cursor-wait" : "hover:bg-emerald-400"}`}
-          >
-            {isSimulating && <RefreshCw size={12} className="animate-spin" />}
-            {isLast ? "Launch Center" : "Continue"}
-          </button>
-        </div>
-
-        {/* Progress Dots */}
-        <div className="flex justify-center gap-1.5 mt-6">
-           {TOUR_STEP_META.map((_, i) => (
-             <div key={i} className={cn("h-1 rounded-full transition-all duration-300", i === currentTourStep ? "w-6 bg-emerald-500" : "w-1.5 bg-white/10")} />
-           ))}
-        </div>
+    <>
+      {/* Dimmed Backdrop with Spotlight Hole */}
+      <div className="fixed inset-0 z-[110] pointer-events-none overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] transition-all duration-500"
+          style={{
+            clipPath: spotlight 
+              ? `polygon(0% 0%, 0% 100%, ${spotlight.left}px 100%, ${spotlight.left}px ${spotlight.top}px, ${spotlight.left + spotlight.width}px ${spotlight.top}px, ${spotlight.left + spotlight.width}px ${spotlight.top + spotlight.height}px, ${spotlight.left}px ${spotlight.top + spotlight.height}px, ${spotlight.left}px 100%, 100% 100%, 100% 0%)`
+              : 'none'
+          }}
+        />
       </div>
-    </div>
+
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 pointer-events-none">
+        <motion.div 
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className={cn(
+            "bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] border border-white/10 w-full max-w-sm pointer-events-auto relative overflow-hidden",
+            spotlight ? "mt-[30vh]" : "" // Shift down if spotlighting
+          )}
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+               <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                  <Sparkles className="text-white" size={20} />
+               </div>
+               <button onClick={closeTour} className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                  <X size={20} />
+               </button>
+            </div>
+
+            <h3 className="text-xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-2">
+              {meta.title}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-xs leading-relaxed">
+              {meta.desc}
+            </p>
+
+            <div className="flex items-center justify-between mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
+               <div className="flex gap-4">
+                  <button
+                    disabled={currentTourStep === 0}
+                    onClick={prevTourStep}
+                    className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all disabled:opacity-30"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="flex items-center gap-1.5 px-2">
+                     {TOUR_STEP_META.map((_, i) => (
+                       <div key={i} className={cn("h-1 rounded-full transition-all duration-300", i === currentTourStep ? "w-6 bg-emerald-500" : "w-1.5 bg-slate-200 dark:bg-slate-800")} />
+                     ))}
+                  </div>
+               </div>
+               
+               <button
+                 onClick={nextTourStep}
+                 className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-3"
+               >
+                 {isLast ? "Ready to Launch" : "Continue"}
+                 <ArrowRight size={14} />
+               </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }

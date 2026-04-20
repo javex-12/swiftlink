@@ -103,6 +103,8 @@ type SwiftLinkContextValue = {
   startLocationTracking: () => void;
   isSyncing: boolean;
   toasts: any[];
+  theme: "light" | "dark";
+  toggleTheme: () => void;
   addToast: (msg: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   addSystemNotification: (title: string, message: string, type?: "order" | "message" | "trend") => void;
@@ -146,6 +148,29 @@ export function SwiftLinkProvider({
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("swiftlink_theme") as "light" | "dark";
+    if (saved) {
+      setTheme(saved);
+      if (saved === "dark") document.documentElement.classList.add("dark");
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+       // Optional: follow system preference
+       // setTheme("dark");
+       // document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      localStorage.setItem("swiftlink_theme", next);
+      if (next === "dark") document.documentElement.classList.add("dark");
+      else document.documentElement.classList.remove("dark");
+      return next;
+    });
+  }, []);
 
   const addToast = useCallback((message: string, type: ToastType = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -1119,6 +1144,8 @@ export function SwiftLinkProvider({
     startLocationTracking,
     isSyncing,
     toasts,
+    theme,
+    toggleTheme,
     addToast,
     removeToast,
     addSystemNotification,
