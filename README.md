@@ -33,7 +33,7 @@ Open `http://localhost:3000`.
 
 ## Environment variables
 
-Create `swiftlink/.env.local`:
+Copy `swiftlink/.env.example` → `swiftlink/.env.local` and fill in values from Firebase Console:
 
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=...
@@ -43,6 +43,8 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 ```
+
+If these variables are missing, Firebase will not initialize and the app will run in a limited (non-synced) mode.
 
 ## Firebase data model (important)
 

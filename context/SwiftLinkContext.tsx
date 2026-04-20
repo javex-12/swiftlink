@@ -479,7 +479,7 @@ export function SwiftLinkProvider({
   const tourSteps: TourStep[] = useMemo(
     () => [
       {
-        title: "Welcome Boss! 🚀",
+        title: "Welcome",
         desc: "SwiftLink Pro is your Command Center. We'll show you how it works.",
         view: "launcher",
         action: async () => {
@@ -487,7 +487,7 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "1. Business Identity 🏗️",
+        title: "1. Business identity",
         desc: "First, give your store a name and a WhatsApp number.",
         view: "business",
         action: async () => {
@@ -506,7 +506,7 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "2. Adding Products 🛍️",
+        title: "2. Add products",
         desc: "Add items to your inventory so customers can shop.",
         view: "business",
         action: async () => {
@@ -532,7 +532,7 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "3. Share Store Link 🔗",
+        title: "3. Share store link",
         desc: "Tap the link icon to copy your shop link. Click it now!",
         view: "business",
         action: async () => {
@@ -544,7 +544,7 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "4. Dispatch Item 🚚",
+        title: "4. Create a dispatch",
         desc: "Sold something? Fill the dispatch form instantly.",
         view: "dispatch",
         action: async () => {
@@ -562,13 +562,13 @@ export function SwiftLinkProvider({
             "disp-ref",
           ) as HTMLInputElement | null;
           await h.moveHandTo(cN);
-          await h.typeEffectOnInput(cN, "Ada Obi");
+          await h.typeEffectOnInput(cN, "Customer Name");
           await h.moveHandTo(cP);
-          await h.typeEffectOnInput(cP, "08012345678");
+          await h.typeEffectOnInput(cP, "08000000000");
           await h.moveHandTo(log);
-          await h.typeEffectOnInput(log, "GIG Logistics");
+          await h.typeEffectOnInput(log, "Dispatch Company");
           await h.moveHandTo(refEl);
-          await h.typeEffectOnInput(refEl, "WAY-9901");
+          await h.typeEffectOnInput(refEl, "REF-0001");
           const submit = document.querySelector(
             "[data-dispatch-submit]",
           ) as HTMLElement | null;
@@ -576,8 +576,8 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "You're a Pro! ✅",
-        desc: "Focus on your sales, we'll handle the rest. Go win!",
+        title: "All set",
+        desc: "You're ready to build and share your storefront.",
         view: "launcher",
         action: async () => {
           setHandHidden(true);

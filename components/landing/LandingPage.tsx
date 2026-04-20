@@ -476,7 +476,7 @@ const Pricing = () => {
               </ul>
 
               <Link
-                href="/signup"
+                href={`/signup?plan=${encodeURIComponent(plan.name.toLowerCase().includes("free") ? "free" : plan.name.toLowerCase().includes("business") ? "business" : "pro")}`}
                 className={cn(
                   "inline-flex items-center justify-center w-full rounded-2xl px-5 py-3.5 text-sm font-black transition-all active:scale-95",
                   plan.featured

@@ -2,14 +2,23 @@
 
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, ShoppingCart, Heart, Plus, Home, X, ChevronLeft, MapPin, Package, MessageSquare, CheckCircle2, TrendingUp, Zap, LogIn, Loader2, ChevronRight, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { doc, onSnapshot } from "firebase/firestore";
+import { getFirebase } from "@/lib/firebase-client";
+import type { ShopState } from "@/lib/types";
 
 type ViewState = "store" | "search";
 
-export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean } = {}) {
+export function CustomerStorefront({
+  isPreview = false,
+  shopId,
+}: {
+  isPreview?: boolean;
+  shopId?: string;
+} = {}) {
   const router = useRouter();
   const { 
       state, 
@@ -19,6 +28,34 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
       user, 
       startLocationTracking,
   } = useSwiftLink();
+
+  const [publicState, setPublicState] = useState<ShopState | null>(null);
+  const effectiveState = shopId ? publicState : state;
+
+  useEffect(() => {
+    if (!shopId) {
+      setPublicState(null);
+      return;
+    }
+    const { db } = getFirebase();
+    if (!db) {
+      setPublicState(null);
+      return;
+    }
+    const unsub = onSnapshot(
+      doc(db, "swiftlink_stores", shopId),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as Partial<ShopState>;
+          setPublicState((prev) => ({ ...(prev || ({} as ShopState)), ...(data as ShopState), id: shopId }));
+        } else {
+          setPublicState(null);
+        }
+      },
+      () => setPublicState(null),
+    );
+    return () => unsub();
+  }, [shopId]);
   
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeView, setActiveView] = useState<ViewState>("store");
@@ -28,35 +65,41 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
 
   // Theme helper classes
   const themeClasses = useMemo(() => {
+    if (!effectiveState) return { fontClass: "font-sans", shapeClass: "rounded-[2.5rem]", btnClass: "rounded-[1.2rem]" };
     const fontClass = 
-        state.fontStyle === "bold" ? "font-black tracking-tight" : 
-        state.fontStyle === "playful" ? "italic" : 
-        state.fontStyle === "classic" ? "font-medium" : "font-sans";
+        effectiveState.fontStyle === "bold" ? "font-black tracking-tight" : 
+        effectiveState.fontStyle === "playful" ? "italic" : 
+        effectiveState.fontStyle === "classic" ? "font-medium" : "font-sans";
     
     const shapeClass = 
-        state.imageShape === "circle" ? "rounded-full" : 
-        state.imageShape === "square" ? "rounded-none" : "rounded-[2.5rem]";
+        effectiveState.imageShape === "circle" ? "rounded-full" : 
+        effectiveState.imageShape === "square" ? "rounded-none" : "rounded-[2.5rem]";
         
     const btnClass = 
-        state.buttonRadius === "pill" ? "rounded-full" : 
-        state.buttonRadius === "sharp" ? "rounded-none" : "rounded-[1.2rem]";
+        effectiveState.buttonRadius === "pill" ? "rounded-full" : 
+        effectiveState.buttonRadius === "sharp" ? "rounded-none" : "rounded-[1.2rem]";
 
     return { fontClass, shapeClass, btnClass };
-  }, [state.fontStyle, state.imageShape, state.buttonRadius]);
+  }, [effectiveState]);
 
   const categories: string[] = useMemo(() => {
-      const custom = state.categories || [];
+      if (!effectiveState) return ["All"];
+      const custom = effectiveState.categories || [];
       if (custom.length > 0) return ["All", ...custom];
-      const collected = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
+      const collected = Array.from(new Set((effectiveState.products || []).map(p => p.category).filter(Boolean)));
       return ["All", ...(collected as string[])];
-  }, [state.categories, state.products]);
+  }, [effectiveState]);
 
-  const accentStr = state.accentColor || "#10b981";
-  const storeAcceptingOrders = state.isLive !== false;
-  const canAddToCart = (outOfStock: boolean) => storeAcceptingOrders && !(outOfStock && state.outOfStockDisplay !== "hide");
+  const accentStr = (effectiveState?.accentColor || "#10b981") as string;
+  const storeAcceptingOrders = effectiveState ? effectiveState.isLive !== false : false;
+  const canAddToCart = (outOfStock: boolean) => {
+    const s = effectiveState;
+    if (!s) return false;
+    return storeAcceptingOrders && !(outOfStock && s.outOfStockDisplay !== "hide");
+  };
 
-  const visibleProducts = state.products.filter(p => {
-      if (state.outOfStockDisplay === "hide" && p.outOfStock) return false;
+  const visibleProducts = (effectiveState?.products || []).filter(p => {
+      if (effectiveState?.outOfStockDisplay === "hide" && p.outOfStock) return false;
       if (activeCategory !== "All" && p.category !== activeCategory) return false;
       if (activeView === "search" && searchQuery) {
           return p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -65,13 +108,22 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
   });
 
   const goToCart = () => {
-      router.push(`/cart?shop=${state.id}`);
+      const sid = shopId || effectiveState?.id;
+      router.push(`/cart?shop=${encodeURIComponent(String(sid || ""))}`);
   };
+
+  if (shopId && !effectiveState) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-slate-500 font-bold text-sm">Loading store…</div>
+      </main>
+    );
+  }
 
   return (
     <div className={cn(
         "w-full relative flex flex-col transition-colors duration-500",
-        state.bgStyle === "light-tint" ? "bg-slate-50" : state.bgStyle === "pattern" ? "bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]" : "bg-[#f8fafc]",
+        effectiveState?.bgStyle === "light-tint" ? "bg-slate-50" : effectiveState?.bgStyle === "pattern" ? "bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]" : "bg-[#f8fafc]",
         themeClasses.fontClass,
         isPreview ? "min-h-full" : "min-h-screen"
     )} id={isPreview ? undefined : "customer-view"}>
@@ -93,14 +145,14 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
          <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
              <div className="flex items-center gap-4">
                  <div className="w-12 h-12 rounded-[1.2rem] flex items-center justify-center shrink-0 shadow-lg shadow-slate-200 overflow-hidden ring-1 ring-slate-100" style={{ backgroundColor: accentStr }}>
-                     {state.bizImage ? 
-                         <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> :
+                     {effectiveState?.bizImage ? 
+                         <img src={effectiveState.bizImage} className="w-full h-full object-cover" alt="" /> :
                          <Zap className="text-white" size={24} fill="white" />
                      }
                  </div>
                  <div className="flex flex-col min-w-0 text-left">
                      <span className="font-black text-slate-900 text-lg md:text-xl leading-none tracking-tighter truncate uppercase italic">
-                         {state.bizName || "My Store"}
+                         {effectiveState?.bizName || "My Store"}
                      </span>
                      <div className="flex items-center gap-2 mt-1.5 min-w-0">
                          <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse")} />
@@ -151,28 +203,28 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
            <div className="px-5 py-6 md:px-10 md:py-10 w-full animate-fade-in-up">
                <div className={cn(
                    "w-full relative rounded-[3rem] overflow-hidden shadow-2xl mb-12 group border-4 border-white",
-                   state.heroStyle === "minimal" ? "aspect-[4/1] md:aspect-[6/1]" : state.heroStyle === "split" ? "aspect-[4/5] md:aspect-[2/1]" : "aspect-[4/3] md:aspect-[3/1]"
+                   effectiveState?.heroStyle === "minimal" ? "aspect-[4/1] md:aspect-[6/1]" : effectiveState?.heroStyle === "split" ? "aspect-[4/5] md:aspect-[2/1]" : "aspect-[4/3] md:aspect-[3/1]"
                )}>
                    <img 
-                       src={state.bizImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"} 
+                       src={effectiveState?.bizImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"} 
                        alt="Banner" 
                        className={cn(
                            "absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110",
-                           state.heroStyle === "split" ? "md:w-1/2 md:translate-x-full" : ""
+                           effectiveState?.heroStyle === "split" ? "md:w-1/2 md:translate-x-full" : ""
                        )}
                    />
                    <div className={cn(
                        "absolute inset-0 p-8 md:p-16 flex flex-col justify-center items-start text-left",
-                       state.heroStyle === "split" ? "bg-slate-900 md:w-1/2" : "bg-gradient-to-r from-black/90 via-black/40 to-transparent"
+                       effectiveState?.heroStyle === "split" ? "bg-slate-900 md:w-1/2" : "bg-gradient-to-r from-black/90 via-black/40 to-transparent"
                    )}>
                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-6">
                           <div className="h-0.5 w-8 bg-emerald-500" />
-                          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-emerald-400 drop-shadow">{state.announcement || "QUALITY GUARANTEED"}</span>
+                          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-emerald-400 drop-shadow">{effectiveState?.announcement || "QUALITY GUARANTEED"}</span>
                        </motion.div>
                        <motion.h2 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                           className={cn("font-black text-white leading-[1] mb-8 drop-shadow-2xl uppercase italic tracking-tighter",
-                              state.heroStyle === "minimal" ? "text-2xl md:text-4xl max-w-xl" : "text-4xl md:text-7xl max-w-[300px] md:max-w-2xl")}>
-                           {state.tagline || "Redefining Your Lifestyle."}
+                              effectiveState?.heroStyle === "minimal" ? "text-2xl md:text-4xl max-w-xl" : "text-4xl md:text-7xl max-w-[300px] md:max-w-2xl")}>
+                           {effectiveState?.tagline || "Redefining Your Lifestyle."}
                        </motion.h2>
                        <button onClick={() => { const el = document.getElementById('product-grid'); el?.scrollIntoView({ behavior: 'smooth' }); }}
                          className={cn("px-8 py-4 md:px-12 md:py-5 flex items-center gap-4 text-[10px] md:text-xs font-black uppercase tracking-widest text-white shadow-2xl active:scale-95 transition-all hover:brightness-110 group/btn", themeClasses.btnClass)} style={{ backgroundColor: accentStr }}>
@@ -181,27 +233,27 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                    </div>
                </div>
 
-               <div id="product-grid" className={cn(state.layoutStyle === "list" ? "flex flex-col gap-6" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8")}>
+               <div id="product-grid" className={cn(effectiveState?.layoutStyle === "list" ? "flex flex-col gap-6" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8")}>
                    {visibleProducts.map((p, i) => (
                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={p.id} 
                           onClick={() => { setSelectedProduct(p); setCurrentImgIndex(0); }} 
                           className={cn("bg-white shadow-sm border border-slate-100 flex relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer group hover:shadow-2xl hover:border-emerald-500/20",
-                              state.layoutStyle === "list" ? "flex-row items-center p-4 gap-6 rounded-[2rem]" : "flex-col " + themeClasses.shapeClass)}>
+                              effectiveState?.layoutStyle === "list" ? "flex-row items-center p-4 gap-6 rounded-[2rem]" : "flex-col " + themeClasses.shapeClass)}>
                            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                                {p.badge && <div className="bg-white/95 backdrop-blur-md text-slate-900 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg border border-slate-100">{p.badge}</div>}
                                {p.outOfStock && <div className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg">Sold out</div>}
                            </div>
-                           <div className={cn("relative overflow-hidden bg-slate-50", state.layoutStyle === "list" ? "w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-2xl" : "w-full aspect-[4/5] border-b border-slate-50")}>
+                           <div className={cn("relative overflow-hidden bg-slate-50", effectiveState?.layoutStyle === "list" ? "w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-2xl" : "w-full aspect-[4/5] border-b border-slate-50")}>
                                <img src={p.image} alt="" className={cn("w-full h-full object-cover transition-transform duration-1000 group-hover:scale-115", p.outOfStock ? "grayscale opacity-50" : "")} />
                            </div>
-                           <div className={cn("flex flex-col flex-1 bg-white relative text-left", state.layoutStyle === "list" ? "p-0" : "p-5 md:p-6")}>
+                           <div className={cn("flex flex-col flex-1 bg-white relative text-left", effectiveState?.layoutStyle === "list" ? "p-0" : "p-5 md:p-6")}>
                                <h3 className="font-black text-sm md:text-lg text-slate-900 mb-1 leading-tight line-clamp-1 uppercase italic tracking-tight">{p.name}</h3>
                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-6">{p.category || "General"}</p>
                                <div className="mt-auto flex items-center justify-between gap-4">
-                                   <span className="font-black text-lg md:text-2xl tracking-tighter text-slate-900 italic">{state.currency}{Number(p.price).toLocaleString()}</span>
+                                   <span className="font-black text-lg md:text-2xl tracking-tighter text-slate-900 italic">{effectiveState?.currency}{Number(p.price).toLocaleString()}</span>
                                    <button onClick={(e) => { e.stopPropagation(); if (!canAddToCart(p.outOfStock)) return; updateCart(p.id, 1); }}
                                        disabled={!canAddToCart(p.outOfStock)}
-                                       className={cn("flex items-center justify-center transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 shadow-xl", state.layoutStyle === "list" ? "w-10 h-10" : "w-12 h-12", themeClasses.btnClass, cart[p.id] ? "bg-emerald-500 text-white" : "bg-slate-900 text-white")}>
+                                       className={cn("flex items-center justify-center transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 shadow-xl", effectiveState?.layoutStyle === "list" ? "w-10 h-10" : "w-12 h-12", themeClasses.btnClass, cart[p.id] ? "bg-emerald-500 text-white" : "bg-slate-900 text-white")}>
                                        {cart[p.id] ? <CheckCircle2 size={20} strokeWidth={3} /> : <Plus size={20} strokeWidth={3} />}
                                    </button>
                                </div>
@@ -250,7 +302,7 @@ export function CustomerStorefront({ isPreview = false }: { isPreview?: boolean 
                           <div className="mb-10">
                              <span className="text-[10px] md:text-xs font-black text-emerald-500 uppercase tracking-[0.3em] mb-4 block">{selectedProduct.category}</span>
                              <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1] tracking-tighter uppercase italic mb-6">{selectedProduct.name}</h2>
-                             <div className="text-3xl md:text-5xl font-black italic tracking-tighter" style={{ color: accentStr }}>{state.currency}{Number(selectedProduct.price).toLocaleString()}</div>
+                             <div className="text-3xl md:text-5xl font-black italic tracking-tighter" style={{ color: accentStr }}>{effectiveState?.currency}{Number(selectedProduct.price).toLocaleString()}</div>
                           </div>
                           <p className="text-slate-500 text-sm md:text-xl font-medium leading-relaxed italic mb-12">{selectedProduct.description || "Premium quality item."}</p>
                           <div className="mt-auto pt-8 border-t border-slate-50 flex gap-4 md:gap-6">

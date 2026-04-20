@@ -255,6 +255,7 @@ function Scene() {
 
 export default function ThreeScene() {
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     if (!mq) return;
@@ -264,13 +265,25 @@ export default function ThreeScene() {
     return () => mq.removeEventListener?.("change", onChange);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia?.("(max-width: 767px)");
+    if (!mq) return;
+    const onChange = () => setIsMobile(Boolean(mq.matches));
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
   return (
     <div className="w-full h-full min-h-[400px] relative">
       <Canvas
-        shadows
-        dpr={[1, 1.5]}
-        frameloop={reduceMotion ? "demand" : "always"}
-        gl={{ antialias: true, alpha: true }}
+        dpr={isMobile ? 1 : [1, 1.5]}
+        frameloop={reduceMotion || isMobile ? "demand" : "always"}
+        gl={{
+          antialias: false,
+          alpha: true,
+          powerPreference: isMobile ? "low-power" : "high-performance",
+        }}
         style={{ background: "transparent" }}
       >
         <PerspectiveCamera makeDefault position={[0, 0, 9]} fov={45} />
@@ -282,7 +295,6 @@ export default function ThreeScene() {
           angle={0.2}
           penumbra={1}
           intensity={2}
-          castShadow
           color="#ffffff"
         />
         <pointLight position={[-8, -6, -8]} intensity={1.5} color="#10b981" />
@@ -291,7 +303,7 @@ export default function ThreeScene() {
 
         <Suspense fallback={null}>
           <Scene />
-          <Environment preset="city" />
+          {!isMobile && <Environment preset="city" />}
         </Suspense>
       </Canvas>
     </div>

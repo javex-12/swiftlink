@@ -13,7 +13,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase-client";
-import { getPublicStoreSlug } from "@/lib/utils";
+import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 
 type Mode = "signup" | "login";
 
@@ -45,24 +45,31 @@ export default function SignupPage() {
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
   
-  const [form, setForm] = useState({ bizName: "", phone: "", email: "", password: "" });
+  const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
     setError(null);
   };
 
-  const saveUserStore = async (uid: string, extra?: { bizName?: string; phone?: string }) => {
+  const saveUserStore = async (
+    uid: string,
+    extra?: { bizName?: string; phone?: string; storeUsername?: string },
+  ) => {
     const { db } = getFirebase();
     if (!db) return;
     const ref = doc(db, "swiftlink_stores", uid);
     const snap = await getDoc(ref);
     const bizName = extra?.bizName || "";
-    const slug = getPublicStoreSlug({ storeUsername: undefined, bizName });
+    const storeUsername = extra?.storeUsername
+      ? normalizeStoreUsername(extra.storeUsername).slice(0, 32)
+      : "";
+    const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
     if (!snap.exists()) {
       await setDoc(ref, {
         id: uid,
         bizName,
+        storeUsername,
         phone: extra?.phone || "",
         products: [],
         deliveries: [],
@@ -73,6 +80,18 @@ export default function SignupPage() {
         createdAt: new Date().toISOString(),
         publishedStoreSlug: slug,
       });
+    } else {
+      // Keep store identity fields up-to-date.
+      await setDoc(
+        ref,
+        {
+          bizName: bizName || undefined,
+          phone: extra?.phone || undefined,
+          storeUsername: storeUsername || undefined,
+          publishedStoreSlug: slug || undefined,
+        },
+        { merge: true },
+      );
     }
     // Always ensure the public slug registry is present (for /store/[slug] lookups).
     if (slug) {
@@ -87,7 +106,16 @@ export default function SignupPage() {
     }
     if (typeof window !== "undefined") {
       const d = snap.exists() ? snap.data() : {};
-      localStorage.setItem("swiftlink_state", JSON.stringify({ ...d, id: uid, ...(extra || {}) }));
+      localStorage.setItem(
+        "swiftlink_state",
+        JSON.stringify({
+          ...d,
+          id: uid,
+          bizName: bizName || (d as any)?.bizName || "",
+          phone: extra?.phone || (d as any)?.phone || "",
+          storeUsername: storeUsername || (d as any)?.storeUsername || "",
+        }),
+      );
       localStorage.setItem("swiftlink_tour_done", "true");
     }
   };
@@ -100,7 +128,10 @@ export default function SignupPage() {
       const provider = new GoogleAuthProvider();
       // Removed provider.setCustomParameters({ prompt: "select_account" }) to fix "invalid_request"
       const result = await signInWithPopup(auth, provider);
-      await saveUserStore(result.user.uid, { bizName: result.user.displayName || "" });
+      await saveUserStore(result.user.uid, {
+        bizName: result.user.displayName || "",
+        storeUsername: form.storeUsername,
+      });
       router.push("/pro");
     } catch (e: unknown) {
       console.error(e);
@@ -161,7 +192,11 @@ export default function SignupPage() {
       
       const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await updateProfile(userCred.user, { displayName: form.bizName });
-      await saveUserStore(userCred.user.uid, { bizName: form.bizName, phone: formattedPhone });
+      await saveUserStore(userCred.user.uid, {
+        bizName: form.bizName,
+        phone: formattedPhone,
+        storeUsername: form.storeUsername,
+      });
       
       await sendEmailVerification(userCred.user);
       await signOut(auth);
@@ -294,6 +329,22 @@ export default function SignupPage() {
                           </div>
                         </div>
                         <div>
+                          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">Store Handle (optional)</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={form.storeUsername}
+                              onChange={setField("storeUsername")}
+                              placeholder="e.g. elitefashion"
+                              inputMode="url"
+                              className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 px-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm"
+                            />
+                          </div>
+                          <p className="text-[9px] text-slate-500 mt-1 ml-0.5 font-medium">
+                            This becomes your public link: <span className="text-slate-300 font-bold">/store/your-handle</span>
+                          </p>
+                        </div>
+                        <div>
                           <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">WhatsApp Number <span className="text-emerald-500">*</span></label>
                           <div className="flex gap-2 relative">
                             <div className="relative w-[110px] sm:w-28 flex-shrink-0">
@@ -346,7 +397,7 @@ export default function SignupPage() {
 
                 <div className="flex items-center justify-center gap-2 mt-5">
                   <Shield size={10} className="text-slate-600" />
-                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">256-bit encrypted · All devices supported</p>
+                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Secure sign-in · Works on all devices</p>
                 </div>
 
                 <p className="mt-3 text-center text-[10px] font-bold text-slate-600 hover:text-emerald-500 transition-colors">

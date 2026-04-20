@@ -25,7 +25,8 @@
     "three": "^0.183.2"
   },
   "overrides": {
-    "es-abstract": "1.24.1"
+    "es-abstract": "1.24.1",
+    "serialize-javascript": "7.0.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

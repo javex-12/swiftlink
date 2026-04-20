@@ -5,28 +5,28 @@ import { useSwiftLink } from "@/context/SwiftLinkContext";
 
 const TOUR_STEP_META = [
   {
-    title: "Welcome Boss! 🚀",
+    title: "Welcome",
     desc: "SwiftLink Pro is your Command Center. We'll show you how it works.",
   },
   {
-    title: "1. Business Identity 🏗️",
+    title: "1. Business identity",
     desc: "First, give your store a name and a WhatsApp number.",
   },
   {
-    title: "2. Adding Products 🛍️",
+    title: "2. Add products",
     desc: "Add items to your inventory so customers can shop.",
   },
   {
-    title: "3. Share Store Link 🔗",
+    title: "3. Share store link",
     desc: "Tap the link icon to copy your shop link. Click it now!",
   },
   {
-    title: "4. Dispatch Item 🚚",
+    title: "4. Create a dispatch",
     desc: "Sold something? Fill the dispatch form instantly.",
   },
   {
-    title: "You're a Pro! ✅",
-    desc: "Focus on your sales, we'll handle the rest. Go win!",
+    title: "All set",
+    desc: "You're ready to build and share your storefront.",
   },
 ];
 

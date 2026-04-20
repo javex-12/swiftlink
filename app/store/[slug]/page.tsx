@@ -85,7 +85,7 @@ export default function StoreByHandlePage() {
     };
   }, [router, shopFromQuery, slug]);
 
-  if (shopFromQuery) return <CustomerStorefront />;
+  if (shopFromQuery) return <CustomerStorefront shopId={shopFromQuery} />;
   if (status === "not_found") return <StoreNotFound slug={slug || "unknown"} />;
   return <StoreResolving />;
 }
