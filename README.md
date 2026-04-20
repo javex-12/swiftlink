@@ -1,70 +1,40 @@
-# SwiftLink Pro — Developer Handbook
+# SwiftLink Pro
 
-> **WhatsApp commerce platform** — Turn any WhatsApp number into a professional online store with real-time inventory, dispatch tracking, and live ordering.
+SwiftLink Pro is a **WhatsApp-first storefront**: merchants create a store, add products, share a public link, and customers place orders via WhatsApp.
 
----
+## Quick start
 
-## 🗂 Project Structure
-
-```
-swiftlink/
-├── app/
-│   ├── layout.tsx              # Root layout (fonts, Firebase provider, AppChrome)
-│   ├── page.tsx                # Landing page entry (HomeClient router)
-│   ├── globals.css             # Global styles + Tailwind config
-│   ├── signup/page.tsx         # Auth page (Google + email/password)
-│   ├── pro/page.tsx            # Business command center (owner view)
-│   ├── business/page.tsx       # Product & store management
-│   ├── dispatch/page.tsx       # Dispatch & delivery management
-│   └── [storeSlug]/page.tsx    # Customer storefront (public)
-│
-├── components/
-│   ├── landing/
-│   │   ├── LandingPage.tsx     # Marketing landing page
-│   │   ├── ThreeScene.tsx      # Three.js hero (rings, sparkles, mouse-reactive)
-│   │   ├── LivePreview.tsx     # Interactive phone mockup (5-screen iOS-style)
-│   │   └── AnimatedText.tsx    # Word-by-word text reveal
-│   ├── AppChrome.tsx           # Global shell (tour, loading overlay, cart)
-│   ├── BusinessView.tsx        # Owner: product/store settings
-│   ├── CustomerStorefront.tsx  # Customer: browse + cart + WhatsApp checkout
-│   ├── DispatchView.tsx        # Owner: dispatch form + delivery list
-│   └── ...
-│
-├── context/
-│   └── SwiftLinkContext.tsx    # Global state (Firebase, cart, tour, deliveries)
-│
-└── lib/
-    ├── firebase-client.ts      # Firebase singleton
-    ├── types.ts                # Shared TypeScript types
-    └── utils.ts                # Helpers
+```bash
+cd swiftlink
+npm install
+npm run dev
 ```
 
----
+Open `http://localhost:3000`.
 
-## ⚙️ Tech Stack
+## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS v3 |
-| Animations | Framer Motion v12 |
-| 3D Graphics | Three.js + @react-three/fiber + drei |
-| Backend / DB | Firebase Firestore (real-time) |
-| Auth | Firebase Auth (Google OAuth + Email/Password) |
+- **Next.js** (App Router) + **React**
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **Firebase**: Auth, Firestore, Storage
 
----
+## App routes (high level)
 
-## 🔑 Firebase Setup
+- **Landing**: `/`
+- **Auth**: `/signup`
+- **Owner** (command center): `/pro`
+- **Owner** (store editor): `/business`
+- **Owner** (dispatch): `/dispatch`
+- **Public storefront**: `/store/[handle]`
+- **Cart**: `/cart`
+- **Terms**: `/terms`
 
-Project: **`swiftlinkpro-ec095`**. Config in `lib/firebase-client.ts`.
+## Environment variables
 
-### ⚠️ Enable Google Sign-In (REQUIRED)
-1. [Firebase Console → Auth → Sign-in method](https://console.firebase.google.com/project/swiftlinkpro-ec095/authentication/providers)
-2. Click **Google** → **Enable**
-3. Add support email + production domain under **Authorized domains**
+Create `swiftlink/.env.local`:
 
-### Environment Variables (`.env.local`)
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
@@ -74,76 +44,77 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 ```
 
-### Recommended Firestore Rules
-```
+## Firebase data model (important)
+
+- **Store documents** live at `swiftlink_stores/{uid}`.
+- **Public store handles** are resolved via `swiftlink_slugs/{slug}` where the doc contains:
+  - `shopId`: the owner UID
+  - `updatedAt`: ISO string
+
+This is what makes `/store/[slug]` load the **correct owner store** for both logged-in and anonymous users.
+
+## Security (must do in Firebase Console)
+
+Client-side code cannot “secure Firebase” by itself. The real security is your **Firestore Rules** and **Storage Rules**.
+
+### Firestore Rules (recommended starting point)
+
+Paste into Firebase Console → Firestore → Rules:
+
+```txt
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Public storefront data is readable by anyone.
     match /swiftlink_stores/{uid} {
       allow read: if true;
-      allow write: if request.auth.uid == uid;
+      allow create, update, delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Public handle registry: readable by anyone, writable only by the owner of that UID.
+    match /swiftlink_slugs/{slug} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.shopId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.shopId == request.auth.uid
+        && request.resource.data.shopId == request.auth.uid;
     }
   }
 }
 ```
 
----
+### Storage Rules (recommended starting point)
 
-## 🚀 Running Locally
+Paste into Firebase Console → Storage → Rules:
+
+```txt
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /stores/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
+## Build & deploy
 
 ```bash
 cd swiftlink
-npm install
-npm run dev   # → http://localhost:3000
+npm run build
+npm run start
 ```
 
----
+For production, deploy on Vercel and configure the same `NEXT_PUBLIC_FIREBASE_*` env vars in the Vercel project settings.
 
-## 📱 Key User Flows
+## Contributing
 
-### Owner Flow
-1. `/` landing → **Get Started** → `/signup`
-2. Google sign-in or email/password → `/pro`
-3. `/business` — add products, copy shop link
-4. `/dispatch` — create delivery → share tracking URL
-
-### Customer Flow
-1. Opens shop link: `/?shop=<uid>` or `/<storeSlug>`
-2. Browses, adds to cart → **Order via WhatsApp**
-
-### Tracking
-- URL: `/?track=<TRK-XXXXX>` — public, no auth needed
-
----
-
-## 🛠 April 2026 Session — What Was Built
-
-### Landing Page
-- **ThreeScene** — New 3D hero: animated rings, orbiting spheres, particle sparkles, wireframe globe, mouse-reactive blob
-- **LandingPage** — Fixed SSR hydration bug (hero text invisible due to `overflow-hidden` + `opacity:0` initial state). Full mobile responsiveness
-- **LivePreview** — Full 5-screen interactive phone demo: Home, Product Detail, Search, Cart, Profile — all buttons work, WhatsApp order flow
-
-### Auth / Sign-Up Page
-- Dark glassmorphism design
-- Google Sign-In via `signInWithPopup`
-- Email/password with Sign Up ↔ Log In toggle
-- Full Firebase error mapping
-- Multi-device login (Firebase persistent sessions)
-- Auto-creates Firestore store on first sign-in
-
-### Bug Fixes
-- Hero text invisible (SSR + `overflow-hidden` clipping) → replaced with `FadeUp` helper
-- Grey whitespace before hero → body bg changed to white
-- 2s black loading overlay on landing/signup → now skipped for those routes
-- Hydration warning → `suppressHydrationWarning` on `<body>`
-- Phone demo height collapse → explicit pixel height on container
-- Added `scrollbar-hide` CSS utility
-
----
-
-## 👥 Team Roles
-| Role | Notes |
-|---|---|
-| Frontend Lead | Landing page, auth, demo |
-| Firebase/Backend | Firestore, rules, functions |
-| Design System | Emerald Green + Slate palette |
+- Keep UI copy **honest** (avoid fake stats/claims).
+- Avoid dead links / placeholder buttons.
+- Run `npm run build` before pushing.

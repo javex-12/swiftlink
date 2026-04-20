@@ -20,10 +20,15 @@ import {
   Box
 } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import ThreeScene from "./ThreeScene";
 import { AnimatedText } from "./AnimatedText";
 import { LivePreview } from "./LivePreview";
+
+const ThreeScene = dynamic(() => import("./ThreeScene"), {
+  ssr: false,
+  loading: () => <div className="w-full h-full min-h-[400px]" />,
+});
 
 // ─── Fade-Up helper (no overflow-hidden clipping) ─────────────────────────────
 const FadeUp = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => (
@@ -35,6 +40,40 @@ const FadeUp = ({ children, delay = 0, className = "" }: { children: React.React
   >
     {children}
   </motion.div>
+);
+
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const onChange = () => setReduce(Boolean(mq.matches));
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return reduce;
+}
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(max-width: 767px)");
+    if (!mq) return;
+    const onChange = () => setIsMobile(Boolean(mq.matches));
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  return isMobile;
+}
+
+const LightweightHeroVisual = () => (
+  <div className="w-full h-full min-h-[340px] sm:min-h-[480px] relative flex items-center justify-center">
+    <div className="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.35),transparent_55%),radial-gradient(circle_at_70%_60%,rgba(15,23,42,0.20),transparent_55%)]" />
+    <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-b from-white/0 via-white/0 to-white" />
+    <div className="relative w-[220px] h-[220px] rounded-full bg-emerald-400/20 blur-2xl" />
+  </div>
 );
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
@@ -113,6 +152,8 @@ const Hero = () => {
   const scrollToDemo = () => {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
   };
+  const isMobile = useIsMobile();
+  const reduceMotion = usePrefersReducedMotion();
 
   return (
     <section className="relative min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6 overflow-hidden flex items-center bg-white">
@@ -164,19 +205,19 @@ const Hero = () => {
             </FadeUp>
 
             <FadeUp delay={0.45}>
-              <div className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-5 sm:gap-8">
+              <div className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4">
                 {[
-                  { value: "1.2k+", label: "Stores Live" },
-                  { value: "$2.4M", label: "Processed" },
-                  { value: "99.9%", label: "Uptime" },
-                ].map((stat, i) => (
-                  <React.Fragment key={stat.label}>
-                    {i > 0 && <div className="h-8 w-px bg-slate-200 hidden sm:block" />}
-                    <div className="flex flex-col items-center lg:items-start">
-                      <span className="text-2xl font-black text-slate-900">{stat.value}</span>
-                      <span className="text-[9px] uppercase font-bold tracking-[0.25em] text-slate-400">{stat.label}</span>
-                    </div>
-                  </React.Fragment>
+                  "Fast setup",
+                  "WhatsApp-first checkout",
+                  "Mobile editor",
+                  "Shareable store link",
+                ].map((label) => (
+                  <span
+                    key={label}
+                    className="px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600"
+                  >
+                    {label}
+                  </span>
                 ))}
               </div>
             </FadeUp>
@@ -187,7 +228,7 @@ const Hero = () => {
             <div className="relative h-[340px] sm:h-[480px] lg:h-[700px] w-full">
               {/* Glow behind 3D */}
               <div className="absolute inset-[20%] rounded-full bg-emerald-300/20 blur-3xl pointer-events-none" />
-              <ThreeScene />
+              {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
 
               {/* Floating Card 1 — New Order */}
               <motion.div
@@ -199,8 +240,8 @@ const Hero = () => {
                   <Zap size={16} fill="currentColor" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-900 uppercase">New Order 🔥</p>
-                  <p className="text-[10px] font-black text-emerald-500">+₦45,000</p>
+                  <p className="text-[10px] font-black text-slate-900 uppercase">New Order</p>
+                  <p className="text-[10px] font-black text-emerald-500">Ready to send</p>
                   <p className="text-[8px] text-slate-400">Just now</p>
                 </div>
               </motion.div>
@@ -220,26 +261,7 @@ const Hero = () => {
                 </div>
               </motion.div>
 
-              {/* Floating Card 3 — Revenue */}
-              <motion.div
-                animate={{ y: [0, -12, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                className="absolute bottom-[28%] right-[2%] bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-xl border border-slate-100 z-20 hidden sm:block"
-              >
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Revenue Today</p>
-                <p className="text-lg font-black text-slate-900">₦287,500</p>
-                <p className="text-[9px] font-bold text-emerald-500">↑ 24% vs yesterday</p>
-              </motion.div>
-
-              {/* Floating Card 4 — Orders badge */}
-              <motion.div
-                animate={{ y: [0, 14, 0] }}
-                transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute bottom-[10%] left-[6%] bg-emerald-500 text-white p-3 sm:p-4 rounded-2xl shadow-lg shadow-emerald-200 z-20 hidden sm:block"
-              >
-                <p className="text-[8px] font-black uppercase tracking-widest opacity-80">Orders Today</p>
-                <p className="text-xl font-black">43</p>
-              </motion.div>
+              {/* (Removed fake metrics cards) */}
             </div>
           </FadeUp>
         </div>
@@ -489,7 +511,7 @@ const CTASection = () => (
             className="text-3xl sm:text-5xl md:text-7xl font-black text-white mb-6 tracking-tighter leading-none justify-center"
           />
           <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto mb-10 font-medium">
-            Join thousands of businesses already growing with SwiftLink Pro. No credit card required. Start your 14-day free trial today.
+            Create your storefront, add products, and share a clean link customers can open instantly. Start free — upgrade only if you need more.
           </motion.p>
           <Link
             href="/signup"
@@ -515,9 +537,12 @@ const Footer = () => (
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Global Commerce for Everyone</p>
       </div>
       <div className="flex gap-6 sm:gap-8">
-        {["Twitter", "Instagram", "LinkedIn"].map((s) => (
-          <a key={s} href="#" className="text-slate-400 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors">{s}</a>
-        ))}
+        <Link href="/terms" className="text-slate-400 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors">
+          Terms
+        </Link>
+        <a href="mailto:support@swiftlink.pro" className="text-slate-400 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors">
+          Support
+        </a>
       </div>
       <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest text-center">© 2026 SwiftLink Pro. All Rights Reserved.</p>
     </div>

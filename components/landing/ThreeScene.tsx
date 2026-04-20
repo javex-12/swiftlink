@@ -8,7 +8,6 @@ import {
   MeshWobbleMaterial,
   PerspectiveCamera,
   Environment,
-  ContactShadows,
   Sparkles,
   Trail,
   useTexture,
@@ -177,8 +176,13 @@ function FloatingSmallSphere({ position, color }: { position: [number, number, n
 // ─── Mouse-Reactive Scene Root ────────────────────────────────────────────────
 function Scene() {
   const groupRef = useRef<THREE.Group>(null!);
+  const reduceMotion = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  }, []);
 
   useFrame((state) => {
+    if (reduceMotion) return;
     const { mouse } = state;
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
@@ -238,31 +242,34 @@ function Scene() {
 
       {/* Particle sparkles */}
       <Sparkles
-        count={80}
+        count={40}
         scale={12}
         size={1.5}
         speed={0.3}
         color="#10b981"
         opacity={0.6}
       />
-
-      <ContactShadows
-        position={[0, -4, 0]}
-        opacity={0.3}
-        scale={16}
-        blur={2.5}
-        far={5}
-      />
     </group>
   );
 }
 
 export default function ThreeScene() {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const onChange = () => setReduceMotion(Boolean(mq.matches));
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
   return (
     <div className="w-full h-full min-h-[400px] relative">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
+        frameloop={reduceMotion ? "demand" : "always"}
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
       >

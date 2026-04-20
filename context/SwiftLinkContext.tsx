@@ -23,6 +23,8 @@ import { getFirebase } from "@/lib/firebase-client";
 import {
   getShopPath,
   parseShopFromPathname,
+  getPublicStoreSlug,
+  normalizeStoreUsername,
 } from "@/lib/utils";
 import { defaultShopState, loadStateLocal, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
@@ -157,6 +159,9 @@ export function SwiftLinkProvider({
   const stateRef = useRef(state);
   stateRef.current = state;
   const shopUnsubRef = useRef<Unsubscribe | null>(null);
+  const firebaseSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const trackId = searchParams.get("track");
   const shopFromQuery = searchParams.get("shop");
@@ -189,10 +194,12 @@ export function SwiftLinkProvider({
       }
       
       // Debounce Firebase writes
-      if (window.firebaseSyncTimeout) clearTimeout(window.firebaseSyncTimeout);
+      if (firebaseSyncTimeoutRef.current) {
+        clearTimeout(firebaseSyncTimeoutRef.current);
+      }
       setIsSyncing(true);
       
-      window.firebaseSyncTimeout = setTimeout(() => {
+      firebaseSyncTimeoutRef.current = setTimeout(() => {
           const { db } = getFirebase();
           if (
             db &&
@@ -200,11 +207,24 @@ export function SwiftLinkProvider({
             isOwnerRef.current &&
             userRef.current?.uid
           ) {
+            const uid = userRef.current.uid;
             setDoc(
-              doc(db, "swiftlink_stores", userRef.current.uid),
+              doc(db, "swiftlink_stores", uid),
               next,
               { merge: true },
             ).then(() => {
+                // Keep public store slug registry up to date.
+                const slug = getPublicStoreSlug({
+                  storeUsername: next.storeUsername,
+                  bizName: next.bizName,
+                });
+                if (slug) {
+                  void setDoc(
+                    doc(db, "swiftlink_slugs", slug),
+                    { shopId: uid, updatedAt: new Date().toISOString() },
+                    { merge: true },
+                  );
+                }
                 setIsSyncing(false);
             }).catch((err) => {
                 console.error("Firebase Sync Error:", err);
@@ -239,8 +259,17 @@ export function SwiftLinkProvider({
 
   const updateState = useCallback(
     (field: keyof ShopState, value: unknown) => {
+      // Basic client-side constraints (security + abuse resistance).
+      let nextValue: unknown = value;
+      if (typeof value === "string") {
+        if (field === "bizName") nextValue = value.slice(0, 60);
+        if (field === "tagline") nextValue = value.slice(0, 120);
+        if (field === "phone") nextValue = value.slice(0, 20);
+        if (field === "storeUsername")
+          nextValue = normalizeStoreUsername(value).slice(0, 32);
+      }
       setState((prev) => {
-        const next = { ...prev, [field]: value } as ShopState;
+        const next = { ...prev, [field]: nextValue } as ShopState;
         persistState(next);
         return next;
       });
@@ -663,49 +692,51 @@ export function SwiftLinkProvider({
       ref: string;
     }) => {
       const { sender, name, phone, item, driver, ref } = form;
-      if (!name || !driver || !ref) return alert("Fill Required Fields");
+      if (!name || !driver || !ref) {
+        addToast("Please fill the required fields.", "error");
+        return;
+      }
+
+      const deliveryId =
+        "TRK-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const newDel: Delivery = {
+        id: deliveryId,
+        status: "dispatched",
+        customer: name,
+        phone,
+        item,
+        driver,
+        ref,
+      };
+      const trackUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/?track=${deliveryId}`
+          : "";
+      const msg = `Package dispatched! Track here: ${trackUrl}`;
+
       setState((prev) => {
         let next = { ...prev };
-        if (sender && !prev.bizName) {
-          next = { ...next, bizName: sender };
-        }
-        const deliveryId =
-          "TRK-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-        const newDel: Delivery = {
-          id: deliveryId,
-          status: "dispatched",
-          customer: name,
-          phone,
-          item,
-          driver,
-          ref,
-        };
-        next = {
-          ...next,
-          deliveries: [newDel, ...next.deliveries],
-        };
-        if (typeof window !== "undefined") {
-          localStorage.setItem("swiftlink_state", JSON.stringify(next));
-        }
-        const { db } = getFirebase();
-        if (db && userRef.current?.uid && isOwnerRef.current) {
-          void setDoc(
-            doc(db, "swiftlink_stores", userRef.current.uid),
-            next,
-            { merge: true },
-          );
-        }
-        const trackUrl = `${window.location.origin}/?track=${deliveryId}`;
-        const msg = `Package dispatched! Track here: ${trackUrl}`;
-        if (confirm("Dispatch Created! Share via WhatsApp?")) {
-          window.open(
-            `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`,
-          );
-        }
+        if (sender && !prev.bizName) next = { ...next, bizName: sender };
+        next = { ...next, deliveries: [newDel, ...next.deliveries] };
+        persistState(next);
         return next;
       });
+
+      void (async () => {
+        const ok = await (window as any).customConfirm(
+          "Dispatch created",
+          "Share the tracking link on WhatsApp?",
+        );
+        if (!ok) return;
+        const wa = phone.replace(/\D/g, "");
+        if (!wa) {
+          addToast("No customer phone number provided.", "error");
+          return;
+        }
+        window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
+      })();
     },
-    [],
+    [addToast, persistState],
   );
 
   const removeDelivery = useCallback(async (id: string) => {
@@ -740,8 +771,12 @@ export function SwiftLinkProvider({
     [state.deliveries],
   );
 
-  const confirmDelivery = useCallback(() => {
-    if (!confirm("Confirm receipt?")) return;
+  const confirmDelivery = useCallback(async () => {
+    const ok = await (window as any).customConfirm(
+      "Confirm receipt?",
+      "This will mark the delivery as delivered.",
+    );
+    if (!ok) return;
     const tid = currentTrackId;
     if (!tid) return;
     setState((prev) => {
@@ -749,23 +784,13 @@ export function SwiftLinkProvider({
         d.id === tid ? { ...d, status: "delivered" as const } : d,
       );
       const next = { ...prev, deliveries };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("swiftlink_state", JSON.stringify(next));
-      }
-      const { db } = getFirebase();
-      if (db && userRef.current?.uid) {
-        void setDoc(
-          doc(db, "swiftlink_stores", userRef.current.uid),
-          next,
-          { merge: true },
-        );
-      }
+      persistState(next);
       const d = next.deliveries.find((x) => x.id === tid) ?? null;
       setTrackingDisplay(d);
       addToast("Delivery Confirmed. Thank you!", "success");
       return next;
     });
-  }, [currentTrackId, addToast]);
+  }, [currentTrackId, addToast, persistState]);
 
   const addProduct = useCallback(() => {
     setState((prev) => {
@@ -824,7 +849,7 @@ export function SwiftLinkProvider({
       if (!file) return;
       const { storage } = getFirebase();
       if (!storage || !userRef.current) {
-          alert("Storage not ready or user not logged in.");
+          addToast("Storage not ready. Please log in again.", "error");
           return;
       }
 
@@ -860,10 +885,10 @@ export function SwiftLinkProvider({
       }).catch((err) => {
           console.error("Upload failed:", err);
           setIsSyncing(false);
-          alert("Upload failed. Check your connection.");
+          addToast("Upload failed. Check your connection.", "error");
       });
     },
-    [persistState],
+    [persistState, addToast],
   );
 
   const addProductImage = useCallback(
@@ -985,16 +1010,16 @@ export function SwiftLinkProvider({
 
   const sendWhatsAppOrder = useCallback(() => {
     if (Object.keys(cart).length === 0) {
-      alert("Your cart is empty.");
+      addToast("Your cart is empty.", "error");
       return;
     }
     const phone = state.phone.replace(/\D/g, "");
     if (!phone) {
-      alert("This store has no WhatsApp number configured yet.");
+      addToast("This store has no WhatsApp number configured yet.", "error");
       return;
     }
     if (state.isLive === false) {
-      alert("This store is not accepting orders right now.");
+      addToast("This store is not accepting orders right now.", "error");
       return;
     }
     const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -1011,7 +1036,7 @@ export function SwiftLinkProvider({
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
     );
-  }, [cart, state]);
+  }, [cart, state, addToast]);
 
   const renderDeliveryCount = useCallback(() => {
     return state.deliveries.filter((d) => d.status === "dispatched").length;

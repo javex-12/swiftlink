@@ -19,6 +19,7 @@ export function CartDrawer({
     updateCart,
     sendWhatsAppOrder,
     cartItemCount,
+    addToast,
   } = useSwiftLink();
 
   const theme = useMemo(() => resolveStorefrontTheme(state), [state]);
@@ -165,7 +166,12 @@ export function CartDrawer({
              {(state.orderMethod === "paystack" || state.orderMethod === "both") && (
                 <button
                   type="button"
-                  onClick={() => alert("Paystack Integration Coming Soon")}
+                  onClick={() =>
+                    addToast(
+                      "Paystack is not enabled for this store yet.",
+                      "error",
+                    )
+                  }
                   disabled={!storeAcceptingOrders}
                   className="w-full bg-white text-slate-900 border border-slate-200 py-5 rounded-2xl font-black shadow-sm flex items-center justify-center space-x-3 active:scale-95 transition-all hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >

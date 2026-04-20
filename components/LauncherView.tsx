@@ -7,19 +7,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function LauncherView() {
-  const { copyShopLink, copyTrackingPortalLink, state, updateState } = useSwiftLink();
-
-  const addSampleNotification = () => {
-    const newNotif: any = {
-        id: Date.now().toString(),
-        title: "New Order #SL-9921",
-        message: "You have a new order from Ada Obi for ₦45,000.",
-        type: "order",
-        timestamp: "Just now",
-        read: false
-    };
-    updateState("notifications", [newNotif, ...(state.notifications || [])]);
-  };
+  const { copyShopLink, copyTrackingPortalLink, state } = useSwiftLink();
 
   const cards = [
     {
@@ -71,14 +59,12 @@ export function LauncherView() {
                  transition={{ delay: 0.1 }}
                  className="text-3xl md:text-5xl font-black italic tracking-tight leading-[1.1] mb-6"
                >
-                 READY TO SCALE, <br/>{state.bizName?.toUpperCase() || "SWIFTLINK"} BOSS?
+                 Ready to scale?<br />
+                 {state.bizName?.toUpperCase() || "SWIFTLINK"}
                </motion.h2>
                <div className="flex flex-wrap gap-4">
                   <button onClick={copyShopLink} className="px-6 py-3 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg">
                      <LinkIcon size={14} /> Copy Shop Link
-                  </button>
-                  <button onClick={addSampleNotification} className="px-6 py-3 bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white/20 active:scale-95 transition-all border border-white/10">
-                     <Bell size={14} /> Test System Alerts
                   </button>
                   <Link href="/business" className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">
                      <Zap size={14} /> Open Store Editor
@@ -88,12 +74,14 @@ export function LauncherView() {
             
             <div className="grid grid-cols-2 gap-4 w-full md:w-auto shrink-0">
                <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center text-center">
-                  <span className="text-3xl font-black italic mb-1">08</span>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Orders Today</span>
+                  <span className="text-3xl font-black italic mb-1">{state.products.length}</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Products</span>
                </div>
                <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center text-center">
-                  <span className="text-3xl font-black italic mb-1">4.2K</span>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Views</span>
+                  <span className="text-3xl font-black italic mb-1">
+                    {state.deliveries.filter((d) => d.status === "dispatched").length}
+                  </span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Active Deliveries</span>
                </div>
             </div>
          </div>

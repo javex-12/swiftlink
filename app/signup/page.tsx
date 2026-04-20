@@ -73,6 +73,9 @@ export default function SignupPage() {
         createdAt: new Date().toISOString(),
         publishedStoreSlug: slug,
       });
+    }
+    // Always ensure the public slug registry is present (for /store/[slug] lookups).
+    if (slug) {
       await setDoc(
         doc(db, "swiftlink_slugs", slug),
         {
@@ -190,7 +193,7 @@ export default function SignupPage() {
 
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.25em] rounded-full mb-6">
-            <Sparkles size={9} /> Join 1,200+ stores
+            <Sparkles size={9} /> Launch fast
           </span>
           <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight tracking-tight mb-5">
             Your Business,<br />
@@ -211,14 +214,13 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          {[{ v: "1.2k+", l: "Stores" }, { v: "$2.4M", l: "Processed" }, { v: "99.9%", l: "Uptime" }].map((s, i) => (
-            <div key={s.l} className="flex items-center gap-6">
-              {i > 0 && <div className="w-px h-10 bg-white/10" />}
-              <div>
-                <p className="text-xl font-black text-white">{s.v}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{s.l}</p>
-              </div>
+        <div className="flex items-center gap-3">
+          {["Store link", "Catalog", "WhatsApp orders"].map((t, i) => (
+            <div key={t} className="flex items-center gap-3">
+              {i > 0 && <div className="w-px h-6 bg-white/10" />}
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                {t}
+              </p>
             </div>
           ))}
         </div>

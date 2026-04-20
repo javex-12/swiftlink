@@ -534,7 +534,7 @@ export const LivePreview = () => {
                 <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.6, repeat: 2 }} className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center">
                   <CheckCircle2 size={28} className="text-emerald-500" />
                 </motion.div>
-                <p className="text-sm font-black text-gray-900">Order Sent! 🎉</p>
+                <p className="text-sm font-black text-gray-900">Order Sent</p>
                 <p className="text-[9px] text-gray-400 text-center font-medium">Your order was sent via WhatsApp. Expect a confirmation soon.</p>
               </motion.div>
             )}
@@ -550,8 +550,8 @@ export const LivePreview = () => {
                 <div className="m-3 bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-black text-sm shadow">A</div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-900">Ada Obi</p>
-                    <p className="text-[8px] text-gray-400 font-bold">ada@gmail.com</p>
+                    <p className="text-[10px] font-black text-gray-900">Customer</p>
+                    <p className="text-[8px] text-gray-400 font-bold">you@store.com</p>
                   </div>
                   <button className="ml-auto w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center active:scale-90">
                     <Settings size={11} className="text-gray-500" />
