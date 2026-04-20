@@ -59,7 +59,7 @@ export function BusinessView() {
     }
   };
 
-  const categories = state.categories && state.categories.length > 0 ? state.categories : ["Tops", "Bottoms", "Footwear", "Accessories"];
+  const categories = state.categories || [];
   const accentStr = state.accentColor || "#10b981";
 
   const applyThemePreset = (preset: ShopState["themePreset"]) => {
@@ -246,7 +246,11 @@ export function BusinessView() {
                         </div>
                     ))}
                     {(!state.categories || state.categories.length === 0) && (
-                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic py-4">No categories added yet. Default ones will be used.</p>
+                        <div className="w-full py-3">
+                          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">
+                            No categories yet. Add categories that match what you sell (e.g. “Hair”, “Perfume”, “Phones”, “Pastries”).
+                          </p>
+                        </div>
                     )}
                 </div>
             </section>
@@ -338,14 +342,27 @@ export function BusinessView() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-[0.2em]">Category</label>
                                 <div className="bg-slate-50 px-4 py-3.5 rounded-2xl border-2 border-slate-100 flex items-center focus-within:border-emerald-500 transition-all shadow-inner relative">
-                                    <select value={p.category || "All"} onChange={(e) => { updateProduct(p.id, "category", e.target.value); }} className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer max-w-[140px] truncate uppercase tracking-widest">
-                                        <option value="All">Uncategorized</option>
-                                        {categories.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
+                                    <select
+                                      value={p.category || ""}
+                                      onChange={(e) => { updateProduct(p.id, "category", e.target.value); }}
+                                      className="bg-transparent text-xs font-black text-slate-700 outline-none appearance-none pr-8 cursor-pointer max-w-[160px] truncate uppercase tracking-widest"
+                                    >
+                                        <option value="">Uncategorized</option>
+                                        {categories.map((cat) => (
+                                          <option key={cat} value={cat}>{cat}</option>
                                         ))}
                                     </select>
                                     <div className="absolute right-4 pointer-events-none text-slate-400 text-[10px]">▼</div>
                                 </div>
+                                {categories.length === 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={addCategory}
+                                    className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 mt-1 ml-1"
+                                  >
+                                    + Add a category
+                                  </button>
+                                )}
                             </div>
                             
                             <div className="space-y-2">
