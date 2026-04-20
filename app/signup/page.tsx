@@ -134,15 +134,21 @@ export default function SignupPage() {
       const { auth } = getFirebase();
       if (!auth) throw new Error("Firebase not ready");
       const provider = new GoogleAuthProvider();
-      // Removed provider.setCustomParameters({ prompt: "select_account" }) to fix "invalid_request"
       const result = await signInWithPopup(auth, provider);
-      await saveUserStore(result.user.uid, {
-        bizName: result.user.displayName || "",
-        storeUsername: form.storeUsername,
-      });
+      
+      try {
+        await saveUserStore(result.user.uid, {
+          bizName: result.user.displayName || "",
+          storeUsername: form.storeUsername,
+        });
+      } catch (dbErr: any) {
+        console.error("Database Error:", dbErr);
+        throw new Error("Login success, but failed to setup store. Please ensure Firestore Database is created in your Firebase Console.");
+      }
+
       router.push("/pro");
     } catch (e: unknown) {
-      console.error(e);
+      console.error("Auth Error:", e);
       const code = (e as { code?: string })?.code;
       const message = (e as { message?: string })?.message || "";
       
@@ -153,8 +159,10 @@ export default function SignupPage() {
         setError(`Firebase Error: Domain '${domain}' is not authorized. Fix: Firebase Console -> Authentication -> Settings -> Authorized Domains -> Add '${domain}'.`);
       } else if (code === "auth/operation-not-allowed") {
         setError("Google Sign-in is disabled. Fix: Firebase Console -> Authentication -> Sign-in Method -> Enable Google.");
+      } else if (message.includes("Firestore")) {
+        setError(message);
       } else {
-        setError("Google sign-in failed. Verify your Firebase API Key and project settings in the console.");
+        setError(`Google sign-in failed: ${message || "Check console for details"}`);
       }
     } finally { setLoading(null); }
   };
