@@ -6,7 +6,7 @@ import { ShopState } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { getShopPath } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, X, Trash2, RefreshCw, Eye, Sparkles, Palette, ShoppingCart, User, FileText, ExternalLink } from "lucide-react";
+import { Plus, X, Trash2, RefreshCw, Eye, Sparkles, Palette, ShoppingCart, User, FileText, ExternalLink, Shield } from "lucide-react";
 
 export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance">("store");
