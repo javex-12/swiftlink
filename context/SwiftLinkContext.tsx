@@ -300,7 +300,22 @@ export function SwiftLinkProvider({
 
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
-    setState(loadStateLocal());
+    
+    // STRICT PRODUCTION LOGIC: 
+    // We do NOT call setState(loadStateLocal()) immediately.
+    // Instead, we wait for the session check in initAuth() or handle it here.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setState(loadStateLocal());
+      } else {
+        setState(defaultShopState());
+      }
+    });
+
+    if (isSupabaseConfigured()) {
+      setIsSupabaseActive(true);
+    }
+    
     return () => clearTimeout(t);
   }, []);
 
@@ -336,6 +351,12 @@ export function SwiftLinkProvider({
                         setState(data.state_json as ShopState);
                     }
                 });
+            }
+        } else {
+            // If no user, reset state to default to avoid showing old local data
+            setState(defaultShopState());
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("swiftlink_state");
             }
         }
       });
