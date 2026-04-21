@@ -65,66 +65,80 @@ export default function SignupPage() {
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     const { db } = getFirebase();
-    if (!db) return;
-    const ref = doc(db, "swiftlink_stores", uid);
-    const snap = await getDoc(ref);
-    const bizName = extra?.bizName || "";
-    const storeUsername = extra?.storeUsername
-      ? normalizeStoreUsername(extra.storeUsername).slice(0, 32)
-      : "";
-    const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
-    if (!snap.exists()) {
-      await setDoc(ref, {
-        id: uid,
-        bizName,
-        storeUsername,
-        phone: extra?.phone || "",
-        products: [],
-        deliveries: [],
-        currency: "₦",
-        bizImage: "",
-        bizDesc: "",
-        bizColor: "#10b981",
-        createdAt: new Date().toISOString(),
-        publishedStoreSlug: slug,
-      });
-    } else {
-      // Keep store identity fields up-to-date.
-      await setDoc(
-        ref,
-        {
-          bizName: bizName || undefined,
-          phone: extra?.phone || undefined,
-          storeUsername: storeUsername || undefined,
-          publishedStoreSlug: slug || undefined,
-        },
-        { merge: true },
-      );
+    if (!db) {
+      console.error("Firestore DB not initialized in saveUserStore");
+      return;
     }
-    // Always ensure the public slug registry is present (for /store/[slug] lookups).
-    if (slug) {
-      await setDoc(
-        doc(db, "swiftlink_slugs", slug),
-        {
-          shopId: uid,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
-    }
-    if (typeof window !== "undefined") {
-      const d = snap.exists() ? snap.data() : {};
-      localStorage.setItem(
-        "swiftlink_state",
-        JSON.stringify({
-          ...d,
+    
+    try {
+      const ref = doc(db, "swiftlink_stores", uid);
+      const snap = await getDoc(ref);
+      const bizName = extra?.bizName || "";
+      const storeUsername = extra?.storeUsername
+        ? normalizeStoreUsername(extra.storeUsername).slice(0, 32)
+        : "";
+      const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
+      
+      if (!snap.exists()) {
+        await setDoc(ref, {
           id: uid,
-          bizName: bizName || (d as any)?.bizName || "",
-          phone: extra?.phone || (d as any)?.phone || "",
-          storeUsername: storeUsername || (d as any)?.storeUsername || "",
-        }),
-      );
-      localStorage.setItem("swiftlink_tour_done", "true");
+          bizName,
+          storeUsername,
+          phone: extra?.phone || "",
+          products: [],
+          deliveries: [],
+          currency: "₦",
+          bizImage: "",
+          bizDesc: "",
+          bizColor: "#10b981",
+          createdAt: new Date().toISOString(),
+          publishedStoreSlug: slug,
+        });
+      } else {
+        // Keep store identity fields up-to-date.
+        await setDoc(
+          ref,
+          {
+            bizName: bizName || undefined,
+            phone: extra?.phone || undefined,
+            storeUsername: storeUsername || undefined,
+            publishedStoreSlug: slug || undefined,
+          },
+          { merge: true },
+        );
+      }
+      // Always ensure the public slug registry is present (for /store/[slug] lookups).
+      if (slug) {
+        await setDoc(
+          doc(db, "swiftlink_slugs", slug),
+          {
+            shopId: uid,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        );
+      }
+      
+      if (typeof window !== "undefined") {
+        const d = snap.exists() ? snap.data() : {};
+        localStorage.setItem(
+          "swiftlink_state",
+          JSON.stringify({
+            ...d,
+            id: uid,
+            bizName: bizName || (d as any)?.bizName || "",
+            phone: extra?.phone || (d as any)?.phone || "",
+            storeUsername: storeUsername || (d as any)?.storeUsername || "",
+          }),
+        );
+        localStorage.setItem("swiftlink_tour_done", "true");
+      }
+    } catch (err: any) {
+      console.error("Critical Firestore Error in saveUserStore:", err);
+      if (err.code === 'permission-denied') {
+        throw new Error("Firestore Permission Denied. Check your Rules for 'swiftlink_stores' and 'swiftlink_slugs'.");
+      }
+      throw err;
     }
   };
 
@@ -148,7 +162,7 @@ export default function SignupPage() {
 
       router.push("/pro");
     } catch (e: unknown) {
-      console.error("Auth Error:", e);
+      console.error("Auth Error Details:", e);
       const code = (e as { code?: string })?.code;
       const message = (e as { message?: string })?.message || "";
       
@@ -158,11 +172,13 @@ export default function SignupPage() {
         const domain = typeof window !== "undefined" ? window.location.hostname : "your domain";
         setError(`Firebase Error: Domain '${domain}' is not authorized. Fix: Firebase Console -> Authentication -> Settings -> Authorized Domains -> Add '${domain}'.`);
       } else if (code === "auth/operation-not-allowed") {
-        setError("Google Sign-in is disabled. Fix: Firebase Console -> Authentication -> Sign-in Method -> Enable Google.");
+        setError("Sign-in method disabled. Fix: Firebase Console -> Authentication -> Sign-in Method -> Enable Google (and Email/Password).");
+      } else if (code === "auth/network-request-failed") {
+        setError("Network error. Check your internet connection.");
       } else if (message.includes("Firestore")) {
         setError(message);
       } else {
-        setError(`Google sign-in failed: ${message || "Check console for details"}`);
+        setError(`Sign-in failed: ${code || message || "Unknown error"}`);
       }
     } finally { setLoading(null); }
   };
@@ -188,8 +204,13 @@ export default function SignupPage() {
 
         await saveUserStore(cred.user.uid);
         router.push("/pro");
-      } catch (e: unknown) {
-        setError("Invalid email or password.");
+      } catch (e: any) {
+        console.error("Email Login Error:", e);
+        if (e.code === "auth/user-not-found" || e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+          setError("Invalid email or password.");
+        } else {
+          setError(`Login failed: ${e.message}`);
+        }
       } finally {
         setLoading(null);
       }
@@ -222,8 +243,12 @@ export default function SignupPage() {
       setStep("verify");
       
     } catch (e: any) {
-      console.error(e);
-      setError(e.message || "Failed to create account. Email might be in use.");
+      console.error("Email Signup Error:", e);
+      if (e.code === "auth/email-already-in-use") {
+        setError("This email is already registered. Try logging in.");
+      } else {
+        setError(e.message || "Failed to create account.");
+      }
     } finally {
       setLoading(null);
     }

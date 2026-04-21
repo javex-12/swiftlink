@@ -22,16 +22,25 @@ export function isFirebaseConfigured() {
     'NEXT_PUBLIC_FIREBASE_APP_ID'
   ];
   
-  const missing = keys.filter(k => !process.env[k]);
+  const missing = keys.filter(k => {
+    const val = process.env[k];
+    return !val || val === '...' || val.includes('your-');
+  });
+
   if (missing.length > 0 && typeof window !== 'undefined') {
-    console.warn("Firebase partially configured. Missing:", missing.join(", "));
+    console.warn("Firebase partially configured or using placeholders. Missing/Invalid:", missing.join(", "));
   }
 
   return missing.length === 0;
 }
 
 function getFirebaseConfig(): FirebasePublicConfig | null {
-  if (!isFirebaseConfigured()) return null;
+  if (!isFirebaseConfigured()) {
+    if (typeof window !== 'undefined') {
+      console.error("Firebase Configuration is incomplete. Check your .env.local file.");
+    }
+    return null;
+  }
   return {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY as string,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN as string,
@@ -52,14 +61,20 @@ export function getFirebase() {
     return { app: null, auth: null, db: null, storage: null };
   }
   if (!app) {
-    const cfg = getFirebaseConfig();
-    if (!cfg) {
+    try {
+      const cfg = getFirebaseConfig();
+      if (!cfg) {
+        return { app: null, auth: null, db: null, storage: null };
+      }
+      app = getApps().length ? getApps()[0]! : initializeApp(cfg);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      storage = getStorage(app);
+      console.log("Firebase initialized successfully with project:", cfg.projectId);
+    } catch (err) {
+      console.error("Error initializing Firebase:", err);
       return { app: null, auth: null, db: null, storage: null };
     }
-    app = getApps().length ? getApps()[0]! : initializeApp(cfg);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
   }
   return { app, auth, db, storage };
 }

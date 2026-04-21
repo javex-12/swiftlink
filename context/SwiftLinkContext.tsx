@@ -324,6 +324,13 @@ export function SwiftLinkProvider({
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
     setState(loadStateLocal());
+    
+    // Check if Firebase is configured immediately on mount
+    const { auth } = getFirebase();
+    if (auth) {
+      setIsFirebaseActive(true);
+    }
+    
     return () => clearTimeout(t);
   }, []);
 
@@ -337,22 +344,29 @@ export function SwiftLinkProvider({
     shopUnsubRef.current?.();
     shopUnsubRef.current = null;
     const { auth, db } = getAuthFirestore();
-    if (!auth || !db) return;
+    if (!auth || !db) {
+      setIsFirebaseActive(false);
+      return;
+    }
+
+    // Since SDK is available, we are active
+    setIsFirebaseActive(true);
 
     let unsubAuth: (() => void) | null = null;
 
     const run = async () => {
+      // Attempt anonymous auth as a fallback for non-logged-in visitors
       try {
         await signInAnonymously(auth);
       } catch (e: any) {
-        if (e?.code !== "auth/admin-restricted-operation") {
-           console.warn("Firebase anonymous auth fallback:", e?.message || e);
+        // Only log if it's not a restricted operation error
+        if (e?.code !== "auth/admin-restricted-operation" && e?.code !== "auth/operation-not-allowed") {
+           console.warn("Anonymous auth skipped:", e.message);
         }
       }
+      
       unsubAuth = onAuthStateChanged(auth, (u) => {
-        if (!u) return;
         setUser(u);
-        setIsFirebaseActive(true);
         
         const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
         
@@ -925,9 +939,19 @@ export function SwiftLinkProvider({
         });
         setIsSyncing(false);
       }).catch((err) => {
-          console.error("Upload failed:", err);
+          console.error("Storage Upload Error Details:", {
+            code: err.code,
+            message: err.message,
+            fullError: err
+          });
           setIsSyncing(false);
-          addToast("Upload failed. Check your connection.", "error");
+          if (err.code === 'storage/unauthorized') {
+            addToast("Upload failed: Permission denied. Check your Firebase Storage Rules.", "error");
+          } else if (err.code === 'storage/retry-limit-exceeded') {
+            addToast("Upload failed: Connection timeout. Check your network.", "error");
+          } else {
+            addToast(`Upload failed: ${err.message}`, "error");
+          }
       });
     },
     [persistState, addToast],
