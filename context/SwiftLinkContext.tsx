@@ -372,7 +372,7 @@ export function SwiftLinkProvider({
         
         // IMPORTANT: We only update the state ID to the user's UID 
         // if we are NOT currently viewing a specific customer shop.
-        if (isOwnerRef.current && !sid) {
+        if (u && isOwnerRef.current && !sid) {
           setState((prev) => {
             const next = { ...prev, id: u.uid };
             if (typeof window !== "undefined") {
