@@ -6,8 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, ShoppingCart, Heart, Plus, Home, X, ChevronLeft, MapPin, Package, MessageSquare, CheckCircle2, TrendingUp, Zap, LogIn, Loader2, ChevronRight, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
-import { getFirebase } from "@/lib/firebase-client";
+import { supabase } from "@/lib/supabase-client";
 import type { ShopState } from "@/lib/types";
 
 type ViewState = "store" | "search";
@@ -37,24 +36,34 @@ export function CustomerStorefront({
       setPublicState(null);
       return;
     }
-    const { db } = getFirebase();
-    if (!db) {
-      setPublicState(null);
-      return;
-    }
-    const unsub = onSnapshot(
-      doc(db, "swiftlink_stores", shopId),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as Partial<ShopState>;
-          setPublicState((prev) => ({ ...(prev || ({} as ShopState)), ...(data as ShopState), id: shopId }));
-        } else {
-          setPublicState(null);
+    
+    // Initial Load
+    supabase
+      .from('stores')
+      .select('state_json')
+      .eq('id', shopId)
+      .single()
+      .then(({ data }) => {
+        if (data?.state_json) {
+           const s = data.state_json as ShopState;
+           setPublicState({ ...s, id: shopId });
         }
-      },
-      () => setPublicState(null),
-    );
-    return () => unsub();
+      });
+
+    // Real-time subscription
+    const channel = supabase
+      .channel(`customer-shop-${shopId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores', filter: `id=eq.${shopId}` }, payload => {
+        if (payload.new?.state_json) {
+          const data = payload.new.state_json as Partial<ShopState>;
+          setPublicState((prev) => ({ ...(prev || ({} as ShopState)), ...(data as ShopState), id: shopId }));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [shopId]);
   
   const [activeCategory, setActiveCategory] = useState("All");

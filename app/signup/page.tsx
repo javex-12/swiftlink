@@ -7,12 +7,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, updateProfile, sendEmailVerification, signOut
-} from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { getFirebase } from "@/lib/firebase-client";
+import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 
 type Mode = "signup" | "login";
@@ -64,80 +59,52 @@ export default function SignupPage() {
     uid: string,
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
-    const { db } = getFirebase();
-    if (!db) {
-      console.error("Firestore DB not initialized in saveUserStore");
-      return;
-    }
-    
     try {
-      const ref = doc(db, "swiftlink_stores", uid);
-      const snap = await getDoc(ref);
+      const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
+      
       const bizName = extra?.bizName || "";
       const storeUsername = extra?.storeUsername
         ? normalizeStoreUsername(extra.storeUsername).slice(0, 32)
         : "";
       const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
       
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          id: uid,
-          bizName,
-          storeUsername,
-          phone: extra?.phone || "",
-          products: [],
-          deliveries: [],
-          currency: "₦",
-          bizImage: "",
-          bizDesc: "",
-          bizColor: "#10b981",
-          createdAt: new Date().toISOString(),
-          publishedStoreSlug: slug,
-        });
-      } else {
-        // Keep store identity fields up-to-date.
-        await setDoc(
-          ref,
-          {
-            bizName: bizName || undefined,
-            phone: extra?.phone || undefined,
-            storeUsername: storeUsername || undefined,
-            publishedStoreSlug: slug || undefined,
-          },
-          { merge: true },
-        );
-      }
-      // Always ensure the public slug registry is present (for /store/[slug] lookups).
+      const nextState = {
+        id: uid,
+        bizName: bizName || (storeData?.state_json as any)?.bizName || "",
+        storeUsername: storeUsername || (storeData?.state_json as any)?.storeUsername || "",
+        phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
+        products: (storeData?.state_json as any)?.products || [],
+        deliveries: (storeData?.state_json as any)?.deliveries || [],
+        currency: (storeData?.state_json as any)?.currency || "₦",
+        bizImage: (storeData?.state_json as any)?.bizImage || "",
+        bizDesc: (storeData?.state_json as any)?.bizDesc || "",
+        bizColor: (storeData?.state_json as any)?.bizColor || "#10b981",
+        publishedStoreSlug: slug,
+      };
+
+      await supabase.from('stores').upsert({
+        id: uid,
+        biz_name: nextState.bizName,
+        store_username: nextState.storeUsername,
+        phone: nextState.phone,
+        state_json: nextState,
+        updated_at: new Date().toISOString()
+      });
+
       if (slug) {
-        await setDoc(
-          doc(db, "swiftlink_slugs", slug),
-          {
-            shopId: uid,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
+        await supabase.from('slugs').upsert({
+          slug,
+          shop_id: uid,
+          updated_at: new Date().toISOString()
+        });
       }
       
       if (typeof window !== "undefined") {
-        const d = snap.exists() ? snap.data() : {};
-        localStorage.setItem(
-          "swiftlink_state",
-          JSON.stringify({
-            ...d,
-            id: uid,
-            bizName: bizName || (d as any)?.bizName || "",
-            phone: extra?.phone || (d as any)?.phone || "",
-            storeUsername: storeUsername || (d as any)?.storeUsername || "",
-          }),
-        );
+        localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
         localStorage.setItem("swiftlink_tour_done", "true");
       }
     } catch (err: any) {
-      console.error("Critical Firestore Error in saveUserStore:", err);
-      if (err.code === 'permission-denied') {
-        throw new Error("Firestore Permission Denied. Check your Rules for 'swiftlink_stores' and 'swiftlink_slugs'.");
-      }
+      console.error("Critical Supabase Error in saveUserStore:", err);
       throw err;
     }
   };
@@ -145,41 +112,16 @@ export default function SignupPage() {
   const handleGoogle = async () => {
     setLoading("google"); setError(null);
     try {
-      const { auth } = getFirebase();
-      if (!auth) throw new Error("Firebase not ready");
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      try {
-        await saveUserStore(result.user.uid, {
-          bizName: result.user.displayName || "",
-          storeUsername: form.storeUsername,
-        });
-      } catch (dbErr: any) {
-        console.error("Database Error:", dbErr);
-        throw new Error("Login success, but failed to setup store. Please ensure Firestore Database is created in your Firebase Console.");
-      }
-
-      router.push("/pro");
-    } catch (e: unknown) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/pro`
+        }
+      });
+      if (error) throw error;
+    } catch (e: any) {
       console.error("Auth Error Details:", e);
-      const code = (e as { code?: string })?.code;
-      const message = (e as { message?: string })?.message || "";
-      
-      if (code === "auth/popup-closed-by-user") {
-        setError("Sign-in cancelled.");
-      } else if (message.includes("requests-from-referer") || code === "auth/unauthorized-domain") {
-        const domain = typeof window !== "undefined" ? window.location.hostname : "your domain";
-        setError(`Firebase Error: Domain '${domain}' is not authorized. Fix: Firebase Console -> Authentication -> Settings -> Authorized Domains -> Add '${domain}'.`);
-      } else if (code === "auth/operation-not-allowed") {
-        setError("Sign-in method disabled. Fix: Firebase Console -> Authentication -> Sign-in Method -> Enable Google (and Email/Password).");
-      } else if (code === "auth/network-request-failed") {
-        setError("Network error. Check your internet connection.");
-      } else if (message.includes("Firestore")) {
-        setError(message);
-      } else {
-        setError(`Sign-in failed: ${code || message || "Unknown error"}`);
-      }
+      setError(`Google sign-in failed: ${e.message}`);
     } finally { setLoading(null); }
   };
 
@@ -191,26 +133,17 @@ export default function SignupPage() {
     if (mode === "login") {
       setLoading("email"); setError(null);
       try {
-        const { auth } = getFirebase();
-        if (!auth) throw new Error("Firebase not ready");
-        const cred = await signInWithEmailAndPassword(auth, form.email, form.password);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password
+        });
+        if (error) throw error;
         
-        if (!cred.user.emailVerified) {
-          await signOut(auth);
-          await sendEmailVerification(cred.user);
-          setError("Please verify your email address. We resent a new link to your inbox.");
-          return;
-        }
-
-        await saveUserStore(cred.user.uid);
+        await saveUserStore(data.user.id);
         router.push("/pro");
       } catch (e: any) {
         console.error("Email Login Error:", e);
-        if (e.code === "auth/user-not-found" || e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
-          setError("Invalid email or password.");
-        } else {
-          setError(`Login failed: ${e.message}`);
-        }
+        setError(e.message || "Invalid email or password.");
       } finally {
         setLoading(null);
       }
@@ -220,35 +153,38 @@ export default function SignupPage() {
     // Signup Flow
     if (!form.bizName || !form.phone) return;
     let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
-    if (!formattedPhone.startsWith("+")) {
-       setError("Phone number must include country code (e.g. +23480...)");
-       return;
-    }
 
     setLoading("email"); setError(null);
     try {
-      const { auth } = getFirebase();
-      if (!auth) throw new Error("Firebase not ready");
-      
-      const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-      await updateProfile(userCred.user, { displayName: form.bizName });
-      await saveUserStore(userCred.user.uid, {
-        bizName: form.bizName,
-        phone: formattedPhone,
-        storeUsername: form.storeUsername,
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            display_name: form.bizName,
+            phone: formattedPhone
+          }
+        }
       });
+      if (error) throw error;
       
-      await sendEmailVerification(userCred.user);
-      await signOut(auth);
-      setStep("verify");
+      if (data.user) {
+          await saveUserStore(data.user.id, {
+            bizName: form.bizName,
+            phone: formattedPhone,
+            storeUsername: form.storeUsername,
+          });
+          
+          if (data.session) {
+            router.push("/pro");
+          } else {
+            setStep("verify");
+          }
+      }
       
     } catch (e: any) {
       console.error("Email Signup Error:", e);
-      if (e.code === "auth/email-already-in-use") {
-        setError("This email is already registered. Try logging in.");
-      } else {
-        setError(e.message || "Failed to create account.");
-      }
+      setError(e.message || "Failed to create account.");
     } finally {
       setLoading(null);
     }

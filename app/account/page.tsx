@@ -6,27 +6,26 @@ import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { Shield, LogOut, Trash2, ArrowRight, User } from "lucide-react";
 
 export default function AccountPage() {
-  const { user, isFirebaseActive, authSignOut, handleSignOut, state } =
+  const { user, isSupabaseActive, authSignOut, handleSignOut, state } =
     useSwiftLink();
 
   const authLabel = useMemo(() => {
-    if (!isFirebaseActive) return "Offline mode (Firebase not configured)";
+    if (!isSupabaseActive) return "Offline mode (Supabase not configured)";
     if (!user) return "Connecting…";
-    if ((user as any).isAnonymous) return "Guest session (anonymous)";
     return user.email ? `Signed in as ${user.email}` : "Signed in";
-  }, [isFirebaseActive, user]);
+  }, [isSupabaseActive, user]);
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 py-10 transition-colors duration-300">
       <div className="max-w-2xl mx-auto">
-        {!isFirebaseActive && (
+        {!isSupabaseActive && (
            <div className="mb-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                  <Shield size={24} />
               </div>
               <div className="text-center md:text-left">
-                 <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Offline Mode / Firebase Not Setup</h4>
-                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">To enable Google Sign-in, Asset Uploads, and Public Store Links, please configure your Firebase environment variables in .env.</p>
+                 <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Offline Mode / Supabase Not Setup</h4>
+                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">To enable Google Sign-in, Asset Uploads, and Public Store Links, please configure your Supabase environment variables in .env.</p>
               </div>
            </div>
         )}

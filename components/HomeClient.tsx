@@ -18,11 +18,11 @@ export function HomeClient({ defaultView = "launcher" }: { defaultView?: "launch
   useEffect(() => {
     // If user is accessing the landing page, and they already own a store (state.id exists OR user is logged in)
     // and they are not specifically viewing another shop, push them to their dashboard
-    const hasStore = state?.id || user?.uid;
+    const hasStore = state?.id || user?.id;
     if (defaultView === "landing" && hasStore && isOwner && !shop) {
       router.replace("/pro");
     }
-  }, [defaultView, state?.id, user?.uid, isOwner, shop, router]);
+  }, [defaultView, state?.id, user?.id, isOwner, shop, router]);
 
   if (track) return <TrackingView />;
   if (shop) return <CustomerStorefront />;

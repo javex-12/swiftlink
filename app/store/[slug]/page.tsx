@@ -1,10 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { doc, getDoc } from "firebase/firestore";
-import { getFirebase } from "@/lib/firebase-client";
+import { supabase } from "@/lib/supabase-client";
 import { normalizeStoreUsername } from "@/lib/utils";
 import { CustomerStorefront } from "@/components/CustomerStorefront";
 import { Loader2 } from "lucide-react";
@@ -20,7 +19,7 @@ function StoreNotFound({ slug, error }: { slug: string, error?: string }) {
         </div>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
           {isPermissionError 
-            ? "Your Firebase Security Rules are blocking public access. Please set your rules to allow public reads."
+            ? "Your Supabase RLS Rules are blocking public access. Please set your rules to allow public reads on 'slugs' and 'stores' tables."
             : `We couldn't find a SwiftLink store with the handle "${slug}".`}
         </p>
         <div className="flex flex-col gap-3 mt-8">
@@ -30,12 +29,6 @@ function StoreNotFound({ slug, error }: { slug: string, error?: string }) {
             >
             Back to SwiftLink
             </Link>
-            {isPermissionError && (
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 leading-relaxed">
-                    Fix: Firebase Console -&gt; Firestore -&gt; Rules -&gt; <br/>
-                    <code className="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded text-emerald-600">allow read: if true;</code>
-                </p>
-            )}
         </div>
       </div>
     </main>
@@ -75,24 +68,29 @@ export default function StoreByHandlePage() {
       setStatus("not_found");
       return;
     }
-    const { db } = getFirebase();
-    if (!db) {
-      setStatus("not_found");
-      setErrorMsg("Firebase not initialized");
-      return;
-    }
 
     let cancelled = false;
     setStatus("resolving");
     (async () => {
       try {
-        const snap = await getDoc(doc(db, "swiftlink_slugs", slug));
-        const shopId = snap.exists() ? (snap.data() as any)?.shopId : null;
+        const { data, error } = await supabase
+          .from('slugs')
+          .select('shop_id')
+          .eq('slug', slug)
+          .single();
+
         if (cancelled) return;
-        if (shopId) {
-          router.replace(`/store/${slug}?shop=${encodeURIComponent(shopId)}`);
+
+        if (data?.shop_id) {
+          router.replace(`/store/${slug}?shop=${encodeURIComponent(data.shop_id)}`);
           return;
         }
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 is not found
+           console.error("Supabase Error:", error);
+           setErrorMsg(error.message);
+        }
+        
         setStatus("not_found");
       } catch (err: any) {
         console.error("Slug Resolution Error:", err);

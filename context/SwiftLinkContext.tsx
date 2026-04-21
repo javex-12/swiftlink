@@ -10,17 +10,8 @@ import React, {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { doc, onSnapshot, setDoc, type Unsubscribe } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  signInAnonymously,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  type User,
-} from "firebase/auth";
-import { getFirebase } from "@/lib/firebase-client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
+import { type User } from "@supabase/supabase-js";
 import {
   getShopPath,
   parseShopFromPathname,
@@ -45,7 +36,7 @@ type SwiftLinkContextValue = {
   state: ShopState;
   cart: CartMap;
   user: User | null;
-  isFirebaseActive: boolean;
+  isSupabaseActive: boolean;
   isOwner: boolean;
   currentTrackId: string | null;
   tourOpen: boolean;
@@ -112,11 +103,6 @@ type SwiftLinkContextValue = {
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
-function getAuthFirestore() {
-  const { auth, db } = getFirebase();
-  return { auth, db };
-}
-
 export function SwiftLinkProvider({
   children,
 }: {
@@ -129,7 +115,7 @@ export function SwiftLinkProvider({
   const [state, setState] = useState<ShopState>(defaultShopState);
   const [cart, setCart] = useState<CartMap>({});
   const [user, setUser] = useState<User | null>(null);
-  const [isFirebaseActive, setIsFirebaseActive] = useState(false);
+  const [isSupabaseActive, setIsSupabaseActive] = useState(true); 
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [currentTourStep, setCurrentTourStep] = useState(0);
@@ -155,10 +141,6 @@ export function SwiftLinkProvider({
     if (saved) {
       setTheme(saved);
       if (saved === "dark") document.documentElement.classList.add("dark");
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-       // Optional: follow system preference
-       // setTheme("dark");
-       // document.documentElement.classList.add("dark");
     }
   }, []);
 
@@ -185,10 +167,7 @@ export function SwiftLinkProvider({
   const userRef = useRef<User | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const shopUnsubRef = useRef<Unsubscribe | null>(null);
-  const firebaseSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const trackId = searchParams.get("track");
   const shopFromQuery = searchParams.get("shop");
@@ -220,49 +199,48 @@ export function SwiftLinkProvider({
         localStorage.setItem("swiftlink_state", JSON.stringify(next));
       }
       
-      // Debounce Firebase writes
-      if (firebaseSyncTimeoutRef.current) {
-        clearTimeout(firebaseSyncTimeoutRef.current);
-      }
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       setIsSyncing(true);
       
-      firebaseSyncTimeoutRef.current = setTimeout(() => {
-          const { db } = getFirebase();
-          if (
-            db &&
-            isFirebaseActive &&
-            isOwnerRef.current &&
-            userRef.current?.uid
-          ) {
-            const uid = userRef.current.uid;
-            setDoc(
-              doc(db, "swiftlink_stores", uid),
-              next,
-              { merge: true },
-            ).then(() => {
-                // Keep public store slug registry up to date.
+      syncTimeoutRef.current = setTimeout(async () => {
+          if (!isSupabaseConfigured()) {
+            setIsSyncing(false);
+            return;
+          }
+          if (isOwnerRef.current && userRef.current?.id) {
+            const uid = userRef.current.id;
+            
+            const { error } = await supabase
+              .from('stores')
+              .upsert({
+                id: uid,
+                biz_name: next.bizName,
+                store_username: next.storeUsername,
+                phone: next.phone,
+                state_json: next,
+                updated_at: new Date().toISOString()
+              });
+
+            if (error) {
+              console.error("Supabase Sync Error:", error);
+            } else {
                 const slug = getPublicStoreSlug({
                   storeUsername: next.storeUsername,
                   bizName: next.bizName,
                 });
                 if (slug) {
-                  void setDoc(
-                    doc(db, "swiftlink_slugs", slug),
-                    { shopId: uid, updatedAt: new Date().toISOString() },
-                    { merge: true },
-                  );
+                  await supabase.from('slugs').upsert({
+                    slug,
+                    shop_id: uid,
+                    updated_at: new Date().toISOString()
+                  });
                 }
-                setIsSyncing(false);
-            }).catch((err) => {
-                console.error("Firebase Sync Error:", err);
-                setIsSyncing(false);
-            });
-          } else {
-            setIsSyncing(false);
+            }
           }
-      }, 1000);
+          setIsSyncing(false);
+      }, 1500);
     },
-    [isFirebaseActive],
+    [],
   );
 
   const saveFullState = useCallback(
@@ -286,7 +264,6 @@ export function SwiftLinkProvider({
 
   const updateState = useCallback(
     (field: keyof ShopState, value: unknown) => {
-      // Basic client-side constraints (security + abuse resistance).
       let nextValue: unknown = value;
       if (typeof value === "string") {
         if (field === "bizName") nextValue = value.slice(0, 60);
@@ -324,13 +301,6 @@ export function SwiftLinkProvider({
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
     setState(loadStateLocal());
-    
-    // Check if Firebase is configured immediately on mount
-    const { auth } = getFirebase();
-    if (auth) {
-      setIsFirebaseActive(true);
-    }
-    
     return () => clearTimeout(t);
   }, []);
 
@@ -341,74 +311,65 @@ export function SwiftLinkProvider({
   }, [isCustomerMode, customerShopId, isTrackingMode]);
 
   useEffect(() => {
-    shopUnsubRef.current?.();
-    shopUnsubRef.current = null;
-    const { auth, db } = getAuthFirestore();
-    if (!auth || !db) {
-      setIsFirebaseActive(false);
-      return;
-    }
+    let unsub: { unsubscribe: () => void } | null = null;
 
-    // Since SDK is available, we are active
-    setIsFirebaseActive(true);
-
-    let unsubAuth: (() => void) | null = null;
-
-    const run = async () => {
-      // Attempt anonymous auth as a fallback for non-logged-in visitors
-      try {
-        await signInAnonymously(auth);
-      } catch (e: any) {
-        // Only log if it's not a restricted operation error
-        if (e?.code !== "auth/admin-restricted-operation" && e?.code !== "auth/operation-not-allowed") {
-           console.warn("Anonymous auth skipped:", e.message);
-        }
+    const initAuth = async () => {
+      if (!isSupabaseConfigured()) {
+        setIsSupabaseActive(false);
+        return;
       }
-      
-      unsubAuth = onAuthStateChanged(auth, (u) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        setIsSupabaseActive(true);
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const u = session?.user ?? null;
         setUser(u);
-        
-        const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
-        
-        // IMPORTANT: We only update the state ID to the user's UID 
-        // if we are NOT currently viewing a specific customer shop.
-        if (u && isOwnerRef.current && !sid) {
-          setState((prev) => {
-            const next = { ...prev, id: u.uid };
-            if (typeof window !== "undefined") {
-              localStorage.setItem("swiftlink_state", JSON.stringify(next));
+        if (u) {
+            setIsSupabaseActive(true);
+            // Auto-load store on login if owner
+            if (isOwnerRef.current) {
+                supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
+                    if (data?.state_json) {
+                        setState(data.state_json as ShopState);
+                    }
+                });
             }
-            void setDoc(
-              doc(db, "swiftlink_stores", u.uid),
-              next,
-              { merge: true },
-            );
-            return next;
-          });
-        }
-        
-        // If I am viewing a CUSTOMER shop
-        if (sid) {
-          shopUnsubRef.current = onSnapshot(
-            doc(db, "swiftlink_stores", sid),
-            (snap) => {
-              if (snap.exists()) {
-                const data = snap.data() as Partial<ShopState>;
-                setState((prev) => ({ ...prev, ...data, id: sid }));
-              } else {
-                console.warn("Shop not found:", sid);
-              }
-            },
-          );
         }
       });
+      unsub = subscription;
     };
-    void run();
+
+    void initAuth();
+
+    // Listen for shop changes if viewing a customer shop
+    const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
+    let channel: any = null;
+
+    if (sid && isSupabaseConfigured()) {
+       supabase.from('stores').select('state_json').eq('id', sid).single().then(({ data }) => {
+           if (data?.state_json) {
+               setState(prev => ({ ...prev, ...(data.state_json as ShopState), id: sid }));
+           }
+       });
+
+       channel = supabase
+         .channel('store-updates')
+         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores', filter: `id=eq.${sid}` }, payload => {
+            if (payload.new?.state_json) {
+                setState(prev => ({ ...prev, ...(payload.new.state_json as ShopState), id: sid }));
+            }
+         })
+         .subscribe();
+    }
+
     return () => {
-      unsubAuth?.();
-      shopUnsubRef.current?.();
+      unsub?.unsubscribe();
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [pathname, trackQ, shopQ, pathShop?.kind === "uid" ? pathShop.shopId : null]);
+  }, [pathname, trackQ, shopQ]);
 
   useEffect(() => {
     if (!trackId) return;
@@ -724,12 +685,7 @@ export function SwiftLinkProvider({
   }, []);
 
   const authSignOut = useCallback(async () => {
-    const { auth } = getFirebase();
-    if (!auth) {
-      addToast("Auth not ready yet.", "error");
-      return;
-    }
-    await firebaseSignOut(auth);
+    await supabase.auth.signOut();
     addToast("Signed out.", "success");
     router.push("/signup?mode=login");
   }, [addToast, router]);
@@ -799,20 +755,10 @@ export function SwiftLinkProvider({
         ...prev,
         deliveries: prev.deliveries.filter((d) => d.id !== id),
       };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("swiftlink_state", JSON.stringify(next));
-      }
-      const { db } = getFirebase();
-      if (db && userRef.current?.uid && isOwnerRef.current) {
-        void setDoc(
-          doc(db, "swiftlink_stores", userRef.current.uid),
-          next,
-          { merge: true },
-        );
-      }
+      persistState(next);
       return next;
     });
-  }, []);
+  }, [persistState]);
 
   const initTracking = useCallback(
     (id: string) => {
@@ -897,83 +843,79 @@ export function SwiftLinkProvider({
   );
 
   const handleImageUpload = useCallback(
-    (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
+    async (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
       if (!file) return;
-      const { storage } = getFirebase();
-      if (!storage) {
-        addToast("Uploads unavailable (Firebase not configured).", "error");
-        return;
-      }
       if (!userRef.current) {
         addToast("Connecting… please wait a moment and try again.", "error");
         return;
       }
 
       setIsSyncing(true);
+      const folder = userRef.current.id;
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
       const path = productId != null 
-        ? `stores/${userRef.current.uid}/products/${productId}/${Date.now()}_${file.name}`
-        : `stores/${userRef.current.uid}/branding/${Date.now()}_${file.name}`;
+        ? `${folder}/products/${productId}/${fileName}`
+        : `${folder}/branding/${fileName}`;
       
-      const sRef = storageRef(storage, path);
-      uploadBytes(sRef, file).then((snapshot) => {
-          return getDownloadURL(snapshot.ref);
-      }).then((url) => {
-        setState((prev) => {
+      const { data, error } = await supabase.storage.from('branding').upload(path, file);
+
+      if (error) {
+          console.error("Storage Upload Error:", error);
+          setIsSyncing(false);
+          addToast(`Upload failed: ${error.message}`, "error");
+          return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('branding').getPublicUrl(path);
+
+      setState((prev) => {
           let next = { ...prev };
           if (productId != null) {
             const products = prev.products.map((p) => {
               if (p.id === productId) {
                 const newImages = p.images?.length ? [...p.images] : (p.image ? [p.image] : []);
-                if (newImages.length === 0) newImages.push(url);
-                else newImages[0] = url; 
-                return { ...p, image: url, images: newImages };
+                if (newImages.length === 0) newImages.push(publicUrl);
+                else newImages[0] = publicUrl; 
+                return { ...p, image: publicUrl, images: newImages };
               }
               return p;
             });
             next = { ...next, products };
           } else {
-            next = { ...next, bizImage: url };
+            next = { ...next, bizImage: publicUrl };
           }
           persistState(next);
           return next;
-        });
-        setIsSyncing(false);
-      }).catch((err) => {
-          console.error("Storage Upload Error Details:", {
-            code: err.code,
-            message: err.message,
-            fullError: err
-          });
-          setIsSyncing(false);
-          if (err.code === 'storage/unauthorized') {
-            addToast("Upload failed: Permission denied. Check your Firebase Storage Rules.", "error");
-          } else if (err.code === 'storage/retry-limit-exceeded') {
-            addToast("Upload failed: Connection timeout. Check your network.", "error");
-          } else {
-            addToast(`Upload failed: ${err.message}`, "error");
-          }
       });
+      setIsSyncing(false);
     },
     [persistState, addToast],
   );
 
   const addProductImage = useCallback(
-    (productId: number, file: File) => {
-      const { storage } = getFirebase();
-      if (!storage || !userRef.current) return;
+    async (productId: number, file: File) => {
+      if (!userRef.current) return;
 
       setIsSyncing(true);
-      const path = `stores/${userRef.current.uid}/products/${productId}/${Date.now()}_${file.name}`;
-      const sRef = storageRef(storage, path);
+      const folder = userRef.current.id;
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const path = `${folder}/products/${productId}/${fileName}`;
+      
+      const { data, error } = await supabase.storage.from('branding').upload(path, file);
 
-      uploadBytes(sRef, file).then((snapshot) => {
-          return getDownloadURL(snapshot.ref);
-      }).then((url) => {
-        setState((prev) => {
+      if (error) {
+          console.error(error);
+          setIsSyncing(false);
+          return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('branding').getPublicUrl(path);
+
+      setState((prev) => {
           const products = prev.products.map((p) => {
             if (p.id === productId) {
               const currentImgs = p.images || (p.image ? [p.image] : []);
-              const nextImgs = [...currentImgs, url];
+              const nextImgs = [...currentImgs, publicUrl];
               return { ...p, images: nextImgs, image: nextImgs[0] };
             }
             return p;
@@ -981,26 +923,20 @@ export function SwiftLinkProvider({
           const next = { ...prev, products };
           persistState(next);
           return next;
-        });
-        setIsSyncing(false);
-      }).catch(err => {
-          console.error(err);
-          setIsSyncing(false);
       });
+      setIsSyncing(false);
     },
     [persistState]
   );
 
   const emailSignIn = useCallback(async (email: string, pass: string) => {
-      const { auth } = getFirebase();
-      if (!auth) return;
-      await signInWithEmailAndPassword(auth, email, pass);
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
   }, []);
 
   const emailSignUp = useCallback(async (email: string, pass: string) => {
-      const { auth } = getFirebase();
-      if (!auth) return;
-      await createUserWithEmailAndPassword(auth, email, pass);
+      const { error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) throw error;
   }, []);
 
   const startLocationTracking = useCallback(() => {
@@ -1121,7 +1057,7 @@ export function SwiftLinkProvider({
     state,
     cart,
     user,
-    isFirebaseActive,
+    isSupabaseActive,
     isOwner,
     currentTrackId,
     tourOpen,

@@ -154,8 +154,8 @@ export function BusinessView() {
                  <Shield size={24} />
               </div>
               <div className="text-center md:text-left">
-                 <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Firebase Not Configured</h4>
-                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Global sync and public store links require Firebase environment variables. Check your .env file.</p>
+                 <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">Supabase Not Configured</h4>
+                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Global sync and public store links require Supabase environment variables. Check your .env file.</p>
               </div>
            </div>
         )}
