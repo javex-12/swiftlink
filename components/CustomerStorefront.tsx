@@ -362,16 +362,6 @@ export function CustomerStorefront({
                           </div>
                           <div className="space-y-6">
                             <p className="text-slate-500 dark:text-zinc-400 text-sm md:text-xl font-medium leading-relaxed italic">{selectedProduct.description || "Experience uncompromising quality. This piece was selected for its exceptional design and durability."}</p>
-                            <div className="flex items-center gap-4 pt-4">
-                               <div className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 rounded-xl border border-slate-100 dark:border-white/5 flex items-center gap-2">
-                                  <ShieldCheck size={14} className="text-emerald-500" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Quality Assured</span>
-                               </div>
-                               <div className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 rounded-xl border border-slate-100 dark:border-white/5 flex items-center gap-2">
-                                  <Package size={14} className="text-blue-500" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Fast Delivery</span>
-                               </div>
-                            </div>
                           </div>
                           
                           <div className="mt-16 flex flex-col sm:flex-row gap-4 md:gap-6">
@@ -379,13 +369,13 @@ export function CustomerStorefront({
                                   disabled={!canAddToCart(selectedProduct.outOfStock)}
                                   className={cn("flex-1 py-7 rounded-[2.5rem] text-white font-black text-sm md:text-base uppercase tracking-[0.3em] shadow-3xl active:scale-[0.98] transition-all flex items-center justify-center gap-4", canAddToCart(selectedProduct.outOfStock) ? "brightness-100" : "opacity-50 grayscale")}
                                   style={{ backgroundColor: accentStr }}>
-                                 {canAddToCart(selectedProduct.outOfStock) ? <><ShoppingCart size={20} strokeWidth={3} /> Proceed to Order</> : "Currently Unavailable"}
+                                 {canAddToCart(selectedProduct.outOfStock) ? <><ShoppingCart size={20} strokeWidth={3} /> Review Selection</> : "Currently Unavailable"}
                               </button>
                               <button 
                                 onClick={() => setSelectedProduct(null)}
                                 className="px-10 py-7 bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white rounded-[2.5rem] font-black text-sm uppercase tracking-widest border border-slate-100 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all"
                               >
-                                Back to Catalog
+                                Close
                               </button>
                           </div>
                       </div>
@@ -394,18 +384,12 @@ export function CustomerStorefront({
           )}
       </AnimatePresence>
 
-      {/* Footer Branding */}
       <footer className="mt-32 py-20 border-t border-slate-100 dark:border-white/5 text-center shrink-0">
          <div className="flex flex-col items-center gap-4">
             <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black shadow-xl mb-4">
                <Store size={20} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300 dark:text-zinc-700">Powered by SwiftLink Pro</p>
-            <div className="flex items-center gap-6 mt-8">
-               <ShieldCheck size={16} className="text-slate-200 dark:text-zinc-800" />
-               <MessageCircle size={16} className="text-slate-200 dark:text-zinc-800" />
-               <Phone size={16} className="text-slate-200 dark:text-zinc-800" />
-            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300 dark:text-zinc-700">Curated with SwiftLink Pro</p>
          </div>
       </footer>
     </div>

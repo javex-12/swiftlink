@@ -34,8 +34,6 @@ export function CartView() {
   }).filter(Boolean) as any[];
 
   const total = cartLines.reduce((acc, p) => acc + p.price * p.quantity, 0);
-  const deliveryFee = total > 0 ? 1500 : 0; 
-  const grandTotal = total + deliveryFee;
 
   const returnUrl = useMemo(() => {
     if (shopId) return `/store/default?shop=${shopId}`;
@@ -44,7 +42,7 @@ export function CartView() {
   }, [shopId, state.id]);
 
   const clearCart = async () => {
-      const ok = await (window as any).customConfirm("Clear Bag?", "Are you sure you want to remove all items?");
+      const ok = await (window as any).customConfirm("Empty Selection?", "Are you sure you want to clear your list?");
       if (ok) {
           cartLines.forEach(p => updateCart(p.id, -p.quantity));
       }
@@ -53,186 +51,103 @@ export function CartView() {
   if (cartItemCount === 0) {
     return (
       <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-6 text-center animate-fade-in transition-colors duration-500">
-         <div className="w-32 h-32 bg-slate-50 dark:bg-zinc-900 rounded-[3rem] flex items-center justify-center text-slate-200 dark:text-zinc-800 mb-8">
-            <ShoppingBag size={64} strokeWidth={1.5} />
+         <div className="w-24 h-24 bg-slate-50 dark:bg-zinc-950 rounded-full flex items-center justify-center text-slate-200 dark:text-zinc-800 mb-8">
+            <ShoppingBag size={48} strokeWidth={1} />
          </div>
-         <h2 className="text-3xl font-black text-slate-900 dark:text-white italic tracking-tight mb-4 uppercase">Your bag is empty</h2>
-         <p className="text-slate-500 dark:text-zinc-400 font-medium mb-10 max-w-xs">Looks like you haven&apos;t added anything to your collection yet.</p>
-         <Link href={returnUrl} className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
-            Return to Store
+         <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-4 uppercase italic">Nothing selected yet</h2>
+         <p className="text-slate-400 font-medium mb-10 max-w-xs text-sm">Browse our collection and add items you&apos;re interested in.</p>
+         <Link href={returnUrl} className="px-10 py-5 bg-black dark:bg-white text-white dark:text-black rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all">
+            Browse Catalog
          </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-black font-sans transition-colors duration-500">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-slate-100 dark:border-white/10 px-4 md:px-8 py-5 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-black font-sans transition-colors duration-500">
+      {/* Minimal Header */}
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5 px-6 py-6 flex items-center justify-between">
          <Link href={returnUrl} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white group-hover:bg-slate-100 dark:group-hover:bg-zinc-800 transition-all border border-slate-100 dark:border-white/5">
-               <ArrowLeft size={20} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors hidden sm:block">Back to Catalog</span>
+            <ArrowLeft size={18} className="text-slate-400 group-hover:text-black dark:group-hover:text-white transition-colors" />
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-black dark:group-hover:text-white transition-colors">Catalog</span>
          </Link>
          
-         <div className="flex flex-col items-center">
-            <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight italic uppercase">My Selection</h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
-               <div className="w-1 h-1 rounded-full bg-emerald-500" />
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Checkout Protocol</span>
-            </div>
-         </div>
+         <h1 className="text-xs font-black text-slate-900 dark:text-white tracking-[0.4em] uppercase italic">Your Selection</h1>
          
-         <button onClick={clearCart} className="flex items-center gap-2 text-rose-500 hover:text-rose-600 transition-colors">
-            <XCircle size={18} />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Cancel Order</span>
+         <button onClick={clearCart} className="text-[9px] font-black uppercase tracking-widest text-rose-500 hover:opacity-70 transition-opacity">
+            Clear
          </button>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
-         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <main className="max-w-4xl mx-auto px-6 py-12">
+         <div className="space-y-12">
             
-            {/* Left Column: Cart Items */}
-            <div className="lg:col-span-7 space-y-8">
-               <div className="space-y-4">
-                  {cartLines.map((p) => (
-                     <motion.div 
-                        layout
-                        key={p.id} 
-                        className="bg-white dark:bg-zinc-950/40 p-5 md:p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-sm flex items-center gap-6 group hover:shadow-xl transition-all"
-                     >
-                        <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-50 dark:bg-zinc-900 rounded-[2rem] overflow-hidden border border-slate-50 dark:border-white/5 shrink-0">
-                           <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={p.name} />
+            {/* List of items */}
+            <div className="space-y-6">
+               {cartLines.map((p) => (
+                  <motion.div 
+                     layout
+                     key={p.id} 
+                     className="flex items-center gap-6 group"
+                  >
+                     <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-50 dark:bg-zinc-900 rounded-3xl overflow-hidden shrink-0 border border-black/5 dark:border-white/5">
+                        <img src={p.image} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt={p.name} />
+                     </div>
+                     
+                     <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex justify-between items-start">
+                           <div className="text-left">
+                              <h3 className="text-sm md:text-lg font-black text-slate-900 dark:text-white truncate uppercase italic tracking-tight">{p.name}</h3>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{p.category}</p>
+                           </div>
                         </div>
                         
-                        <div className="flex-1 min-w-0 py-2">
-                           <div className="flex justify-between items-start mb-2 text-left">
-                              <div>
-                                 <h3 className="text-base md:text-xl font-black text-slate-900 dark:text-white truncate leading-tight uppercase italic">{p.name}</h3>
-                                 <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1">{p.category}</p>
-                              </div>
-                              <button onClick={() => updateCart(p.id, -p.quantity)} className="text-slate-300 dark:text-zinc-700 hover:text-red-500 transition-colors p-1">
-                                 <Trash2 size={18} />
+                        <div className="flex items-center justify-between mt-4">
+                           <div className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-900 rounded-full px-2 py-1 border border-black/5 dark:border-white/5">
+                              <button onClick={() => updateCart(p.id, -1)} className="w-7 h-7 rounded-full bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center active:scale-75 transition-all">
+                                 <Minus size={12} />
+                              </button>
+                              <span className="text-[11px] font-black dark:text-white">{p.quantity}</span>
+                              <button onClick={() => updateCart(p.id, 1)} className="w-7 h-7 rounded-full bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center active:scale-75 transition-all">
+                                 <Plus size={12} />
                               </button>
                            </div>
-                           
-                           <div className="flex items-center justify-between mt-6 md:mt-8">
-                              <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 rounded-2xl p-1 border border-slate-100 dark:border-white/5">
-                                 <button onClick={() => updateCart(p.id, -1)} className="w-8 h-8 rounded-xl bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
-                                    <Minus size={14} />
-                                 </button>
-                                 <span className="w-10 text-center text-xs font-black dark:text-white">{p.quantity}</span>
-                                 <button onClick={() => updateCart(p.id, 1)} className="w-8 h-8 rounded-xl bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
-                                    <Plus size={14} />
-                                 </button>
-                              </div>
-                              <span className="text-lg md:text-2xl font-black text-slate-900 dark:text-white italic text-right">
-                                 {state.currency}{(p.price * p.quantity).toLocaleString()}
-                              </span>
-                           </div>
-                        </div>
-                     </motion.div>
-                  ))}
-               </div>
-
-               {/* Quality Badges */}
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                  {[
-                     { icon: ShieldCheck, text: "Authentic Product", sub: "100% Guaranteed" },
-                     { icon: Truck, text: "Swift Delivery", sub: "Same Day Possible" },
-                     { icon: Zap, text: "Best Price", sub: "Value Selection" },
-                  ].map((item, i) => (
-                     <div key={i} className="bg-white/50 dark:bg-zinc-950/20 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
-                        <item.icon className="text-slate-900 dark:text-white mb-3" size={24} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">{item.text}</span>
-                        <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest mt-1">{item.sub}</span>
-                     </div>
-                  ))}
-               </div>
-            </div>
-
-            {/* Right Column: Order Summary */}
-            <div className="lg:col-span-5">
-               <div className="sticky top-32 space-y-8">
-                  <div className="bg-slate-900 dark:bg-black rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden border dark:border-white/10">
-                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
-                     
-                     <h3 className="text-xl font-black italic tracking-tight mb-8 uppercase text-left">Order Summary</h3>
-                     
-                     <div className="space-y-4 mb-10">
-                        <div className="flex justify-between items-center text-sm">
-                           <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Subtotal</span>
-                           <span className="font-black italic">{state.currency}{total.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                           <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Estimated Delivery</span>
-                           <span className="font-black italic text-emerald-400">{state.currency}{deliveryFee.toLocaleString()}</span>
-                        </div>
-                        <div className="h-px bg-white/5 my-2" />
-                        <div className="flex justify-between items-center text-left">
-                           <span className="text-xs font-black uppercase tracking-[0.2em]">Grand Total</span>
-                           <span className="text-4xl font-black italic tracking-tighter" style={{ color: accentStr }}>
-                              {state.currency}{grandTotal.toLocaleString()}
+                           <span className="text-sm md:text-lg font-black text-slate-900 dark:text-white italic">
+                              {state.currency}{(p.price * p.quantity).toLocaleString()}
                            </span>
                         </div>
                      </div>
-
-                     <div className="space-y-4">
-                        {(state.orderMethod === "whatsapp" || state.orderMethod === "both" || !state.orderMethod) && (
-                            <button 
-                               onClick={sendWhatsAppOrder}
-                               disabled={!storeAcceptingOrders}
-                               className={cn(
-                                  "w-full py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95",
-                                  storeAcceptingOrders ? "bg-emerald-500 text-white hover:brightness-110" : "bg-slate-800 dark:bg-zinc-900 text-slate-500 cursor-not-allowed"
-                               )}
-                               style={storeAcceptingOrders ? { boxShadow: `0 20px 40px -10px ${accentStr}66` } : {}}
-                            >
-                               <MessageSquare size={18} />
-                               {storeAcceptingOrders ? "Confirm via WhatsApp" : "Store Paused"}
-                            </button>
-                        )}
-
-                        {(state.orderMethod === "paystack" || state.orderMethod === "both") && (
-                            <button 
-                               onClick={() =>
-                                 addToast(
-                                   "Paystack is not enabled for this store yet.",
-                                   "error",
-                                 )
-                               }
-                               disabled={!storeAcceptingOrders}
-                               className={cn(
-                                  "w-full py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95",
-                                  storeAcceptingOrders ? "bg-white dark:bg-white text-slate-900 dark:text-black hover:bg-slate-50" : "bg-slate-800 dark:bg-zinc-900 text-slate-500 cursor-not-allowed"
-                               )}
-                            >
-                               <CreditCard size={18} />
-                               {storeAcceptingOrders ? "Secure Paystack Pay" : "Store Paused"}
-                            </button>
-                        )}
-                        
-                        <p className="text-[9px] text-center text-slate-500 font-bold uppercase tracking-widest">
-                           By confirming, you agree to our <Link href="/terms" className="underline hover:text-white">Terms of Service</Link>
-                        </p>
-                     </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm text-left">
-                     <div className="flex items-center gap-3 mb-6">
-                        <CreditCard className="text-slate-400 dark:text-zinc-600" size={18} />
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-600">Supported Methods</h4>
-                     </div>
-                     <div className="flex flex-wrap gap-3">
-                        {["VISA", "MASTERCARD", "BANK", "CASH"].map(m => (
-                           <div key={m} className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 rounded-xl text-[9px] font-black text-slate-400 dark:text-zinc-600 border border-slate-100 dark:border-white/5 uppercase tracking-widest">{m}</div>
-                        ))}
-                     </div>
-                  </div>
-               </div>
+                  </motion.div>
+               ))}
             </div>
 
+            {/* Simple Total */}
+            <div className="pt-12 border-t border-black/5 dark:border-white/5">
+               <div className="flex flex-col items-end gap-6">
+                  <div className="text-right">
+                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block mb-2">Estimated Total</span>
+                     <span className="text-4xl md:text-6xl font-black italic tracking-tighter dark:text-white">
+                        {state.currency}{total.toLocaleString()}
+                     </span>
+                  </div>
+
+                  <button 
+                     onClick={sendWhatsAppOrder}
+                     disabled={!storeAcceptingOrders}
+                     className={cn(
+                        "w-full md:w-auto px-12 py-6 rounded-full font-black text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 shadow-3xl transition-all active:scale-95",
+                        storeAcceptingOrders ? "bg-black dark:bg-white text-white dark:text-black hover:brightness-110" : "bg-slate-100 dark:bg-zinc-900 text-slate-400 cursor-not-allowed"
+                     )}
+                  >
+                     <MessageSquare size={16} fill="currentColor" />
+                     {storeAcceptingOrders ? "Confirm Selection" : "Store Paused"}
+                  </button>
+                  
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] text-center w-full">
+                     Logistics & payment will be finalized on WhatsApp
+                  </p>
+               </div>
+            </div>
          </div>
       </main>
     </div>
