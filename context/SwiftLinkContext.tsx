@@ -216,6 +216,9 @@ export function SwiftLinkProvider({
           if (isOwnerRef.current && userRef.current?.id) {
             const uid = userRef.current.id;
             
+            // Ensure the ID is part of the state we save
+            const stateToSave = { ...next, id: uid };
+            
             const { error } = await supabase
               .from('stores')
               .upsert({
@@ -223,7 +226,7 @@ export function SwiftLinkProvider({
                 biz_name: next.bizName,
                 store_username: next.storeUsername,
                 phone: next.phone,
-                state_json: next,
+                state_json: stateToSave,
                 updated_at: new Date().toISOString()
               });
 
@@ -345,34 +348,61 @@ export function SwiftLinkProvider({
         setIsSupabaseActive(true);
       }
 
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
 
-              const u = session?.user ?? null;
+                    const u = session?.user ?? null;
 
-              setUser(u);
+                    setUser(u);
 
-              userRef.current = u; // CRITICAL FIX: Update the ref for uploads
+                    userRef.current = u;
 
-              
+                    
 
-              if (u) {
-            setIsSupabaseActive(true);
-            const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+                    if (u) {
+
+                        setIsSupabaseActive(true);
+
+                        const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+
+                        
+
+                        if (isOwnerRef.current) {
+
+                            supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
+
+                                // If no data, use default but FORCE the ID to be the user's UID
+
+                                let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
+
+                                
+
+                                // CRITICAL: Always ensure the state ID matches the authenticated user ID
+
+                                nextState = { ...nextState, id: u.id };
+
+                                
+
+                                if (isGodMode) {
+
+                                    nextState = { ...nextState, plan: "pro" };
+
+                                }
+
+                                
+
+                                setState(nextState);
+
+                                // Sync back to local storage immediately
+
+                                localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
+
+                            });
+
+                        }
+
+                    } else {
+
             
-            // Auto-load store on login if owner
-            if (isOwnerRef.current) {
-                supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
-                    let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
-                    
-                    // Force Pro Plan for God Mode users
-                    if (isGodMode) {
-                        nextState = { ...nextState, plan: "pro" };
-                    }
-                    
-                    setState(nextState);
-                });
-            }
-        } else {
             // If no user, reset state to default to avoid showing old local data
             setState(defaultShopState());
             if (typeof window !== "undefined") {
