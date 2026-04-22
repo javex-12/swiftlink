@@ -345,11 +345,17 @@ export function SwiftLinkProvider({
         setIsSupabaseActive(true);
       }
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        const u = session?.user ?? null;
-        setUser(u);
-        
-        if (u) {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+
+              const u = session?.user ?? null;
+
+              setUser(u);
+
+              userRef.current = u; // CRITICAL FIX: Update the ref for uploads
+
+              
+
+              if (u) {
             setIsSupabaseActive(true);
             const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
             
