@@ -67,6 +67,7 @@ export type ShopState = {
   
   // Theme Presets
   themePreset?: "custom" | "fresh" | "bold" | "minimal" | "playful";
+  storeTheme?: "light" | "dark" | "system"; // New field
 
   // Visual Customization (Phase 1 & 2)
   accentColor?: string;

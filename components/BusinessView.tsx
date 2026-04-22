@@ -514,6 +514,14 @@ export function BusinessView() {
                                 />
                             </div>
                         </div>
+                        <div className="pt-4 border-t border-slate-50 dark:border-white/5">
+                            <h3 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4 ml-1">Storefront Theme (Public View)</h3>
+                            <PillSelector 
+                                options={[{label: "Light Mode", value: "light"}, {label: "Dark Mode", value: "dark"}, {label: "Follow System", value: "system"}]}
+                                value={state.storeTheme || "system"}
+                                onChange={(v) => { updateState("storeTheme", v); }}
+                            />
+                        </div>
                     </div>
                 </Accordion>
                 <Accordion id="behaviour" title="Behaviour" subtitle="Store Workflow" icon={ShoppingCart}>

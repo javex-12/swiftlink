@@ -37,7 +37,11 @@ export function CartView() {
   const deliveryFee = total > 0 ? 1500 : 0; 
   const grandTotal = total + deliveryFee;
 
-  const returnUrl = shopId ? `/store/default?shop=${shopId}` : "/";
+  const returnUrl = useMemo(() => {
+    if (shopId) return `/store/default?shop=${shopId}`;
+    if (state.id) return `/store/default?shop=${state.id}`;
+    return "/";
+  }, [shopId, state.id]);
 
   const clearCart = async () => {
       const ok = await (window as any).customConfirm("Clear Bag?", "Are you sure you want to remove all items?");
@@ -48,13 +52,13 @@ export function CartView() {
 
   if (cartItemCount === 0) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-         <div className="w-32 h-32 bg-slate-50 rounded-[3rem] flex items-center justify-center text-slate-200 mb-8">
+      <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-6 text-center animate-fade-in transition-colors duration-500">
+         <div className="w-32 h-32 bg-slate-50 dark:bg-zinc-900 rounded-[3rem] flex items-center justify-center text-slate-200 dark:text-zinc-800 mb-8">
             <ShoppingBag size={64} strokeWidth={1.5} />
          </div>
-         <h2 className="text-3xl font-black text-slate-900 italic tracking-tight mb-4 uppercase">Your bag is empty</h2>
-         <p className="text-slate-500 font-medium mb-10 max-w-xs">Looks like you haven&apos;t added anything to your collection yet.</p>
-         <Link href={returnUrl} className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+         <h2 className="text-3xl font-black text-slate-900 dark:text-white italic tracking-tight mb-4 uppercase">Your bag is empty</h2>
+         <p className="text-slate-500 dark:text-zinc-400 font-medium mb-10 max-w-xs">Looks like you haven&apos;t added anything to your collection yet.</p>
+         <Link href={returnUrl} className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
             Return to Store
          </Link>
       </div>
@@ -62,21 +66,21 @@ export function CartView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-black font-sans transition-colors duration-500">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-5 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-slate-100 dark:border-white/10 px-4 md:px-8 py-5 flex items-center justify-between">
          <Link href={returnUrl} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100 transition-all border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white group-hover:bg-slate-100 dark:group-hover:bg-zinc-800 transition-all border border-slate-100 dark:border-white/5">
                <ArrowLeft size={20} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 transition-colors hidden sm:block">Back to Catalog</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors hidden sm:block">Back to Catalog</span>
          </Link>
          
          <div className="flex flex-col items-center">
-            <h1 className="text-lg font-black text-slate-900 tracking-tight italic uppercase">My Selection</h1>
+            <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight italic uppercase">My Selection</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
                <div className="w-1 h-1 rounded-full bg-emerald-500" />
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Checkout Protocol</span>
+               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Checkout Protocol</span>
             </div>
          </div>
          
@@ -96,34 +100,34 @@ export function CartView() {
                      <motion.div 
                         layout
                         key={p.id} 
-                        className="bg-white p-5 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl transition-all"
+                        className="bg-white dark:bg-zinc-950/40 p-5 md:p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-sm flex items-center gap-6 group hover:shadow-xl transition-all"
                      >
-                        <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-50 shrink-0">
+                        <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-50 dark:bg-zinc-900 rounded-[2rem] overflow-hidden border border-slate-50 dark:border-white/5 shrink-0">
                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={p.name} />
                         </div>
                         
                         <div className="flex-1 min-w-0 py-2">
-                           <div className="flex justify-between items-start mb-2">
-                              <div className="text-left">
-                                 <h3 className="text-base md:text-xl font-black text-slate-900 truncate leading-tight uppercase italic">{p.name}</h3>
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{p.category}</p>
+                           <div className="flex justify-between items-start mb-2 text-left">
+                              <div>
+                                 <h3 className="text-base md:text-xl font-black text-slate-900 dark:text-white truncate leading-tight uppercase italic">{p.name}</h3>
+                                 <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1">{p.category}</p>
                               </div>
-                              <button onClick={() => updateCart(p.id, -p.quantity)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
+                              <button onClick={() => updateCart(p.id, -p.quantity)} className="text-slate-300 dark:text-zinc-700 hover:text-red-500 transition-colors p-1">
                                  <Trash2 size={18} />
                               </button>
                            </div>
                            
                            <div className="flex items-center justify-between mt-6 md:mt-8">
-                              <div className="flex items-center gap-2 bg-slate-50 rounded-2xl p-1 border border-slate-100">
-                                 <button onClick={() => updateCart(p.id, -1)} className="w-8 h-8 rounded-xl bg-white text-slate-900 shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
+                              <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 rounded-2xl p-1 border border-slate-100 dark:border-white/5">
+                                 <button onClick={() => updateCart(p.id, -1)} className="w-8 h-8 rounded-xl bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
                                     <Minus size={14} />
                                  </button>
-                                 <span className="w-10 text-center text-xs font-black">{p.quantity}</span>
-                                 <button onClick={() => updateCart(p.id, 1)} className="w-8 h-8 rounded-xl bg-white text-slate-900 shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
+                                 <span className="w-10 text-center text-xs font-black dark:text-white">{p.quantity}</span>
+                                 <button onClick={() => updateCart(p.id, 1)} className="w-8 h-8 rounded-xl bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90">
                                     <Plus size={14} />
                                  </button>
                               </div>
-                              <span className="text-lg md:text-2xl font-black text-slate-900 italic text-right">
+                              <span className="text-lg md:text-2xl font-black text-slate-900 dark:text-white italic text-right">
                                  {state.currency}{(p.price * p.quantity).toLocaleString()}
                               </span>
                            </div>
@@ -139,10 +143,10 @@ export function CartView() {
                      { icon: Truck, text: "Swift Delivery", sub: "Same Day Possible" },
                      { icon: Zap, text: "Best Price", sub: "Value Selection" },
                   ].map((item, i) => (
-                     <div key={i} className="bg-white/50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center text-center">
-                        <item.icon className="text-slate-900 mb-3" size={24} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{item.text}</span>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.sub}</span>
+                     <div key={i} className="bg-white/50 dark:bg-zinc-950/20 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
+                        <item.icon className="text-slate-900 dark:text-white mb-3" size={24} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">{item.text}</span>
+                        <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest mt-1">{item.sub}</span>
                      </div>
                   ))}
                </div>
@@ -151,7 +155,7 @@ export function CartView() {
             {/* Right Column: Order Summary */}
             <div className="lg:col-span-5">
                <div className="sticky top-32 space-y-8">
-                  <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
+                  <div className="bg-slate-900 dark:bg-black rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden border dark:border-white/10">
                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
                      
                      <h3 className="text-xl font-black italic tracking-tight mb-8 uppercase text-left">Order Summary</h3>
@@ -166,7 +170,7 @@ export function CartView() {
                            <span className="font-black italic text-emerald-400">{state.currency}{deliveryFee.toLocaleString()}</span>
                         </div>
                         <div className="h-px bg-white/5 my-2" />
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center text-left">
                            <span className="text-xs font-black uppercase tracking-[0.2em]">Grand Total</span>
                            <span className="text-4xl font-black italic tracking-tighter" style={{ color: accentStr }}>
                               {state.currency}{grandTotal.toLocaleString()}
@@ -181,7 +185,7 @@ export function CartView() {
                                disabled={!storeAcceptingOrders}
                                className={cn(
                                   "w-full py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95",
-                                  storeAcceptingOrders ? "bg-emerald-500 text-white hover:brightness-110" : "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                  storeAcceptingOrders ? "bg-emerald-500 text-white hover:brightness-110" : "bg-slate-800 dark:bg-zinc-900 text-slate-500 cursor-not-allowed"
                                )}
                                style={storeAcceptingOrders ? { boxShadow: `0 20px 40px -10px ${accentStr}66` } : {}}
                             >
@@ -201,7 +205,7 @@ export function CartView() {
                                disabled={!storeAcceptingOrders}
                                className={cn(
                                   "w-full py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95",
-                                  storeAcceptingOrders ? "bg-white text-slate-900 hover:bg-slate-50" : "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                  storeAcceptingOrders ? "bg-white dark:bg-white text-slate-900 dark:text-black hover:bg-slate-50" : "bg-slate-800 dark:bg-zinc-900 text-slate-500 cursor-not-allowed"
                                )}
                             >
                                <CreditCard size={18} />
@@ -215,14 +219,14 @@ export function CartView() {
                      </div>
                   </div>
 
-                  <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm text-left">
                      <div className="flex items-center gap-3 mb-6">
-                        <CreditCard className="text-slate-400" size={18} />
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Supported Methods</h4>
+                        <CreditCard className="text-slate-400 dark:text-zinc-600" size={18} />
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-600">Supported Methods</h4>
                      </div>
                      <div className="flex flex-wrap gap-3">
                         {["VISA", "MASTERCARD", "BANK", "CASH"].map(m => (
-                           <div key={m} className="px-4 py-2 bg-slate-50 rounded-xl text-[9px] font-black text-slate-400 border border-slate-100 uppercase tracking-widest">{m}</div>
+                           <div key={m} className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 rounded-xl text-[9px] font-black text-slate-400 dark:text-zinc-600 border border-slate-100 dark:border-white/5 uppercase tracking-widest">{m}</div>
                         ))}
                      </div>
                   </div>
