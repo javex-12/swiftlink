@@ -34,7 +34,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col lg:flex-row font-sans transition-colors duration-300">
       {/* Sidebar Navigation */}
       <ProSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
@@ -42,7 +42,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         
         {/* Unified Top Header */}
-        <header className="sticky top-0 z-40 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between shadow-sm shrink-0">
+        <header className="sticky top-0 z-40 bg-white dark:bg-black border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between shadow-sm shrink-0">
           <div className="flex items-center gap-4">
              <button
                type="button"
@@ -63,7 +63,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
-             <div className="hidden md:flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full px-4 py-2 text-slate-400 focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-all focus-within:bg-white dark:focus-within:bg-slate-950 shadow-inner">
+             <div className="hidden md:flex items-center bg-slate-50 dark:bg-black border border-slate-100 dark:border-slate-800 rounded-full px-4 py-2 text-slate-400 focus-within:border-slate-300 dark:focus-within:border-slate-700 transition-all focus-within:bg-white dark:focus-within:bg-black shadow-inner">
                 <Search size={16} />
                 <input type="text" placeholder="Global search..." className="bg-transparent border-none outline-none text-xs font-bold px-3 w-40 text-slate-900 dark:text-white" />
              </div>
@@ -71,7 +71,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
              <div className="relative">
                 <button 
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center relative shadow-sm border border-slate-100 dark:border-slate-800"
+                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-black text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center relative shadow-sm border border-slate-100 dark:border-slate-800"
                 >
                    <Bell size={18} />
                    {(state.notifications || []).some(n => !n.read) && (
@@ -85,9 +85,9 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden"
+                        className="absolute top-12 right-0 w-80 bg-white dark:bg-black rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden"
                       >
-                         <div className="p-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/50">
+                         <div className="p-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-black">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Notifications</h3>
                             <button onClick={markAllRead} className="text-[9px] font-black text-emerald-500 uppercase hover:underline">Mark all read</button>
                          </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { Shield, LogOut, Trash2, ArrowRight, User } from "lucide-react";
+import { Shield, LogOut, Trash2, ArrowRight, User, Zap } from "lucide-react";
 
 export default function AccountPage() {
   const { user, isSupabaseActive, authSignOut, handleSignOut, state } =
@@ -16,11 +16,11 @@ export default function AccountPage() {
   }, [isSupabaseActive, user]);
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 py-10 transition-colors duration-300">
+    <main className="min-h-screen bg-slate-50 dark:bg-black px-6 py-10 transition-colors duration-300">
       <div className="max-w-2xl mx-auto">
         {!isSupabaseActive && (
-           <div className="mb-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+           <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                  <Shield size={24} />
               </div>
               <div className="text-center md:text-left">
@@ -31,12 +31,17 @@ export default function AccountPage() {
         )}
         <div className="flex items-start justify-between gap-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">
-              Account
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">
+                Account
+              </h1>
+              {state.plan === "pro" && (
+                <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-xl shadow-emerald-500/20">Pro Member</span>
+              )}
+            </div>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium">{authLabel}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center overflow-hidden shadow border border-slate-100 dark:border-slate-800">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-zinc-900 flex items-center justify-center text-white dark:text-white shadow-lg overflow-hidden border-2 border-slate-100 dark:border-white/10">
             {state.bizImage ? (
               <img src={state.bizImage} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -46,7 +51,18 @@ export default function AccountPage() {
         </div>
 
         <div className="mt-8 grid gap-4">
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
+          {state.plan !== "pro" && (
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+                  <Zap size={80} fill="currentColor" />
+               </div>
+               <h3 className="text-xl font-black uppercase italic leading-tight">Upgrade to Pro</h3>
+               <p className="text-sm font-bold opacity-90 mt-2 max-w-[240px]">Get custom domains, unlimited products, and advanced analytics.</p>
+               <button className="mt-6 px-6 py-3 bg-white text-emerald-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">Coming Soon</button>
+            </div>
+          )}
+
+          <div className="bg-white dark:bg-zinc-900/40 rounded-[2rem] border border-slate-100 dark:border-white/5 p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20">
                 <Shield size={18} />
@@ -69,14 +85,14 @@ export default function AccountPage() {
               </Link>
               <Link
                 href="/signup?mode=signup"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-black text-[11px] uppercase tracking-widest"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 bg-white dark:bg-black border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-black text-[11px] uppercase tracking-widest"
               >
                 Create account <ArrowRight size={16} />
               </Link>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
+          <div className="bg-white dark:bg-zinc-900/40 rounded-[2rem] border border-slate-100 dark:border-white/5 p-6 shadow-sm">
             <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
               Session controls
             </p>
@@ -89,7 +105,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={() => void authSignOut()}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-black text-[11px] uppercase tracking-widest"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 bg-slate-50 dark:bg-black border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-black text-[11px] uppercase tracking-widest"
               >
                 <LogOut size={16} /> Sign out
               </button>

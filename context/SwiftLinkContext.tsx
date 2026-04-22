@@ -103,6 +103,12 @@ type SwiftLinkContextValue = {
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
+// EMAILS THAT GET PRO AUTOMATICALLY
+const GOD_MODE_EMAILS = [
+  "michaeldosunmu22@gmail.com", // You
+  "dosunmumichael26@gmail.com", // Your other email
+];
+
 export function SwiftLinkProvider({
   children,
 }: {
@@ -115,7 +121,7 @@ export function SwiftLinkProvider({
   const [state, setState] = useState<ShopState>(defaultShopState);
   const [cart, setCart] = useState<CartMap>({});
   const [user, setUser] = useState<User | null>(null);
-  const [isSupabaseActive, setIsSupabaseActive] = useState(true); 
+  const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [currentTourStep, setCurrentTourStep] = useState(0);
@@ -342,14 +348,22 @@ export function SwiftLinkProvider({
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
+        
         if (u) {
             setIsSupabaseActive(true);
+            const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+            
             // Auto-load store on login if owner
             if (isOwnerRef.current) {
                 supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
-                    if (data?.state_json) {
-                        setState(data.state_json as ShopState);
+                    let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
+                    
+                    // Force Pro Plan for God Mode users
+                    if (isGodMode) {
+                        nextState = { ...nextState, plan: "pro" };
                     }
+                    
+                    setState(nextState);
                 });
             }
         } else {

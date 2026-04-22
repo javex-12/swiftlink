@@ -33,7 +33,7 @@ export function LauncherView() {
       description: "Deep dive into your sales, traffic, and growth.",
       href: "/pro/analytics",
       icon: BarChart3,
-      color: "bg-slate-900",
+      color: "bg-slate-900 dark:bg-zinc-800",
       accent: "slate",
       badge: "NEW",
     },
@@ -42,7 +42,7 @@ export function LauncherView() {
   return (
     <div className="space-y-10 max-w-7xl mx-auto w-full">
       {/* Welcome Section */}
-      <section className="relative overflow-hidden bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl">
+      <section className="relative overflow-hidden bg-slate-900 dark:bg-black rounded-[3rem] p-8 md:p-12 text-white shadow-2xl border dark:border-white/10">
          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-20 -mt-20 blur-3xl animate-pulse" />
          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="max-w-xl">
@@ -51,7 +51,7 @@ export function LauncherView() {
                  animate={{ opacity: 1, y: 0 }}
                  className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-4 block"
                >
-                 Powering Your Vision
+                 Powering Your Vision {state.plan === "pro" && "• PRO ACCOUNT"}
                </motion.span>
                <motion.h2 
                  initial={{ opacity: 0, y: 20 }}
@@ -90,7 +90,7 @@ export function LauncherView() {
       {/* Management Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
          {cards.map((card, i) => (
-            <Link key={card.title} href={card.href} className="group relative block bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-200 transition-all hover:-translate-y-2 flex flex-col h-full overflow-hidden">
+            <Link key={card.title} href={card.href} className="group relative block bg-white dark:bg-black rounded-[2.5rem] p-8 border border-slate-100 dark:border-white/10 shadow-sm hover:shadow-xl hover:border-slate-200 dark:hover:border-emerald-500/30 transition-all hover:-translate-y-2 flex flex-col h-full overflow-hidden">
                <div className={cn("absolute top-0 right-0 w-32 h-32 opacity-5 rounded-full -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150 group-hover:opacity-10", card.color)} />
                
                <div className="flex justify-between items-start mb-10">
@@ -98,37 +98,37 @@ export function LauncherView() {
                      <card.icon size={24} />
                   </div>
                   <div className={cn("px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase", 
-                     card.accent === "emerald" ? "bg-emerald-50 text-emerald-600" : 
-                     card.accent === "blue" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-600"
+                     card.accent === "emerald" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : 
+                     card.accent === "blue" ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300"
                   )}>
                      {card.badge}
                   </div>
                </div>
                
                <div className="mt-auto">
-                  <h3 className="text-xl font-black text-slate-900 mb-3 uppercase italic tracking-tight">{card.title}</h3>
-                  <p className="text-sm font-medium text-slate-500 leading-relaxed">{card.description}</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white mb-3 uppercase italic tracking-tight">{card.title}</h3>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">{card.description}</p>
                </div>
                
-               <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Launch Module</span>
-                  <ExternalLink size={14} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
+               <div className="mt-8 pt-6 border-t border-slate-50 dark:border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">Launch Module</span>
+                  <ExternalLink size={14} className="text-slate-300 dark:text-slate-700 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
                </div>
             </Link>
          ))}
       </section>
 
       {/* Quick Stats / Feedback Section */}
-      <section className="bg-emerald-50 rounded-[3rem] p-8 md:p-12 border border-emerald-100 flex flex-col md:flex-row items-center gap-8 justify-between">
+      <section className="bg-emerald-50 dark:bg-emerald-950/20 rounded-[3rem] p-8 md:p-12 border border-emerald-100 dark:border-emerald-500/20 flex flex-col md:flex-row items-center gap-8 justify-between">
          <div className="max-w-md text-center md:text-left">
-            <h3 className="text-2xl font-black text-slate-900 italic mb-2 tracking-tight">NEED A CUSTOM FEATURE?</h3>
-            <p className="text-sm font-medium text-emerald-800/70">Our dev team is live. Send us a message on WhatsApp and we&apos;ll help you scale your operations.</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white italic mb-2 tracking-tight uppercase">NEED A CUSTOM FEATURE?</h3>
+            <p className="text-sm font-medium text-emerald-800/70 dark:text-emerald-400/60">Our dev team is live. Send us a message on WhatsApp and we&apos;ll help you scale your operations.</p>
          </div>
          <a 
            href="https://wa.me/2348085741430?text=Hi, I want to request a feature for SwiftLink..."
            target="_blank"
            rel="noopener noreferrer"
-           className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2"
+           className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2"
          >
             <MessageSquare size={16} /> Contact Support
          </a>

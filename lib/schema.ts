@@ -48,6 +48,7 @@ export type AppNotification = {
 
 export type ShopState = {
   id: string | null;
+  plan?: "free" | "pro"; // New plan field
   bizName: string;
   bizImage: string;
   storeUsername?: string; // unique slug for URLs
