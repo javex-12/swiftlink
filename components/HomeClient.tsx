@@ -25,7 +25,7 @@ export function HomeClient({ defaultView = "launcher" }: { defaultView?: "launch
   }, [defaultView, user?.id, isOwner, shop, router]);
 
   if (track) return <TrackingView />;
-  if (shop) return <CustomerStorefront />;
+  if (shop) return <CustomerStorefront shopId={shop} />;
   
   return defaultView === "landing" ? <LandingPage /> : <LauncherView />;
 }
