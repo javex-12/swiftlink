@@ -5,7 +5,7 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { supabase } from "@/lib/supabase-client";
@@ -62,61 +62,6 @@ export default function SignupPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !nonceRef.current) return;
-
-    const handleCredentialResponse = async (response: any) => {
-      setLoading("google");
-      try {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: response.credential,
-          nonce: nonceRef.current,
-        });
-        if (error) throw error;
-        
-        if (data.user) {
-          await saveUserStore(data.user.id);
-          router.push("/pro");
-        }
-      } catch (e: any) {
-        console.error("Google Token Auth Error:", e);
-        setError(`Google sign-in failed: ${e.message}`);
-      } finally {
-        setLoading(null);
-      }
-    };
-
-    // Initialize Google One Tap / Button
-    const initGsi = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          nonce: nonceRef.current,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-        
-        // Optionally show One Tap prompt automatically
-        window.google.accounts.id.prompt();
-      }
-    };
-
-    if (window.google) {
-      initGsi();
-    } else {
-      // Script is loaded via Next.js Script tag, we might need to wait
-      const interval = setInterval(() => {
-        if (window.google) {
-          initGsi();
-          clearInterval(interval);
-        }
-      }, 100);
-      return () => clearInterval(interval);
-    }
-  }, [GOOGLE_CLIENT_ID, router, nonce]);
-
   const handleGoogleCustom = () => {
     if (!GOOGLE_CLIENT_ID) {
       setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
@@ -151,7 +96,7 @@ export default function SignupPage() {
     setError(null);
   };
 
-  const saveUserStore = async (
+  const saveUserStore = useCallback(async (
     uid: string,
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
@@ -214,7 +159,62 @@ export default function SignupPage() {
       console.error("Critical Supabase Error in saveUserStore:", err);
       throw err;
     }
-  };
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !nonceRef.current) return;
+
+    const handleCredentialResponse = async (response: any) => {
+      setLoading("google");
+      try {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.credential,
+          nonce: nonceRef.current,
+        });
+        if (error) throw error;
+        
+        if (data.user) {
+          await saveUserStore(data.user.id);
+          router.push("/pro");
+        }
+      } catch (e: any) {
+        console.error("Google Token Auth Error:", e);
+        setError(`Google sign-in failed: ${e.message}`);
+      } finally {
+        setLoading(null);
+      }
+    };
+
+    // Initialize Google One Tap / Button
+    const initGsi = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          nonce: nonceRef.current,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        
+        // Optionally show One Tap prompt automatically
+        window.google.accounts.id.prompt();
+      }
+    };
+
+    if (window.google) {
+      initGsi();
+    } else {
+      // Script is loaded via Next.js Script tag, we might need to wait
+      const interval = setInterval(() => {
+        if (window.google) {
+          initGsi();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
