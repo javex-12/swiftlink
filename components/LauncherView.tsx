@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 export function LauncherView() {
   const { copyShopLink, copyTrackingPortalLink, state } = useSwiftLink();
 
+  const isPro = state.plan === "pro" || state.plan === "business";
+
   const cards = [
     {
       title: "Storefront",
@@ -29,13 +31,13 @@ export function LauncherView() {
       badge: state.deliveries.length.toString(),
     },
     {
-      title: "Analytics",
-      description: "Deep dive into your sales, traffic, and growth.",
-      href: "/pro/analytics",
-      icon: BarChart3,
-      color: "bg-slate-900 dark:bg-zinc-800",
-      accent: "slate",
-      badge: "NEW",
+      title: isPro ? "Analytics" : "Detailed Analytics",
+      description: isPro ? "Deep dive into your sales, traffic, and growth." : "Unlock traffic insights and sales growth charts.",
+      href: isPro ? "/pro/analytics" : "/account",
+      icon: isPro ? BarChart3 : Shield,
+      color: isPro ? "bg-slate-900 dark:bg-zinc-800" : "bg-slate-400 dark:bg-zinc-900",
+      accent: isPro ? "slate" : "gray",
+      badge: isPro ? "NEW" : "PRO",
     },
   ];
 

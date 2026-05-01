@@ -4,6 +4,7 @@ export * from "./schema";
 
 export const defaultShopState = (): ShopState => ({
   id: null,
+  plan: "free",
   bizName: "",
   bizImage: "",
   phone: "",

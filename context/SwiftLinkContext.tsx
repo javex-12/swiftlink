@@ -890,12 +890,18 @@ export function SwiftLinkProvider({
 
   const addProduct = useCallback(() => {
     setState((prev) => {
+      const isPro = prev.plan === "pro" || prev.plan === "business";
+      if (!isPro && prev.products.length >= 5) {
+        addToast("Starter plan limit reached (5 products). Upgrade to Pro for unlimited items!", "error");
+        return prev;
+      }
+
       const next = {
         ...prev,
         products: [
           {
             id: Date.now(),
-            name: "Product",
+            name: "New Product",
             price: 0,
             description: "",
             image: "",
@@ -908,7 +914,7 @@ export function SwiftLinkProvider({
       persistState(next);
       return next;
     });
-  }, [persistState]);
+  }, [persistState, addToast]);
 
   const updateProduct = useCallback(
     (id: number, field: string, value: unknown) => {

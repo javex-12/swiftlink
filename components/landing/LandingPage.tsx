@@ -474,7 +474,7 @@ const Pricing = () => {
               </div>
 
               <Link
-                href="/signup"
+                href={`/signup?mode=signup&plan=${p.name.toLowerCase()}`}
                 className={cn(
                   "w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-center active:scale-95",
                   p.variant === "black" ? "bg-white text-slate-900 hover:bg-emerald-400" : "bg-slate-900 text-white hover:bg-emerald-500 shadow-lg"
@@ -516,7 +516,7 @@ const CTASection = () => (
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/signup"
+              href="/signup?mode=signup&plan=pro"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl text-lg font-black hover:bg-emerald-400 transition-all hover:scale-105 active:scale-95 shadow-2xl"
             >
               Get Started <ArrowRight size={20} />

@@ -5,7 +5,7 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { supabase } from "@/lib/supabase-client";
@@ -47,20 +47,23 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
-  const [nonce, setNonce] = useState<string>("");
+  
+  // Use a ref for the nonce to ensure it stays consistent for the callback
+  const nonceRef = useRef<string>("");
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   useEffect(() => {
-    // Generate a secure nonce for Google Sign-In
-    const rawNonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    setNonce(rawNonce);
+    // Generate a secure nonce ONCE on mount
+    if (!nonceRef.current) {
+      nonceRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
   }, []);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !nonce) return;
+    if (!GOOGLE_CLIENT_ID || !nonceRef.current) return;
 
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
@@ -68,7 +71,7 @@ export default function SignupPage() {
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
-          nonce: nonce,
+          nonce: nonceRef.current,
         });
         if (error) throw error;
         
@@ -90,7 +93,7 @@ export default function SignupPage() {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
-          nonce: nonce,
+          nonce: nonceRef.current,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
@@ -153,6 +156,7 @@ export default function SignupPage() {
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
       
       const bizName = extra?.bizName || "";
@@ -161,8 +165,18 @@ export default function SignupPage() {
         : "";
       const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
       
+      const GOD_MODE_EMAILS = [
+        "michaeldosunmu22@gmail.com",
+        "dosunmumichael26@gmail.com",
+      ];
+      
+      const isGodMode = user?.email && GOD_MODE_EMAILS.includes(user.email);
+      const urlPlan = searchParams.get("plan");
+      const initialPlan = isGodMode ? "pro" : (urlPlan || "free");
+
       const nextState = {
         id: uid,
+        plan: initialPlan as any,
         bizName: bizName || (storeData?.state_json as any)?.bizName || "",
         storeUsername: storeUsername || (storeData?.state_json as any)?.storeUsername || "",
         phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
