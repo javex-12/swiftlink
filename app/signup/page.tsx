@@ -47,13 +47,20 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
+  const [nonce, setNonce] = useState<string>("");
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    // Generate a secure nonce for Google Sign-In
+    const rawNonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    setNonce(rawNonce);
+  }, []);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !nonce) return;
 
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
@@ -61,6 +68,7 @@ export default function SignupPage() {
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
+          nonce: nonce,
         });
         if (error) throw error;
         
@@ -82,6 +90,7 @@ export default function SignupPage() {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
+          nonce: nonce,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
@@ -103,7 +112,7 @@ export default function SignupPage() {
       }, 100);
       return () => clearInterval(interval);
     }
-  }, [GOOGLE_CLIENT_ID, router]);
+  }, [GOOGLE_CLIENT_ID, router, nonce]);
 
   const handleGoogleCustom = () => {
     if (!GOOGLE_CLIENT_ID) {
@@ -481,7 +490,7 @@ export default function SignupPage() {
           </div>
 
           <div className="flex items-center justify-center mt-6">
-            <Link href="/" className="text-slate-500 hover:text-emerald-400 font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center gap-2">
+            <Link href="/?v=landing" className="text-slate-500 hover:text-emerald-400 font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center gap-2">
               <Zap size={11} /> Back to home
             </Link>
           </div>
