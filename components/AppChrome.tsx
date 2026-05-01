@@ -9,15 +9,25 @@ import { X, Check, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
-  const [modal, setModal] = useState<{ title: string, message: string, onConfirm: (val?: string) => void, onCancel: () => void, isPrompt?: boolean } | null>(null);
+  const [modal, setModal] = useState<{ 
+    title: string, 
+    message: string, 
+    onConfirm: (val?: string) => void, 
+    onCancel: () => void, 
+    isPrompt?: boolean,
+    confirmLabel?: string,
+    cancelLabel?: string
+  } | null>(null);
   const [promptValue, setPromptValue] = useState("");
 
   useEffect(() => {
-    (window as any).customConfirm = (title: string, message: string) => {
+    (window as any).customConfirm = (title: string, message: string, confirmLabel = "Confirm", cancelLabel = "Cancel") => {
         return new Promise((resolve) => {
             setModal({
                 title,
                 message,
+                confirmLabel,
+                cancelLabel,
                 onConfirm: () => { setModal(null); resolve(true); },
                 onCancel: () => { setModal(null); resolve(false); }
             });
@@ -140,13 +150,13 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
                    onClick={modal.onCancel}
                    className="flex-1 py-4 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors"
                  >
-                   Cancel
+                   {modal.cancelLabel || "Cancel"}
                  </button>
                  <button 
                    onClick={() => modal.onConfirm(modal.isPrompt ? promptValue : undefined)}
                    className="flex-1 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
                  >
-                   {modal.isPrompt ? "Save" : "Confirm"}
+                   {modal.isPrompt ? "Save" : (modal.confirmLabel || "Confirm")}
                  </button>
               </div>
             </motion.div>

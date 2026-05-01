@@ -239,67 +239,78 @@ export function CustomerStorefront({
                       </div>
                     </div>
 
-                    {/* Product Grid - Responsive Columns */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-8">
-                      {filteredProducts.map((p) => (
-                        <motion.div key={p.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                          <div onClick={() => { setSelectedProduct(p); setScreen("product"); }} className="w-full text-left cursor-pointer group">
-                            <div className="bg-white rounded-[1.25rem] md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 relative border border-black/[0.01]">
-                              <div className="aspect-square overflow-hidden relative">
-                                <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                {p.badge && (
-                                  <span className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[8px] md:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    {p.badge}
-                                  </span>
-                                )}
-                                <button
-                                  onClick={(e) => { 
-                                      e.stopPropagation(); 
-                                      setWishlist(w => w.includes(p.id) ? w.filter(x => x !== p.id) : [...w, p.id]); 
-                                  }}
-                                  className="absolute top-3 right-3 w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-sm opacity-0 md:group-hover:opacity-100 transition-all"
-                                >
-                                  <Heart size={12} className={wishlist.includes(p.id) ? "fill-red-500 text-red-500" : "text-gray-400"} />
-                                </button>
-                              </div>
-
-                              <div className="p-3 md:p-6">
-                                <p className="text-[11px] md:text-base font-black text-gray-900 truncate leading-none mb-1.5">{p.name}</p>
-                                <div className="flex items-center gap-1">
-                                  <Star size={8} className="fill-amber-400 text-amber-400" />
-                                  <span className="text-[9px] md:text-[11px] font-bold text-gray-400">4.9</span>
-                                  <span className="text-[8px] md:text-[10px] text-gray-300 ml-0.5">(86)</span>
-                                </div>
-                                <div className="flex items-center justify-between mt-3 md:mt-4">
-                                  <p className="text-[12px] md:text-xl font-black text-emerald-600">{s.currency}{Number(p.price).toLocaleString()}</p>
-                                  {qty(p.id) === 0 ? (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }}
-                                      className="w-7 h-7 md:w-10 md:h-10 bg-gray-900 text-white rounded-full flex items-center justify-center active:scale-90 transition-all hover:bg-emerald-500"
-                                    >
-                                      <Plus size={14} />
-                                    </button>
-                                  ) : (
-                                    <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1">
-                                      <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, -1); }} className="w-6 h-6 md:w-8 md:h-8 bg-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
-                                        <Minus size={10} />
-                                      </button>
-                                      <span className="text-[10px] md:text-xs font-black w-4 text-center">{qty(p.id)}</span>
-                                      <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }} className="w-6 h-6 md:w-8 md:h-8 bg-emerald-500 text-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
-                                        <Plus size={10} />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    {filteredProducts.length === 0 && (
+                                        {/* Product Grid - Responsive Columns */}
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-8">
+                                          {filteredProducts.map((p) => (
+                                            <motion.div key={p.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                              <div
+                                                onClick={() => { setSelectedProduct(p); setScreen("product"); }}
+                                                className={cn(
+                                                    "w-full text-left cursor-pointer group transition-all",
+                                                    p.outOfStock && "opacity-60 grayscale-[0.8]"
+                                                )}
+                                              >
+                                                <div className="bg-white rounded-[1.25rem] md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 relative border border-black/[0.01]">
+                                                  <div className="aspect-square overflow-hidden relative">
+                                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                                                    {p.badge && (
+                                                      <span className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[8px] md:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                        {p.badge}
+                                                      </span>
+                                                    )}
+                    
+                                                    {p.outOfStock && (
+                                                      <span className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] z-10">
+                                                        <span className="bg-white/90 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-xl">Sold Out</span>
+                                                      </span>
+                                                    )}
+                                                    <button
+                                                      onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setWishlist(w => w.includes(p.id) ? w.filter(x => x !== p.id) : [...w, p.id]);
+                                                      }}
+                                                      className="absolute top-3 right-3 w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-sm opacity-0 md:group-hover:opacity-100 transition-all"
+                                                    >
+                                                      <Heart size={12} className={wishlist.includes(p.id) ? "fill-red-500 text-red-500" : "text-gray-400"} />
+                                                    </button>
+                                                  </div>
+                    
+                                                  <div className="p-3 md:p-6">
+                                                    <p className="text-[11px] md:text-base font-black text-gray-900 truncate leading-none mb-1.5">{p.name}</p>
+                                                    <div className="flex items-center gap-1">
+                                                      <Star size={8} className="fill-amber-400 text-amber-400" />
+                                                      <span className="text-[9px] md:text-[11px] font-bold text-gray-400">4.9</span>
+                                                      <span className="text-[8px] md:text-[10px] text-gray-300 ml-0.5">(86)</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-3 md:mt-4">
+                                                      <p className="text-[12px] md:text-xl font-black text-emerald-600">{s.currency}{Number(p.price).toLocaleString()}</p>
+                                                      {qty(p.id) === 0 ? (
+                                                        <button
+                                                          onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }}
+                                                          className="w-7 h-7 md:w-10 md:h-10 bg-gray-900 text-white rounded-full flex items-center justify-center active:scale-90 transition-all hover:bg-emerald-500"
+                                                        >
+                                                          <Plus size={14} />
+                                                        </button>
+                                                      ) : (
+                                                        <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1">
+                                                          <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, -1); }} className="w-6 h-6 md:w-8 md:h-8 bg-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
+                                                            <Minus size={10} />
+                                                          </button>
+                                                          <span className="text-[10px] md:text-xs font-black w-4 text-center">{qty(p.id)}</span>
+                                                          <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }} className="w-6 h-6 md:w-8 md:h-8 bg-emerald-500 text-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
+                                                            <Plus size={10} />
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </motion.div>
+                                          ))}
+                                        </div>                    {filteredProducts.length === 0 && (
                       <div className="flex flex-col items-center justify-center py-20 text-gray-300">
                         <Package size={48} strokeWidth={1} />
                         <p className="text-xs md:text-sm font-black mt-4 uppercase tracking-[0.2em]">No products found</p>
@@ -575,7 +586,7 @@ export function CustomerStorefront({
                 }`}
               >
                 <div className="relative">
-                  <Icon size={18} md:size={22} strokeWidth={activeTab === id ? 2.5 : 1.5} />
+                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" strokeWidth={activeTab === id ? 2.5 : 1.5} />
                   {badge != null && badge > 0 && (
                     <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-emerald-500 text-white text-[7px] font-black rounded-full flex items-center justify-center border-2 border-white">
                       {badge}

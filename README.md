@@ -1,122 +1,40 @@
 # SwiftLink Pro
 
-SwiftLink Pro is a **WhatsApp-first storefront**: merchants create a store, add products, share a public link, and customers place orders via WhatsApp.
+SwiftLink Pro is a **WhatsApp-first storefront** for Nigerian small businesses. Merchants create a store, add products, share a public link, and customers place orders via WhatsApp with live dispatch tracking.
 
-## Quick start
+## Quick Start
 
 ```bash
-cd swiftlink
 npm install
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-## Tech stack
+## Tech Stack
 
-- **Next.js** (App Router) + **React**
-- **TypeScript**
-- **Tailwind CSS**
-- **Framer Motion**
-- **Firebase**: Auth, Firestore, Storage
+- **Framework**: Next.js 15 (App Router) + TypeScript
+- **Database/Auth**: Supabase
+- **Styling**: Tailwind CSS + Framer Motion
+- **Maps**: Leaflet (Live Dispatch Tracking)
 
-## App routes (high level)
+## Environment Variables
 
-- **Landing**: `/`
-- **Auth**: `/signup`
-- **Owner** (command center): `/pro`
-- **Owner** (store editor): `/business`
-- **Owner** (dispatch): `/dispatch`
-- **Public storefront**: `/store/[handle]`
-- **Cart**: `/cart`
-- **Terms**: `/terms`
-
-## Environment variables
-
-Copy `swiftlink/.env.example` → `swiftlink/.env.local` and fill in values from Firebase Console:
+Copy `.env.example` to `.env.local` and fill in your Supabase credentials:
 
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 ```
 
-If these variables are missing, Firebase will not initialize and the app will run in a limited (non-synced) mode.
+## Features
 
-## Firebase data model (important)
+- **Store Editor**: Drag-and-drop management of products and branding.
+- **WhatsApp Checkout**: Frictionless order flow straight to the merchant's phone.
+- **Dispatch Tracking**: Driver portal for live GPS streaming and customer map view.
+- **Modern Auth**: Google One Tap & Popup authentication.
 
-- **Store documents** live at `swiftlink_stores/{uid}`.
-- **Public store handles** are resolved via `swiftlink_slugs/{slug}` where the doc contains:
-  - `shopId`: the owner UID
-  - `updatedAt`: ISO string
+## Deploying
 
-This is what makes `/store/[slug]` load the **correct owner store** for both logged-in and anonymous users.
-
-## Security (must do in Firebase Console)
-
-Client-side code cannot “secure Firebase” by itself. The real security is your **Firestore Rules** and **Storage Rules**.
-
-### Firestore Rules (recommended starting point)
-
-Paste into Firebase Console → Firestore → Rules:
-
-```txt
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Public storefront data is readable by anyone.
-    match /swiftlink_stores/{uid} {
-      allow read: if true;
-      allow create, update, delete: if isSignedIn() && request.auth.uid == uid;
-    }
-
-    // Public handle registry: readable by anyone, writable only by the owner of that UID.
-    match /swiftlink_slugs/{slug} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.shopId == request.auth.uid;
-      allow update, delete: if isSignedIn()
-        && resource.data.shopId == request.auth.uid
-        && request.resource.data.shopId == request.auth.uid;
-    }
-  }
-}
-```
-
-### Storage Rules (recommended starting point)
-
-Paste into Firebase Console → Storage → Rules:
-
-```txt
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /stores/{uid}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
-
-## Build & deploy
-
-```bash
-cd swiftlink
-npm run build
-npm run start
-```
-
-For production, deploy on Vercel and configure the same `NEXT_PUBLIC_FIREBASE_*` env vars in the Vercel project settings.
-
-## Contributing
-
-- Keep UI copy **honest** (avoid fake stats/claims).
-- Avoid dead links / placeholder buttons.
-- Run `npm run build` before pushing.
+Deploy on **Vercel** with the environment variables listed above. Ensure you have the `dispatch_tracking` table set up in your Supabase project (see `docs/SUPABASE_SETUP.sql`).

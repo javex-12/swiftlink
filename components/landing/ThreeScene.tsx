@@ -173,7 +173,7 @@ function FloatingSmallSphere({ position, color }: { position: [number, number, n
   );
 }
 
-// ─── Mouse-Reactive Scene Root ────────────────────────────────────────────────
+// ─── Scene Root ───────────────────────────────────────────────────────────────
 function Scene() {
   const groupRef = useRef<THREE.Group>(null!);
   const reduceMotion = useMemo(() => {
@@ -186,68 +186,54 @@ function Scene() {
     const { mouse } = state;
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
-      (mouse.x * Math.PI) / 8,
-      0.04
+      (mouse.x * Math.PI) / 12,
+      0.03
     );
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
       groupRef.current.rotation.x,
-      (mouse.y * Math.PI) / 12,
-      0.04
+      (mouse.y * Math.PI) / 16,
+      0.03
     );
   });
 
   return (
     <group ref={groupRef}>
-      {/* Background wireframe globe for depth */}
-      <WireframeGlobe />
-
       {/* Central hero element */}
       <CentralBlob />
 
-      {/* Orbiting rings */}
+      {/* Simplified Orbiting elements */}
       <AnimatedRing
         radius={2.8}
-        speed={1}
+        speed={0.6}
         color="#10b981"
-        thickness={0.04}
+        thickness={0.02}
         tilt={[Math.PI / 4, 0, 0]}
       />
       <AnimatedRing
-        radius={3.5}
-        speed={-0.7}
+        radius={3.2}
+        speed={-0.4}
         color="#0f172a"
-        thickness={0.025}
+        thickness={0.01}
         tilt={[Math.PI / 6, Math.PI / 5, 0]}
-      />
-      <AnimatedRing
-        radius={4.2}
-        speed={0.5}
-        color="#34d399"
-        thickness={0.015}
-        tilt={[Math.PI / 3, 0, Math.PI / 6]}
       />
 
       {/* Orbiting satellites */}
-      <OrbitingSphere orbitRadius={2.8} speed={0.5} color="#10b981" size={0.18} startAngle={0} yOffset={0} />
-      <OrbitingSphere orbitRadius={2.8} speed={0.5} color="#34d399" size={0.12} startAngle={Math.PI} yOffset={0} />
-      <OrbitingSphere orbitRadius={3.5} speed={-0.35} color="#0f172a" size={0.22} startAngle={Math.PI / 3} yOffset={0.5} />
-      <OrbitingSphere orbitRadius={3.5} speed={-0.35} color="#475569" size={0.14} startAngle={Math.PI + Math.PI / 3} yOffset={-0.5} />
+      <OrbitingSphere orbitRadius={2.8} speed={0.4} color="#10b981" size={0.12} startAngle={0} yOffset={0} />
+      <OrbitingSphere orbitRadius={3.2} speed={-0.25} color="#0f172a" size={0.15} startAngle={Math.PI / 3} yOffset={0.4} />
 
       {/* Floating decorative elements */}
-      <FloatingCube position={[3.2, 1.8, 0.5]} />
-      <FloatingCube position={[-3.5, -1.2, -0.8]} />
-      <FloatingSmallSphere position={[-2.5, 2.2, 0.5]} color="#10b981" />
-      <FloatingSmallSphere position={[2.8, -2.0, 1.0]} color="#34d399" />
-      <FloatingSmallSphere position={[-1.5, -2.8, -0.5]} color="#6ee7b7" />
+      <FloatingCube position={[3.5, 1.5, 0]} />
+      <FloatingSmallSphere position={[-3, 2, 0.5]} color="#10b981" />
+      <FloatingSmallSphere position={[2.5, -2, 1.0]} color="#34d399" />
 
       {/* Particle sparkles */}
       <Sparkles
-        count={40}
-        scale={12}
-        size={1.5}
-        speed={0.3}
+        count={25}
+        scale={10}
+        size={1.2}
+        speed={0.2}
         color="#10b981"
-        opacity={0.6}
+        opacity={0.4}
       />
     </group>
   );
@@ -275,7 +261,7 @@ export default function ThreeScene() {
   }, []);
 
   return (
-    <div className="w-full h-full min-h-[400px] relative">
+    <div className="w-full h-full min-h-[400px] relative pointer-events-none">
       <Canvas
         dpr={isMobile ? 1 : [1, 1.5]}
         frameloop={reduceMotion || isMobile ? "demand" : "always"}
@@ -286,20 +272,19 @@ export default function ThreeScene() {
         }}
         style={{ background: "transparent" }}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 9]} fov={45} />
+        <PerspectiveCamera makeDefault position={[0, 0, 8]} fov={45} />
 
         {/* Lighting setup */}
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.5} />
         <spotLight
-          position={[10, 12, 10]}
-          angle={0.2}
+          position={[10, 10, 10]}
+          angle={0.15}
           penumbra={1}
-          intensity={2}
+          intensity={1.5}
           color="#ffffff"
         />
-        <pointLight position={[-8, -6, -8]} intensity={1.5} color="#10b981" />
-        <pointLight position={[8, 6, 4]} intensity={0.8} color="#6ee7b7" />
-        <pointLight position={[0, 10, 0]} intensity={0.5} color="#34d399" />
+        <pointLight position={[-10, -10, -10]} intensity={1} color="#10b981" />
+        <pointLight position={[0, 5, 0]} intensity={0.5} color="#34d399" />
 
         <Suspense fallback={null}>
           <Scene />

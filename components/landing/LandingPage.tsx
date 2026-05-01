@@ -17,7 +17,8 @@ import {
   Globe,
   Sparkles,
   Smartphone,
-  Box
+  Box,
+  Truck
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -156,112 +157,116 @@ const Hero = () => {
   const reduceMotion = usePrefersReducedMotion();
 
   return (
-    <section className="relative min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6 overflow-hidden flex items-center bg-white">
-      {/* Background orbs — decorative only */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-100/60 rounded-full blur-[120px] pointer-events-none -translate-y-1/4 translate-x-1/4" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-slate-100/80 rounded-full blur-[100px] pointer-events-none translate-y-1/4 -translate-x-1/4" />
+    <section className="relative min-h-[90vh] lg:min-h-screen pt-28 sm:pt-32 pb-16 px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa]">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
+        <div className="absolute top-[10%] left-[5%] w-[40%] aspect-square bg-emerald-100/40 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[10%] right-[5%] w-[35%] aspect-square bg-blue-100/30 rounded-full blur-[100px]" />
+      </div>
 
       <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* ── Left: Copy ─────────────────────────────── */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <FadeUp delay={0}>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                The Next Evolution of E-Commerce
-              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 shadow-sm rounded-full mb-8">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Next-Gen E-Commerce</span>
+              </div>
             </FadeUp>
 
             <FadeUp delay={0.1}>
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black text-slate-900 leading-[1.0] tracking-tighter mb-6">
-                Turn your<br />
-                WhatsApp into a{" "}
-                <span className="text-emerald-500 italic">Sales Machine.</span>
+              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-slate-900 leading-[0.95] tracking-tight mb-8">
+                Sell on <span className="text-emerald-500">WhatsApp</span> <br className="hidden sm:block" />
+                <span className="italic font-serif opacity-90">like a Pro.</span>
               </h1>
             </FadeUp>
 
             <FadeUp delay={0.2}>
-              <p className="text-base sm:text-lg lg:text-xl text-slate-500 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-medium">
-                SwiftLink Pro empowers modern businesses with high-converting storefronts,
-                live commerce tools, and professional dispatch management.
+              <p className="text-lg sm:text-xl text-slate-500 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
+                The high-performance storefront for Nigerian entrepreneurs. 
+                Fast, professional, and built for your phone.
               </p>
             </FadeUp>
 
             <FadeUp delay={0.3}>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4">
                 <Link
                   href="/signup"
-                  className="bg-slate-900 text-white px-7 py-4 rounded-2xl text-base font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200 group"
+                  className="bg-slate-900 text-white px-8 py-5 rounded-2xl text-base font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200"
                 >
-                  Get Started Free <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  Start Selling Now <ArrowRight size={18} />
                 </Link>
                 <button
                   onClick={scrollToDemo}
-                  className="flex items-center justify-center gap-3 px-7 py-4 rounded-2xl text-slate-700 font-black hover:bg-slate-50 transition-all border-2 border-slate-200"
+                  className="flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-slate-700 bg-white border border-slate-200 font-black hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                 >
-                  View Demo <Sparkles size={18} className="text-emerald-500" />
+                  Watch Demo <Sparkles size={18} className="text-emerald-500" />
                 </button>
               </div>
             </FadeUp>
-
-            <FadeUp delay={0.45}>
-              <div className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4">
-                {[
-                  "Fast setup",
-                  "WhatsApp-first checkout",
-                  "Mobile editor",
-                  "Shareable store link",
-                ].map((label) => (
-                  <span
-                    key={label}
-                    className="px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
+            
+            <FadeUp delay={0.4} className="mt-12 opacity-50 flex items-center justify-center lg:justify-start gap-8">
+               <div className="flex flex-col">
+                  <span className="text-2xl font-black text-slate-900 tracking-tighter">60s</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Setup Time</span>
+               </div>
+               <div className="w-px h-8 bg-slate-200" />
+               <div className="flex flex-col">
+                  <span className="text-2xl font-black text-slate-900 tracking-tighter">0%</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Transaction Fee</span>
+               </div>
+               <div className="w-px h-8 bg-slate-200" />
+               <div className="flex flex-col">
+                  <span className="text-2xl font-black text-slate-900 tracking-tighter">Live</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tracking</span>
+               </div>
             </FadeUp>
           </div>
 
-          {/* ── Right: 3D Scene + Floating Cards ───────── */}
-          <FadeUp delay={0.1} className="relative order-1 lg:order-2">
-            <div className="relative h-[340px] sm:h-[480px] lg:h-[700px] w-full">
-              {/* Glow behind 3D */}
-              <div className="absolute inset-[20%] rounded-full bg-emerald-300/20 blur-3xl pointer-events-none" />
-              {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
+          {/* ── Right: Hero Visual ───────── */}
+          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center">
+            <div className="relative w-full max-w-[500px] aspect-square lg:aspect-auto lg:h-[700px]">
+              {/* Background Glass Plate */}
+              <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border border-white/60 rounded-[3rem] -rotate-2 transform hidden lg:block" />
+              
+              <div className="relative h-full w-full flex items-center justify-center overflow-visible">
+                {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
 
-              {/* Floating Card 1 — New Order */}
-              <motion.div
-                animate={{ y: [0, -14, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-[8%] right-[4%] bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-2xl shadow-slate-200 border border-white/60 z-20 hidden sm:flex items-center gap-3"
-              >
-                <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 flex-shrink-0">
-                  <Zap size={16} fill="currentColor" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-900 uppercase">New Order</p>
-                  <p className="text-[10px] font-black text-emerald-500">Ready to send</p>
-                  <p className="text-[8px] text-slate-400">Just now</p>
-                </div>
-              </motion.div>
+                {/* Modern Floating Badges */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="absolute top-[15%] right-[2%] bg-white border border-slate-100 p-4 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex items-center gap-3 z-30"
+                >
+                  <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-900 uppercase leading-none">Order Received</p>
+                    <p className="text-[12px] font-black text-emerald-500 mt-1">₦72,500.00</p>
+                  </div>
+                </motion.div>
 
-              {/* Floating Card 2 — Live Sync */}
-              <motion.div
-                animate={{ y: [0, 18, 0] }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.7 }}
-                className="absolute top-[32%] left-[-2%] bg-slate-900 text-white p-3 sm:p-4 rounded-2xl shadow-2xl z-20 hidden sm:flex items-center gap-3"
-              >
-                <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                  <Layout size={14} className="text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wide">Live Sync</p>
-                  <p className="text-[9px] text-emerald-400 font-bold">● Active</p>
-                </div>
-              </motion.div>
-
-              {/* (Removed fake metrics cards) */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  transition={{ delay: 1, duration: 0.5 }}
+                  className="absolute bottom-[20%] left-[2%] bg-slate-900 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 z-30"
+                >
+                  <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
+                    <Truck size={20} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none">Tracking</p>
+                    <p className="text-[11px] font-black mt-1">Driver En-Route</p>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </FadeUp>
         </div>
@@ -270,106 +275,112 @@ const Hero = () => {
   );
 };
 
-// ─── Feature Card ─────────────────────────────────────────────────────────────
-const FeatureCard = ({ icon: Icon, title, description, delay }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.5, delay }}
-    whileHover={{ y: -8 }}
-    className="group p-8 sm:p-10 bg-white border border-slate-100 rounded-[2.5rem] hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all cursor-default relative overflow-hidden"
-  >
-    <div className="absolute top-0 right-0 w-28 h-28 bg-slate-50 rounded-full -mr-14 -mt-14 group-hover:bg-emerald-50 transition-colors" />
-    <div className="relative z-10">
-      <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-500 group-hover:rotate-6 transition-all duration-300">
-        <Icon size={28} strokeWidth={2} />
-      </div>
-      <h3 className="text-xl font-black text-slate-900 mb-3 uppercase tracking-tight italic group-hover:text-emerald-500 transition-colors">{title}</h3>
-      <p className="text-slate-500 font-medium leading-relaxed text-sm sm:text-base">{description}</p>
-    </div>
-  </motion.div>
-);
-
-// ─── Features ─────────────────────────────────────────────────────────────────
+// ─── Features (Bento Style) ───────────────────────────────────────────────────
 const Features = () => {
   const features = [
-    { icon: Store, title: "Smart Storefront", description: "A beautiful, lightning-fast catalog that lives right in your customer's WhatsApp chat. No downloads, no friction.", delay: 0.1 },
-    { icon: Zap, title: "60s Setup", description: "Launch your entire business ecosystem in a minute. Name your store, add products, and start selling.", delay: 0.2 },
-    { icon: MessageSquare, title: "Live Commerce", description: "Chat with customers in real-time, negotiate prices, and close deals directly where they're most comfortable.", delay: 0.3 },
-    { icon: Smartphone, title: "Mobile First", description: "Manage your entire business from your phone. Our command center is built for the mobile entrepreneur.", delay: 0.4 },
-    { icon: Box, title: "Inventory Sync", description: "Real-time tracking of your stock levels. Never oversell again with automated inventory management.", delay: 0.5 },
-    { icon: Shield, title: "Secured Trust", description: "Enterprise-grade security for your data and your customer's privacy. Built for scale, built for Africa.", delay: 0.6 },
+    { icon: Store, title: "Modern Catalog", description: "Clean, high-performance product listings that convert visitors into customers instantly.", className: "md:col-span-2 md:row-span-2 bg-slate-900 text-white" },
+    { icon: Zap, title: "Instant Setup", description: "Zero technical skills needed. Just name your store and go.", className: "bg-white" },
+    { icon: Truck, title: "Live Tracking", description: "Real-time dispatch tracking. Customers watch their package move on a map.", className: "bg-emerald-50" },
+    { icon: Shield, title: "Reliable Sync", description: "Your inventory stays updated across all devices automatically.", className: "bg-white" },
+    { icon: Smartphone, title: "Mobile Editor", description: "Update your store, add products, and manage orders from anywhere.", className: "md:col-span-2 bg-white border-2 border-slate-100" },
   ];
 
   return (
-    <section id="features" className="py-24 sm:py-32 px-4 sm:px-6 bg-slate-50/50">
+    <section id="features" className="py-24 sm:py-32 px-4 sm:px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sm:mb-24">
           <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
-            Capabilities
+            The Command Center
           </motion.span>
-          <AnimatedText
-            text="Everything you need to dominate WhatsApp commerce."
-            className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 tracking-tight justify-center text-center"
-          />
+          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
+            Everything you need,<br />none of the noise.
+          </h2>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
-          {features.map((f, i) => <FeatureCard key={i} {...f} />)}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className={cn(
+                "p-8 md:p-10 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between transition-all hover:shadow-2xl group",
+                f.className
+              )}
+            >
+              <div>
+                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-8 transition-transform group-hover:scale-110", f.className?.includes("slate-900") ? "bg-white/10 text-white" : "bg-slate-900 text-white")}>
+                    <f.icon size={28} />
+                 </div>
+                 <h3 className="text-2xl font-black uppercase tracking-tight italic mb-3">{f.title}</h3>
+                 <p className={cn("text-base font-medium leading-relaxed opacity-70", f.className?.includes("slate-900") ? "text-slate-300" : "text-slate-500")}>
+                    {f.description}
+                 </p>
+              </div>
+              <div className="mt-12 flex justify-end">
+                 <ArrowRight className="opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
   );
 };
 
+
 // ─── How It Works ─────────────────────────────────────────────────────────────
 const HowItWorks = () => {
   const steps = [
-    { number: "01", title: "Create your Store", description: "Set up your business profile and branding in seconds. Your unique link is ready instantly." },
-    { number: "02", title: "Upload Products", description: "Add items with prices, variants, and high-quality images. Organise into smart categories." },
-    { number: "03", title: "Share & Sell", description: "Send your catalog link to WhatsApp groups or status. Close sales via our integrated dispatch system." },
+    { number: "01", title: "Launch your Hub", description: "Name your business and set your WhatsApp number. Your professional link is live instantly." },
+    { number: "02", title: "Showcase Products", description: "Add items with high-res images and variations. Organise your catalog into smart, shareable categories." },
+    { number: "03", title: "Close & Track", description: "Customers order via WhatsApp. You manage the dispatch and they watch the delivery live on a map." },
   ];
 
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-white">
+    <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-[#fafafa]">
       <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          {/* Phone mockup — uses fixed px dimensions for reliability */}
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-32 items-center">
+          {/* Phone mockup with better styling */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="flex justify-center relative"
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex justify-center relative order-2 lg:order-1"
           >
-            <div className="relative">
-              <div className="absolute -top-8 -left-8 w-36 h-36 bg-emerald-100 rounded-full blur-3xl -z-10" />
-              <div className="absolute -bottom-8 -right-8 w-52 h-52 bg-slate-100 rounded-full blur-3xl -z-10" />
-              <LivePreview />
+            <div className="relative group">
+              <div className="absolute -inset-10 bg-emerald-100/50 rounded-full blur-[100px] -z-10 group-hover:bg-emerald-200/50 transition-colors" />
+              <div className="scale-90 sm:scale-100 transition-transform duration-700 group-hover:scale-[1.02]">
+                 <LivePreview />
+              </div>
             </div>
           </motion.div>
 
           {/* Steps */}
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 block">The Workflow</span>
-            <AnimatedText
-              text="How it feels to use SwiftLink."
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-12"
-            />
-            <div className="space-y-10">
+          <div className="order-1 lg:order-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-6 block">The Workflow</span>
+            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] mb-12 italic uppercase">
+              Pure Frictionless<br />Commerce.
+            </h2>
+            <div className="space-y-12">
               {steps.map((step, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="flex gap-6 group"
+                  transition={{ delay: i * 0.15, duration: 0.6 }}
+                  className="flex gap-8 group"
                 >
-                  <span className="text-4xl sm:text-5xl font-black text-emerald-100 group-hover:text-emerald-400 transition-colors duration-500 leading-none">{step.number}</span>
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight italic">{step.title}</h3>
-                    <p className="text-slate-500 font-medium leading-relaxed">{step.description}</p>
+                  <div className="flex-shrink-0">
+                    <span className="text-5xl font-black text-slate-200 group-hover:text-emerald-500 transition-colors duration-500 leading-none tabular-nums tracking-tighter">{step.number}</span>
+                  </div>
+                  <div className="pt-1">
+                    <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">{step.title}</h3>
+                    <p className="text-base text-slate-500 font-medium leading-relaxed">{step.description}</p>
                   </div>
                 </motion.div>
               ))}
@@ -385,106 +396,91 @@ const HowItWorks = () => {
 const Pricing = () => {
   const plans = [
     {
-      name: "Tier 1 - Free",
-      subtitle: "Hook",
+      name: "Starter",
       price: "Free",
-      description: "Perfect for getting started.",
-      featured: false,
-      features: ["5 products max", "1 delivery slot", "SwiftLink branding"],
+      description: "Perfect for testing the waters.",
+      features: ["5 Live Products", "Basic Tracking", "SwiftLink Branding", "WhatsApp Checkout"],
+      cta: "Start Free",
+      variant: "white"
     },
     {
-      name: "Tier 2 - Pro",
-      subtitle: "Most Popular",
-      price: "₦3,000-₦5,000/month",
-      description: "For growing stores that need full control.",
+      name: "Pro",
+      price: "₦5,000",
+      period: "/mo",
+      description: "Our most popular choice for growing stores.",
+      features: ["Unlimited Products", "Custom Branding", "Live Map Tracking", "Detailed Analytics", "Priority Support"],
+      cta: "Upgrade to Pro",
       featured: true,
-      features: [
-        "Unlimited products",
-        "Custom storefront colors",
-        "No branding",
-        "Delivery history export",
-      ],
+      variant: "black"
     },
     {
-      name: "Tier 3 - Business",
-      subtitle: "Scale",
-      price: "₦10,000-₦15,000/month",
-      description: "For teams running advanced operations.",
-      featured: false,
-      features: [
-        "Multi-store",
-        "Analytics",
-        "Paystack payment links embedded in cart",
-        "Flutterwave payment links embedded in cart",
-      ],
+      name: "Business",
+      price: "₦15,000",
+      period: "/mo",
+      description: "Enterprise features for established brands.",
+      features: ["Multi-Store Management", "Team Collaboration", "Payment Gateway Integration", "Custom Domain API", "API Access"],
+      cta: "Contact Sales",
+      variant: "white"
     },
   ];
 
   return (
-    <section id="pricing" className="py-24 sm:py-32 px-4 sm:px-6 bg-slate-50/60">
+    <section id="pricing" className="py-24 sm:py-32 px-4 sm:px-6 bg-white">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 sm:mb-20">
-          <motion.span
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block"
-          >
+        <div className="text-center mb-16 sm:mb-24">
+          <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
             Pricing
           </motion.span>
-          <AnimatedText
-            text="Choose the plan that fits your growth stage."
-            className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 tracking-tight justify-center text-center"
-          />
+          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
+            Simple plans for<br />ambitious brands.
+          </h2>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
-          {plans.map((plan, index) => (
+        <div className="grid lg:grid-cols-3 gap-8">
+          {plans.map((p, i) => (
             <motion.div
-              key={plan.name}
+              key={p.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
               className={cn(
-                "rounded-[2rem] border p-8 sm:p-10 bg-white relative",
-                plan.featured
-                  ? "border-emerald-400 shadow-2xl shadow-emerald-500/10"
-                  : "border-slate-100 shadow-lg shadow-slate-100/80"
+                "rounded-[3rem] p-10 flex flex-col justify-between transition-all duration-500 border relative overflow-hidden",
+                p.variant === "black" ? "bg-slate-900 text-white border-slate-900 shadow-2xl scale-[1.05] z-10" : "bg-[#f8fafc] text-slate-900 border-slate-100"
               )}
             >
-              {plan.featured && (
-                <span className="absolute -top-3 left-8 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-emerald-500 text-white">
-                  Recommended
-                </span>
+              {p.featured && (
+                <div className="absolute top-6 right-8">
+                   <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</span>
+                </div>
               )}
-
-              <div className="mb-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">{plan.subtitle}</p>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{plan.name}</h3>
-                <p className="text-emerald-500 font-black text-xl sm:text-2xl">{plan.price}</p>
-                <p className="text-slate-500 text-sm font-medium mt-3">{plan.description}</p>
+              
+              <div>
+                <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-4", p.variant === "black" ? "text-emerald-400" : "text-slate-400")}>{p.name}</p>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl sm:text-5xl font-black tracking-tighter">{p.price}</span>
+                  {p.period && <span className={cn("text-sm font-bold opacity-60", p.variant === "black" ? "text-slate-400" : "text-slate-500")}>{p.period}</span>}
+                </div>
+                <p className={cn("text-sm font-medium leading-relaxed mb-10", p.variant === "black" ? "text-slate-400" : "text-slate-500")}>{p.description}</p>
+                
+                <div className="space-y-4 mb-12">
+                   {p.features.map(f => (
+                     <div key={f} className="flex items-center gap-3">
+                        <CheckCircle2 size={16} className={p.variant === "black" ? "text-emerald-400" : "text-emerald-500"} />
+                        <span className="text-sm font-bold opacity-80">{f}</span>
+                     </div>
+                   ))}
+                </div>
               </div>
 
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-slate-600 font-medium">
-                    <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
               <Link
-                href={`/signup?plan=${encodeURIComponent(plan.name.toLowerCase().includes("free") ? "free" : plan.name.toLowerCase().includes("business") ? "business" : "pro")}`}
+                href="/signup"
                 className={cn(
-                  "inline-flex items-center justify-center w-full rounded-2xl px-5 py-3.5 text-sm font-black transition-all active:scale-95",
-                  plan.featured
-                    ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                    : "bg-slate-900 text-white hover:bg-emerald-500"
+                  "w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-center active:scale-95",
+                  p.variant === "black" ? "bg-white text-slate-900 hover:bg-emerald-400" : "bg-slate-900 text-white hover:bg-emerald-500 shadow-lg"
                 )}
               >
-                Get Started
+                {p.cta}
               </Link>
             </motion.div>
           ))}
@@ -496,29 +492,42 @@ const Pricing = () => {
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 const CTASection = () => (
-  <section className="py-16 sm:py-20 px-4 sm:px-6">
-    <div className="max-w-7xl mx-auto">
+  <section className="py-24 sm:py-32 px-4 sm:px-6 bg-white overflow-hidden relative">
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-full">
+       <div className="absolute top-[20%] left-[-10%] w-[40%] aspect-square bg-emerald-100/50 rounded-full blur-[100px]" />
+       <div className="absolute bottom-[20%] right-[-10%] w-[40%] aspect-square bg-blue-50/50 rounded-full blur-[100px]" />
+    </div>
+
+    <div className="max-w-5xl mx-auto relative z-10">
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        whileInView={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="bg-slate-900 rounded-[3rem] p-10 sm:p-16 md:p-24 text-center relative overflow-hidden"
+        className="bg-slate-900 rounded-[3.5rem] p-10 sm:p-20 text-center relative overflow-hidden shadow-2xl"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12),transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1),transparent_70%)] pointer-events-none" />
         <div className="relative z-10">
-          <AnimatedText
-            text="READY TO SCALE UP?"
-            className="text-3xl sm:text-5xl md:text-7xl font-black text-white mb-6 tracking-tighter leading-none justify-center"
-          />
-          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto mb-10 font-medium">
-            Create your storefront, add products, and share a clean link customers can open instantly. Start free — upgrade only if you need more.
-          </motion.p>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-3 bg-emerald-500 text-slate-900 px-8 py-5 rounded-[2rem] text-lg font-black hover:bg-white transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-500/20"
-          >
-            Get My Store Link <ChevronRight size={22} />
-          </Link>
+          <span className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6 block">Ready to Scale?</span>
+          <h2 className="text-4xl sm:text-7xl font-black text-white mb-8 tracking-tighter leading-[1.0] italic uppercase">
+            Deploy your<br />storefront today.
+          </h2>
+          <p className="text-slate-400 text-base sm:text-xl max-w-xl mx-auto mb-12 font-medium leading-relaxed">
+            Join the elite circle of Nigerian vendors using SwiftLink Pro to dominate their niche.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/signup"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl text-lg font-black hover:bg-emerald-400 transition-all hover:scale-105 active:scale-95 shadow-2xl"
+            >
+              Get Started <ArrowRight size={20} />
+            </Link>
+            <Link
+              href="/signup?mode=login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-transparent text-white border border-white/20 px-10 py-5 rounded-2xl text-lg font-black hover:bg-white/5 transition-all active:scale-95"
+            >
+              Merchant Login
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -527,24 +536,42 @@ const CTASection = () => (
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = () => (
-  <footer className="py-16 sm:py-20 px-4 sm:px-6 border-t border-slate-100">
-    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-8">
-      <div className="flex flex-col items-center sm:items-start gap-3">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
-          <span className="text-lg font-black text-slate-900">SwiftLink<span className="text-emerald-500">Pro</span></span>
-        </div>
-        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Global Commerce for Everyone</p>
-      </div>
-      <div className="flex gap-6 sm:gap-8">
-        <Link href="/terms" className="text-slate-400 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors">
-          Terms
-        </Link>
-        <a href="mailto:support@swiftlink.pro" className="text-slate-400 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors">
-          Support
-        </a>
-      </div>
-      <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest text-center">© 2026 SwiftLink Pro. All Rights Reserved.</p>
+  <footer className="py-20 px-4 sm:px-6 bg-[#fafafa] border-t border-slate-100">
+    <div className="max-w-7xl mx-auto">
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
+          <div className="col-span-1 md:col-span-2">
+             <div className="flex items-center gap-2 mb-6">
+               <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
+               <span className="text-xl font-black text-slate-900 uppercase italic">SwiftLink<span className="text-emerald-500">Pro</span></span>
+             </div>
+             <p className="text-slate-500 font-medium max-w-xs leading-relaxed">
+                The high-performance command center for modern WhatsApp commerce.
+             </p>
+          </div>
+          <div>
+             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Product</h4>
+             <ul className="space-y-4">
+                <li><a href="#features" className="text-sm font-bold text-slate-500 hover:text-emerald-500 transition-colors">Capabilities</a></li>
+                <li><a href="#how-it-works" className="text-sm font-bold text-slate-500 hover:text-emerald-500 transition-colors">Workflow</a></li>
+                <li><a href="#pricing" className="text-sm font-bold text-slate-500 hover:text-emerald-500 transition-colors">Pricing</a></li>
+             </ul>
+          </div>
+          <div>
+             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Company</h4>
+             <ul className="space-y-4">
+                <li><Link href="/terms" className="text-sm font-bold text-slate-500 hover:text-emerald-500 transition-colors">Terms of Service</Link></li>
+                <li><a href="mailto:support@swiftlink.pro" className="text-sm font-bold text-slate-500 hover:text-emerald-500 transition-colors">Support</a></li>
+             </ul>
+          </div>
+       </div>
+       <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-200/60 gap-4">
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 SwiftLink Pro Hub.</p>
+          <div className="flex gap-6">
+             {["Twitter", "Instagram", "WhatsApp"].map(social => (
+                <span key={social} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">{social}</span>
+             ))}
+          </div>
+       </div>
     </div>
   </footer>
 );

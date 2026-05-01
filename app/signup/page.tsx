@@ -7,10 +7,15 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
 import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 
-type Mode = "signup" | "login";
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 const PERKS = [
   "Launch your store in 60 seconds",
@@ -31,6 +36,8 @@ function GoogleIcon() {
   );
 }
 
+type Mode = "signup" | "login";
+
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,12 +50,89 @@ export default function SignupPage() {
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const handleCredentialResponse = async (response: any) => {
+      setLoading("google");
+      try {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.credential,
+        });
+        if (error) throw error;
+        
+        if (data.user) {
+          await saveUserStore(data.user.id);
+          router.push("/pro");
+        }
+      } catch (e: any) {
+        console.error("Google Token Auth Error:", e);
+        setError(`Google sign-in failed: ${e.message}`);
+      } finally {
+        setLoading(null);
+      }
+    };
+
+    // Initialize Google One Tap / Button
+    const initGsi = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        
+        // Optionally show One Tap prompt automatically
+        window.google.accounts.id.prompt();
+      }
+    };
+
+    if (window.google) {
+      initGsi();
+    } else {
+      // Script is loaded via Next.js Script tag, we might need to wait
+      const interval = setInterval(() => {
+        if (window.google) {
+          initGsi();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [GOOGLE_CLIENT_ID, router]);
+
+  const handleGoogleCustom = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
+      return;
+    }
+    window.google.accounts.id.prompt((notification: any) => {
+       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback to the standard popup if One Tap is blocked/skipped
+          window.google.accounts.id.renderButton(
+            document.getElementById("google-button-hidden"),
+            { theme: "outline", size: "large" }
+          );
+          // Trigger a click on the rendered button if possible or just show it
+          document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+       }
+    });
+  };
+
   // Allow deep-linking directly into login mode: /signup?mode=login
   useEffect(() => {
     const m = (searchParams.get("mode") || "").toLowerCase();
     if (m === "login") setMode("login");
     if (m === "signup") setMode("signup");
   }, [searchParams]);
+
+  const handleGoogle = async () => {
+    handleGoogleCustom();
+  };
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
@@ -107,22 +191,6 @@ export default function SignupPage() {
       console.error("Critical Supabase Error in saveUserStore:", err);
       throw err;
     }
-  };
-
-  const handleGoogle = async () => {
-    setLoading("google"); setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/pro`
-        }
-      });
-      if (error) throw error;
-    } catch (e: any) {
-      console.error("Auth Error Details:", e);
-      setError(`Google sign-in failed: ${e.message}`);
-    } finally { setLoading(null); }
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -191,6 +259,7 @@ export default function SignupPage() {
   };
 
   return (
+    <>
     <main className="min-h-screen bg-[#080d18] flex relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -419,5 +488,14 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+    <div id="google-button-hidden" className="hidden" />
+    <Script 
+      src="https://accounts.google.com/gsi/client" 
+      strategy="afterInteractive" 
+      onLoad={() => {
+        console.log("Google Identity Services loaded");
+      }}
+    />
+  </>
   );
 }

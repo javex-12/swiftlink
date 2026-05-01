@@ -787,10 +787,30 @@ export function SwiftLinkProvider({
         driver,
         ref,
       };
+
+      // 1. Insert into dedicated tracking table for live updates
+      void (async () => {
+        if (isSupabaseConfigured() && user?.id) {
+           await supabase.from('dispatch_tracking').insert({
+              tracking_code: deliveryId,
+              store_id: user.id,
+              driver_name: driver,
+              customer_name: name,
+              destination: "", // can be expanded
+              status: 'pending'
+           });
+        }
+      })();
+
       const trackUrl =
         typeof window !== "undefined"
           ? `${window.location.origin}/?track=${deliveryId}`
           : "";
+      const driverUrl = 
+        typeof window !== "undefined"
+          ? `${window.location.origin}/dispatch/driver/${deliveryId}`
+          : "";
+      
       const msg = `Package dispatched! Track here: ${trackUrl}`;
 
       setState((prev) => {
@@ -802,17 +822,24 @@ export function SwiftLinkProvider({
       });
 
       void (async () => {
-        const ok = await (window as any).customConfirm(
+        const choice = await (window as any).customConfirm(
           "Dispatch created",
-          "Share the tracking link on WhatsApp?",
+          "Send tracking link to Customer OR Driver?",
+          "Customer (WA)",
+          "Driver Link"
         );
-        if (!ok) return;
-        const wa = phone.replace(/\D/g, "");
-        if (!wa) {
-          addToast("No customer phone number provided.", "error");
-          return;
+        
+        if (choice === true) { // Customer
+          const wa = phone.replace(/\D/g, "");
+          if (!wa) {
+            addToast("No customer phone number provided.", "error");
+            return;
+          }
+          window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
+        } else if (choice === false) { // Driver
+          void navigator.clipboard.writeText(driverUrl);
+          addToast("Driver tracking link copied!");
         }
-        window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
       })();
     },
     [addToast, persistState],
