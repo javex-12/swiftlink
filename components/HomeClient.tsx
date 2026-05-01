@@ -15,22 +15,26 @@ export function HomeClient({ defaultView = "launcher" }: { defaultView?: "launch
   const viewParam = searchParams.get("v");
   const forceLanding = viewParam === "landing";
   
-  const { state, isOwner, user } = useSwiftLink();
+  const { isOwner, user } = useSwiftLink();
   const router = useRouter();
 
+  // Determine if we should show the landing page.
+  // We show it if:
+  // 1. Specifically requested via ?v=landing
+  // 2. We are on the landing route and there is NO active user session
+  const showLanding = forceLanding || (defaultView === "landing" && !user);
+
   useEffect(() => {
-    // STRICT PRODUCTION LOGIC: 
-    // Only redirect to /pro if we have a verified Supabase User session.
-    // We ignore localStorage state for the initial landing-to-pro transition.
-    // Also, if 'forceLanding' is true (v=landing), we stay on the landing page.
-    if (defaultView === "landing" && user?.id && isOwner && !shop && !forceLanding) {
+    // If we have a user and we AREN'T forcing the landing page, 
+    // and we aren't viewing a specific shop/track, go to /pro
+    if (user?.id && isOwner && !shop && !track && !forceLanding && defaultView === "landing") {
       router.replace("/pro");
     }
-  }, [defaultView, user?.id, isOwner, shop, router, forceLanding]);
+  }, [user?.id, isOwner, shop, track, router, forceLanding, defaultView]);
 
   if (track) return <TrackingView />;
   if (shop) return <CustomerStorefront shopId={shop} />;
   
-  const showLanding = defaultView === "landing" || forceLanding;
+  // If showLanding is true, show LandingPage. Otherwise, show the Dashboard (LauncherView).
   return showLanding ? <LandingPage /> : <LauncherView />;
 }
