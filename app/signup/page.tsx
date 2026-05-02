@@ -42,28 +42,34 @@ export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("signup");
-  const [loading, setLoading] = useState<"google" | "email" | null>(null);
+  const [loading, setLoading] = useState<"google" | "email" | "reset" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
-  
-  // Use a ref for nonce to ensure it's absolutely stable and doesn't trigger re-renders
-  const nonceRef = useRef<string>("");
-  const isGisInitialized = useRef(false);
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
-  // Initialize nonce once
-  if (!nonceRef.current) {
-    nonceRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  }
+  // 1. STABLE NONCE PERSISTENCE
+  // We use sessionStorage so the nonce survives component remounts and page refreshes, 
+  // ensuring Google and Supabase always see the exact same string.
+  const getStableNonce = useCallback(() => {
+    if (typeof window === "undefined") return "";
+    let n = sessionStorage.getItem("sl_auth_nonce");
+    if (!n) {
+      n = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      sessionStorage.setItem("sl_auth_nonce", n);
+    }
+    return n;
+  }, []);
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
     setError(null);
+    setMessage(null);
   };
 
   const saveUserStore = useCallback(async (
@@ -133,7 +139,9 @@ export default function SignupPage() {
   }, [searchParams, form.email]);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !nonceRef.current || isGisInitialized.current) return;
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const nonce = getStableNonce();
 
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
@@ -141,7 +149,7 @@ export default function SignupPage() {
         const { data, error: authError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
-          nonce: nonceRef.current,
+          nonce: nonce,
         });
         if (authError) throw authError;
         
@@ -158,15 +166,16 @@ export default function SignupPage() {
     };
 
     const initGsi = () => {
-      if (window.google && !isGisInitialized.current) {
+      // Use window tracking to prevent re-initialization which causes nonce mismatch
+      if (window.google && !(window as any)._swiftlink_gis_ready) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
-          nonce: nonceRef.current,
+          nonce: nonce,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-        isGisInitialized.current = true;
+        (window as any)._swiftlink_gis_ready = true;
         window.google.accounts.id.prompt();
       }
     };
@@ -179,7 +188,7 @@ export default function SignupPage() {
     }, 500);
 
     return () => clearInterval(checkInterval);
-  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
+  }, [GOOGLE_CLIENT_ID, router, saveUserStore, getStableNonce]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +196,7 @@ export default function SignupPage() {
     
     // Login flow
     if (mode === "login") {
-      setLoading("email"); setError(null);
+      setLoading("email"); setError(null); setMessage(null);
       try {
         const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: form.email,
@@ -195,9 +204,8 @@ export default function SignupPage() {
         });
         
         if (authError) {
-          // Check if this looks like a Google-only user
           if (authError.message.toLowerCase().includes("invalid login credentials")) {
-             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google.");
+             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google or reset your password.");
           }
           throw authError;
         }
@@ -220,7 +228,7 @@ export default function SignupPage() {
     let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
     const urlPlan = searchParams.get("plan");
 
-    setLoading("email"); setError(null);
+    setLoading("email"); setError(null); setMessage(null);
     try {
       const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
@@ -264,22 +272,43 @@ export default function SignupPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!form.email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    setLoading("reset"); setError(null); setMessage(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+        redirectTo: `${window.location.origin}/signup?mode=login`,
+      });
+      if (error) throw error;
+      setMessage("Password reset link sent to your email.");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const handleGoogleCustom = () => {
     if (!GOOGLE_CLIENT_ID) {
       setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
       return;
     }
-    window.google.accounts.id.prompt((notification: any) => {
-       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback to the standard popup if One Tap is blocked/skipped
-          window.google.accounts.id.renderButton(
-            document.getElementById("google-button-hidden"),
-            { theme: "outline", size: "large" }
-          );
-          // Trigger a click on the rendered button if possible or just show it
-          document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-       }
-    });
+    
+    // Force a prompt if One Tap didn't show or was skipped
+    if (window.google) {
+       window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+             window.google.accounts.id.renderButton(
+               document.getElementById("google-button-hidden"),
+               { theme: "outline", size: "large" }
+             );
+             document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+          }
+       });
+    }
   };
 
   const handleGoogle = async () => {
@@ -392,6 +421,12 @@ export default function SignupPage() {
                       {error}
                     </motion.div>
                   )}
+                  {message && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl px-4 py-3 mb-4 text-[11px] font-bold">
+                      <CheckCircle2 size={13} className="flex-shrink-0" />
+                      {message}
+                    </motion.div>
+                  )}
                 </AnimatePresence>
 
                 <form onSubmit={handleEmailSignup} className="space-y-4">
@@ -458,7 +493,14 @@ export default function SignupPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">Password</label>
+                    <div className="flex items-center justify-between mb-1.5 ml-0.5">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Password</label>
+                      {mode === "login" && (
+                        <button type="button" onClick={handleForgotPassword} className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400">
+                          {loading === "reset" ? "Sending..." : "Forgot?"}
+                        </button>
+                      )}
+                    </div>
                     <div className="relative">
                       <input required type={showPassword ? "text" : "password"} value={form.password} onChange={setField("password")} placeholder="Min. 6 characters" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 px-4 pr-11 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
                       <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
