@@ -450,17 +450,25 @@ export function SwiftLinkProvider({
   }, [trackId, state.deliveries]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || pathname !== "/pro") return;
+    if (typeof window === "undefined" || pathname !== "/pro" || !isSupabaseActive) return;
     
+    // Don't redirect while we are still verifying the session
+    if (!userRef.current && loadingOverlay) return;
+
     // If no business name is set and it's not a temporary session, 
     // we consider them a "new user" who should see the landing page first.
     const saved = localStorage.getItem("swiftlink_state");
-    const hasBiz = saved ? (JSON.parse(saved) as ShopState).bizName : false;
+    const hasBizLocal = state.bizName;
+    const hasBizSaved = saved ? (JSON.parse(saved) as ShopState).bizName : false;
     
-    if (!hasBiz && !localStorage.getItem("swiftlink_tour_done")) {
-      router.push("/signup");
+    if (!hasBizLocal && !hasBizSaved && !localStorage.getItem("swiftlink_tour_done")) {
+      // Small check: if we are logged in, maybe wait a bit for the Supabase data to sync
+      const t = setTimeout(() => {
+         if (!stateRef.current.bizName) router.push("/signup");
+      }, 2000);
+      return () => clearTimeout(t);
     }
-  }, [pathname, router]);
+  }, [pathname, router, isSupabaseActive, state.bizName, loadingOverlay]);
 
   useEffect(() => {
     if (!isOwner || pathname !== "/pro" || typeof window === "undefined") return;

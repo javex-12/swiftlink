@@ -134,30 +134,39 @@ export default function SignupPage() {
         const { data, error: authError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
+          // Omit nonce entirely. If it exists in token, GIS was configured elsewhere.
         });
-        if (authError) throw authError;
+        
+        if (authError) {
+           if (authError.message.toLowerCase().includes("nonce")) {
+              throw new Error("Security sync error. Please refresh the page and try again.");
+           }
+           throw authError;
+        }
         
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
-          router.push("/pro");
+          // Small delay to ensure localStorage and Supabase session are 'warm'
+          setTimeout(() => router.push("/pro"), 800);
         }
       } catch (e: any) {
         console.error("Google Token Auth Error:", e);
-        setError(`Google sign-in failed: ${e.message}`);
+        setError(e.message);
       } finally {
         setLoading(null);
       }
     };
 
     const initGsi = () => {
-      if (window.google && !(window as any)._swiftlink_gis_ready) {
+      // Use a versioned flag to force re-init with the 'no nonce' config
+      if (window.google && !(window as any)._sl_gis_v2_ready) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-        (window as any)._swiftlink_gis_ready = true;
+        (window as any)._sl_gis_v2_ready = true;
         window.google.accounts.id.prompt();
       }
     };
@@ -194,7 +203,7 @@ export default function SignupPage() {
         
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
-          router.push("/pro");
+          setTimeout(() => router.push("/pro"), 800);
         }
       } catch (e: any) {
         console.error("Email Login Error:", e);
