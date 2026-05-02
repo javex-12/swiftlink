@@ -48,14 +48,18 @@ export default function SignupPage() {
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
   
-  // Generate a truly stable nonce that never changes for the life of this component instance
-  const nonce = useMemo(() => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  }, []);
+  // Use a ref for nonce to ensure it's absolutely stable and doesn't trigger re-renders
+  const nonceRef = useRef<string>("");
+  const isGisInitialized = useRef(false);
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
+  // Initialize nonce once
+  if (!nonceRef.current) {
+    nonceRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
@@ -81,7 +85,8 @@ export default function SignupPage() {
         "dosunmumichael26@gmail.com",
       ];
       
-      const isGodMode = email && GOD_MODE_EMAILS.includes(email);
+      const emailToCheck = email || form.email;
+      const isGodMode = emailToCheck && GOD_MODE_EMAILS.includes(emailToCheck);
       const urlPlan = searchParams.get("plan");
       const initialPlan = isGodMode ? "pro" : (urlPlan || "free");
 
@@ -125,20 +130,20 @@ export default function SignupPage() {
       console.error("Critical Supabase Error in saveUserStore:", err);
       throw err;
     }
-  }, [searchParams]);
+  }, [searchParams, form.email]);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !nonce) return;
+    if (!GOOGLE_CLIENT_ID || !nonceRef.current || isGisInitialized.current) return;
 
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
       try {
-        const { data, error } = await supabase.auth.signInWithIdToken({
+        const { data, error: authError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
-          nonce: nonce,
+          nonce: nonceRef.current,
         });
-        if (error) throw error;
+        if (authError) throw authError;
         
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
@@ -152,36 +157,29 @@ export default function SignupPage() {
       }
     };
 
-    // Initialize Google One Tap / Button
     const initGsi = () => {
-      if (window.google) {
+      if (window.google && !isGisInitialized.current) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
-          nonce: nonce,
+          nonce: nonceRef.current,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
-        
-        // Optionally show One Tap prompt automatically
+        isGisInitialized.current = true;
         window.google.accounts.id.prompt();
       }
     };
 
-    if (window.google) {
-      initGsi();
-    } else {
-      // Script is loaded via Next.js Script tag, we might need to wait
-      const interval = setInterval(() => {
-        if (window.google) {
-          initGsi();
-          clearInterval(interval);
-        }
-      }, 100);
-      return () => clearInterval(interval);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [GOOGLE_CLIENT_ID, router, saveUserStore, nonce]);
+    const checkInterval = setInterval(() => {
+      if (window.google) {
+        initGsi();
+        clearInterval(checkInterval);
+      }
+    }, 500);
+
+    return () => clearInterval(checkInterval);
+  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,11 +189,18 @@ export default function SignupPage() {
     if (mode === "login") {
       setLoading("email"); setError(null);
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password
         });
-        if (error) throw error;
+        
+        if (authError) {
+          // Check if this looks like a Google-only user
+          if (authError.message.toLowerCase().includes("invalid login credentials")) {
+             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google.");
+          }
+          throw authError;
+        }
         
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
@@ -203,7 +208,7 @@ export default function SignupPage() {
         }
       } catch (e: any) {
         console.error("Email Login Error:", e);
-        setError(e.message || "Invalid email or password.");
+        setError(e.message);
       } finally {
         setLoading(null);
       }
@@ -217,7 +222,7 @@ export default function SignupPage() {
 
     setLoading("email"); setError(null);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
@@ -228,7 +233,14 @@ export default function SignupPage() {
           }
         }
       });
-      if (error) throw error;
+      
+      if (authError) {
+        if (authError.message.toLowerCase().includes("user already registered")) {
+           setMode("login");
+           throw new Error("This email is already registered. Please log in.");
+        }
+        throw authError;
+      }
       
       if (data.user) {
           await saveUserStore(data.user.id, data.user.email, {
@@ -246,7 +258,7 @@ export default function SignupPage() {
       
     } catch (e: any) {
       console.error("Email Signup Error:", e);
-      setError(e.message || "Failed to create account.");
+      setError(e.message);
     } finally {
       setLoading(null);
     }
