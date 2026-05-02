@@ -5,7 +5,7 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { supabase } from "@/lib/supabase-client";
@@ -48,48 +48,14 @@ export default function SignupPage() {
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
   
-  // Use a ref for the nonce to ensure it stays consistent for the callback
-  const nonceRef = useRef<string>("");
+  // Generate a truly stable nonce that never changes for the life of this component instance
+  const nonce = useMemo(() => {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }, []);
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-
-  useEffect(() => {
-    // Generate a secure nonce ONCE on mount
-    if (!nonceRef.current) {
-      nonceRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    }
-  }, []);
-
-  const handleGoogleCustom = () => {
-    if (!GOOGLE_CLIENT_ID) {
-      setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
-      return;
-    }
-    window.google.accounts.id.prompt((notification: any) => {
-       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback to the standard popup if One Tap is blocked/skipped
-          window.google.accounts.id.renderButton(
-            document.getElementById("google-button-hidden"),
-            { theme: "outline", size: "large" }
-          );
-          // Trigger a click on the rendered button if possible or just show it
-          document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-       }
-    });
-  };
-
-  // Allow deep-linking directly into login mode: /signup?mode=login
-  useEffect(() => {
-    const m = (searchParams.get("mode") || "").toLowerCase();
-    if (m === "login") setMode("login");
-    if (m === "signup") setMode("signup");
-  }, [searchParams]);
-
-  const handleGoogle = async () => {
-    handleGoogleCustom();
-  };
 
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
@@ -98,10 +64,10 @@ export default function SignupPage() {
 
   const saveUserStore = useCallback(async (
     uid: string,
+    email: string | undefined,
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
       
       const bizName = extra?.bizName || "";
@@ -115,7 +81,7 @@ export default function SignupPage() {
         "dosunmumichael26@gmail.com",
       ];
       
-      const isGodMode = user?.email && GOD_MODE_EMAILS.includes(user.email);
+      const isGodMode = email && GOD_MODE_EMAILS.includes(email);
       const urlPlan = searchParams.get("plan");
       const initialPlan = isGodMode ? "pro" : (urlPlan || "free");
 
@@ -162,7 +128,7 @@ export default function SignupPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !nonceRef.current) return;
+    if (!GOOGLE_CLIENT_ID || !nonce) return;
 
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
@@ -170,12 +136,12 @@ export default function SignupPage() {
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
-          nonce: nonceRef.current,
+          nonce: nonce,
         });
         if (error) throw error;
         
         if (data.user) {
-          await saveUserStore(data.user.id);
+          await saveUserStore(data.user.id, data.user.email);
           router.push("/pro");
         }
       } catch (e: any) {
@@ -192,7 +158,7 @@ export default function SignupPage() {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
-          nonce: nonceRef.current,
+          nonce: nonce,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
@@ -214,7 +180,8 @@ export default function SignupPage() {
       }, 100);
       return () => clearInterval(interval);
     }
-  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [GOOGLE_CLIENT_ID, router, saveUserStore, nonce]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,8 +197,10 @@ export default function SignupPage() {
         });
         if (error) throw error;
         
-        await saveUserStore(data.user.id);
-        router.push("/pro");
+        if (data.user) {
+          await saveUserStore(data.user.id, data.user.email);
+          router.push("/pro");
+        }
       } catch (e: any) {
         console.error("Email Login Error:", e);
         setError(e.message || "Invalid email or password.");
@@ -244,6 +213,7 @@ export default function SignupPage() {
     // Signup Flow
     if (!form.bizName || !form.phone) return;
     let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
+    const urlPlan = searchParams.get("plan");
 
     setLoading("email"); setError(null);
     try {
@@ -253,14 +223,15 @@ export default function SignupPage() {
         options: {
           data: {
             display_name: form.bizName,
-            phone: formattedPhone
+            phone: formattedPhone,
+            plan: urlPlan || "free"
           }
         }
       });
       if (error) throw error;
       
       if (data.user) {
-          await saveUserStore(data.user.id, {
+          await saveUserStore(data.user.id, data.user.email, {
             bizName: form.bizName,
             phone: formattedPhone,
             storeUsername: form.storeUsername,
@@ -279,6 +250,28 @@ export default function SignupPage() {
     } finally {
       setLoading(null);
     }
+  };
+
+  const handleGoogleCustom = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
+      return;
+    }
+    window.google.accounts.id.prompt((notification: any) => {
+       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback to the standard popup if One Tap is blocked/skipped
+          window.google.accounts.id.renderButton(
+            document.getElementById("google-button-hidden"),
+            { theme: "outline", size: "large" }
+          );
+          // Trigger a click on the rendered button if possible or just show it
+          document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+       }
+    });
+  };
+
+  const handleGoogle = async () => {
+    handleGoogleCustom();
   };
 
   return (
