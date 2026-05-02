@@ -53,19 +53,6 @@ export default function SignupPage() {
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
-  // 1. STABLE NONCE PERSISTENCE
-  // We use sessionStorage so the nonce survives component remounts and page refreshes, 
-  // ensuring Google and Supabase always see the exact same string.
-  const getStableNonce = useCallback(() => {
-    if (typeof window === "undefined") return "";
-    let n = sessionStorage.getItem("sl_auth_nonce");
-    if (!n) {
-      n = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("sl_auth_nonce", n);
-    }
-    return n;
-  }, []);
-
   const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
     setError(null);
@@ -141,15 +128,12 @@ export default function SignupPage() {
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
 
-    const nonce = getStableNonce();
-
     const handleCredentialResponse = async (response: any) => {
       setLoading("google");
       try {
         const { data, error: authError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
-          nonce: nonce,
         });
         if (authError) throw authError;
         
@@ -166,12 +150,10 @@ export default function SignupPage() {
     };
 
     const initGsi = () => {
-      // Use window tracking to prevent re-initialization which causes nonce mismatch
       if (window.google && !(window as any)._swiftlink_gis_ready) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
-          nonce: nonce,
           auto_select: false,
           cancel_on_tap_outside: true,
         });
@@ -185,10 +167,10 @@ export default function SignupPage() {
         initGsi();
         clearInterval(checkInterval);
       }
-    }, 500);
+    }, 1000);
 
     return () => clearInterval(checkInterval);
-  }, [GOOGLE_CLIENT_ID, router, saveUserStore, getStableNonce]);
+  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +187,7 @@ export default function SignupPage() {
         
         if (authError) {
           if (authError.message.toLowerCase().includes("invalid login credentials")) {
-             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google or reset your password.");
+             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google or use 'Forgot?' to set a password.");
           }
           throw authError;
         }
@@ -274,17 +256,25 @@ export default function SignupPage() {
 
   const handleForgotPassword = async () => {
     if (!form.email) {
-      setError("Please enter your email address first.");
+      setError("Enter your email address first.");
       return;
     }
     setLoading("reset"); setError(null); setMessage(null);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(form.email, {
         redirectTo: `${window.location.origin}/signup?mode=login`,
       });
-      if (error) throw error;
-      setMessage("Password reset link sent to your email.");
+      
+      if (resetError) {
+        if (resetError.message.toLowerCase().includes("failed to fetch")) {
+          throw new Error("Connection failed. Please check your internet or disable ad-blockers for this site.");
+        }
+        throw resetError;
+      }
+      
+      setMessage("Check your email for the reset link.");
     } catch (e: any) {
+      console.error("Forgot Password Error:", e);
       setError(e.message);
     } finally {
       setLoading(null);
@@ -293,11 +283,10 @@ export default function SignupPage() {
 
   const handleGoogleCustom = () => {
     if (!GOOGLE_CLIENT_ID) {
-      setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to .env.local");
+      setError("Google Client ID not configured.");
       return;
     }
     
-    // Force a prompt if One Tap didn't show or was skipped
     if (window.google) {
        window.google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
