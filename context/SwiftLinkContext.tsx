@@ -109,6 +109,8 @@ const GOD_MODE_EMAILS = [
   "dosunmumichael26@gmail.com", // Your other email
 ];
 
+const PROTECTED_PATHS = ["/pro", "/business", "/dispatch", "/account", "/cart"];
+
 export function SwiftLinkProvider({
   children,
 }: {
@@ -141,6 +143,7 @@ export function SwiftLinkProvider({
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("swiftlink_theme") as "light" | "dark";
@@ -186,6 +189,10 @@ export function SwiftLinkProvider({
   const customerShopId = shopFromQuery || pathShopId || null;
   const isCustomerMode = Boolean(customerShopId);
   const isOwner = !isTrackingMode && !isCustomerMode;
+  const isProtectedRoute = PROTECTED_PATHS.some(
+    (protectedPath) =>
+      pathname === protectedPath || pathname.startsWith(`${protectedPath}/`),
+  );
 
   isOwnerRef.current = isOwner;
   userRef.current = user;
@@ -340,13 +347,17 @@ export function SwiftLinkProvider({
     const initAuth = async () => {
       if (!isSupabaseConfigured()) {
         setIsSupabaseActive(false);
+        setAuthReady(true);
         return;
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
         setIsSupabaseActive(true);
+      } else {
+        setUser(null);
       }
+      setAuthReady(true);
 
                   const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
 
@@ -441,6 +452,13 @@ export function SwiftLinkProvider({
       if (channel) supabase.removeChannel(channel);
     };
   }, [pathname, trackQ, shopQ]);
+
+  useEffect(() => {
+    if (!authReady || !isSupabaseConfigured()) return;
+    if (isProtectedRoute && !user) {
+      router.replace("/signup?mode=login");
+    }
+  }, [authReady, isProtectedRoute, router, user]);
 
   useEffect(() => {
     if (!trackId) return;
