@@ -5,17 +5,10 @@ import {
   ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Script from "next/script";
 import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 
 const PERKS = [
   "Launch your store in 60 seconds",
@@ -41,6 +34,7 @@ type Mode = "signup" | "login";
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("signup");
   const [loading, setLoading] = useState<"google" | "email" | "reset" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -51,13 +45,30 @@ export default function SignupPage() {
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
-  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  // 1. Detect if user is already logged in (Google Redirect returns here)
+  useEffect(() => {
+    setMounted(true);
+    const m = searchParams.get("mode") as Mode;
+    if (m === "login" || m === "signup") setMode(m);
 
-  const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((p) => ({ ...p, [key]: e.target.value }));
-    setError(null);
-    setMessage(null);
-  };
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Logged in session detected, moving to dashboard...");
+        router.push("/pro");
+      }
+    };
+    checkUser();
+    
+    // Also listen for state changes (handles the #access_token in URL)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        router.push("/pro");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [searchParams, router]);
 
   const saveUserStore = useCallback(async (
     uid: string,
@@ -66,28 +77,20 @@ export default function SignupPage() {
   ) => {
     try {
       const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
+      const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
+      const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
+      const slug = getPublicStoreSlug({ storeUsername, bizName });
       
-      const bizName = extra?.bizName || "";
-      const storeUsername = extra?.storeUsername
-        ? normalizeStoreUsername(extra.storeUsername).slice(0, 32)
-        : "";
-      const slug = getPublicStoreSlug({ storeUsername: storeUsername || undefined, bizName });
-      
-      const GOD_MODE_EMAILS = [
-        "michaeldosunmu22@gmail.com",
-        "dosunmumichael26@gmail.com",
-      ];
-      
+      const GOD_MODE_EMAILS = ["michaeldosunmu22@gmail.com", "dosunmumichael26@gmail.com"];
       const emailToCheck = email || form.email;
       const isGodMode = emailToCheck && GOD_MODE_EMAILS.includes(emailToCheck);
-      const urlPlan = searchParams.get("plan");
-      const initialPlan = isGodMode ? "pro" : (urlPlan || "free");
+      const initialPlan = isGodMode ? "pro" : (searchParams.get("plan") || "free");
 
       const nextState = {
         id: uid,
-        plan: initialPlan as any,
-        bizName: bizName || (storeData?.state_json as any)?.bizName || "",
-        storeUsername: storeUsername || (storeData?.state_json as any)?.storeUsername || "",
+        plan: initialPlan,
+        bizName,
+        storeUsername,
         phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
         products: (storeData?.state_json as any)?.products || [],
         deliveries: (storeData?.state_json as any)?.deliveries || [],
@@ -108,462 +111,177 @@ export default function SignupPage() {
       });
 
       if (slug) {
-        await supabase.from('slugs').upsert({
-          slug,
-          shop_id: uid,
-          updated_at: new Date().toISOString()
-        });
+        await supabase.from('slugs').upsert({ slug, shop_id: uid, updated_at: new Date().toISOString() });
       }
       
-      if (typeof window !== "undefined") {
-        localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
-        localStorage.setItem("swiftlink_tour_done", "true");
-      }
-    } catch (err: any) {
-      console.error("Critical Supabase Error in saveUserStore:", err);
-      throw err;
+      localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
+    } catch (err) {
+      console.error("Store Save Error:", err);
     }
   }, [searchParams, form.email]);
 
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
-
-    const handleCredentialResponse = async (response: any) => {
-      setLoading("google");
-      try {
-        const { data, error: authError } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: response.credential,
-          // Omit nonce entirely. If it exists in token, GIS was configured elsewhere.
-        });
-        
-        if (authError) {
-           if (authError.message.toLowerCase().includes("nonce")) {
-              throw new Error("Security sync error. Please refresh the page and try again.");
-           }
-           throw authError;
+  const handleGoogleLogin = async () => {
+    setLoading("google");
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/pro`,
         }
-        
-        if (data.user) {
-          await saveUserStore(data.user.id, data.user.email);
-          // Small delay to ensure localStorage and Supabase session are 'warm'
-          setTimeout(() => router.push("/pro"), 800);
-        }
-      } catch (e: any) {
-        console.error("Google Token Auth Error:", e);
-        setError(e.message);
-      } finally {
-        setLoading(null);
-      }
-    };
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      setError(e.message);
+      setLoading(null);
+    }
+  };
 
-    const initGsi = () => {
-      // Use a versioned flag to force re-init with the 'no nonce' config
-      if (window.google && !(window as any)._sl_gis_v2_ready) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-        (window as any)._sl_gis_v2_ready = true;
-        window.google.accounts.id.prompt();
-      }
-    };
-
-    const checkInterval = setInterval(() => {
-      if (window.google) {
-        initGsi();
-        clearInterval(checkInterval);
-      }
-    }, 1000);
-
-    return () => clearInterval(checkInterval);
-  }, [GOOGLE_CLIENT_ID, router, saveUserStore]);
-
-  const handleEmailSignup = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password) return;
-    
-    // Login flow
-    if (mode === "login") {
-      setLoading("email"); setError(null); setMessage(null);
-      try {
+    setLoading("email");
+    setError(null);
+    try {
+      if (mode === "login") {
         const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password
         });
-        
-        if (authError) {
-          if (authError.message.toLowerCase().includes("invalid login credentials")) {
-             throw new Error("Invalid email or password. If you signed up with Google, please continue with Google or use 'Forgot?' to set a password.");
-          }
-          throw authError;
-        }
-        
+        if (authError) throw authError;
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
-          setTimeout(() => router.push("/pro"), 800);
+          router.push("/pro");
         }
-      } catch (e: any) {
-        console.error("Email Login Error:", e);
-        setError(e.message);
-      } finally {
-        setLoading(null);
-      }
-      return;
-    }
-
-    // Signup Flow
-    if (!form.bizName || !form.phone) return;
-    let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
-    const urlPlan = searchParams.get("plan");
-
-    setLoading("email"); setError(null); setMessage(null);
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: {
-            display_name: form.bizName,
-            phone: formattedPhone,
-            plan: urlPlan || "free"
+      } else {
+        let formattedPhone = countryCode + form.phone.replace(/^0+/, '').trim();
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { display_name: form.bizName, phone: formattedPhone }
           }
-        }
-      });
-      
-      if (authError) {
-        if (authError.message.toLowerCase().includes("user already registered")) {
-           setMode("login");
-           throw new Error("This email is already registered. Please log in.");
-        }
-        throw authError;
-      }
-      
-      if (data.user) {
+        });
+        if (authError) throw authError;
+        if (data.user) {
           await saveUserStore(data.user.id, data.user.email, {
             bizName: form.bizName,
             phone: formattedPhone,
             storeUsername: form.storeUsername,
           });
-          
-          if (data.session) {
-            router.push("/pro");
-          } else {
-            setStep("verify");
-          }
-      }
-      
-    } catch (e: any) {
-      console.error("Email Signup Error:", e);
-      setError(e.message);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!form.email) {
-      setError("Enter your email address first.");
-      return;
-    }
-    setLoading("reset"); setError(null); setMessage(null);
-    try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(form.email, {
-        redirectTo: `${window.location.origin}/signup?mode=login`,
-      });
-      
-      if (resetError) {
-        if (resetError.message.toLowerCase().includes("failed to fetch")) {
-          throw new Error("Connection failed. Please check your internet or disable ad-blockers for this site.");
+          if (data.session) router.push("/pro");
+          else setStep("verify");
         }
-        throw resetError;
       }
-      
-      setMessage("Check your email for the reset link.");
     } catch (e: any) {
-      console.error("Forgot Password Error:", e);
       setError(e.message);
-    } finally {
       setLoading(null);
     }
   };
 
-  const handleGoogleCustom = () => {
-    if (!GOOGLE_CLIENT_ID) {
-      setError("Google Client ID not configured.");
-      return;
-    }
-    
-    if (window.google) {
-       window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-             window.google.accounts.id.renderButton(
-               document.getElementById("google-button-hidden"),
-               { theme: "outline", size: "large" }
-             );
-             document.getElementById("google-button-hidden")?.querySelector('div[role="button"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-          }
-       });
-    }
-  };
-
-  const handleGoogle = async () => {
-    handleGoogleCustom();
-  };
+  if (!mounted) return <div className="min-h-screen bg-[#080d18]" />;
 
   return (
-    <>
-    <main className="min-h-screen bg-[#080d18] flex relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <main className="min-h-screen bg-[#080d18] flex relative overflow-hidden font-sans text-slate-200">
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-blue-500/8 rounded-full blur-[100px]" />
-        <div className="absolute inset-0" style={{ backgroundImage: `linear-gradient(rgba(16,185,129,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.03) 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
       </div>
 
-      {/* Left panel — desktop only */}
       <div className="hidden lg:flex flex-col justify-between w-[44%] p-14 xl:p-20 relative z-10 border-r border-white/[0.06]">
         <Link href="/" className="flex items-center gap-3">
           <img src="/logo.png" alt="SwiftLink" className="w-10 h-10" />
           <span className="text-2xl font-black text-white">SwiftLink<span className="text-emerald-400">Pro</span></span>
         </Link>
-
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.25em] rounded-full mb-6">
-            <Sparkles size={9} /> Launch fast
-          </span>
-          <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight tracking-tight mb-5">
-            Your Business,<br />
-            <span className="text-emerald-400 italic">Supercharged.</span>
-          </h1>
-          <p className="text-slate-400 text-base font-medium leading-relaxed max-w-sm mb-10">
-            Turn WhatsApp into your most powerful sales channel. Manage stores, dispatch, and customers — all in one place.
-          </p>
-          <div className="space-y-3.5">
-            {PERKS.map((perk, i) => (
+          <h1 className="text-5xl font-black text-white leading-tight mb-5 tracking-tight">Your Business,<br /><span className="text-emerald-400 italic">Supercharged.</span></h1>
+          <div className="space-y-4">
+            {PERKS.map((perk) => (
               <div key={perk} className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-emerald-500/15 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 size={11} className="text-emerald-400" />
+                <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <CheckCircle2 size={12} className="text-emerald-400" />
                 </div>
-                <span className="text-slate-300 text-sm font-medium">{perk}</span>
+                <span className="text-slate-400 text-sm font-semibold">{perk}</span>
               </div>
             ))}
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          {["Store link", "Catalog", "WhatsApp orders"].map((t, i) => (
-            <div key={t} className="flex items-center gap-3">
-              {i > 0 && <div className="w-px h-6 bg-white/10" />}
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                {t}
-              </p>
-            </div>
-          ))}
-        </div>
+        <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Store link · Catalog · WhatsApp orders</p>
       </div>
 
-      {/* Right panel — auth form */}
-      <div className="flex-1 flex items-center justify-center p-5 sm:p-8 relative z-10 min-h-screen">
+      <div className="flex-1 flex items-center justify-center p-5 relative z-10">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <Link href="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
-            <span className="text-xl font-black text-white">SwiftLink<span className="text-emerald-400">Pro</span></span>
-          </Link>
-
-          <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/[0.08] rounded-[2rem] p-6 sm:p-8 shadow-2xl overflow-hidden relative">
+          <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08] rounded-[2.5rem] p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+            
             <AnimatePresence mode="wait">
-              {step === "form" && (
-                <motion.div key="form" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  
-                  {/* Mode toggle */}
-                <div className="flex bg-white/[0.05] rounded-xl p-1 mb-7">
-                  {(["signup", "login"] as Mode[]).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => { setMode(m); setError(null); }}
-                      className={`flex-1 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 ${
-                        mode === m ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      {m === "signup" ? "Sign Up" : "Log In"}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Google */}
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  disabled={loading !== null}
-                  className="w-full flex items-center justify-center gap-3 py-3.5 bg-white text-slate-900 rounded-xl font-black text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mb-5"
-                >
-                  {loading === "google" ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
-                  {loading === "google" ? "Connecting..." : "Continue with Google"}
-                </button>
-
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">or</span>
-                  <div className="flex-1 h-px bg-white/10" />
-                </div>
-
-                <AnimatePresence>
-                  {error && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 mb-4 text-[11px] font-bold">
-                      <AlertCircle size={13} className="flex-shrink-0" />
-                      {error}
-                    </motion.div>
-                  )}
-                  {message && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl px-4 py-3 mb-4 text-[11px] font-bold">
-                      <CheckCircle2 size={13} className="flex-shrink-0" />
-                      {message}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <form onSubmit={handleEmailSignup} className="space-y-4">
-                  <AnimatePresence mode="wait">
-                    {mode === "signup" && (
-                      <motion.div key="extra" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-hidden">
-                        <div>
-                          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">Business Name</label>
-                          <div className="relative">
-                            <Store size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input required type="text" value={form.bizName} onChange={setField("bizName")} placeholder="e.g. Elite Fashion" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 pl-9 pr-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">Store Handle (optional)</label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={form.storeUsername}
-                              onChange={setField("storeUsername")}
-                              placeholder="e.g. elitefashion"
-                              inputMode="url"
-                              className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 px-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm"
-                            />
-                          </div>
-                          <p className="text-[9px] text-slate-500 mt-1 ml-0.5 font-medium">
-                            This becomes your public link: <span className="text-slate-300 font-bold">/store/your-handle</span>
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">WhatsApp Number <span className="text-emerald-500">*</span></label>
-                          <div className="flex gap-2 relative">
-                            <div className="relative w-[110px] sm:w-28 flex-shrink-0">
-                              <select 
-                                value={countryCode} 
-                                onChange={(e) => setCountryCode(e.target.value)}
-                                className="w-full h-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white pl-3.5 pr-2 py-3.5 rounded-xl outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
-                              >
-                                <option className="bg-slate-900" value="+234">🇳🇬 +234</option>
-                                <option className="bg-slate-900" value="+1">🇺🇸 +1</option>
-                                <option className="bg-slate-900" value="+44">🇬🇧 +44</option>
-                                <option className="bg-slate-900" value="+27">🇿🇦 +27</option>
-                                <option className="bg-slate-900" value="+254">🇰🇪 +254</option>
-                                <option className="bg-slate-900" value="+233">🇬🇭 +233</option>
-                                <option className="bg-slate-900" value="+91">🇮🇳 +91</option>
-                                <option className="bg-slate-900" value="+971">🇦🇪 +971</option>
-                              </select>
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▼</div>
-                            </div>
-                            <div className="relative flex-1 min-w-0">
-                              <Phone size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                              <input required type="tel" value={form.phone} onChange={setField("phone")} placeholder="801 234..." className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 pl-9 pr-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
-                            </div>
-                          </div>
-                          <p className="text-[9px] text-slate-500 mt-1 ml-0.5 font-medium">Select your code. Do not include leading zeros.</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5 ml-0.5">Email</label>
-                    <input required type="email" value={form.email} onChange={setField("email")} placeholder="you@example.com" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 px-4 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 ml-0.5">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Password</label>
-                      {mode === "login" && (
-                        <button type="button" onClick={handleForgotPassword} className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400">
-                          {loading === "reset" ? "Sending..." : "Forgot?"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <input required type={showPassword ? "text" : "password"} value={form.password} onChange={setField("password")} placeholder="Min. 6 characters" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500 text-white placeholder:text-slate-600 px-4 pr-11 py-3.5 rounded-xl outline-none transition-all font-bold text-sm" />
-                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              {step === "form" ? (
+                <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+                  <div className="flex bg-white/[0.05] rounded-2xl p-1.5 mb-8">
+                    {(["signup", "login"] as Mode[]).map((m) => (
+                      <button key={m} onClick={() => {setMode(m); setError(null);}} className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === m ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20" : "text-slate-500 hover:text-slate-300"}`}>
+                        {m === "signup" ? "Sign Up" : "Log In"}
                       </button>
+                    ))}
+                  </div>
+
+                  <button onClick={handleGoogleLogin} disabled={loading !== null} className="w-full flex items-center justify-center gap-3 py-4 bg-white text-slate-900 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 shadow-lg">
+                    {loading === "google" ? <Loader2 className="animate-spin text-emerald-600" size={18} /> : <GoogleIcon />}
+                    {loading === "google" ? "Syncing..." : "Continue with Google"}
+                  </button>
+
+                  <div className="flex items-center gap-3 my-8">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Secure email login</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+
+                  {error && <motion.div initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 text-xs font-bold flex gap-3"><AlertCircle size={16} className="shrink-0"/>{error}</motion.div>}
+                  {message && <motion.div initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl mb-6 text-xs font-bold flex gap-3"><CheckCircle2 size={16} className="shrink-0"/>{message}</motion.div>}
+
+                  <form onSubmit={handleEmailAuth} className="space-y-4">
+                    {mode === "signup" && (
+                      <div className="space-y-4">
+                        <input required type="text" value={form.bizName} onChange={e => setForm({...form, bizName: e.target.value})} placeholder="Business Name" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                        <div className="flex gap-2">
+                           <div className="relative shrink-0">
+                                <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="h-full bg-white/5 border border-white/10 text-white pl-4 pr-8 rounded-2xl text-sm font-bold outline-none appearance-none cursor-pointer">
+                                    <option className="bg-slate-900" value="+234">🇳🇬 +234</option>
+                                    <option className="bg-slate-900" value="+1">🇺🇸 +1</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-slate-500">▼</div>
+                           </div>
+                           <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="WhatsApp Number" className="flex-1 bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                        </div>
+                      </div>
+                    )}
+                    <input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Email Address" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                    <div className="relative">
+                      <input required type={showPassword ? "text" : "password"} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Password" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                     </div>
+                    <button type="submit" disabled={loading !== null} className="w-full py-4.5 bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-[0.15em] hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50 mt-2">
+                      {loading === "email" ? <Loader2 className="animate-spin" size={20} /> : <>{mode === "signup" ? "Create Command Center" : "Login to Center"} <ArrowRight size={20} /></>}
+                    </button>
+                  </form>
+                </motion.div>
+              ) : (
+                <motion.div key="verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="text-center py-4">
+                  <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+                    <MessageSquare size={32} className="text-emerald-400" />
                   </div>
-
-                  <button type="submit" disabled={loading !== null} className="w-full py-4 bg-emerald-500 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {loading === "email" ? <Loader2 size={17} className="animate-spin" /> : <>{mode === "signup" ? "Create Store" : "Log In"} <ArrowRight size={17} /></>}
-                  </button>
-                </form>
-
-                <div className="flex items-center justify-center gap-2 mt-5">
-                  <Shield size={10} className="text-slate-600" />
-                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Secure sign-in · Works on all devices</p>
-                </div>
-
-                <p className="mt-3 text-center text-[10px] font-bold text-slate-600 hover:text-emerald-500 transition-colors">
-                  <Link href="/terms">Terms & Privacy Policy</Link>
-                </p>
-              </motion.div>
-              )}
-              
-              {step === "verify" && (
-                <motion.div key="verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="pt-2 pb-6">
-                  <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
-                    <MessageSquare size={20} className="text-emerald-400" />
-                  </div>
-                  <h2 className="text-xl font-black text-white text-center mb-1">Check your inbox</h2>
-                  <p className="text-xs text-slate-400 text-center mb-6 px-4">
-                    We just sent a secure verification link to<br/><span className="text-white font-bold">{form.email}</span>
-                  </p>
-
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
-                    <p className="text-[10px] text-slate-400 leading-relaxed text-center font-medium">
-                      Click the link in the email to activate your account. Once verified, you can return here and safely log in to open your storefront.
-                    </p>
-                  </div>
-                  
-                  <button type="button" onClick={() => { setStep("form"); setMode("login"); setError(null); }} className="w-full py-4 bg-emerald-500 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl shadow-emerald-500/20">
-                    I&apos;ve verified my email
-                  </button>
+                  <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Check your inbox</h2>
+                  <p className="text-sm text-slate-400 mb-8 px-4">We sent a secure verification link to <br/><span className="text-white font-bold">{form.email}</span></p>
+                  <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mb-8 text-xs text-slate-500 font-medium leading-relaxed">Click the link in the email to activate your business. You can then return here to log in.</div>
+                  <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-4 bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl">I&apos;ve verified my email</button>
                 </motion.div>
               )}
-
             </AnimatePresence>
           </div>
-
-          <div className="flex items-center justify-center mt-6">
-            <Link href="/?v=landing" className="text-slate-500 hover:text-emerald-400 font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center gap-2">
-              <Zap size={11} /> Back to home
-            </Link>
-          </div>
+          <Link href="/?v=landing" className="block text-center mt-10 text-slate-500 hover:text-emerald-400 font-bold text-[11px] uppercase tracking-[0.2em] transition-all">
+            <Zap size={12} className="inline mr-2 -mt-0.5" /> Return to landing
+          </Link>
         </div>
       </div>
     </main>
-    <div id="google-button-hidden" className="hidden" />
-    <Script 
-      src="https://accounts.google.com/gsi/client" 
-      strategy="afterInteractive" 
-      onLoad={() => {
-        console.log("Google Identity Services loaded");
-      }}
-    />
-  </>
   );
 }
