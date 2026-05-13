@@ -133,6 +133,11 @@ export function CustomerStorefront({
   }
 
   const s = effectiveState!;
+  const heroTemplate = s.heroTemplate || "spotlight";
+  const heroImage = s.heroImage || s.bizImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200";
+  const heroTitle = s.heroTitle || s.tagline || "The New Collection";
+  const heroSubtitle = s.heroSubtitle || s.aboutUs || "Premium products selected for your lifestyle.";
+  const heroButtonText = s.heroButtonText || "Shop Now";
   const pageAnim = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -216,28 +221,78 @@ export function CustomerStorefront({
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-8 space-y-6 md:space-y-10">
                     
                     {/* Hero Banner - Responsive */}
-                    <div className="relative rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden bg-gray-900 shadow-lg" style={{ aspectRatio: "16/7" }}>
-                      <img
-                        src={s.bizImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200"}
-                        className="w-full h-full object-cover opacity-70"
-                        alt="Banner"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent flex flex-col justify-center px-6 md:px-12">
-                        <p className="text-emerald-400 text-[9px] md:text-xs font-black uppercase tracking-[0.2em]">New Drop</p>
-                        <p className="text-white text-[18px] md:text-4xl font-black leading-tight mt-2">{s.tagline || "The SS26 Collection"}</p>
-                        <button
-                          onClick={() => {
-                              if (filteredProducts.length > 0) {
-                                setSelectedProduct(filteredProducts[0]);
-                                setScreen("product");
-                              }
-                          }}
-                          className="mt-4 md:mt-6 flex items-center gap-2 text-white text-[10px] md:text-xs font-black bg-emerald-500 rounded-full px-5 py-2.5 w-fit active:scale-95 transition-transform shadow-lg shadow-emerald-500/20"
-                        >
-                          SHOP NOW <ArrowRight size={12} />
-                        </button>
+                    {s.showHero !== false && (
+                      <div
+                        className={cn(
+                          "relative overflow-hidden bg-gray-900 shadow-lg",
+                          heroTemplate === "editorial" ? "rounded-none md:rounded-[1rem]" : "rounded-[1.5rem] md:rounded-[2rem]",
+                          heroTemplate === "split-showcase" && "bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900",
+                          heroTemplate === "drop-card" && "bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950"
+                        )}
+                        style={{ aspectRatio: heroTemplate === "drop-card" ? "16/6" : "16/7" }}
+                      >
+                        {heroTemplate === "split-showcase" ? (
+                          <div className="grid h-full grid-cols-1 md:grid-cols-2">
+                            <div className="flex flex-col justify-center px-6 py-8 md:px-12">
+                              <p className="text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-300">{s.bizName || "Featured"}</p>
+                              <h1 className="mt-2 text-[20px] md:text-4xl font-black leading-tight text-white">{heroTitle}</h1>
+                              <p className="mt-3 hidden max-w-sm text-xs font-bold leading-relaxed text-white/60 md:block">{heroSubtitle}</p>
+                              <button
+                                onClick={() => {
+                                  if (filteredProducts.length > 0) {
+                                    setSelectedProduct(filteredProducts[0]);
+                                    setScreen("product");
+                                  }
+                                }}
+                                className="mt-5 flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[10px] font-black uppercase text-slate-950 shadow-lg transition-transform active:scale-95"
+                              >
+                                {heroButtonText} <ArrowRight size={12} />
+                              </button>
+                            </div>
+                            <div className="hidden p-5 md:block">
+                              <img src={heroImage} className="h-full w-full rounded-[1.5rem] object-cover shadow-2xl" alt="Store hero" />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <img
+                              src={heroImage}
+                              className={cn(
+                                "h-full w-full object-cover",
+                                heroTemplate === "editorial" ? "opacity-85 grayscale-[0.15]" : "opacity-70",
+                                heroTemplate === "drop-card" && "scale-105 opacity-45"
+                              )}
+                              alt="Store hero"
+                            />
+                            <div
+                              className={cn(
+                                "absolute inset-0 flex flex-col justify-center px-6 md:px-12",
+                                heroTemplate === "drop-card"
+                                  ? "items-center bg-black/20 text-center"
+                                  : "bg-gradient-to-r from-black/80 via-black/30 to-transparent"
+                              )}
+                            >
+                              <p className="text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-400">{s.bizName || "New Drop"}</p>
+                              <h1 className={cn("mt-2 max-w-xl font-black leading-tight text-white", heroTemplate === "drop-card" ? "text-[20px] md:text-5xl" : "text-[18px] md:text-4xl")}>{heroTitle}</h1>
+                              {heroTemplate !== "spotlight" && (
+                                <p className="mt-3 hidden max-w-md text-xs font-bold leading-relaxed text-white/70 md:block">{heroSubtitle}</p>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (filteredProducts.length > 0) {
+                                    setSelectedProduct(filteredProducts[0]);
+                                    setScreen("product");
+                                  }
+                                }}
+                                className="mt-4 flex w-fit items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-[10px] font-black uppercase text-white shadow-lg shadow-emerald-500/20 transition-transform active:scale-95 md:mt-6"
+                              >
+                                {heroButtonText} <ArrowRight size={12} />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </div>
+                    )}
 
                                         {/* Product Grid - Responsive Columns */}
                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-8">

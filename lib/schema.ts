@@ -74,6 +74,11 @@ export type ShopState = {
   fontStyle?: "modern" | "bold" | "classic" | "playful";
   layoutStyle?: "grid" | "list" | "magazine";
   heroStyle?: "banner" | "minimal" | "split";
+  heroTemplate?: "spotlight" | "split-showcase" | "editorial" | "drop-card";
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroButtonText?: string;
+  heroImage?: string;
   buttonRadius?: "rounded" | "pill" | "sharp";
   bgStyle?: "white" | "light-tint" | "pattern";
   imageShape?: "square" | "rounded" | "circle";

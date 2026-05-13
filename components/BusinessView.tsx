@@ -6,7 +6,34 @@ import { ShopState } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { getShopPath } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, X, Trash2, RefreshCw, Eye, Sparkles, Palette, ShoppingCart, User, FileText, ExternalLink, Shield } from "lucide-react";
+import { Plus, X, Trash2, RefreshCw, Eye, Sparkles, Palette, ShoppingCart, User, FileText, ExternalLink, Shield, Code2, Copy, Image as ImageIcon } from "lucide-react";
+
+const HERO_TEMPLATES = [
+    {
+        id: "spotlight",
+        name: "Spotlight",
+        description: "Full-width product image with strong text overlay.",
+        className: "from-black/85 via-black/35 to-transparent",
+    },
+    {
+        id: "split-showcase",
+        name: "Split Showcase",
+        description: "Text and product photo side by side.",
+        className: "from-emerald-950 via-slate-950 to-slate-900",
+    },
+    {
+        id: "editorial",
+        name: "Editorial",
+        description: "Magazine-style launch section for premium brands.",
+        className: "from-stone-950 via-neutral-900 to-zinc-800",
+    },
+    {
+        id: "drop-card",
+        name: "Drop Card",
+        description: "Compact promo card for fast sales campaigns.",
+        className: "from-slate-950 via-emerald-950 to-slate-950",
+    },
+] as const;
 
 export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance">("store");
@@ -41,6 +68,24 @@ export function BusinessView() {
     const path = getShopPath(state);
     const url = `${window.location.origin}${path}`;
     window.open(url, "_blank");
+  };
+
+  const exportHeroCode = async () => {
+    const heroImage = state.heroImage || state.bizImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200";
+    const heroTitle = state.heroTitle || state.tagline || "Premium Products";
+    const heroSubtitle = state.heroSubtitle || state.aboutUs || "Shop the latest collection from our store.";
+    const heroButton = state.heroButtonText || "Shop Now";
+    const code = `<section class="swiftlink-hero swiftlink-hero-${state.heroTemplate || "spotlight"}">
+  <img src="${heroImage}" alt="${state.bizName || "Store"} hero" />
+  <div class="swiftlink-hero-content">
+    <p>${state.bizName || "SwiftLink Store"}</p>
+    <h1>${heroTitle}</h1>
+    <span>${heroSubtitle}</span>
+    <a href="#products">${heroButton}</a>
+  </div>
+</section>`;
+    await navigator.clipboard.writeText(code);
+    addSystemNotification("Hero Code Copied", "Your current hero section code was copied to clipboard.", "message");
   };
 
   const addCategory = async () => {
@@ -471,6 +516,99 @@ export function BusinessView() {
                                 </div>
                             </button>
                         ))}
+                    </div>
+                </Accordion>
+                <Accordion id="hero-builder" title="Visual Hero Builder" subtitle="Pick, Edit, Export" icon={Code2}>
+                    <div className="space-y-8 pb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {HERO_TEMPLATES.map((template) => (
+                                <button
+                                    key={template.id}
+                                    type="button"
+                                    onClick={() => {
+                                        updateState("heroTemplate", template.id);
+                                        updateState("heroStyle", template.id === "split-showcase" ? "split" : "banner");
+                                        updateState("themePreset", "custom");
+                                    }}
+                                    className={cn(
+                                        "overflow-hidden rounded-[2rem] border-4 bg-white text-left transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-black",
+                                        (state.heroTemplate || "spotlight") === template.id ? "border-emerald-500 shadow-2xl" : "border-slate-100 dark:border-white/10"
+                                    )}
+                                >
+                                    <div className={cn("relative h-36 bg-gradient-to-br", template.className)}>
+                                        <div className="absolute inset-y-5 right-5 w-24 rounded-2xl bg-cover bg-center shadow-2xl" style={{ backgroundImage: `url(${state.heroImage || state.bizImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600"})` }} />
+                                        <div className="absolute left-5 top-6 w-32 space-y-2">
+                                            <div className="h-2 w-12 rounded-full bg-emerald-400" />
+                                            <div className="h-5 rounded-full bg-white/90" />
+                                            <div className="h-3 w-24 rounded-full bg-white/40" />
+                                            <div className="h-7 w-20 rounded-full bg-emerald-500" />
+                                        </div>
+                                    </div>
+                                    <div className="p-5">
+                                        <p className="text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white">{template.name}</p>
+                                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{template.description}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Hero Headline</label>
+                                    <input
+                                        value={state.heroTitle || ""}
+                                        onChange={(e) => updateState("heroTitle", e.target.value)}
+                                        className="mt-2 w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-black text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+                                        placeholder={state.tagline || "The New Collection"}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Supporting Text</label>
+                                    <textarea
+                                        value={state.heroSubtitle || ""}
+                                        onChange={(e) => updateState("heroSubtitle", e.target.value)}
+                                        className="mt-2 h-28 w-full resize-none rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-600 outline-none transition-all focus:border-emerald-500 focus:bg-white dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300"
+                                        placeholder={state.aboutUs || "Tell customers what makes this collection special."}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Button Text</label>
+                                    <input
+                                        value={state.heroButtonText || ""}
+                                        onChange={(e) => updateState("heroButtonText", e.target.value)}
+                                        className="mt-2 w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-black text-slate-900 outline-none transition-all focus:border-emerald-500 focus:bg-white dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+                                        placeholder="Shop Now"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="group relative flex h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 text-center transition-all hover:border-emerald-400 hover:bg-emerald-50 dark:border-white/10 dark:bg-zinc-900 dark:hover:bg-emerald-500/10">
+                                    {(state.heroImage || state.bizImage) ? (
+                                        <>
+                                            <img src={state.heroImage || state.bizImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/45 opacity-0 transition-opacity group-hover:opacity-100" />
+                                        </>
+                                    ) : null}
+                                    <div className="relative z-10 flex flex-col items-center gap-3 px-6">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-900 shadow-lg">
+                                            <ImageIcon size={22} />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-300">Change Hero Image</span>
+                                    </div>
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e.target.files?.[0], "heroImage")} />
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={exportHeroCode}
+                                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-xl transition-all active:scale-95 dark:bg-white dark:text-black"
+                                >
+                                    <Copy size={15} />
+                                    Export Hero Code
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </Accordion>
                 <Accordion id="visual" title="Design System" subtitle="Micro-Customization" icon={Palette}>

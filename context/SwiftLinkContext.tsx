@@ -78,7 +78,7 @@ type SwiftLinkContextValue = {
   removeProduct: (id: number) => void;
   handleImageUpload: (
     file: File | undefined,
-    field: "bizImage" | "image",
+    field: "bizImage" | "heroImage" | "image",
     productId?: number,
   ) => void;
   addProductImage: (productId: number, file: File) => void;
@@ -973,7 +973,7 @@ export function SwiftLinkProvider({
   );
 
   const handleImageUpload = useCallback(
-    async (file: File | undefined, field: "bizImage" | "image", productId?: number) => {
+    async (file: File | undefined, field: "bizImage" | "heroImage" | "image", productId?: number) => {
       if (!file) return;
       if (!userRef.current) {
         addToast("Connecting… please wait a moment and try again.", "error");
@@ -1012,7 +1012,7 @@ export function SwiftLinkProvider({
             });
             next = { ...next, products };
           } else {
-            next = { ...next, bizImage: publicUrl };
+            next = { ...next, [field]: publicUrl };
           }
           persistState(next);
           return next;
