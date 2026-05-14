@@ -9,6 +9,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 const PERKS = [
   "Launch your store in 60 seconds",
@@ -120,21 +121,33 @@ export default function SignupPage() {
     }
   }, [searchParams, form.email]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading("google");
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      if (!credentialResponse.credential) throw new Error("No ID token returned from Google");
+      
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/signup?mode=login`,
-        }
+        token: credentialResponse.credential,
       });
+      
       if (error) throw error;
+      
+      if (data.user) {
+        // Automatically save their store state and redirect
+        await saveUserStore(data.user.id, data.user.email);
+        router.push("/pro");
+      }
     } catch (e: any) {
       setError(e.message);
       setLoading(null);
     }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Sign-In failed or was cancelled.");
+    setLoading(null);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -224,10 +237,21 @@ export default function SignupPage() {
                     ))}
                   </div>
 
-                  <button onClick={handleGoogleLogin} disabled={loading !== null} className="w-full flex items-center justify-center gap-3 py-4 bg-white text-slate-900 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 shadow-lg">
-                    {loading === "google" ? <Loader2 className="animate-spin text-emerald-600" size={18} /> : <GoogleIcon />}
-                    {loading === "google" ? "Syncing..." : "Continue with Google"}
-                  </button>
+                  {/* Google OAuth Provider Wrapper */}
+                  <div className="w-full flex justify-center mb-2">
+                    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        useOneTap
+                        shape="pill"
+                        theme="filled_black"
+                        text={mode === "signup" ? "signup_with" : "signin_with"}
+                        width="320"
+                      />
+                    </GoogleOAuthProvider>
+                  </div>
+                  {loading === "google" && <p className="text-[10px] text-center text-emerald-500 font-bold uppercase tracking-widest mt-2 animate-pulse">Syncing with Google...</p>}
 
                   <div className="flex items-center gap-3 my-8">
                     <div className="flex-1 h-px bg-white/10" />
