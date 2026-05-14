@@ -74,11 +74,11 @@ export type StoreSocials = {
 
 export type StoreReview = {
   id: string;
-  authorName: string;
+  author_name: string;
   message: string;
-  rating?: number; // 1-5
-  createdAt: string;
-  storeId: string;
+  rating?: number;
+  created_at: string;
+  store_id: string;
 };
 
 export type AppNotification = {

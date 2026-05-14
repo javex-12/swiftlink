@@ -52,8 +52,9 @@ export function CustomerStorefront({
   const [publicState, setPublicState] = useState<ShopState | null>(null);
   const effectiveState = shopId ? publicState : state;
   
-  const [screen, setScreen] = useState<Screen>("home");
-  const [activeTab, setActiveTab] = useState<"home" | "search" | "cart">("home");
+  const [screen, setScreen] = useState<"home" | "product" | "cart" | "search" | "success" | "community">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "search" | "cart" | "community">("home");
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -126,7 +127,10 @@ export function CustomerStorefront({
 
   const goTab = (tab: typeof activeTab) => {
     setActiveTab(tab);
-    setScreen(tab === "home" ? "home" : tab === "search" ? "search" : "cart");
+    if (tab === "home") setScreen("home");
+    else if (tab === "search") setScreen("search");
+    else if (tab === "cart") setScreen("cart");
+    else if (tab === "community") setScreen("community");
   };
 
   const handleOrder = () => {
@@ -331,11 +335,37 @@ export function CustomerStorefront({
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <div className="max-w-screen-lg mx-auto md:flex md:items-stretch md:min-h-screen">
                     
-                    {/* Image Column */}
+                    {/* Image Column - with carousel */}
                     <div className="relative md:w-1/2 md:h-screen">
-                      <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-[300px] md:h-full object-cover" />
+                      {(() => {
+                        const imgs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+                        const idx = Math.min(activeImgIdx, imgs.length - 1);
+                        return (
+                          <>
+                            <img src={imgs[idx]} alt={selectedProduct.name} className="w-full h-[300px] md:h-full object-cover" />
+                            {imgs.length > 1 && (
+                              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                                {imgs.map((_, i) => (
+                                  <button key={i} onClick={() => setActiveImgIdx(i)}
+                                    className={`w-2 h-2 rounded-full transition-all ${i === idx ? "bg-white w-6" : "bg-white/50"}`} />
+                                ))}
+                              </div>
+                            )}
+                            {imgs.length > 1 && (
+                              <div className="absolute bottom-12 left-0 right-0 flex gap-2 px-4 overflow-x-auto no-scrollbar z-20">
+                                {imgs.map((img, i) => (
+                                  <button key={i} onClick={() => setActiveImgIdx(i)}
+                                    className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${i === idx ? "border-white" : "border-transparent opacity-60"}`}>
+                                    <img src={img} className="w-full h-full object-cover" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:hidden" />
-                      <button onClick={() => setScreen("home")} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg">
+                      <button onClick={() => { setScreen("home"); setActiveImgIdx(0); }} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg">
                         <ChevronLeft size={20} />
                       </button>
                       <button onClick={() => setWishlist(w => w.includes(selectedProduct.id) ? w.filter(x => x !== selectedProduct.id) : [...w, selectedProduct.id])} className="absolute top-5 right-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg">
@@ -572,6 +602,14 @@ export function CustomerStorefront({
             )}
 
           </AnimatePresence>
+
+          {/* COMMUNITY SCREEN */}
+          {screen === "community" && showShell && s.id && (
+            <motion.div key="community" {...pageAnim} className="absolute inset-0 overflow-y-auto no-scrollbar bg-[#f2f2f7]">
+              <CommunityWall storeId={s.id} accentColor={s.accentColor} />
+              <div className="h-24" />
+            </motion.div>
+          )}
         </div>
 
         {/* 
@@ -584,6 +622,7 @@ export function CustomerStorefront({
             {[
               { id: "home", icon: Home, label: "Store" },
               { id: "search", icon: Search, label: "Search" },
+              { id: "community", icon: MessageCircle, label: "Reviews" },
               { id: "cart", icon: ShoppingCart, label: "Cart", badge: cartItemCount },
             ].map(({ id, icon: Icon, label, badge }) => (
               <button

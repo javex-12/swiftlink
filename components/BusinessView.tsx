@@ -558,10 +558,10 @@ export function BusinessView() {
                                 <div key={r.id} className="bg-slate-50 dark:bg-zinc-900 p-5 rounded-3xl">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm">{r.authorName?.charAt(0).toUpperCase()}</div>
+                                            <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm">{r.author_name?.charAt(0).toUpperCase()}</div>
                                             <div>
-                                                <p className="text-sm font-black text-slate-900 dark:text-white">{r.authorName}</p>
-                                                <p className="text-[9px] text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                                <p className="text-sm font-black text-slate-900 dark:text-white">{r.author_name}</p>
+                                                <p className="text-[9px] text-slate-400">{new Date(r.created_at).toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-0.5">

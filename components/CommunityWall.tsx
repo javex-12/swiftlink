@@ -11,7 +11,6 @@ type Review = {
   message: string;
   rating: number;
   created_at: string;
-  likes?: number;
 };
 
 export function CommunityWall({ storeId, accentColor }: { storeId: string; accentColor?: string }) {
