@@ -221,9 +221,9 @@ export default function SignupPage() {
         <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Store link · Catalog · WhatsApp orders</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-5 relative z-10">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-5 relative z-10">
         <div className="w-full max-w-md">
-          <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08] rounded-[2.5rem] p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+          <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08] rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
             
             <AnimatePresence mode="wait">
@@ -238,7 +238,7 @@ export default function SignupPage() {
                   </div>
 
                   {/* Google OAuth Provider Wrapper */}
-                  <div className="w-full flex justify-center mb-2">
+                  <div className="w-full flex justify-center mb-2 overflow-hidden">
                     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
@@ -247,7 +247,6 @@ export default function SignupPage() {
                         shape="pill"
                         theme="filled_black"
                         text={mode === "signup" ? "signup_with" : "signin_with"}
-                        width="320"
                       />
                     </GoogleOAuthProvider>
                   </div>
