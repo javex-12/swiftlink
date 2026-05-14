@@ -24,20 +24,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
+import { SectionRenderer } from "./sections/SectionRenderer";
 
 type Screen = "home" | "product" | "cart" | "success" | "search";
 
 export function CustomerStorefront({
   shopId,
+  isEditable = false,
+  selectedSectionId,
+  onSectionAction
 }: {
   shopId?: string;
+  isEditable?: boolean;
+  selectedSectionId?: string | null;
+  onSectionAction?: (id: string, action: string) => void;
 }) {
   const { 
       state, 
       cart, 
       updateCart, 
       cartItemCount,
-      sendWhatsAppOrder
+      sendWhatsAppOrder,
+      logEvent
   } = useSwiftLink();
 
   const [publicState, setPublicState] = useState<ShopState | null>(null);
@@ -83,6 +91,12 @@ export function CustomerStorefront({
     };
   }, [shopId]);
 
+  useEffect(() => {
+    if (effectiveState?.id) {
+        logEvent("view", { shopId: effectiveState.id });
+    }
+  }, [effectiveState?.id, logEvent]);
+
   const categories: string[] = useMemo(() => {
       if (!effectiveState) return ["All"];
       const custom = effectiveState.categories || [];
@@ -115,6 +129,7 @@ export function CustomerStorefront({
   };
 
   const handleOrder = () => {
+    logEvent("whatsapp_checkout", { total: totalPrice, items: Object.keys(cart).length });
     sendWhatsAppOrder();
     setScreen("success");
     setTimeout(() => {
@@ -133,11 +148,12 @@ export function CustomerStorefront({
   }
 
   const s = effectiveState!;
-  const heroTemplate = s.heroTemplate || "spotlight";
-  const heroImage = s.heroImage || s.bizImage || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200";
-  const heroTitle = s.heroTitle || s.tagline || "The New Collection";
-  const heroSubtitle = s.heroSubtitle || s.aboutUs || "Premium products selected for your lifestyle.";
-  const heroButtonText = s.heroButtonText || "Shop Now";
+  const isVisualCanvas = isEditable && (s.plan === "pro" || s.plan === "business");
+  
+  // If we are in the Visual Editor, we might want to hide the standard shell
+  // and only show the dynamic sections.
+  const showShell = !isVisualCanvas;
+
   const pageAnim = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -147,8 +163,29 @@ export function CustomerStorefront({
 
   const qty = (id: number) => cart[id] || 0;
 
+  const accentColor = s.accentColor || "#10b981";
+  const bgColor = s.bgColor || "#f2f2f7";
+  const textColor = s.textColor || "#111827";
+
   return (
-    <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center selection:bg-emerald-500 selection:text-white"
+         style={{ "--theme-color": accentColor, "--bg-color": bgColor, "--text-color": textColor } as React.CSSProperties}>
+      <style>{`
+         .bg-emerald-500 { background-color: var(--theme-color) !important; }
+         .text-emerald-500 { color: var(--theme-color) !important; }
+         .border-emerald-500 { border-color: var(--theme-color) !important; }
+         .ring-emerald-500 { --tw-ring-color: var(--theme-color) !important; }
+         .shadow-emerald-500\\/20 { box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--theme-color) 20%, transparent), 0 2px 4px -2px color-mix(in srgb, var(--theme-color) 20%, transparent) !important; }
+         .fill-emerald-500 { fill: var(--theme-color) !important; }
+         .text-emerald-400 { color: color-mix(in srgb, var(--theme-color) 80%, white) !important; }
+         .bg-emerald-50 { background-color: color-mix(in srgb, var(--theme-color) 10%, white) !important; }
+         .text-emerald-600 { color: color-mix(in srgb, var(--theme-color) 80%, black) !important; }
+         
+         .bg-\\[\\#f2f2f7\\] { background-color: var(--bg-color) !important; }
+         .text-gray-900 { color: var(--text-color) !important; }
+         .text-slate-900 { color: var(--text-color) !important; }
+         .bg-white { background-color: color-mix(in srgb, var(--bg-color) 15%, white) !important; }
+      `}</style>
       {/* 
           WEBSITE WRAPPER:
           On mobile: Full width
@@ -164,8 +201,8 @@ export function CustomerStorefront({
             {screen === "home" && (
               <motion.div key="home" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden bg-[#f2f2f7]">
                 
-                {/* Store header - Center aligned on desktop */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-10 w-full">
+                {/* Store header - Clean & Minimal */}
+                {showShell && <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-3 md:py-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
@@ -197,184 +234,87 @@ export function CustomerStorefront({
                       </button>
                     </div>
                   </div>
+                </div>}
 
-                  {/* Categories - Center aligned on desktop */}
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 pb-3">
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                      {categories.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => setActiveCategory(c)}
-                          className={`flex-shrink-0 px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[11px] font-black transition-all active:scale-95 ${
-                            activeCategory === c ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                          }`}
-                        >
-                          {c}
-                        </button>
-                      ))}
+                {/* Content Area - Internal Scroll */}
+                <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
+                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-8">
+                    
+                    {/* The Section Engine */}
+                    <div className="space-y-6 md:space-y-10">
+                      {(() => {
+                        const sections = s.sections || [];
+                        const firstSection = sections[0];
+                        const remainingSections = sections.slice(1);
+
+                        return (
+                          <>
+                            {/* Render First Section (Usually Hero) */}
+                            {firstSection && (
+                              <SectionRenderer 
+                                sections={[firstSection]} 
+                                state={s}
+                                cart={cart}
+                                updateCart={updateCart}
+                                onProductClick={(p) => { 
+                                  setSelectedProduct(p); 
+                                  setScreen("product"); 
+                                  logEvent("product_click", { productId: p.id, productName: p.name });
+                                }}
+                                activeCategory={activeCategory}
+                                isEditable={isEditable}
+                                selectedSectionId={selectedSectionId}
+                                onSectionAction={onSectionAction}
+                              />
+                            )}
+
+                            {/* CATEGORIES BAR - Now placed below the first section */}
+                            {showShell && (
+                              <div className="pb-4 sticky top-0 z-40 backdrop-blur-xl pt-2" style={{ backgroundColor: "color-mix(in srgb, var(--bg-color) 80%, transparent)" }}>
+                                <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+                                  {categories.map((c) => (
+                                    <button
+                                      key={c}
+                                      onClick={() => setActiveCategory(c)}
+                                      className={`flex-shrink-0 px-5 py-2 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-black transition-all active:scale-95 ${
+                                        activeCategory === c ? "shadow-lg" : "border border-black/[0.03] hover:brightness-95"
+                                      }`}
+                                      style={{
+                                        backgroundColor: activeCategory === c ? "var(--text-color)" : "color-mix(in srgb, var(--bg-color) 30%, white)",
+                                        color: activeCategory === c ? "var(--bg-color)" : "var(--text-color)"
+                                      }}
+                                    >
+                                      {c}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Render Remaining Sections */}
+                            <SectionRenderer 
+                              sections={remainingSections} 
+                              state={s}
+                              cart={cart}
+                              updateCart={updateCart}
+                              onProductClick={(p) => { 
+                                setSelectedProduct(p); 
+                                setScreen("product"); 
+                                logEvent("product_click", { productId: p.id, productName: p.name });
+                              }}
+                              activeCategory={activeCategory}
+                              isEditable={isEditable}
+                              selectedSectionId={selectedSectionId}
+                              onSectionAction={onSectionAction}
+                            />
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
-                </div>
-
-                {/* Content Area - Responsive Grid */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-8 space-y-6 md:space-y-10">
-                    
-                    {/* Hero Banner - Responsive */}
-                    {s.showHero !== false && (
-                      <div
-                        className={cn(
-                          "relative overflow-hidden bg-gray-900 shadow-lg",
-                          heroTemplate === "editorial" ? "rounded-none md:rounded-[1rem]" : "rounded-[1.5rem] md:rounded-[2rem]",
-                          heroTemplate === "split-showcase" && "bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900",
-                          heroTemplate === "drop-card" && "bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950"
-                        )}
-                        style={{ aspectRatio: heroTemplate === "drop-card" ? "16/6" : "16/7" }}
-                      >
-                        {heroTemplate === "split-showcase" ? (
-                          <div className="grid h-full grid-cols-1 md:grid-cols-2">
-                            <div className="flex flex-col justify-center px-6 py-8 md:px-12">
-                              <p className="text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-300">{s.bizName || "Featured"}</p>
-                              <h1 className="mt-2 text-[20px] md:text-4xl font-black leading-tight text-white">{heroTitle}</h1>
-                              <p className="mt-3 hidden max-w-sm text-xs font-bold leading-relaxed text-white/60 md:block">{heroSubtitle}</p>
-                              <button
-                                onClick={() => {
-                                  if (filteredProducts.length > 0) {
-                                    setSelectedProduct(filteredProducts[0]);
-                                    setScreen("product");
-                                  }
-                                }}
-                                className="mt-5 flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[10px] font-black uppercase text-slate-950 shadow-lg transition-transform active:scale-95"
-                              >
-                                {heroButtonText} <ArrowRight size={12} />
-                              </button>
-                            </div>
-                            <div className="hidden p-5 md:block">
-                              <img src={heroImage} className="h-full w-full rounded-[1.5rem] object-cover shadow-2xl" alt="Store hero" />
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <img
-                              src={heroImage}
-                              className={cn(
-                                "h-full w-full object-cover",
-                                heroTemplate === "editorial" ? "opacity-85 grayscale-[0.15]" : "opacity-70",
-                                heroTemplate === "drop-card" && "scale-105 opacity-45"
-                              )}
-                              alt="Store hero"
-                            />
-                            <div
-                              className={cn(
-                                "absolute inset-0 flex flex-col justify-center px-6 md:px-12",
-                                heroTemplate === "drop-card"
-                                  ? "items-center bg-black/20 text-center"
-                                  : "bg-gradient-to-r from-black/80 via-black/30 to-transparent"
-                              )}
-                            >
-                              <p className="text-[9px] md:text-xs font-black uppercase tracking-[0.2em] text-emerald-400">{s.bizName || "New Drop"}</p>
-                              <h1 className={cn("mt-2 max-w-xl font-black leading-tight text-white", heroTemplate === "drop-card" ? "text-[20px] md:text-5xl" : "text-[18px] md:text-4xl")}>{heroTitle}</h1>
-                              {heroTemplate !== "spotlight" && (
-                                <p className="mt-3 hidden max-w-md text-xs font-bold leading-relaxed text-white/70 md:block">{heroSubtitle}</p>
-                              )}
-                              <button
-                                onClick={() => {
-                                  if (filteredProducts.length > 0) {
-                                    setSelectedProduct(filteredProducts[0]);
-                                    setScreen("product");
-                                  }
-                                }}
-                                className="mt-4 flex w-fit items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-[10px] font-black uppercase text-white shadow-lg shadow-emerald-500/20 transition-transform active:scale-95 md:mt-6"
-                              >
-                                {heroButtonText} <ArrowRight size={12} />
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                                        {/* Product Grid - Responsive Columns */}
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-8">
-                                          {filteredProducts.map((p) => (
-                                            <motion.div key={p.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                              <div
-                                                onClick={() => { setSelectedProduct(p); setScreen("product"); }}
-                                                className={cn(
-                                                    "w-full text-left cursor-pointer group transition-all",
-                                                    p.outOfStock && "opacity-60 grayscale-[0.8]"
-                                                )}
-                                              >
-                                                <div className="bg-white rounded-[1.25rem] md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 relative border border-black/[0.01]">
-                                                  <div className="aspect-square overflow-hidden relative">
-                                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                                                    {p.badge && (
-                                                      <span className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[8px] md:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                                        {p.badge}
-                                                      </span>
-                                                    )}
-                    
-                                                    {p.outOfStock && (
-                                                      <span className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] z-10">
-                                                        <span className="bg-white/90 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-xl">Sold Out</span>
-                                                      </span>
-                                                    )}
-                                                    <button
-                                                      onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setWishlist(w => w.includes(p.id) ? w.filter(x => x !== p.id) : [...w, p.id]);
-                                                      }}
-                                                      className="absolute top-3 right-3 w-8 h-8 md:w-10 md:h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-sm opacity-0 md:group-hover:opacity-100 transition-all"
-                                                    >
-                                                      <Heart size={12} className={wishlist.includes(p.id) ? "fill-red-500 text-red-500" : "text-gray-400"} />
-                                                    </button>
-                                                  </div>
-                    
-                                                  <div className="p-3 md:p-6">
-                                                    <p className="text-[11px] md:text-base font-black text-gray-900 truncate leading-none mb-1.5">{p.name}</p>
-                                                    <div className="flex items-center gap-1">
-                                                      <Star size={8} className="fill-amber-400 text-amber-400" />
-                                                      <span className="text-[9px] md:text-[11px] font-bold text-gray-400">4.9</span>
-                                                      <span className="text-[8px] md:text-[10px] text-gray-300 ml-0.5">(86)</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between mt-3 md:mt-4">
-                                                      <p className="text-[12px] md:text-xl font-black text-emerald-600">{s.currency}{Number(p.price).toLocaleString()}</p>
-                                                      {qty(p.id) === 0 ? (
-                                                        <button
-                                                          onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }}
-                                                          className="w-7 h-7 md:w-10 md:h-10 bg-gray-900 text-white rounded-full flex items-center justify-center active:scale-90 transition-all hover:bg-emerald-500"
-                                                        >
-                                                          <Plus size={14} />
-                                                        </button>
-                                                      ) : (
-                                                        <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1">
-                                                          <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, -1); }} className="w-6 h-6 md:w-8 md:h-8 bg-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
-                                                            <Minus size={10} />
-                                                          </button>
-                                                          <span className="text-[10px] md:text-xs font-black w-4 text-center">{qty(p.id)}</span>
-                                                          <button onClick={(e) => { e.stopPropagation(); updateCart(p.id, 1); }} className="w-6 h-6 md:w-8 md:h-8 bg-emerald-500 text-white shadow-sm rounded-full flex items-center justify-center active:scale-90">
-                                                            <Plus size={10} />
-                                                          </button>
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </motion.div>
-                                          ))}
-                                        </div>                    {filteredProducts.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-20 text-gray-300">
-                        <Package size={48} strokeWidth={1} />
-                        <p className="text-xs md:text-sm font-black mt-4 uppercase tracking-[0.2em]">No products found</p>
-                      </div>
-                    )}
-                  </div>
                   
-                  {/* Empty space for bottom nav on mobile */}
-                  <div className="h-24 md:hidden" />
+                  {/* Buffer for bottom nav */}
+                  <div className="h-24" />
                 </div>
               </motion.div>
             )}
@@ -416,25 +356,32 @@ export function CustomerStorefront({
                         {selectedProduct.description || `Premium quality ${selectedProduct.name.toLowerCase()} designed for the modern lifestyle. Crafted with top-tier materials for comfort and durability.`}
                       </p>
 
-                      {/* Size selector */}
-                      <div className="mt-8 md:mt-12">
-                        <p className="text-[10px] md:text-xs font-black text-gray-800 uppercase tracking-widest mb-3 md:mb-5">Select Size</p>
-                        <div className="flex gap-2 md:gap-4">
-                          {["S", "M", "L", "XL"].map((size, i) => (
-                            <button key={size} className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl text-[10px] md:text-sm font-black border transition-all active:scale-95 ${i === 1 ? "bg-gray-900 text-white border-gray-900 shadow-xl" : "border-gray-200 text-gray-500 hover:border-gray-900"}`}>
-                              {size}
-                            </button>
+                      {/* Dynamic Attributes */}
+                      {selectedProduct.attributes && selectedProduct.attributes.length > 0 && (
+                        <div className="mt-8 md:mt-12 space-y-6">
+                          {selectedProduct.attributes.map((attr, i) => (
+                            <div key={i}>
+                              <p className="text-[10px] md:text-xs font-black text-gray-800 uppercase tracking-widest mb-3 md:mb-5">{attr.label}</p>
+                              <div className="flex gap-2 md:gap-4 flex-wrap">
+                                {attr.value.split(',').map((val) => (
+                                  <button key={val} className="px-5 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl text-[10px] md:text-sm font-black border border-gray-200 text-gray-500 hover:border-gray-900 transition-all active:scale-95">
+                                    {val.trim()}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
-                      </div>
+                      )}
 
                       <div className="mt-10 md:mt-16 space-y-3 md:space-y-4 max-w-md">
                         {qty(selectedProduct.id) === 0 ? (
                           <button
+                            disabled={selectedProduct.outOfStock}
                             onClick={() => updateCart(selectedProduct.id, 1)}
-                            className="w-full py-4 md:py-6 bg-gray-900 text-white rounded-2xl md:rounded-3xl text-xs md:text-sm font-black flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-2xl shadow-black/20"
+                            className="w-full py-4 md:py-6 bg-gray-900 text-white rounded-2xl md:rounded-3xl text-xs md:text-sm font-black flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-2xl shadow-black/20 disabled:opacity-50 disabled:grayscale"
                           >
-                            <ShoppingCart size={18} /> ADD TO CART
+                            <ShoppingCart size={18} /> {selectedProduct.outOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
                           </button>
                         ) : (
                           <div className="flex items-center justify-between bg-gray-100 rounded-2xl md:rounded-3xl px-8 py-4 md:py-6">
@@ -626,7 +573,7 @@ export function CustomerStorefront({
             Repositioned for responsive view. 
             On desktop, it can stay as a centered floating bar or stick to bottom of container.
         */}
-        <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
+        {showShell && <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
           <div className="flex items-center w-full max-w-screen-lg mx-auto md:bg-white md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12">
             {[
               { id: "home", icon: Home, label: "Store" },
@@ -655,7 +602,7 @@ export function CustomerStorefront({
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
       </div>
 

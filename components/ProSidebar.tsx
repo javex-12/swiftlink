@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
   const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme } = useSwiftLink();
+  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen } = useSwiftLink();
   const [isHovered, setIsHovered] = useState(false);
 
   const navItems = [
@@ -110,6 +110,14 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
             <span className={cn("whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>Copy Store Link</span>
           </button>
           
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
+          >
+            <MessageSquare className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-indigo-500" />
+            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-bold", isHovered ? "opacity-100" : "lg:opacity-0")}>Feedback / Report</span>
+          </button>
+
           <button
             onClick={() => { setMobileOpen(false); startTour(); }}
             className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-black text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"

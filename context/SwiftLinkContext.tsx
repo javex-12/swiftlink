@@ -34,6 +34,9 @@ type TourStep = {
 
 type SwiftLinkContextValue = {
   state: ShopState;
+  stores: ShopState[];
+  switchStore: (id: string) => Promise<void>;
+  createNewStore: (name: string) => Promise<void>;
   cart: CartMap;
   user: User | null;
   isSupabaseActive: boolean;
@@ -98,7 +101,13 @@ type SwiftLinkContextValue = {
   toggleTheme: () => void;
   addToast: (msg: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
-  addSystemNotification: (title: string, message: string, type?: "order" | "message" | "trend") => void;
+  addSystemNotification: (title: string, message: string, type?: "order" | "message" | "trend" | "feedback") => void;
+  feedbackOpen: boolean;
+  setFeedbackOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  submitFeedback: (type: string, message: string) => Promise<void>;
+  logEvent: (type: string, metadata?: any) => Promise<void>;
+  editorMode: "basic" | "advanced";
+  setEditorMode: (mode: "basic" | "advanced") => void;
 };
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
@@ -121,8 +130,21 @@ export function SwiftLinkProvider({
   const searchParams = useSearchParams();
 
   const [state, setState] = useState<ShopState>(defaultShopState);
+  const [stores, setStores] = useState<ShopState[]>([]);
   const [cart, setCart] = useState<CartMap>({});
   const [user, setUser] = useState<User | null>(null);
+
+  const fetchStores = useCallback(async (userId: string) => {
+    const { data } = await supabase.from('stores').select('id, owner_id, state_json').eq('owner_id', userId);
+    if (data) {
+        const loadedStores = data.map((s: any) => ({ ...(s.state_json as ShopState), id: s.id, ownerId: s.owner_id }));
+        setStores(loadedStores);
+        if (loadedStores.length > 0 && !state.id) {
+            setState(loadedStores[0]);
+        }
+    }
+  }, [state.id]);
+
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
@@ -144,6 +166,8 @@ export function SwiftLinkProvider({
   const [toasts, setToasts] = useState<any[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [authReady, setAuthReady] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
 
   useEffect(() => {
     const saved = localStorage.getItem("swiftlink_theme") as "light" | "dark";
@@ -171,6 +195,33 @@ export function SwiftLinkProvider({
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const createNewStore = useCallback(async (name: string) => {
+    if (!user) return;
+    const newId = crypto.randomUUID();
+    const newState = { ...defaultShopState(), id: newId, ownerId: user.id, bizName: name };
+    
+    const { error } = await supabase.from('stores').insert({
+        id: newId,
+        owner_id: user.id,
+        biz_name: name,
+        state_json: newState
+    });
+
+    if (!error) {
+        setStores(prev => [...prev, newState]);
+        setState(newState);
+        addToast("New store created!", "success");
+    }
+  }, [user, addToast]);
+
+  const switchStore = useCallback(async (id: string) => {
+    const target = stores.find(s => s.id === id);
+    if (target) {
+        setState(target);
+        addToast(`Switched to ${target.bizName}`, "success");
+    }
+  }, [stores, addToast]);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
@@ -223,13 +274,14 @@ export function SwiftLinkProvider({
           if (isOwnerRef.current && userRef.current?.id) {
             const uid = userRef.current.id;
             
-            // Ensure the ID is part of the state we save
-            const stateToSave = { ...next, id: uid };
+            const storeId = next.id || uid;
+            const stateToSave = { ...next, id: storeId, ownerId: uid };
             
             const { error } = await supabase
               .from('stores')
               .upsert({
-                id: uid,
+                id: storeId,
+                owner_id: uid,
                 biz_name: next.bizName,
                 store_username: next.storeUsername,
                 phone: next.phone,
@@ -247,7 +299,7 @@ export function SwiftLinkProvider({
                 if (slug) {
                   await supabase.from('slugs').upsert({
                     slug,
-                    shop_id: uid,
+                    shop_id: storeId,
                     updated_at: new Date().toISOString()
                   });
                 }
@@ -297,7 +349,7 @@ export function SwiftLinkProvider({
     [persistState],
   );
 
-  const addSystemNotification = useCallback((title: string, message: string, type: "order" | "message" | "trend" = "message") => {
+  const addSystemNotification = useCallback((title: string, message: string, type: "order" | "message" | "trend" | "feedback" = "message") => {
     const id = Date.now().toString();
     const newNotif: AppNotification = {
         id,
@@ -313,6 +365,51 @@ export function SwiftLinkProvider({
         return next;
     });
   }, [persistState]);
+
+  const submitFeedback = useCallback(async (type: string, message: string) => {
+    if (!message.trim()) return;
+    
+    if (isSupabaseConfigured() && userRef.current) {
+        const { error } = await supabase.from('user_feedback').insert({
+            user_id: userRef.current.id,
+            store_id: stateRef.current.id,
+            type,
+            message,
+            metadata: {
+                path: window.location.pathname,
+                userAgent: navigator.userAgent
+            }
+        });
+
+        if (error) {
+            addToast("Failed to send feedback. Try again.", "error");
+            console.error(error);
+        } else {
+            addToast("Feedback sent! Thank you for helping us improve.", "success");
+            setFeedbackOpen(false);
+            addSystemNotification("Feedback Sent", "We've received your report.", "feedback");
+        }
+    } else {
+        // Fallback or guest feedback
+        addToast("Please sign in to send feedback.", "error");
+    }
+  }, [addToast, addSystemNotification]);
+
+  const logEvent = useCallback(async (event_type: string, metadata: any = {}) => {
+    const sid = metadata.shopId || stateRef.current.id;
+    if (!sid || !isSupabaseConfigured()) return;
+
+    void supabase.from('store_events').insert({
+        store_id: sid,
+        event_type,
+        product_id: metadata.productId || null,
+        metadata: {
+            ...metadata,
+            url: window.location.href,
+            referrer: document.referrer
+        }
+    });
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
@@ -369,27 +466,55 @@ export function SwiftLinkProvider({
 
                     
 
-                    if (u) {
+                                        if (u) {
 
-                        setIsSupabaseActive(true);
+                    
 
-                        const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+                                            setIsSupabaseActive(true);
+
+                    
+
+                                            void fetchStores(u.id);
+
+                    
+
+                                            const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+
+                    
+
+                    
 
                         
 
                         if (isOwnerRef.current) {
 
-                            supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
+                                                        supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
 
-                                // If no data, use default but FORCE the ID to be the user's UID
+                                                            // If no data, use default but FORCE the ID to be the user's UID
 
-                                let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
+                                                            let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
 
-                                
+                                                            
 
-                                // CRITICAL: Always ensure the state ID matches the authenticated user ID
+                                                            // CRITICAL: Ensure 'sections' exists even for legacy users
+                                                            if (!nextState.sections || nextState.sections.length === 0) {
+                                                                nextState.sections = [
+                                                                    {
+                                                                        id: 'catalog-auto',
+                                                                        type: 'catalog',
+                                                                        title: 'Our Collection',
+                                                                        isVisible: true,
+                                                                        order: 0,
+                                                                        content: {},
+                                                                        styles: {}
+                                                                    }
+                                                                ];
+                                                            }
+                            
+                                                            // CRITICAL: Always ensure the state ID matches the authenticated user ID
+                                                            nextState = { ...nextState, id: u.id };
 
-                                nextState = { ...nextState, id: u.id };
+                            
 
                                 
 
@@ -1185,6 +1310,9 @@ export function SwiftLinkProvider({
 
   const value: SwiftLinkContextValue = {
     state,
+    stores,
+    switchStore,
+    createNewStore,
     cart,
     user,
     isSupabaseActive,
@@ -1239,6 +1367,12 @@ export function SwiftLinkProvider({
     addToast,
     removeToast,
     addSystemNotification,
+    feedbackOpen,
+    setFeedbackOpen,
+    submitFeedback,
+    logEvent,
+    editorMode,
+    setEditorMode,
   };
 
   return (

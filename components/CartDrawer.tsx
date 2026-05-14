@@ -83,21 +83,6 @@ export function CartDrawer({
 
   return (
     <>
-      <div
-        id="floating-cart-btn"
-        className={`fixed bottom-6 right-6 z-[60] ${cartItemCount === 0 ? "hidden" : ""}`}
-      >
-        <button
-          type="button"
-          onClick={() => onToggle(true)}
-          className="w-16 h-16 btn-primary text-white rounded-full shadow-2xl flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all"
-        >
-          <i className="fas fa-shopping-bag text-xl" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white">
-            {cartItemCount}
-          </span>
-        </button>
-      </div>
 
       <button
         type="button"

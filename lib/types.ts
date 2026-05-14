@@ -14,51 +14,49 @@ export const defaultShopState = (): ShopState => ({
   tagline: "Premium Products",
   aboutUs: "Store launched on SwiftLink.",
   
-  themePreset: "custom",
+  // New Visual Editor Sections
+  sections: [
+    {
+      id: "hero-default",
+      type: "hero",
+      title: "Welcome to our Store",
+      subtitle: "Quality products, delivered to you.",
+      isVisible: true,
+      order: 0,
+      content: {
+        buttonText: "Shop Now",
+        image: ""
+      }
+    },
+    {
+      id: "catalog-default",
+      type: "catalog",
+      title: "Our Collection",
+      isVisible: true,
+      order: 1
+    }
+  ],
+
   accentColor: "#10b981",
   fontStyle: "modern",
-  layoutStyle: "grid",
-  heroStyle: "banner",
-  heroTemplate: "spotlight",
-  heroTitle: "",
-  heroSubtitle: "",
-  heroButtonText: "Shop Now",
-  heroImage: "",
   buttonRadius: "rounded",
-  bgStyle: "white",
-  imageShape: "rounded",
-  logoSize: "medium",
-  priceStyle: "bold",
 
   orderMethod: "whatsapp",
   waTemplate: "Hi, I would like to order:\n{cart_details}\n\nTotal: {total}",
   minOrder: 0,
   outOfStockDisplay: "show-sold-out",
-  addButtonStyle: "icon-text",
-  showQtySelector: true,
-  showProductShare: false,
 
-  announcement: "",
-  announcementEnabled: false,
-  featuredProductId: null,
-  promoTimer: "",
-  trustBadges: { fastDelivery: false, securePayment: false, verifiedSeller: false },
+  categories: [],
+  notifications: [],
   testimonials: [],
-  showWABubble: true,
 
   socials: {},
-  storeHours: "",
   location: "",
   deliveryAreas: "",
   deliveryFee: "",
   returnPolicy: "",
 
-  showHero: true,
-  showAbout: true,
-
   isLive: true,
-  categories: [],
-  notifications: [],
 });
 
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = {

@@ -3,6 +3,8 @@
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { TourOverlay } from "@/components/TourOverlay";
 import { CartDrawer } from "@/components/CartDrawer";
+import { FeedbackModal } from "@/components/FeedbackModal";
+import { Bug } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { X, Check, AlertTriangle } from "lucide-react";
@@ -59,6 +61,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     cartItemCount,
     cartOpen,
     toggleCartDrawer,
+    setFeedbackOpen
   } = useSwiftLink();
 
   const showOverlay = loadingOverlay && !isLandingRoute;
@@ -113,6 +116,21 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       </div>
 
       <TourOverlay />
+
+      {isOwner && (
+        <>
+          <FeedbackModal />
+
+          {/* Floating Feedback Trigger */}
+          <button 
+            onClick={() => setFeedbackOpen(true)}
+            className="fixed bottom-24 right-6 z-[60] px-4 py-3 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all group gap-2 border border-white/10"
+          >
+            <Bug size={16} className="group-hover:-rotate-12 transition-transform text-rose-400" />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Report Bug</span>
+          </button>
+        </>
+      )}
 
       {children}
 

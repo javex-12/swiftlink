@@ -3,28 +3,58 @@
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { TrendingUp, BarChart3, Users, DollarSign, Package, MapPin, Zap, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase-client";
+import { BarChart3, Users, Package, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, MessageSquare } from "lucide-react";
 
 export function AnalyticsView() {
-  const { state } = useSwiftLink();
+  const { state, user } = useSwiftLink();
   const accentStr = state.accentColor || "#10b981";
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Real calculations
-  const totalOrders = state.deliveries.length;
-  const avgPrice = state.products.length > 0 
-    ? state.products.reduce((acc, p) => acc + Number(p.price || 0), 0) / state.products.length 
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const fetchAnalytics = async () => {
+        const { data, error } = await supabase
+            .from('store_events')
+            .select('*')
+            .eq('store_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1000);
+            
+        if (data) setEvents(data);
+        setLoading(false);
+    };
+
+    fetchAnalytics();
+  }, [user?.id]);
+
+  // Real calculations from events
+  const totalViews = events.filter(e => e.event_type === 'view').length;
+  const productViews = events.filter(e => e.event_type === 'product_click' || e.event_type === 'product_view').length;
+  const totalCheckouts = events.filter(e => e.event_type === 'whatsapp_checkout' || e.event_type === 'checkout').length;
+  const totalOrders = totalCheckouts;
+  const dispatchRate = state.deliveries.length > 0
+    ? (state.deliveries.filter((d) => d.status === "delivered").length / state.deliveries.length) * 100
     : 0;
   
-  // Estimate volume (since deliveries don't have explicit value field yet, we use avg price of items)
-  const estimatedVolume = totalOrders * (avgPrice || 15000); 
-  const deliveredCount = state.deliveries.filter(d => d.status === "delivered").length;
-  const dispatchRate = totalOrders > 0 ? (deliveredCount / totalOrders) * 100 : 94.2;
+  const conversionRate = totalViews > 0 ? (totalCheckouts / totalViews) * 100 : 0;
+  
+  // Trending products
+  const productStats = events
+    .filter(e => (e.event_type === 'product_click' || e.event_type === 'product_view') && e.product_id)
+    .reduce((acc: any, e) => {
+        acc[e.product_id] = (acc[e.product_id] || 0) + 1;
+        return acc;
+    }, {});
 
   const stats = [
-    { label: "Estimated Volume", value: `${state.currency}${estimatedVolume.toLocaleString()}`, change: "+12.5%", icon: DollarSign, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
-    { label: "Total Deliveries", value: totalOrders.toString(), change: "+5.2%", icon: Package, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
-    { label: "Active Products", value: state.products.length.toString(), change: "Live", icon: Zap, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
-    { label: "Completion Rate", value: `${dispatchRate.toFixed(1)}%`, change: "+0.8%", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-50" },
+    { label: "Total Store Views", value: totalViews.toLocaleString(), change: "Real-time", icon: Users, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
+    { label: "Product Interest", value: productViews.toLocaleString(), change: "Clicks", icon: MousePointer2, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "WhatsApp Inquiries", value: totalCheckouts.toLocaleString(), change: "Intent", icon: MessageSquare, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
+    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, change: "Goal", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-50" },
   ];
 
   const categories = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
@@ -171,9 +201,8 @@ export function AnalyticsView() {
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                  {state.products.length > 0 ? state.products.slice(0, 5).map((p, i) => {
-                     // Count actual deliveries for this product name if possible
-                     const unitsSold = state.deliveries.filter(d => d.item.toLowerCase().includes(p.name.toLowerCase())).length;
+                  {state.products.length > 0 ? [...state.products].sort((a,b) => (productStats[b.id] || 0) - (productStats[a.id] || 0)).slice(0, 5).map((p, i) => {
+                     const views = productStats[p.id] || 0;
                      return (
                      <tr key={p.id} className="group">
                         <td className="py-5 px-2">
@@ -189,16 +218,16 @@ export function AnalyticsView() {
                            </div>
                         </td>
                         <td className="py-5 px-2">
-                           <span className="text-sm font-black text-slate-700 dark:text-zinc-400">{unitsSold} {unitsSold === 1 ? 'Sale' : 'Sales'}</span>
+                           <span className="text-sm font-black text-slate-700 dark:text-zinc-400">{views} {views === 1 ? 'View' : 'Views'}</span>
                         </td>
                         <td className="py-5 px-2 font-black text-slate-900 dark:text-white italic">
-                           {state.currency}{(Number(p.price) * unitsSold).toLocaleString()}
+                           {state.currency}{Number(p.price).toLocaleString()}
                         </td>
                         <td className="py-5 px-2">
                            <div className="flex items-center gap-2">
-                              <div className={cn("w-1.5 h-1.5 rounded-full", unitsSold > 0 ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-800")} />
-                              <span className={cn("text-[10px] font-black uppercase tracking-widest", unitsSold > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-700")}>
-                                 {unitsSold > 0 ? "Trending" : "Stable"}
+                              <div className={cn("w-1.5 h-1.5 rounded-full", views > 0 ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-800")} />
+                              <span className={cn("text-[10px] font-black uppercase tracking-widest", views > 10 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-700")}>
+                                 {views > 10 ? "Trending" : "Stable"}
                               </span>
                            </div>
                         </td>

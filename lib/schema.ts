@@ -1,3 +1,10 @@
+import type { CSSProperties } from "react";
+
+export type ProductAttribute = {
+  label: string;
+  value: string;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -7,10 +14,32 @@ export type Product = {
   images?: string[]; // new list of multiple images
   outOfStock: boolean;
   
-  // Phase 2: Product Options
+  // Phase 2: Dynamic Attributes
   category?: string;
-  variants?: { name: string; options: string[] }[];
+  attributes?: ProductAttribute[]; // e.g. [{label: "Size", value: "XL"}, {label: "Material", value: "Cotton"}]
   badge?: "hot" | "new" | "sale" | string;
+};
+
+export type SectionType = 
+  | "hero" 
+  | "catalog" 
+  | "about" 
+  | "testimonials" 
+  | "contact" 
+  | "features" 
+  | "custom_code"
+  | "announcement_bar";
+
+export type PageSection = {
+  id: string;
+  type: SectionType;
+  title?: string;
+  subtitle?: string;
+  content?: Record<string, any>; // Specific data for the section (e.g. text, image URLs)
+  styles?: CSSProperties; // Per-section visual overrides: HEX colors, px radii, font sizes, spacing, etc.
+  isVisible: boolean;
+  order: number;
+  isPublic?: boolean; // For the code sharing feature
 };
 
 export type StorefrontTheme = {
@@ -19,39 +48,55 @@ export type StorefrontTheme = {
   heroLayout: "split" | "banner";
   cardRadius: "rounded" | "pill" | "sharp";
   showHeroBadge: boolean;
+  fontFamily?: string;
+  glassmorphism?: boolean;
 };
 
 export type Delivery = {
   id: string;
-  status: "dispatched" | "delivered";
+  status: "dispatched" | "delivered" | "in-transit";
   customer: string;
   phone: string;
   item: string;
   driver: string;
   ref: string;
+  lastLocation?: { lat: number; lng: number }; // For live tracking
 };
 
 export type StoreSocials = {
   instagram?: string;
   tiktok?: string;
   twitter?: string;
+  facebook?: string;
+  youtube?: string;
+  website?: string;
+};
+
+export type StoreReview = {
+  id: string;
+  authorName: string;
+  message: string;
+  rating?: number; // 1-5
+  createdAt: string;
+  storeId: string;
 };
 
 export type AppNotification = {
     id: string;
     title: string;
     message: string;
-    type: "order" | "message" | "trend";
+    type: "order" | "message" | "trend" | "feedback";
     timestamp: string;
     read: boolean;
 };
 
 export type ShopState = {
   id: string | null;
-  plan?: "free" | "pro" | "business"; // New plan field
+  plan?: "free" | "pro" | "business"; 
+  ownerId?: string;
   bizName: string;
   bizImage: string;
-  storeUsername?: string; // unique slug for URLs
+  storeUsername?: string; 
   phone: string;
   currency: string;
   products: Product[];
@@ -61,59 +106,47 @@ export type ShopState = {
   isLive?: boolean;
   storeHours?: string;
   
-  // Custom categories for this store
-  categories: string[];
-  notifications: AppNotification[];
+  // The Visual Editor Engine
+  sections: PageSection[];
   
-  // Theme Presets
-  themePreset?: "custom" | "fresh" | "bold" | "minimal" | "playful";
-  storeTheme?: "light" | "dark" | "system"; // New field
-
-  // Visual Customization (Phase 1 & 2)
+  // Global Styles
   accentColor?: string;
+  bgColor?: string;
+  textColor?: string;
   fontStyle?: "modern" | "bold" | "classic" | "playful";
-  layoutStyle?: "grid" | "list" | "magazine";
-  heroStyle?: "banner" | "minimal" | "split";
-  heroTemplate?: "spotlight" | "split-showcase" | "editorial" | "drop-card";
-  heroTitle?: string;
-  heroSubtitle?: string;
-  heroButtonText?: string;
-  heroImage?: string;
   buttonRadius?: "rounded" | "pill" | "sharp";
-  bgStyle?: "white" | "light-tint" | "pattern";
-  imageShape?: "square" | "rounded" | "circle";
-  logoSize?: "small" | "medium" | "large";
-  priceStyle?: "plain" | "bold" | "strikethrough";
-
+  
   // Store Behaviour
   orderMethod: "whatsapp" | "paystack" | "both";
   waTemplate?: string;
   minOrder?: number;
   outOfStockDisplay?: "hide" | "show-sold-out" | "show-badge";
-  addButtonStyle?: "icon-only" | "icon-text" | "text-only";
-  showQtySelector?: boolean;
-  showProductShare?: boolean;
-
-  // Marketing
-  announcement: string;
-  announcementEnabled?: boolean;
-  featuredProductId?: number | null;
-  promoTimer?: string; // ISO date string for countdown
-  trustBadges?: { fastDelivery?: boolean; securePayment?: boolean; verifiedSeller?: boolean };
-  testimonials?: { id: string; quote: string; author: string }[];
-  showWABubble?: boolean;
-
+  
   // Business Info
+  bio?: string;
+  contactEmail?: string;
+  contactAddress?: string;
   socials?: StoreSocials;
   location?: string;
   deliveryAreas?: string;
   deliveryFee?: string;
   returnPolicy?: string;
 
-  // Toggles
+  // Social & Feedback
+  categories: string[];
+  notifications: AppNotification[];
+  testimonials?: { id: string; quote: string; author: string; avatar?: string }[];
+  storefrontTheme?: Partial<StorefrontTheme>;
+  heroTemplate?: string;
+  heroImage?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroButtonText?: string;
+  
+  // Legacy fields (Keeping for migration safety)
+  themePreset?: "custom" | "fresh" | "bold" | "minimal" | "playful";
+  layoutStyle?: "grid" | "list" | "magazine";
+  heroStyle?: "banner" | "minimal" | "split";
   showHero?: boolean;
   showAbout?: boolean;
-
-  // Legacy compatibility for components not yet overhauled
-  storefrontTheme?: Partial<StorefrontTheme>;
 };
