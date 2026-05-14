@@ -615,7 +615,7 @@ export function CustomerStorefront({
             Repositioned for responsive view. 
             On desktop, it can stay as a centered floating bar or stick to bottom of container.
         */}
-        {showShell && <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
+        {showShell && screen !== "community" && <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
           <div className="flex items-center w-full max-w-screen-lg mx-auto md:bg-white md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12">
             {[
               { id: "home", icon: Home, label: "Store" },

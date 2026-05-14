@@ -265,15 +265,15 @@ export default function SignupPage() {
                     {mode === "signup" && (
                       <div className="space-y-4">
                         <input required type="text" value={form.bizName} onChange={e => setForm({...form, bizName: e.target.value})} placeholder="Business Name" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3">
                            <div className="relative shrink-0">
-                                <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="h-full bg-white/5 border border-white/10 text-white pl-4 pr-8 rounded-2xl text-sm font-bold outline-none appearance-none cursor-pointer">
+                                <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="w-full sm:w-auto min-h-[52px] h-full bg-white/5 border border-white/10 text-white pl-4 pr-8 py-4 sm:py-0 rounded-2xl text-sm font-bold outline-none appearance-none cursor-pointer">
                                     <option className="bg-slate-900" value="+234">🇳🇬 +234</option>
                                     <option className="bg-slate-900" value="+1">🇺🇸 +1</option>
                                 </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-slate-500">▼</div>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-slate-500">▼</div>
                            </div>
-                           <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="WhatsApp Number" className="flex-1 bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                           <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="WhatsApp Number" className="flex-1 w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
                         </div>
                       </div>
                     )}
