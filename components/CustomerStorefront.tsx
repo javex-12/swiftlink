@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
 import { SectionRenderer } from "./sections/SectionRenderer";
-import { CommunityWall } from "./CommunityWall";
+import { SocialPage } from "./SocialPage";
 
 type Screen = "home" | "product" | "cart" | "success" | "search";
 
@@ -318,10 +318,7 @@ export function CustomerStorefront({
                     </div>
                   </div>
 
-                  {/* Community Review Wall */}
-                  {showShell && s.id && (
-                    <CommunityWall storeId={s.id} accentColor={s.accentColor} />
-                  )}
+                  {/* Community Review Wall was here, now moved to dedicated tab */}
                   
                   {/* Buffer for bottom nav */}
                   <div className="h-24" />
@@ -603,12 +600,13 @@ export function CustomerStorefront({
 
           </AnimatePresence>
 
-          {/* COMMUNITY SCREEN */}
+          {/* COMMUNITY SCREEN TAKEOVER */}
           {screen === "community" && showShell && s.id && (
-            <motion.div key="community" {...pageAnim} className="absolute inset-0 overflow-y-auto no-scrollbar bg-[#f2f2f7]">
-              <CommunityWall storeId={s.id} accentColor={s.accentColor} />
-              <div className="h-24" />
-            </motion.div>
+            <SocialPage 
+              storeId={s.id} 
+              accentColor={s.accentColor} 
+              onBack={() => { setScreen("home"); setActiveTab("home"); }} 
+            />
           )}
         </div>
 

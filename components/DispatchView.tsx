@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { Navigation, Copy, Check } from "lucide-react";
 
 export function DispatchView() {
   const router = useRouter();
-  const { state, handleDispatchSubmit, removeDelivery, copyTrackLink } =
-    useSwiftLink();
+  const { state, handleDispatchSubmit, removeDelivery, copyTrackLink, addToast } = useSwiftLink();
 
   const [sender, setSender] = useState("");
   const [name, setName] = useState("");
@@ -15,6 +15,17 @@ export function DispatchView() {
   const [item, setItem] = useState("Package");
   const [driver, setDriver] = useState("");
   const [ref, setRef] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyDriverLink = (id: string) => {
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${base}/?track=${id}&driver=1`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id);
+      addToast('Driver link copied!', 'success');
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
 
   const activeCount = state.deliveries.filter(
     (d) => d.status === "dispatched",
@@ -131,19 +142,17 @@ export function DispatchView() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => removeDelivery(d.id)}
-                      className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                    >
+                    <button type="button" onClick={() => removeDelivery(d.id)}
+                      className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                       <i className="fas fa-trash-can text-xs" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => copyTrackLink(d.id)}
-                      className="w-10 h-10 rounded-full bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-500 transition-all"
-                    >
+                    <button type="button" onClick={() => copyTrackLink(d.id)} title="Copy customer link"
+                      className="w-10 h-10 rounded-full bg-slate-50 dark:bg-zinc-900 text-slate-400 flex items-center justify-center hover:bg-emerald-50 hover:text-emerald-500 transition-all">
                       <i className="fas fa-link text-xs" />
+                    </button>
+                    <button type="button" onClick={() => copyDriverLink(d.id)} title="Copy driver GPS link"
+                      className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition-all">
+                      {copiedId === d.id ? <Check size={14} /> : <Navigation size={14} />}
                     </button>
                   </div>
                 </div>

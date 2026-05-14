@@ -1042,8 +1042,8 @@ export function SwiftLinkProvider({
   const addProduct = useCallback(() => {
     setState((prev) => {
       const isPro = prev.plan === "pro" || prev.plan === "business";
-      if (!isPro && prev.products.length >= 5) {
-        addToast("Starter plan limit reached (5 products). Upgrade to Pro for unlimited items!", "error");
+      if (!isPro && prev.products.length >= 6) {
+        addToast("Starter plan limit reached (6 products). Upgrade to Pro for unlimited items!", "error");
         return prev;
       }
 

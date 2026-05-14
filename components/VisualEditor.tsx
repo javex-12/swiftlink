@@ -235,7 +235,19 @@ function isGalleryType(type: SectionType): type is GalleryType {
 }
 
 export function VisualEditor({ onClose }: { onClose: () => void }) {
-  const { state, updateState } = useSwiftLink();
+  const { state, updateState, saveFullState, addToast } = useSwiftLink();
+  const [history, setHistory] = useState<typeof state.sections[]>([]);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+
+  const pushHistory = (sections: typeof state.sections) => {
+    setHistory(prev => [...prev.slice(0, historyIdx + 1), sections].slice(-10));
+    setHistoryIdx(prev => Math.min(prev + 1, 9));
+  };
+
+  const handlePublish = () => {
+    saveFullState(state);
+    addToast('Store published successfully!', 'success');
+  };
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [showGallery, setShowGallery] = useState<GalleryType | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -340,52 +352,62 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
                   <Layout size={16} />
               </button>
               <div className="flex bg-slate-50 dark:bg-black p-1 rounded-lg border border-slate-100 dark:border-white/10">
-                  <button onClick={() => setPreviewDevice("mobile")} className={cn("p-1.5 rounded-md transition-all", previewDevice === "mobile" ? "bg-slate-900 text-white" : "text-slate-400")}><Smartphone size={14} /></button>
-                  <button onClick={() => setPreviewDevice("desktop")} className={cn("p-1.5 rounded-md transition-all", previewDevice === "desktop" ? "bg-slate-900 text-white" : "text-slate-400")}><Monitor size={14} /></button>
+                  <button onClick={() => setPreviewDevice("mobile")} className={cn("p-1.5 rounded-md transition-all", previewDevice === "mobile" ? "bg-slate-900 text-white" : "text-slate-400")} title="Mobile"><Smartphone size={14} /></button>
+                  <button onClick={() => setPreviewDevice("desktop")} className={cn("p-1.5 rounded-md transition-all", previewDevice === "desktop" ? "bg-slate-900 text-white" : "text-slate-400")} title="Desktop"><Monitor size={14} /></button>
               </div>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 hidden md:block">Visual Editor</span>
           <div className="flex items-center gap-2">
-              <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all">Publish</button>
+              <button onClick={handlePublish} className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all">Publish</button>
               <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"><X size={18} /></button>
           </div>
       </div>
 
-      {/* DESKTOP LAYOUT: sidebar + canvas side by side */}
+      {/* DESKTOP LAYOUT: left layers | canvas | right properties */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <motion.div animate={{ width: isSidebarOpen ? 280 : 0 }} className="h-full flex-col border-r border-slate-100 bg-white shadow-xl dark:border-white/5 dark:bg-zinc-900 overflow-hidden flex-shrink-0">
-          <div className="w-[280px] flex flex-col h-full p-4 space-y-3 overflow-y-auto no-scrollbar">
-            {sections.map((section) => {
-              const Icon = sectionIcon(section.type);
-              return (
-                <div key={section.id} onClick={() => setSelectedSection(section.id)}
-                  className={cn("rounded-2xl border-2 bg-slate-50 p-3 cursor-pointer transition-all dark:bg-black/40",
-                    selectedSection === section.id ? "border-emerald-500" : "border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
-                  )}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500"><Icon size={14} /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black uppercase truncate dark:text-white">{section.title || section.type}</p>
-                      <p className="text-[9px] text-slate-400 uppercase">{section.type}</p>
+        {/* Left: Layers Panel */}
+        <motion.div animate={{ width: isSidebarOpen ? 260 : 0 }} className="h-full flex-col border-r border-slate-100 bg-white shadow-xl dark:border-white/5 dark:bg-zinc-900 overflow-hidden flex-shrink-0">
+          <div className="w-[260px] flex flex-col h-full">
+            <div className="p-4 border-b border-slate-100 dark:border-white/5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Layers</p>
+            </div>
+            <div className="flex-1 p-3 space-y-2 overflow-y-auto no-scrollbar">
+              {sections.map((section) => {
+                const Icon = sectionIcon(section.type);
+                const isSelected = selectedSection === section.id;
+                return (
+                  <div key={section.id} onClick={() => setSelectedSection(section.id)}
+                    className={cn("rounded-2xl border-2 p-3 cursor-pointer transition-all group",
+                      isSelected ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5" : "border-transparent bg-slate-50 dark:bg-black/40 hover:border-slate-200 dark:hover:border-zinc-700"
+                    )}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors", isSelected ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-400")}>
+                        <Icon size={13} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-black uppercase truncate dark:text-white">{section.title || section.type}</p>
+                        <p className="text-[9px] text-slate-400 uppercase">{section.type}</p>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'up'); }} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-400"><ChevronUp size={11} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'down'); }} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-400"><ChevronDownIcon size={11} /></button>
+                        {isGalleryType(section.type) && (
+                          <button onClick={(e) => { e.stopPropagation(); setShowGallery(section.type as GalleryType); setSelectedSection(section.id); }} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 text-emerald-500"><Sparkles size={11} /></button>
+                        )}
+                      </div>
                     </div>
-                    {isGalleryType(section.type) && (
-                      <button onClick={(e) => { e.stopPropagation(); setShowGallery(section.type as GalleryType); setSelectedSection(section.id); }} className="p-1.5 rounded-lg border border-slate-100 dark:border-white/5 text-slate-400 hover:text-emerald-500">
-                        <Sparkles size={12} />
-                      </button>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-            <button onClick={() => { setSelectedSection(null); setShowGallery("hero"); }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-3 text-slate-400 hover:border-emerald-500 hover:text-emerald-500 dark:border-zinc-800 transition-all">
-              <Plus size={16} /><span className="text-[10px] font-black uppercase">Add Section</span>
-            </button>
+                );
+              })}
+              <button onClick={() => { setSelectedSection(null); setShowGallery("hero"); }}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-3 text-slate-400 hover:border-emerald-500 hover:text-emerald-500 dark:border-zinc-800 transition-all">
+                <Plus size={14} /><span className="text-[10px] font-black uppercase">Add Section</span>
+              </button>
+            </div>
           </div>
         </motion.div>
 
-        {/* Canvas */}
+        {/* Center: Canvas */}
         <div className="flex-1 flex items-center justify-center p-6 bg-slate-100 dark:bg-zinc-950 overflow-auto">
           <motion.div animate={{ width: previewDevice === "mobile" ? 390 : "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className={cn("overflow-hidden bg-white dark:bg-black shadow-2xl flex-shrink-0",
@@ -396,6 +418,60 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
               <CustomerStorefront isEditable selectedSectionId={selectedSection} onSectionAction={handleSectionAction} />
             </div>
           </motion.div>
+        </div>
+
+        {/* Right: Properties Panel — always visible */}
+        <div className="w-[280px] h-full flex-shrink-0 border-l border-slate-100 dark:border-white/5 bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-slate-100 dark:border-white/5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Properties</p>
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+            {selected && selected.type !== "custom_code" ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Selected</p>
+                  <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white mt-0.5">{selected.type}</h3>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400"><Type size={11} /> Title</span>
+                  <input value={selected.title || ""} onChange={(e) => patchSection(selected.id, { title: e.target.value })} className="w-full rounded-xl bg-slate-50 dark:bg-black p-3 text-xs font-bold outline-none dark:text-white border-2 border-transparent focus:border-emerald-500/30 transition-all" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Subtitle / Text</span>
+                  <textarea value={selected.subtitle || selected.content?.text || ""} onChange={(e) => patchSection(selected.id, selected.type === "about" ? { content: { ...selected.content, text: e.target.value } } : { subtitle: e.target.value })} className="min-h-[80px] w-full rounded-xl bg-slate-50 dark:bg-black p-3 text-xs font-bold outline-none dark:text-white border-2 border-transparent focus:border-emerald-500/30 transition-all" />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label>
+                    <span className="mb-1.5 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400"><Palette size={9} /> BG</span>
+                    <input type="color" value={(selected.styles?.backgroundColor as string) || "#ffffff"} onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, backgroundColor: e.target.value } })} className="h-10 w-full rounded-xl cursor-pointer" />
+                  </label>
+                  <label>
+                    <span className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Radius</span>
+                    <input value={(selected.styles?.borderRadius as string) || ""} placeholder="24px" onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, borderRadius: e.target.value } })} className="h-10 w-full rounded-xl bg-slate-50 dark:bg-black px-3 text-[10px] font-bold outline-none dark:text-white border-2 border-transparent focus:border-emerald-500/30 transition-all" />
+                  </label>
+                </div>
+                <label>
+                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Font Size</span>
+                  <input value={(selected.styles?.fontSize as string) || ""} placeholder="16px" onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, fontSize: e.target.value } })} className="h-10 w-full rounded-xl bg-slate-50 dark:bg-black px-3 text-[10px] font-bold outline-none dark:text-white border-2 border-transparent focus:border-emerald-500/30 transition-all" />
+                </label>
+                <div className="flex gap-2 pt-2">
+                  {isGalleryType(selected.type) && (
+                    <button onClick={() => setShowGallery(selected.type as GalleryType)} className="flex-1 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 transition-all">
+                      <Sparkles size={12} /> Template
+                    </button>
+                  )}
+                  <button onClick={() => deleteSection(selected.id)} className="p-2.5 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-xl hover:bg-red-100 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center gap-3 opacity-40">
+                <Globe size={32} strokeWidth={1} className="text-slate-400" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select a section<br/>to edit properties</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -595,11 +671,11 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
                 
                 {/* Community / Code Hook */}
                 <button 
-                  onClick={() => addSection("custom_code")}
+                  onClick={() => setShowGallery(null)}
                   className="w-full h-32 rounded-[1.5rem] border-2 border-dashed border-indigo-500/30 bg-indigo-500/5 flex flex-col items-center justify-center gap-3 text-indigo-400 hover:bg-indigo-500/10 hover:border-indigo-500 transition-all group"
                 >
                   <Code2 className="group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Import Custom Logic</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Browse More Templates</span>
                 </button>
               </div>
             </div>
@@ -607,48 +683,7 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
         )}
       </AnimatePresence>
 
-      {selected && selected.type !== "custom_code" && (
-        <div className="absolute right-8 top-8 z-40 w-80 rounded-[2rem] border border-slate-100 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-zinc-900">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Selected Section</p>
-              <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white">{selected.type}</h3>
-            </div>
-            <button onClick={() => setSelectedSection(null)} className="rounded-full p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5">
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                <Type size={12} /> Title
-              </span>
-              <input value={selected.title || ""} onChange={(e) => patchSection(selected.id, { title: e.target.value })} className="w-full rounded-xl bg-slate-50 p-3 text-xs font-bold outline-none dark:bg-black dark:text-white" />
-            </label>
-            <label className="block">
-              <span className="mb-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Subtitle / Text</span>
-              <textarea value={selected.subtitle || selected.content?.text || ""} onChange={(e) => patchSection(selected.id, selected.type === "about" ? { content: { ...selected.content, text: e.target.value } } : { subtitle: e.target.value })} className="min-h-20 w-full rounded-xl bg-slate-50 p-3 text-xs font-bold outline-none dark:bg-black dark:text-white" />
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              <label>
-                <span className="mb-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                  <Palette size={10} /> BG
-                </span>
-                <input type="color" value={(selected.styles?.backgroundColor as string) || "#ffffff"} onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, backgroundColor: e.target.value } })} className="h-10 w-full rounded-xl" />
-              </label>
-              <label>
-                <span className="mb-1 block text-[9px] font-black uppercase tracking-widest text-slate-400">Radius</span>
-                <input value={(selected.styles?.borderRadius as string) || ""} placeholder="24px" onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, borderRadius: e.target.value } })} className="h-10 w-full rounded-xl bg-slate-50 px-2 text-[10px] font-bold outline-none dark:bg-black dark:text-white" />
-              </label>
-              <label>
-                <span className="mb-1 block text-[9px] font-black uppercase tracking-widest text-slate-400">Size</span>
-                <input value={(selected.styles?.fontSize as string) || ""} placeholder="16px" onChange={(e) => patchSection(selected.id, { styles: { ...selected.styles, fontSize: e.target.value } })} className="h-10 w-full rounded-xl bg-slate-50 px-2 text-[10px] font-bold outline-none dark:bg-black dark:text-white" />
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Floating panel removed — properties now live in the right sidebar */}
     </motion.div>
   );
 }
