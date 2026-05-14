@@ -11,7 +11,7 @@ import {
   ShoppingCart, ExternalLink, Shield, 
   Layout, Settings2, Smartphone, Globe, ChevronDown, Store, FileText, X,
   GripVertical, ChevronUp, MessageSquare, AlertTriangle,
-  Instagram, Twitter, Youtube, Facebook, Link2, Mail, MapPin, User
+  Link2, Mail, MapPin, User, Video, AtSign, Hash
 } from "lucide-react";
 import { VisualEditor } from "./VisualEditor";
 import { StoreSwitcher } from "./StoreSwitcher";
@@ -350,11 +350,11 @@ export function BusinessView() {
                         <div className="pt-4 border-t border-slate-50 dark:border-white/5 space-y-3">
                             <p className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">Social Links</p>
                             {[
-                                { key: "instagram", label: "Instagram", icon: Instagram, placeholder: "https://instagram.com/yourbrand" },
-                                { key: "tiktok", label: "TikTok", icon: Link2, placeholder: "https://tiktok.com/@yourbrand" },
-                                { key: "twitter", label: "Twitter / X", icon: Twitter, placeholder: "https://x.com/yourbrand" },
-                                { key: "facebook", label: "Facebook", icon: Facebook, placeholder: "https://facebook.com/yourbrand" },
-                                { key: "youtube", label: "YouTube", icon: Youtube, placeholder: "https://youtube.com/@yourbrand" },
+                                { key: "instagram", label: "Instagram", icon: AtSign, placeholder: "https://instagram.com/yourbrand" },
+                                { key: "tiktok", label: "TikTok", icon: Hash, placeholder: "https://tiktok.com/@yourbrand" },
+                                { key: "twitter", label: "Twitter / X", icon: AtSign, placeholder: "https://x.com/yourbrand" },
+                                { key: "facebook", label: "Facebook", icon: Link2, placeholder: "https://facebook.com/yourbrand" },
+                                { key: "youtube", label: "YouTube", icon: Video, placeholder: "https://youtube.com/@yourbrand" },
                                 { key: "website", label: "Website", icon: Globe, placeholder: "https://yourbrand.com" },
                             ].map(({ key, label, icon: Icon, placeholder }) => (
                                 <div key={key} className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl px-4 py-3 border border-slate-100 dark:border-white/5">

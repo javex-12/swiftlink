@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
 import { SectionRenderer } from "./sections/SectionRenderer";
+import { CommunityWall } from "./CommunityWall";
 
 type Screen = "home" | "product" | "cart" | "success" | "search";
 
@@ -312,6 +313,11 @@ export function CustomerStorefront({
                       })()}
                     </div>
                   </div>
+
+                  {/* Community Review Wall */}
+                  {showShell && s.id && (
+                    <CommunityWall storeId={s.id} accentColor={s.accentColor} />
+                  )}
                   
                   {/* Buffer for bottom nav */}
                   <div className="h-24" />
