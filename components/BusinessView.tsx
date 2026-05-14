@@ -64,7 +64,7 @@ export function BusinessView() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute top-full right-0 mt-4 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-white/5 z-50 p-3 overflow-hidden w-[280px] max-w-[calc(100vw-2rem)]"
+                      className="absolute top-full left-0 md:left-auto md:right-0 mt-4 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-white/5 z-50 p-3 overflow-hidden w-[280px] max-w-[calc(100vw-2rem)]"
                   >
                       <div className="max-h-[300px] overflow-y-auto no-scrollbar space-y-1">
                           {stores.map(store => (
