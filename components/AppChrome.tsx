@@ -118,18 +118,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <TourOverlay />
 
       {isOwner && (
-        <>
-          <FeedbackModal />
-
-          {/* Floating Feedback Trigger */}
-          <button 
-            onClick={() => setFeedbackOpen(true)}
-            className="fixed bottom-24 right-6 z-[60] px-4 py-3 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all group gap-2 border border-white/10"
-          >
-            <Bug size={16} className="group-hover:-rotate-12 transition-transform text-rose-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Report Bug</span>
-          </button>
-        </>
+        <FeedbackModal />
       )}
 
       {children}

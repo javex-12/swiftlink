@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { ShopState, PageSection, Product } from "@/lib/schema";
+import { ShopState, PageSection, Product, StoreReview } from "@/lib/schema";
+import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 import { getShopPath } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,6 +21,8 @@ export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance" | "inbox">("store");
   const [expandedSection, setExpandedSection] = useState<string>("");
   const [showVisualEditor, setShowVisualEditor] = useState(false);
+  const [reviews, setReviews] = useState<StoreReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const {
     state,
@@ -40,6 +43,13 @@ export function BusinessView() {
   } = useSwiftLink();
 
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "inbox" || !state.id) return;
+    setReviewsLoading(true);
+    supabase.from("store_reviews").select("*").eq("store_id", state.id).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => { if (data) setReviews(data as StoreReview[]); setReviewsLoading(false); });
+  }, [activeTab, state.id]);
 
   const handleCreateNew = async () => {
     const name = await (window as any).customPrompt("New Store", "Enter brand name:");
@@ -529,38 +539,61 @@ export function BusinessView() {
         )}
 
         {activeTab === "inbox" && (
-            <motion.div key="inbox" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-8">
-                <div className="bg-white dark:bg-black rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 dark:border-white/10 relative overflow-hidden">
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-2">Customer Inbox</h2>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-8">System alerts and customer feedback</p>
+            <motion.div key="inbox" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-6">
+                <div className="bg-white dark:bg-black rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 dark:border-white/10">
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-1">Customer Reviews</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">What your customers are saying publicly</p>
                     
-                    {(!state.notifications || state.notifications.length === 0) ? (
-                        <div className="py-20 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem]">
-                            <div className="w-16 h-16 bg-slate-50 dark:bg-zinc-900 rounded-full flex items-center justify-center text-slate-300 dark:text-zinc-600 mb-4">
-                                <MessageSquare size={24} />
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Inbox is Empty</h3>
-                            <p className="text-[10px] text-slate-400 uppercase mt-2">When customers interact with your store, alerts will appear here.</p>
+                    {reviewsLoading ? (
+                        <div className="py-16 flex justify-center"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+                    ) : reviews.length === 0 ? (
+                        <div className="py-16 flex flex-col items-center text-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem]">
+                            <MessageSquare size={32} className="text-slate-200 mb-3" />
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No reviews yet</p>
+                            <p className="text-[10px] text-slate-300 mt-1">Share your store link to get your first review!</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {state.notifications.map((notif) => (
-                                <div key={notif.id} className="bg-slate-50 dark:bg-zinc-900 p-6 rounded-3xl flex gap-6">
-                                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-black flex items-center justify-center text-emerald-500 shadow-sm shrink-0">
-                                        {notif.type === 'feedback' || notif.type === 'message' ? <MessageSquare size={20} /> : <AlertTriangle size={20} />}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h4 className="font-black text-slate-900 dark:text-white uppercase text-xs tracking-widest">{notif.title}</h4>
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase">{notif.timestamp}</span>
+                            {reviews.map((r) => (
+                                <div key={r.id} className="bg-slate-50 dark:bg-zinc-900 p-5 rounded-3xl">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm">{r.authorName?.charAt(0).toUpperCase()}</div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900 dark:text-white">{r.authorName}</p>
+                                                <p className="text-[9px] text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                        <p className="text-sm font-medium text-slate-600 dark:text-zinc-400">{notif.message}</p>
+                                        <div className="flex gap-0.5">
+                                            {[1,2,3,4,5].map(s => <span key={s} className={s <= (r.rating || 5) ? "text-amber-400" : "text-slate-200"}>★</span>)}
+                                        </div>
                                     </div>
+                                    <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">{r.message}</p>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
+
+                {/* System Notifications */}
+                {state.notifications && state.notifications.length > 0 && (
+                    <div className="bg-white dark:bg-black rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 dark:border-white/10">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-6">System Alerts</h3>
+                        <div className="space-y-4">
+                            {state.notifications.map((notif) => (
+                                <div key={notif.id} className="bg-slate-50 dark:bg-zinc-900 p-5 rounded-3xl flex gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-black flex items-center justify-center text-emerald-500 shadow-sm shrink-0">
+                                        <MessageSquare size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="font-black text-slate-900 dark:text-white text-xs uppercase">{notif.title}</p>
+                                        <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">{notif.message}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </motion.div>
         )}
         </AnimatePresence>
