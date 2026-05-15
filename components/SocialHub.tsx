@@ -302,8 +302,37 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     return Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 10);
   }, [reviews]);
 
-  const AvatarIcon = ({ name, className = "w-full h-full p-2" }: { name?: string, className?: string }) => {
-     const found = PROF_AVATARS.find(a => a.icon.name === name) || PROF_AVATARS[0];
+  // Vibe Reactions
+  const REACTION_TYPES = [
+    { label: "Love", emoji: "❤️", color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-500/10" },
+    { label: "Fire", emoji: "🔥", color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-500/10" },
+    { label: "Clap", emoji: "👏", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+    { label: "Mindblown", emoji: "🤯", color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-500/10" },
+  ];
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    const path = `avatars/${user.id}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("social_media").upload(path, file);
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage.from("social_media").getPublicUrl(path);
+      setSetupAvatar(publicUrl);
+      if (myProfile) {
+         await supabase.from("social_profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+         setMyProfile({ ...myProfile, avatar_url: publicUrl });
+         addToast("Avatar Updated!", "success");
+      }
+    }
+    setUploading(false);
+  };
+
+  const AvatarIcon = ({ src, className = "w-full h-full" }: { src?: string, className?: string }) => {
+     if (src?.startsWith("http")) {
+        return <img src={src} className={cn("rounded-full object-cover", className)} alt="Avatar" />;
+     }
+     const found = PROF_AVATARS.find(a => a.icon.name === src) || PROF_AVATARS[0];
      const Icon = found.icon;
      return <div className={cn("rounded-full flex items-center justify-center text-white", found.color, className)}><Icon size="60%" /></div>;
   };
