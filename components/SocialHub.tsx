@@ -128,22 +128,46 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const fileInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const accent = accentColor || "#10b981";
+  // SwiftChat (DM) State
+  const [activeChat, setActiveChat] = useState<UserProfile | null>(null);
+  const [directMessages, setDirectMessages] = useState<any[]>([]);
+  const [chatText, setChatText] = useState("");
+  const [unreadDMs, setUnreadDMs] = useState(0);
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setCheckingProfile(false);
-      return;
-    }
-    const { data } = await supabase.from("social_profiles").select("*").eq("id", user.id).maybeSingle();
-    if (data) {
-      setMyProfile(data as UserProfile);
-      setOnboarding(false);
-    } else {
-      setOnboarding(true);
-    }
-    setCheckingProfile(false);
+  const fetchMessages = async (recipientId: string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("social_messages")
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`)
+      .order("created_at", { ascending: true });
+    if (data) setDirectMessages(data);
   };
+
+  const handleSendMessage = async () => {
+    if (!chatText.trim() || !activeChat || !user) return;
+    const msg = chatText.trim();
+    setChatText("");
+    
+    const { error } = await supabase.from("social_messages").insert({
+      sender_id: user.id,
+      recipient_id: activeChat.id,
+      content: msg
+    });
+
+    if (!error) fetchMessages(activeChat.id);
+  };
+
+  useEffect(() => {
+    if (activeChat) {
+      fetchMessages(activeChat.id);
+      const channel = supabase
+        .channel(`chat-${activeChat.id}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "social_messages" }, () => fetchMessages(activeChat.id))
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
+  }, [activeChat]);
 
   const fetchReviews = async () => {
     const { data } = await supabase
@@ -316,9 +340,18 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         <div className="flex items-center gap-3">
           {onBack && <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800"><ChevronLeft size={22} className="dark:text-white" /></button>}
           <div className="w-10 h-10 rounded-2xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-black shadow-lg"><Hash size={20} /></div>
-          <div><h1 className="text-xl font-black text-slate-900 dark:text-white italic flex items-center gap-2">Social Hub<Verified size={14} className="text-blue-500 fill-blue-500" /></h1><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Feed</p></div>
+          <div><h1 className="text-xl font-black text-slate-900 dark:text-white italic flex items-center gap-2">Social Hub<Verified size={14} className="text-blue-500 fill-blue-500" /></h1><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live Hub</p></div>
         </div>
-        <button onClick={() => setTab("profile")} className="w-10 h-10 rounded-2xl border-2 border-slate-100 dark:border-zinc-800 overflow-hidden active:scale-90 transition-transform"><AvatarIcon src={myProfile?.avatar_url} /></button>
+        <div className="flex items-center gap-3">
+           <button onClick={() => setTab("activity")} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 relative">
+              <Bell size={20} className="text-slate-600 dark:text-slate-400" />
+              {notifications.length > 0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-black" />}
+           </button>
+           <button onClick={() => setTab("search")} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800">
+              <MessageCircle size={20} className="text-slate-600 dark:text-slate-400" />
+           </button>
+           <button onClick={() => setTab("profile")} className="w-10 h-10 rounded-2xl border-2 border-slate-100 dark:border-zinc-800 overflow-hidden active:scale-90 transition-transform"><AvatarIcon src={myProfile?.avatar_url} /></button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto no-scrollbar pb-32">
@@ -518,18 +551,38 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         )}
       </AnimatePresence>
 
+      {/* SWIFTCHAT OVERLAY */}
       <AnimatePresence>
-        {activeThread && (
-          <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[100] bg-white dark:bg-black flex flex-col">
-             <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center gap-4">
-                <button onClick={() => setActiveThread(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"><ChevronLeft size={24} className="dark:text-white" /></button>
-                <h2 className="text-lg font-black dark:text-white italic uppercase">Thread</h2>
+        {activeChat && (
+          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[150] bg-white dark:bg-black flex flex-col">
+             <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <button onClick={() => setActiveChat(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"><ChevronLeft size={24} className="dark:text-white" /></button>
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-100 dark:border-zinc-800"><AvatarIcon src={activeChat.avatar_url} /></div>
+                      <div><p className="font-black dark:text-white leading-tight">{activeChat.display_name}</p><p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Active Now</p></div>
+                   </div>
+                </div>
+                <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-slate-400"><MoreHorizontal size={20} /></button>
              </header>
-             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
-                <div className="flex gap-4"><div className="w-12 h-12 shrink-0"><AvatarIcon src={activeThread.author_avatar} /></div><div className="flex-1 min-w-0"><p className="font-black dark:text-white tracking-tight">{activeThread.author_name}</p><p className="text-slate-600 dark:text-zinc-300 mt-2 text-lg leading-relaxed">{activeThread.message}</p></div></div>
-                <div className="border-t border-slate-100 dark:border-zinc-900 pt-8 space-y-6"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Replies</p>{loadingComments ? <Loader2 className="animate-spin text-slate-300 mx-auto" size={24} /> : comments.map((c, i) => (<div key={i} className="flex gap-4"><div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-xl shrink-0"><MessageSquare size={18} /></div><div className="bg-slate-50 dark:bg-zinc-900/50 rounded-2xl rounded-tl-none p-4 flex-1"><p className="text-xs font-black dark:text-white mb-1">{c.author_name}</p><p className="text-sm dark:text-zinc-300 leading-snug">{c.message}</p></div></div>))}</div>
+             
+             <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+                {directMessages.map((m, i) => (
+                  <div key={i} className={cn("flex", m.sender_id === user?.id ? "justify-end" : "justify-start")}>
+                    <div className={cn("max-w-[75%] p-4 rounded-3xl", m.sender_id === user?.id ? "bg-slate-900 text-white rounded-tr-none" : "bg-slate-50 dark:bg-zinc-900 dark:text-white rounded-tl-none")}>
+                       <p className="text-[15px] font-medium leading-relaxed">{m.content}</p>
+                       <p className={cn("text-[9px] font-black uppercase mt-1 opacity-50", m.sender_id === user?.id ? "text-right" : "text-left")}>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                ))}
              </div>
-             <div className="p-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-slate-100 dark:border-zinc-900 pb-10"><div className="max-w-2xl mx-auto flex gap-3 items-end"><textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Post your reply..." className="flex-1 bg-slate-50 dark:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none resize-none min-h-[56px] dark:text-white" rows={1} /><button onClick={handlePostComment} disabled={!newComment.trim()} className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20 active:scale-95 transition-transform"><Send size={20} /></button></div></div>
+             
+             <div className="p-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-slate-100 dark:border-zinc-900 pb-10">
+                <div className="max-w-2xl mx-auto flex gap-3 items-end">
+                   <textarea value={chatText} onChange={e => setChatText(e.target.value)} placeholder="Type a message..." className="flex-1 bg-slate-50 dark:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none resize-none min-h-[56px] dark:text-white" rows={1} />
+                   <button onClick={handleSendMessage} disabled={!chatText.trim()} className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-500/20 active:scale-95 transition-transform"><Send size={20} /></button>
+                </div>
+             </div>
           </motion.div>
         )}
       </AnimatePresence>
