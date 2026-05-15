@@ -38,7 +38,23 @@ import {
   Globe,
   Ghost,
   ShieldCheck,
+  Package,
 } from "lucide-react";
+
+// Vibe Burst Animation
+function VibeBurst({ emoji, x }: { emoji: string, x: number }) {
+  return (
+    <motion.div
+      initial={{ y: 0, opacity: 1, scale: 0.5 }}
+      animate={{ y: -150, opacity: 0, scale: 2, rotate: x }}
+      transition={{ duration: 1.5, ease: "easeOut" }}
+      className="absolute pointer-events-none text-2xl z-[100]"
+      style={{ left: `calc(50% + ${x}px)` }}
+    >
+      {emoji}
+    </motion.div>
+  );
+}
 import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 
@@ -61,6 +77,7 @@ type Review = {
   author_avatar?: string;
   user_id?: string;
   attachments?: string[];
+  tagging_product?: number;
 };
 
 type SocialHubProps = {
@@ -206,10 +223,11 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     const { error } = await supabase.from("store_reviews").insert({
       store_id: storeId, user_id: user?.id, author_name: myProfile?.display_name || "Guest",
       message: message.trim(), rating, likes: 0, dislikes: 0,
-      attachments: attachments.length > 0 ? attachments : null
+      attachments: attachments.length > 0 ? attachments : null,
+      tagging_product: taggingProduct
     });
     if (error) { addToast("Failed to post: " + error.message, "error"); }
-    else { setSubmitting(false); setMessage(""); setAttachments([]); setTab("feed"); addToast("Shared!"); }
+    else { setSubmitting(false); setMessage(""); setAttachments([]); setTaggingProduct(null); setTab("feed"); addToast("Shared!"); }
     setSubmitting(false);
   };
 
@@ -235,6 +253,21 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     });
     return Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 10);
   }, [reviews]);
+
+  // Vibe Reactions Logic
+  const handleVibe = async (id: string, emoji: string) => {
+    // Add a floating vibe element for immediate visual feedback
+    const vibe = { id: Math.random(), emoji, x: Math.random() * 100 - 50 };
+    setLocalVibes(prev => [...prev, vibe]);
+    setTimeout(() => setLocalVibes(prev => prev.filter(v => v.id !== vibe.id)), 2000);
+    
+    // Increment likes (or vibes) in DB
+    void handleInteraction(id, "like");
+  };
+
+  const [localVibes, setLocalVibes] = useState<any[]>([]);
+  const [taggingProduct, setTaggingProduct] = useState<number | null>(null);
+  const [showProductPicker, setShowProductPicker] = useState(false);
 
   const AvatarIcon = ({ src, className = "w-full h-full" }: { src?: string, className?: string }) => {
      if (src?.startsWith("http")) return <img src={src} className={cn("rounded-full object-cover", className)} alt="Ava" />;
@@ -287,7 +320,17 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-black font-sans relative selection:bg-emerald-500 selection:text-white">
+    <div className="flex flex-col h-full bg-white dark:bg-black font-sans selection:bg-emerald-500 selection:text-white relative overflow-hidden">
+      
+      {/* Vibe Animations Layer */}
+      <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
+        <AnimatePresence>
+          {localVibes.map((v: any) => (
+            <VibeBurst key={v.id} emoji={v.emoji} x={v.x} />
+          ))}
+        </AnimatePresence>
+      </div>
+
       <header className="shrink-0 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           {onBack && <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800"><ChevronLeft size={22} className="dark:text-white" /></button>}
@@ -320,6 +363,22 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                       <div className="flex items-center gap-2"><span className="font-black text-[16px] dark:text-white tracking-tight">{r.author_name}</span><span className="text-xs text-slate-400 font-bold">@{r.author_name.toLowerCase().replace(/\s/g,'')}</span></div>
                     </div>
                     <p className="text-[16px] text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium">{r.message}</p>
+                    
+                    {/* Tagged Product Card in Feed */}
+                    {r.tagging_product && (
+                       <div className="mt-4 p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/10 flex items-center gap-4 group/item cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all">
+                          <div className="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-800 shrink-0 overflow-hidden shadow-sm">
+                             <img src={state.products.find(p => p.id === r.tagging_product)?.image} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Tagged Product</p>
+                             <p className="font-bold truncate dark:text-white">{state.products.find(p => p.id === r.tagging_product)?.name || "Store Item"}</p>
+                             <p className="text-xs text-slate-400 font-black">{state.currency}{state.products.find(p => p.id === r.tagging_product)?.price.toLocaleString()}</p>
+                          </div>
+                          <ChevronLeft className="rotate-180 text-emerald-500" />
+                       </div>
+                    )}
+
                     {r.attachments && r.attachments.length > 0 && (
                       <div className="mt-5 grid grid-cols-2 gap-3 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-zinc-800">
                         {r.attachments.map((img, idx) => <img key={idx} src={img} className="w-full h-56 object-cover hover:scale-110 transition-transform duration-700" />)}
@@ -337,21 +396,64 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
           )}
 
           {tab === "post" && (
-            <motion.div key="post" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="p-6 md:p-12 max-w-2xl mx-auto w-full">
+            <motion.div key="post" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="p-6 md:p-12 max-w-2xl mx-auto w-full relative">
                <div className="flex gap-6">
                   <div className="w-16 h-16 shrink-0 shadow-xl"><AvatarIcon src={myProfile?.avatar_url} /></div>
                   <div className="flex-1 space-y-8">
                     <p className="text-xl font-black dark:text-white tracking-tight">{myProfile?.display_name || "Guest"}</p>
                     <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="What's the latest?" className="w-full bg-transparent border-none outline-none text-2xl md:text-3xl font-medium dark:text-zinc-300 placeholder:text-slate-200 dark:placeholder:text-zinc-800 resize-none min-h-[300px]" autoFocus />
-                    {attachments.length > 0 && <div className="flex gap-2 flex-wrap">{attachments.map((img, idx) => (
-                      <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800"><img src={img} className="w-full h-full object-cover" /><button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"><X size={10} /></button></div>
-                    ))}</div>}
+                    
+                    {/* Preview Attachments */}
+                    {(attachments.length > 0 || taggingProduct) && (
+                      <div className="flex gap-3 flex-wrap">
+                        {attachments.map((img, idx) => (
+                          <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800"><img src={img} className="w-full h-full object-cover" /><button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"><X size={10} /></button></div>
+                        ))}
+                        {taggingProduct && (
+                          <div className="relative w-48 h-24 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500/20 p-3 flex gap-3 items-center">
+                             <div className="w-16 h-16 rounded-xl bg-white dark:bg-zinc-800 shrink-0 overflow-hidden">
+                                <img src={state.products.find(p => p.id === taggingProduct)?.image} className="w-full h-full object-cover" />
+                             </div>
+                             <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-black uppercase text-emerald-500">Tagged Item</p>
+                                <p className="text-xs font-bold truncate dark:text-white">{state.products.find(p => p.id === taggingProduct)?.name}</p>
+                             </div>
+                             <button onClick={() => setTaggingProduct(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg"><X size={10} /></button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                </div>
+
+               {/* PRODUCT PICKER MODAL */}
+               <AnimatePresence>
+                 {showProductPicker && (
+                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute bottom-32 left-6 right-6 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-zinc-800 z-50 p-6 space-y-6">
+                      <div className="flex items-center justify-between">
+                         <h3 className="font-black italic uppercase text-slate-900 dark:text-white">Tag a Product</h3>
+                         <button onClick={() => setShowProductPicker(false)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-full"><X size={16} /></button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto no-scrollbar">
+                         {state.products.map(p => (
+                            <button key={p.id} onClick={() => { setTaggingProduct(p.id); setShowProductPicker(false); }} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-left">
+                               <img src={p.image} className="w-12 h-12 rounded-xl object-cover" />
+                               <div>
+                                  <p className="font-bold dark:text-white">{p.name}</p>
+                                  <p className="text-xs text-slate-400 font-black">{state.currency}{p.price.toLocaleString()}</p>
+                               </div>
+                            </button>
+                         ))}
+                      </div>
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+
                <div className="border-t border-slate-100 dark:border-zinc-900 pt-8 mt-12 flex items-center justify-between">
                   <input type="file" ref={fileInputRef} onChange={handleImageUpload} hidden accept="image/*" />
                   <div className="flex items-center gap-6 text-slate-400">
                     <button onClick={() => fileInputRef.current?.click()} className={cn("p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-900", uploading && "animate-pulse")}><Camera size={26} /></button>
+                    <button onClick={() => setShowProductPicker(true)} className={cn("p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-900", taggingProduct && "text-emerald-500 bg-emerald-50")}><Package size={26} /></button>
                     <button className="p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-900"><MapPin size={26} /></button>
                   </div>
                   <button onClick={handlePost} disabled={submitting || !message.trim()} className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-3xl font-black text-[11px] uppercase tracking-widest shadow-2xl disabled:opacity-50 transition-transform active:scale-95 flex items-center gap-3">{submitting ? <Loader2 className="animate-spin" size={18} /> : <><Send size={18} /> Post Feed</>}</button>
