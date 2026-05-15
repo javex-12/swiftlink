@@ -643,12 +643,14 @@ export function CustomerStorefront({
       </div>
 
       {/* COMMUNITY SCREEN TAKEOVER (Moved here for true full-screen) */}
-      {screen === "community" && showShell && effectiveState?.id && (
-        <SocialPage 
-          storeId={effectiveState.id} 
-          accentColor={effectiveState.accentColor} 
-          onBack={() => { setScreen("home"); setActiveTab("home"); }} 
-        />
+      {screen === "community" && effectiveState?.id && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-black">
+          <SocialHub 
+            storeId={effectiveState.id} 
+            accentColor={effectiveState.accentColor} 
+            onBack={() => { setScreen("home"); setActiveTab("home"); }} 
+          />
+        </div>
       )}
 
       <style jsx global>{`
