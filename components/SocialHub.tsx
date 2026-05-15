@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
   Share2,
   Smile,
+  ThumbsDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
@@ -29,7 +30,8 @@ type Review = {
   message: string;
   rating: number;
   created_at: string;
-  likes?: number;
+  likes: number;
+  dislikes: number;
 };
 
 type SocialHubProps = {
@@ -56,8 +58,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
   const [tab, setTab] = useState<"feed" | "post" | "report">(defaultTab);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState<Set<string>>(new Set());
-  const [localLikes, setLocalLikes] = useState<Record<string, number>>({});
+  const [interactions, setInteractions] = useState<Record<string, "like" | "dislike" | null>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Post form
@@ -77,13 +78,17 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
   const gradClass = ACCENT_GRADIENTS[accent] || "from-emerald-500 to-teal-500";
 
   const fetchReviews = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("store_reviews")
       .select("*")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .limit(30);
-    if (data) setReviews(data as Review[]);
+    
+    if (error) {
+      console.error("Error fetching reviews:", error);
+    }
+    if (data) setReviews((data as any[]).map(r => ({ ...r, likes: r.likes || 0, dislikes: r.dislikes || 0 })));
     setLoading(false);
   };
 
@@ -107,7 +112,19 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
           table: "store_reviews",
           filter: `store_id=eq.${storeId}`,
         },
-        (payload) => setReviews((prev) => [payload.new as Review, ...prev])
+        (payload) => setReviews((prev) => [{ ...payload.new, likes: payload.new.likes || 0, dislikes: payload.new.dislikes || 0 } as Review, ...prev])
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "store_reviews",
+          filter: `store_id=eq.${storeId}`,
+        },
+        (payload) => {
+          setReviews((prev) => prev.map(r => r.id === payload.new.id ? { ...r, ...payload.new } : r));
+        }
       )
       .subscribe();
 
@@ -132,24 +149,61 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const handleLike = (id: string, currentLikes: number) => {
-    if (liked.has(id)) return;
-    setLiked((prev) => new Set([...prev, id]));
-    setLocalLikes((prev) => ({ ...prev, [id]: (prev[id] ?? currentLikes ?? 0) + 1 }));
-    // Optimistic — fire and forget
-    supabase.from("store_reviews").update({ likes: (currentLikes ?? 0) + 1 }).eq("id", id);
+  const handleInteraction = async (id: string, type: "like" | "dislike") => {
+    const review = reviews.find(r => r.id === id);
+    if (!review) return;
+
+    const currentType = interactions[id];
+    let newLikes = review.likes || 0;
+    let newDislikes = review.dislikes || 0;
+
+    // Reset previous
+    if (currentType === "like") newLikes--;
+    if (currentType === "dislike") newDislikes--;
+
+    // Apply new
+    let nextType: "like" | "dislike" | null = type;
+    if (currentType === type) {
+      nextType = null;
+    } else {
+      if (type === "like") newLikes++;
+      if (type === "dislike") newDislikes++;
+    }
+
+    // Optimistic
+    setInteractions(prev => ({ ...prev, [id]: nextType }));
+    setReviews(prev => prev.map(r => r.id === id ? { ...r, likes: newLikes, dislikes: newDislikes } : r));
+
+    const { error } = await supabase
+      .from("store_reviews")
+      .update({ likes: newLikes, dislikes: newDislikes })
+      .eq("id", id);
+      
+    if (error) {
+      console.error("Interaction error:", error);
+    }
   };
 
   const handlePost = async () => {
     if (!name.trim() || !message.trim()) return;
     setSubmitting(true);
-    await supabase.from("store_reviews").insert({
+    
+    const { data, error } = await supabase.from("store_reviews").insert({
       store_id: storeId,
       author_name: name.trim(),
       message: message.trim(),
       rating,
       likes: 0,
-    });
+      dislikes: 0
+    }).select().single();
+
+    if (error) {
+      console.error("Post error:", error);
+      alert("Failed to post: " + error.message);
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(false);
     setSubmitted(true);
     setName("");
@@ -160,6 +214,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
       setTab("feed");
     }, 2000);
   };
+
 
   const handleReport = async () => {
     if (!reportMsg.trim()) return;
@@ -183,7 +238,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
       : "—";
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 md:px-0 py-6 space-y-6">
+    <div className="w-full h-full flex flex-col space-y-6 px-4 md:px-6 py-6 overflow-y-auto no-scrollbar">
       {/* Header Card */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -271,8 +326,10 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
             ) : (
               <AnimatePresence>
                 {reviews.map((r, i) => {
-                  const likes = localLikes[r.id] ?? r.likes ?? 0;
-                  const hasLiked = liked.has(r.id);
+                  const likes = r.likes || 0;
+                  const dislikes = r.dislikes || 0;
+                  const currentInteraction = interactions[r.id];
+                  
                   return (
                     <motion.div
                       key={r.id}
@@ -318,23 +375,38 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed" }: SocialH
 
                       {/* Actions */}
                       <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-50 dark:border-white/5">
-                        <button
-                          onClick={() => handleLike(r.id, r.likes ?? 0)}
-                          className={cn(
-                            "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all active:scale-90",
-                            hasLiked ? "text-rose-500" : "text-slate-300 hover:text-rose-400"
-                          )}
-                        >
-                          <Heart size={14} className={hasLiked ? "fill-rose-500" : ""} />
-                          {likes > 0 && <span>{likes}</span>}
-                          <span>{hasLiked ? "Liked" : "Like"}</span>
-                        </button>
-                        <button className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-slate-500 transition-colors">
+                        <div className="flex items-center gap-1 bg-slate-50 dark:bg-white/5 rounded-full p-1">
+                          <button
+                            onClick={() => handleInteraction(r.id, "like")}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-90",
+                              currentInteraction === "like" ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-slate-400 hover:text-rose-500"
+                            )}
+                          >
+                            <Heart size={14} className={currentInteraction === "like" ? "fill-white" : ""} />
+                            {likes > 0 && <span>{likes}</span>}
+                          </button>
+                          
+                          <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800" />
+
+                          <button
+                            onClick={() => handleInteraction(r.id, "dislike")}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-90",
+                              currentInteraction === "dislike" ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-indigo-500"
+                            )}
+                          >
+                            <ThumbsDown size={14} className={currentInteraction === "dislike" ? "fill-white" : ""} />
+                            {dislikes > 0 && <span>{dislikes}</span>}
+                          </button>
+                        </div>
+
+                        <button className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-slate-500 transition-colors ml-2">
                           <Share2 size={13} />
                           <span>Share</span>
                         </button>
                         <div className="ml-auto">
-                          <Sparkles size={12} className="text-slate-100" />
+                          <Sparkles size={12} className="text-slate-100 dark:text-zinc-800" />
                         </div>
                       </div>
                     </motion.div>

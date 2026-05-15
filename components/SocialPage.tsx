@@ -233,24 +233,39 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
   const handlePost = async () => {
     if (!composeName.trim() || !composeMessage.trim()) return;
     setSubmittingPost(true);
-    const { error } = await supabase.from("store_reviews").insert({
+    
+    const newPostObj = {
       store_id: storeId,
       author_name: composeName.trim(),
       message: composeMessage.trim(),
-      rating: 5, // Default for non-review posts
+      rating: 5,
       likes: 0,
       dislikes: 0
-    });
-    setSubmittingPost(false);
+    };
     
-    if (error) {
-      alert("Failed to save post: " + error.message + "\n\n(Tip: Check your Supabase RLS policies for store_reviews!)");
-      return;
-    }
+    const tempId = `temp-post-${Date.now()}`;
+    const optimisticPost: Post = {
+      ...newPostObj,
+      id: tempId,
+      created_at: new Date().toISOString()
+    };
+    
+    // Optimistic UI update so the user instantly sees their post!
+    setPosts(prev => [optimisticPost, ...prev]);
     
     setIsComposing(false);
     setComposeMessage("");
     setComposeName("");
+
+    const { error } = await supabase.from("store_reviews").insert(newPostObj);
+    setSubmittingPost(false);
+    
+    if (error) {
+      alert("Failed to save post: " + error.message + "\n\n(Tip: Check your Supabase RLS policies for store_reviews!)");
+      // Revert optimistic update
+      setPosts(prev => prev.filter(p => p.id !== tempId));
+      return;
+    }
   };
 
   return (
@@ -275,7 +290,7 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
 
       {/* Main Feed Scroll Area */}
       <main className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
-        <div className="max-w-2xl mx-auto w-full pb-32 pt-2 md:pt-6">
+        <div className="w-full max-w-3xl mx-auto pb-32 pt-2 md:pt-6">
           
           {loading ? (
             <div className="flex justify-center py-20">
@@ -295,7 +310,7 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-zinc-800 md:rounded-3xl md:border md:border-slate-100 dark:md:border-zinc-800 md:bg-white dark:md:bg-zinc-950 md:shadow-sm md:overflow-hidden md:mb-8">
+            <div className="divide-y divide-slate-100 dark:divide-zinc-800 md:bg-white dark:md:bg-zinc-950 md:shadow-sm md:overflow-hidden md:mb-8">
               <AnimatePresence>
                 {posts.map((post) => {
                   const hasLiked = userInteractions[post.id] === "like";
@@ -308,7 +323,7 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
                       key={post.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="px-4 py-5 md:p-6 bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors"
+                      className="px-4 py-5 md:p-8 bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors"
                     >
                       {/* Post Header */}
                       <div className="flex items-start justify-between mb-3">
