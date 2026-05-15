@@ -267,6 +267,30 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     setUploading(false);
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredReviews = useMemo(() => {
+    if (!searchQuery.trim()) return reviews;
+    const q = searchQuery.toLowerCase();
+    return reviews.filter(r => 
+      r.message.toLowerCase().includes(q) || 
+      r.author_name.toLowerCase().includes(q)
+    );
+  }, [reviews, searchQuery]);
+
+  const trendingTags = useMemo(() => {
+    const tags: Record<string, number> = {};
+    reviews.forEach(r => {
+      const found = r.message.match(/#\w+/g);
+      if (found) found.forEach(t => { tags[t] = (tags[t] || 0) + 1; });
+    });
+    return Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [reviews]);
+
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag);
+    setTab("search");
+  };
+
   const AvatarIcon = ({ src, className = "w-full h-full" }: { src?: string, className?: string }) => {
      if (src?.startsWith("http")) return <img src={src} className={cn("rounded-full object-cover", className)} alt="Ava" />;
      const found = PROF_AVATARS.find(a => a.id === src) || PROF_AVATARS[0];
@@ -331,13 +355,108 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
 
           {tab === "activity" && (
             <motion.div key="activity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 space-y-6">
-               <h2 className="text-xl font-black dark:text-white italic uppercase px-2">Notifications</h2>
-               {notifications.map((n, i) => (
-                 <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-zinc-900 rounded-3xl">
-                    <div className="w-12 h-12 shrink-0"><AvatarIcon src={n.actor?.avatar_url} /></div>
-                    <div className="flex-1"><p className="text-sm dark:text-zinc-300 font-bold"><span className="font-black dark:text-white">{n.actor?.display_name}</span> {n.type === "vibe" ? "vibed with your post 🔥" : "replied to your thread 💬"}</p><p className="text-[10px] text-slate-400 font-black uppercase mt-1">Just now</p></div>
-                 </div>
-               ))}
+               <div className="flex items-center justify-between px-2">
+                  <h2 className="text-xl font-black dark:text-white italic uppercase tracking-tighter">Live Pulse</h2>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+               </div>
+               {notifications.length === 0 ? (
+                 <div className="py-20 text-center text-slate-400 font-bold">No new activity.</div>
+               ) : (
+                 notifications.map((n, i) => (
+                   <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm">
+                      <div className="w-12 h-12 shrink-0"><AvatarIcon src={n.actor?.avatar_url} /></div>
+                      <div className="flex-1"><p className="text-sm dark:text-zinc-300 font-bold"><span className="font-black dark:text-white">{n.actor?.display_name}</span> {n.type === "vibe" ? "vibed with your post 🔥" : "replied to your thread 💬"}</p><p className="text-[10px] text-slate-400 font-black uppercase mt-1">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div>
+                   </div>
+                 ))
+               )}
+            </motion.div>
+          )}
+
+          {tab === "search" && (
+            <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 space-y-8">
+               <div className="relative group">
+                 <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                 <input 
+                   value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                   placeholder="Search #tags or @people..."
+                   className="w-full bg-slate-50 dark:bg-zinc-900 pl-14 pr-6 py-6 rounded-3xl border-none outline-none font-bold dark:text-white shadow-inner focus:ring-2 ring-emerald-500/30 transition-all"
+                 />
+               </div>
+               
+               <div className="space-y-8">
+                  {searchQuery ? (
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Results for &quot;{searchQuery}&quot;</p>
+                       {filteredReviews.map((r, i) => (
+                         <div key={r.id} onClick={() => { setActiveThread(r); fetchComments(r.id); }} className="p-5 bg-white dark:bg-zinc-950 rounded-3xl border border-slate-50 dark:border-white/5 cursor-pointer hover:scale-[1.01] transition-transform">
+                            <div className="flex gap-3 items-center mb-2">
+                               <div className="w-8 h-8 shrink-0"><AvatarIcon src={r.author_avatar} /></div>
+                               <span className="font-black text-sm dark:text-white">{r.author_name}</span>
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-zinc-400 line-clamp-2">{r.message}</p>
+                         </div>
+                       ))}
+                    </div>
+                  ) : (
+                    <>
+                      <section className="space-y-4">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-2 italic">Rising Trends</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                           {trendingTags.map(([tag, count]) => (
+                             <button key={tag} onClick={() => handleTagClick(tag)} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-emerald-500/20">
+                                <div className="space-y-1 text-left">
+                                   <p className="text-lg font-black dark:text-white">{tag}</p>
+                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{count} posts spiking</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-black flex items-center justify-center text-emerald-500 shadow-sm"><TrendingUp size={20} /></div>
+                             </button>
+                           ))}
+                        </div>
+                      </section>
+                      <section className="p-8 rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-violet-700 text-white space-y-4 shadow-2xl relative overflow-hidden group">
+                         <Globe className="absolute -right-8 -bottom-8 w-40 h-40 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-1000" />
+                         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 italic">Connect Global</p>
+                         <h2 className="text-2xl font-black leading-tight">Explore the SwiftLink Universe</h2>
+                         <button className="px-6 py-2.5 rounded-full bg-white text-indigo-600 text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-transform">See All Stores</button>
+                      </section>
+                    </>
+                  )}
+               </div>
+            </motion.div>
+          )}
+
+          {tab === "report" && (
+            <motion.div key="report" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 space-y-10">
+               <div className="text-center space-y-3">
+                  <div className="w-20 h-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center text-rose-500 mx-auto border-2 border-rose-500/20 shadow-xl shadow-rose-500/10">
+                     <AlertTriangle size={32} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black italic dark:text-white uppercase tracking-tighter">Support Hub</h2>
+                    <p className="text-sm text-slate-400 font-medium tracking-tight">How can we improve your experience?</p>
+                  </div>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'bug', icon: Bug, label: 'Report Bug', color: 'bg-rose-500' },
+                    { id: 'idea', icon: Lightbulb, label: 'Feature Idea', color: 'bg-amber-500' },
+                    { id: 'vibe', icon: Sparkles, label: 'General Feedback', color: 'bg-emerald-500' },
+                    { id: 'shield', icon: ShieldCheck, label: 'Safety Concern', color: 'bg-blue-500' },
+                  ].map(item => (
+                    <button key={item.id} className="p-6 rounded-[2rem] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 text-left space-y-4 hover:shadow-2xl transition-all group active:scale-95">
+                       <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", item.color)}>
+                         <item.icon size={22} />
+                       </div>
+                       <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{item.label}</span>
+                    </button>
+                  ))}
+               </div>
+
+               <div className="bg-slate-50 dark:bg-zinc-950 p-6 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-zinc-800">
+                  <textarea placeholder="Write your message here..." className="w-full bg-transparent border-none outline-none text-slate-900 dark:text-white font-medium resize-none min-h-[120px] text-lg" />
+                  <button className="w-full mt-4 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-transform">Submit to HQ</button>
+               </div>
             </motion.div>
           )}
 
@@ -415,13 +534,14 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         )}
       </AnimatePresence>
 
-      <nav className="shrink-0 bg-white/80 dark:bg-black/80 backdrop-blur-3xl border-t border-slate-100 dark:border-zinc-900 px-8 pb-10 pt-4 fixed bottom-0 left-0 right-0 z-40">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          <NavItem id="feed" icon={Home} label="Timeline" />
+      <nav className="shrink-0 bg-white/80 dark:bg-black/80 backdrop-blur-3xl border-t border-slate-100 dark:border-zinc-900 px-6 pb-10 pt-4 fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2">
+          <NavItem id="feed" icon={Home} label="Feed" />
           <NavItem id="search" icon={Search} label="Explore" />
-          <button onClick={() => setTab("post")} className="w-16 h-16 bg-slate-900 dark:bg-white rounded-3xl flex items-center justify-center text-white dark:text-black shadow-2xl active:scale-90 transition-all -mt-10 border-4 border-white dark:border-black"><PlusCircle size={32} /></button>
+          <button onClick={() => setTab("post")} className="w-16 h-16 bg-slate-900 dark:bg-white rounded-3xl flex items-center justify-center text-white dark:text-black shadow-2xl active:scale-90 transition-all -mt-10 border-4 border-white dark:border-black shrink-0"><PlusCircle size={32} /></button>
+          <NavItem id="report" icon={MessageSquare} label="Talk" />
           <NavItem id="activity" icon={Bell} label="Activity" />
-          <NavItem id="profile" icon={User} label="Profile" />
+          <NavItem id="profile" icon={User} label="Me" />
         </div>
       </nav>
     </div>
