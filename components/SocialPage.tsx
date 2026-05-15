@@ -210,22 +210,30 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
     const textToSubmit = commentText;
     setCommentText("");
     
-    // We swallow errors silently for this demo if table doesn't exist yet
+    // We swallow errors silently for this demo if table doesn't exist yet, but we'll alert if there's an RLS issue
     try {
-      await supabase.from("store_review_comments").insert({
+      const { error } = await supabase.from("store_review_comments").insert({
         review_id: postId,
         author_name: author,
         message: textToSubmit.trim(),
       });
-    } catch(e) {
-      console.error(e);
+      if (error) {
+        alert("Failed to save comment: " + error.message);
+        // Revert optimistic update
+        setComments(prev => ({
+          ...prev,
+          [postId]: prev[postId].filter(c => c.id !== tempId)
+        }));
+      }
+    } catch(e: any) {
+      alert("Error saving comment: " + e.message);
     }
   };
 
   const handlePost = async () => {
     if (!composeName.trim() || !composeMessage.trim()) return;
     setSubmittingPost(true);
-    await supabase.from("store_reviews").insert({
+    const { error } = await supabase.from("store_reviews").insert({
       store_id: storeId,
       author_name: composeName.trim(),
       message: composeMessage.trim(),
@@ -234,6 +242,12 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
       dislikes: 0
     });
     setSubmittingPost(false);
+    
+    if (error) {
+      alert("Failed to save post: " + error.message + "\n\n(Tip: Check your Supabase RLS policies for store_reviews!)");
+      return;
+    }
+    
     setIsComposing(false);
     setComposeMessage("");
     setComposeName("");

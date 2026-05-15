@@ -600,14 +600,7 @@ export function CustomerStorefront({
 
           </AnimatePresence>
 
-          {/* COMMUNITY SCREEN TAKEOVER */}
-          {screen === "community" && showShell && s.id && (
-            <SocialPage 
-              storeId={s.id} 
-              accentColor={s.accentColor} 
-              onBack={() => { setScreen("home"); setActiveTab("home"); }} 
-            />
-          )}
+          {/* COMMUNITY SCREEN TAKEOVER WAS HERE */}
         </div>
 
         {/* 
@@ -648,6 +641,15 @@ export function CustomerStorefront({
         </div>}
 
       </div>
+
+      {/* COMMUNITY SCREEN TAKEOVER (Moved here for true full-screen) */}
+      {screen === "community" && showShell && effectiveState?.id && (
+        <SocialPage 
+          storeId={effectiveState.id} 
+          accentColor={effectiveState.accentColor} 
+          onBack={() => { setScreen("home"); setActiveTab("home"); }} 
+        />
+      )}
 
       <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar {

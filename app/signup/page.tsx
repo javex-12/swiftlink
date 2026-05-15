@@ -243,7 +243,6 @@ export default function SignupPage() {
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={handleGoogleError}
-                        useOneTap
                         shape="pill"
                         theme="filled_black"
                         text={mode === "signup" ? "signup_with" : "signin_with"}
