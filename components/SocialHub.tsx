@@ -101,21 +101,45 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const accent = accentColor || "#10b981";
+  // Trends & Search logic
+  const trendingTags = useMemo(() => {
+    const tags: Record<string, number> = {};
+    reviews.forEach(r => {
+      const found = r.message.match(/#\w+/g);
+      if (found) {
+        found.forEach(t => {
+          tags[t] = (tags[t] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [reviews]);
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setCheckingProfile(false);
-      return;
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredReviews = useMemo(() => {
+    if (!searchQuery.trim()) return reviews;
+    return reviews.filter(r => 
+      r.message.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      r.author_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [reviews, searchQuery]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    const path = `avatars/${user.id}/${Date.now()}_${file.name}`;
+    const { data, error } = await supabase.storage.from("social_media").upload(path, file);
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage.from("social_media").getPublicUrl(path);
+      setSetupAvatar(publicUrl);
+      if (myProfile) {
+         // Update existing profile
+         await supabase.from("social_profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+         setMyProfile({ ...myProfile, avatar_url: publicUrl });
+      }
     }
-    const { data } = await supabase.from("social_profiles").select("*").eq("id", user.id).maybeSingle();
-    if (data) {
-      setMyProfile(data as UserProfile);
-      setOnboarding(false);
-    } else {
-      setOnboarding(true);
-    }
-    setCheckingProfile(false);
+    setUploading(false);
   };
 
   const handleProfileSetup = async () => {
