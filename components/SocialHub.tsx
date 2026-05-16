@@ -208,7 +208,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
       .order("created_at", { ascending: false })
       .range(from, to);
     
-    if (feedFilter === "global") { query = query.eq("store_id", storeId); }
+    if (feedFilter === "global") { query = query.not("user_id", "is", null); }
     else if (feedFilter === "following" && user) { query = query.in("user_id", Array.from(followingIds)); }
 
     const { data } = await query;
