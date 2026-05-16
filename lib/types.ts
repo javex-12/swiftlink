@@ -38,8 +38,17 @@ export const defaultShopState = (): ShopState => ({
   ],
 
   accentColor: "#10b981",
+  bgColor: "#ffffff",
+  textColor: "#111827",
+  surfaceColor: "#f8fafc",
+  buttonColor: "#10b981",
   fontStyle: "modern",
   buttonRadius: "rounded",
+
+  heroTemplateId: "hero-1",
+  catalogTemplateId: "catalog-1",
+  aboutTemplateId: "about-1",
+  footerTemplateId: "footer-1",
 
   orderMethod: "whatsapp",
   waTemplate: "Hi, I would like to order:\n{cart_details}\n\nTotal: {total}",

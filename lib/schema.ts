@@ -113,8 +113,16 @@ export type ShopState = {
   accentColor?: string;
   bgColor?: string;
   textColor?: string;
+  surfaceColor?: string; // Color for cards and inner sections
+  buttonColor?: string;  // Color for primary action buttons
   fontStyle?: "modern" | "bold" | "classic" | "playful";
   buttonRadius?: "rounded" | "pill" | "sharp";
+  
+  // Section Templates (1-10)
+  heroTemplateId?: string;
+  catalogTemplateId?: string;
+  aboutTemplateId?: string;
+  footerTemplateId?: string;
   
   // Store Behaviour
   orderMethod: "whatsapp" | "paystack" | "both";
@@ -137,7 +145,8 @@ export type ShopState = {
   notifications: AppNotification[];
   testimonials?: { id: string; quote: string; author: string; avatar?: string }[];
   storefrontTheme?: Partial<StorefrontTheme>;
-  heroTemplate?: string;
+  
+  // Content overrides for templates
   heroImage?: string;
   heroTitle?: string;
   heroSubtitle?: string;
