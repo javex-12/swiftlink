@@ -345,6 +345,38 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   );
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [userResults, setUserResults] = useState<UserProfile[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+
+  const parseMessage = (text: string) => {
+    const parts = text.split(/([@#]\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("#")) {
+        return <span key={i} onClick={(e) => { e.stopPropagation(); handleTagClick(part); }} className="text-emerald-500 font-bold cursor-pointer hover:underline">{part}</span>;
+      }
+      if (part.startsWith("@")) {
+        return <span key={i} onClick={(e) => { e.stopPropagation(); setSearchQuery(part); setTab("search"); }} className="text-blue-500 font-bold cursor-pointer hover:underline">{part}</span>;
+      }
+      return part;
+    });
+  };
+
+  const searchPeople = async (q: string) => {
+    if (q.length < 2) { setUserResults([]); return; }
+    setSearchingUsers(true);
+    const { data } = await supabase.from("social_profiles").select("*").ilike("username", `%${q.replace("@", "")}%`).limit(10);
+    if (data) setUserResults(data as UserProfile[]);
+    setSearchingUsers(false);
+  };
+
+  useEffect(() => {
+    if (tab === "search" && searchQuery.startsWith("@")) {
+      searchPeople(searchQuery);
+    } else {
+      setUserResults([]);
+    }
+  }, [searchQuery, tab]);
+
   const filteredReviews = useMemo(() => {
     if (!searchQuery.trim()) return reviews;
     const q = searchQuery.toLowerCase();
@@ -417,7 +449,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                         <div className="flex items-center gap-2"><span className="font-black text-[16px] dark:text-white">{r.author_name}</span>{r.user_id === state.id && <Verified size={14} className="text-blue-500 fill-blue-500" />}</div>
                         {r.user_id !== user?.id && <button onClick={(e) => { e.stopPropagation(); toggleFollow(r.user_id!); }} className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", followingIds.has(r.user_id!) ? "bg-slate-100 dark:bg-zinc-800 text-slate-400" : "bg-emerald-500 text-white shadow-lg")}>{followingIds.has(r.user_id!) ? "Following" : "Follow"}</button>}
                       </div>
-                      <p className="text-[16px] text-slate-700 dark:text-zinc-300 leading-relaxed font-medium">{r.message}</p>
+                      <p className="text-[16px] text-slate-700 dark:text-zinc-300 leading-relaxed font-medium">{parseMessage(r.message)}</p>
                       {r.tagging_product && (
                         <div className="mt-4 p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/10 flex items-center gap-4"><img src={state.products.find(p => p.id === r.tagging_product)?.image} className="w-12 h-12 rounded-xl object-cover" /><div className="flex-1 min-w-0"><p className="text-[10px] font-black uppercase text-emerald-500">Tagged Item</p><p className="font-bold truncate dark:text-white text-sm">{state.products.find(p => p.id === r.tagging_product)?.name}</p></div></div>
                       )}
@@ -438,12 +470,68 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
 
           {tab === "search" && (
             <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 space-y-10">
-               <div className="relative"><Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" /><input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Explore the community..." className="w-full bg-slate-50 dark:bg-zinc-900 pl-14 pr-6 py-6 rounded-3xl border-none outline-none font-bold dark:text-white shadow-inner focus:ring-2 ring-emerald-500/30 transition-all text-lg" /></div>
+               <div className="relative group">
+                  <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                  <input 
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search @people or #tags..."
+                    className="w-full bg-slate-50 dark:bg-zinc-900 pl-14 pr-6 py-6 rounded-3xl border-none outline-none font-bold dark:text-white shadow-inner focus:ring-2 ring-emerald-500/30 transition-all text-lg"
+                  />
+               </div>
+               
                <div className="space-y-8">
                   {searchQuery ? (
-                    <div className="space-y-4">{filteredReviews.map(r => (<div key={r.id} onClick={() => { setActiveThread(r); fetchComments(r.id); }} className="p-5 bg-white dark:bg-zinc-950 rounded-3xl border border-slate-50 dark:border-white/5 cursor-pointer"><div className="flex gap-3 items-center mb-2"><div className="w-8 h-8 shrink-0"><AvatarIcon src={r.author_avatar} /></div><span className="font-black text-sm dark:text-white">{r.author_name}</span></div><p className="text-sm text-slate-600 dark:text-zinc-400 line-clamp-2">{r.message}</p></div>))}</div>
+                    <div className="space-y-6">
+                       {searchQuery.startsWith("@") && (
+                         <section className="space-y-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</p>
+                            {searchingUsers ? <Loader2 className="animate-spin text-slate-300 mx-auto" /> : userResults.map(u => (
+                               <div key={u.id} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-white/5">
+                                  <div className="flex items-center gap-3">
+                                     <div className="w-10 h-10 shrink-0"><AvatarIcon src={u.avatar_url} /></div>
+                                     <div>
+                                        <p className="font-black dark:text-white text-sm leading-tight">{u.display_name}</p>
+                                        <p className="text-xs text-slate-400 font-bold">@{u.username}</p>
+                                     </div>
+                                  </div>
+                                  <button onClick={() => toggleFollow(u.id)} className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", followingIds.has(u.id) ? "bg-slate-100 dark:bg-zinc-800 text-slate-400" : "bg-emerald-500 text-white shadow-lg")}>
+                                     {followingIds.has(u.id) ? "Following" : "Follow"}
+                                  </button>
+                               </div>
+                            ))}
+                         </section>
+                       )}
+                       
+                       <section className="space-y-4">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Posts</p>
+                          {filteredReviews.length === 0 ? <p className="text-center py-10 text-slate-400">No posts found.</p> : filteredReviews.map(r => (
+                             <div key={r.id} onClick={() => { setActiveThread(r); fetchComments(r.id); }} className="p-5 bg-white dark:bg-zinc-950 rounded-3xl border border-slate-50 dark:border-white/5 cursor-pointer hover:scale-[1.01] transition-transform">
+                                <div className="flex gap-3 items-center mb-2">
+                                   <div className="w-8 h-8 shrink-0"><AvatarIcon src={r.author_avatar} /></div>
+                                   <span className="font-black text-sm dark:text-white">{r.author_name}</span>
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-zinc-400 line-clamp-2">{parseMessage(r.message)}</p>
+                             </div>
+                          ))}
+                       </section>
+                    </div>
                   ) : (
-                    <><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-2 italic">Rising Trends</h3><div className="grid grid-cols-1 gap-3">{trendingTags.map(([tag, count], i) => (<button key={tag} onClick={() => { setSearchQuery(tag); }} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-all border border-transparent"><div><p className="text-lg font-black dark:text-white">{tag}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{count} posts</p></div><TrendingUp size={20} className="text-emerald-500" /></button>))}</div><section className="p-8 rounded-[2.5rem] bg-indigo-600 text-white space-y-4 shadow-2xl relative overflow-hidden group"><Globe className="absolute -right-8 -bottom-8 w-40 h-40 opacity-10 rotate-12" /><p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Connect Global</p><h2 className="text-2xl font-black leading-tight">Explore the Universe</h2><button className="px-6 py-2.5 rounded-full bg-white text-indigo-600 text-[10px] font-black uppercase tracking-widest">See All Stores</button></section></>
+                    <>
+                      <section className="space-y-4">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-2 italic">Rising Trends</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                           {trendingTags.map(([tag, count]) => (
+                             <button key={tag} onClick={() => handleTagClick(tag)} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-all border border-transparent">
+                                <div className="space-y-1 text-left">
+                                   <p className="text-lg font-black dark:text-white">{tag}</p>
+                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{count} posts spiking</p>
+                                </div>
+                                <TrendingUp size={20} className="text-emerald-500" />
+                             </button>
+                           ))}
+                        </div>
+                      </section>
+                    </>
                   )}
                </div>
             </motion.div>
