@@ -59,6 +59,39 @@ export function CustomerStorefront({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReview, setNewReview] = useState({ name: "", message: "", rating: 5 });
+
+  useEffect(() => {
+      if (screen === "community" && effectiveState?.id) {
+          setReviewsLoading(true);
+          supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).order("created_at", { ascending: false })
+            .then(({ data }) => {
+                if (data) setReviews(data);
+                setReviewsLoading(false);
+            });
+      }
+  }, [screen, effectiveState?.id]);
+
+  const submitReview = async () => {
+      if (!newReview.name || !newReview.message || !effectiveState?.id) return;
+      
+      const { data, error } = await supabase.from("store_reviews").insert({
+          store_id: effectiveState.id,
+          author_name: newReview.name,
+          message: newReview.message,
+          rating: newReview.rating
+      }).select().single();
+
+      if (!error && data) {
+          setReviews(prev => [data, ...prev]);
+          setShowReviewForm(false);
+          setNewReview({ name: "", message: "", rating: 5 });
+      }
+  };
 
   useEffect(() => {
     if (!shopId) {
@@ -172,18 +205,7 @@ export function CustomerStorefront({
   const bgColor = s.bgColor || "#f2f2f7";
   const textColor = s.textColor || "#111827";
 
-  // --- RENDER EARLY RETURN FOR COMMUNITY ---
-  // This completely detaches SocialHub from the Storefront wrappers, 
-  // guaranteeing it is 100% full screen.
-  if (screen === "community" && s.id) {
-    return (
-      <SocialHub 
-        storeId={s.id} 
-        accentColor={accentColor} 
-        onBack={() => { setScreen("home"); setActiveTab("home"); }} 
-      />
-    );
-  }
+  // RENDER EARLY RETURN FOR COMMUNITY removed to allow local store reviews in the storefront shell.
 
   return (
     <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center selection:bg-emerald-500 selection:text-white"
@@ -613,7 +635,95 @@ export function CustomerStorefront({
 
           </AnimatePresence>
 
-          {/* COMMUNITY SCREEN TAKEOVER WAS HERE */}
+          {/* LOCAL STORE REVIEWS */}
+          <AnimatePresence>
+            {screen === "community" && (
+              <motion.div key="community" {...pageAnim} className="absolute inset-0 flex flex-col bg-[#f2f2f7] overflow-hidden">
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full shrink-0">
+                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 md:py-10 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm md:text-2xl font-black text-gray-900 tracking-tight">Customer Reviews</h2>
+                      <p className="text-[10px] md:text-sm text-gray-400 font-bold mt-1 uppercase tracking-wider">
+                        See what others are saying
+                      </p>
+                    </div>
+                    <button onClick={() => setShowReviewForm(true)} className="px-6 py-3 bg-gray-900 text-white text-[10px] md:text-xs font-black uppercase tracking-widest rounded-full shadow-lg active:scale-95 transition-all">
+                      Write Review
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar relative p-4 md:p-8">
+                  <div className="max-w-screen-lg mx-auto space-y-4">
+                    {reviewsLoading ? (
+                        <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>
+                    ) : reviews.length === 0 ? (
+                        <div className="text-center py-20 text-gray-400">
+                           <MessageCircle size={48} className="mx-auto mb-4 opacity-50" />
+                           <p className="text-xs font-black uppercase tracking-widest">No reviews yet</p>
+                           <p className="text-[10px] mt-2">Be the first to review {s.bizName}!</p>
+                        </div>
+                    ) : (
+                        reviews.map(r => (
+                            <div key={r.id} className="bg-white p-6 rounded-3xl shadow-sm border border-black/[0.02]">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm uppercase">{r.author_name.charAt(0)}</div>
+                                        <div>
+                                            <p className="text-sm font-black text-gray-900">{r.author_name}</p>
+                                            <p className="text-[9px] text-gray-400 font-bold">{new Date(r.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(star => <Star key={star} size={14} className={star <= (r.rating||5) ? "fill-amber-400 text-amber-400" : "fill-gray-100 text-gray-200"} />)}
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-600 leading-relaxed font-medium">{r.message}</p>
+                            </div>
+                        ))
+                    )}
+                  </div>
+                  
+                  {/* Write Review Modal */}
+                  <AnimatePresence>
+                      {showReviewForm && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end md:items-center justify-center p-4">
+                              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="w-full max-w-md bg-white rounded-[2rem] p-6 shadow-2xl">
+                                  <div className="flex justify-between items-center mb-6">
+                                      <h3 className="text-lg font-black text-gray-900 uppercase italic">Rate Your Experience</h3>
+                                      <button onClick={() => setShowReviewForm(false)} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200"><X size={16} /></button>
+                                  </div>
+                                  <div className="space-y-4">
+                                      <div className="space-y-1">
+                                          <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Your Name</label>
+                                          <input value={newReview.name} onChange={e => setNewReview(n => ({...n, name: e.target.value}))} placeholder="John Doe" className="w-full bg-gray-50 px-4 py-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold text-gray-900" />
+                                      </div>
+                                      <div className="space-y-1">
+                                          <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Rating</label>
+                                          <div className="flex gap-2">
+                                              {[1,2,3,4,5].map(star => (
+                                                  <button key={star} onClick={() => setNewReview(n => ({...n, rating: star}))}>
+                                                      <Star size={24} className={star <= newReview.rating ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"} />
+                                                  </button>
+                                              ))}
+                                          </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                          <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Your Feedback</label>
+                                          <textarea value={newReview.message} onChange={e => setNewReview(n => ({...n, message: e.target.value}))} placeholder="What did you think of our products and service?" className="w-full bg-gray-50 px-4 py-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-gray-900 h-24 resize-none" />
+                                      </div>
+                                      <button onClick={submitReview} disabled={!newReview.name || !newReview.message} className="w-full py-4 bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50 mt-4 active:scale-95 transition-transform">
+                                          Submit Review
+                                      </button>
+                                  </div>
+                              </motion.div>
+                          </motion.div>
+                      )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 

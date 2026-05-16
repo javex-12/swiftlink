@@ -12,7 +12,8 @@ import {
   ShoppingCart, ExternalLink, Shield, 
   Layout, Settings2, Smartphone, Globe, ChevronDown, Store, FileText, X,
   GripVertical, ChevronUp, MessageSquare, AlertTriangle,
-  Link2, Mail, MapPin, User, Video, AtSign, Hash
+  Link2, Mail, MapPin, User, Video, AtSign, Hash,
+  Image as ImageIcon, LayoutTemplate, PanelBottom
 } from "lucide-react";
 import { VisualEditor } from "./VisualEditor";
 import { StoreSwitcher } from "./StoreSwitcher";
@@ -42,7 +43,60 @@ export function BusinessView() {
     addSystemNotification
   } = useSwiftLink();
 
+  const updateSection = (type: string, updates: any) => {
+      const currentSections = state.sections || [];
+      const idx = currentSections.findIndex(s => s.type === type);
+      if (idx >= 0) {
+          const updated = [...currentSections];
+          // For content object, merge deeply
+          if (updates.content) {
+             updated[idx] = { ...updated[idx], ...updates, content: { ...updated[idx].content, ...updates.content } };
+          } else {
+             updated[idx] = { ...updated[idx], ...updates };
+          }
+          updateState("sections", updated);
+      } else {
+          // If it doesn't exist, create it
+          const newSection = { id: `${type}-custom`, type, isVisible: true, order: currentSections.length, ...updates };
+          updateState("sections", [...currentSections, newSection]);
+      }
+  };
+
+  const getSection = (type: string): Partial<PageSection> => {
+      return (state.sections || []).find(s => s.type === type) || {};
+  };
+
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+  const [handleInput, setHandleInput] = useState(state.storeUsername || "");
+  const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+
+  useEffect(() => {
+    setHandleInput(state.storeUsername || "");
+  }, [state.storeUsername]);
+
+  useEffect(() => {
+    if (!handleInput) {
+       setHandleStatus("idle");
+       return;
+    }
+    if (handleInput === state.storeUsername) {
+       setHandleStatus("idle");
+       return;
+    }
+    const cleanHandle = handleInput.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    
+    setHandleStatus("checking");
+    const timeoutId = setTimeout(async () => {
+        const { data, error } = await supabase.from("stores").select("id").eq("store_username", cleanHandle).maybeSingle();
+        if (data && data.id !== state.id) {
+            setHandleStatus("taken");
+        } else {
+            setHandleStatus("available");
+            updateState("storeUsername", cleanHandle);
+        }
+    }, 600);
+    return () => clearTimeout(timeoutId);
+  }, [handleInput, state.id]);
 
   useEffect(() => {
     if (activeTab !== "inbox" || !state.id) return;
@@ -303,6 +357,29 @@ export function BusinessView() {
                                 placeholder="+234..."
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center ml-1">
+                                   <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 tracking-[0.2em]">Store Handle (Link)</label>
+                                   {handleStatus === "checking" && <span className="text-[10px] text-amber-500 font-bold uppercase">Checking...</span>}
+                                   {handleStatus === "available" && <span className="text-[10px] text-emerald-500 font-bold uppercase">Available!</span>}
+                                   {handleStatus === "taken" && <span className="text-[10px] text-red-500 font-bold uppercase">Taken!</span>}
+                                </div>
+                                <div className="relative">
+                                  <span className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 font-bold">@</span>
+                                  <input
+                                  type="text"
+                                  value={handleInput}
+                                  onChange={(e) => { setHandleInput(e.target.value); }}
+                                  className={`w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl py-4 md:py-5 pl-10 md:pl-12 pr-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border ${handleStatus === "taken" ? "border-red-500" : handleStatus === "available" ? "border-emerald-500" : "border-slate-100 dark:border-white/5"} focus:bg-white dark:focus:bg-black transition-all shadow-inner`}
+                                  placeholder="my-store"
+                                  />
+                                </div>
+                                {handleInput && (
+                                    <p className="text-[10px] text-slate-400 font-medium ml-1">
+                                        Your link: <a href={`https://swiftlink.com/shop/${handleInput.toLowerCase().replace(/[^a-z0-9-]/g, "")}`} target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline">swiftlink.com/shop/{handleInput.toLowerCase().replace(/[^a-z0-9-]/g, "")}</a>
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -523,7 +600,7 @@ export function BusinessView() {
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">Visual Engine <span className="ml-2 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded uppercase not-italic">Pro</span></h3>
                                 <p className="text-slate-500 dark:text-zinc-400 font-bold text-sm max-w-md">The ultimate editor. Drag and drop sections, browse the gallery with 40+ premium templates, and build your site live.</p>
                             </div>
-                            <button onClick={() => setShowVisualEditor(true)} className="w-full md:w-auto px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">Launch Visual Editor</button>
+                            <button onClick={() => addSystemNotification("Pro Feature", "The Visual Editor is locked and will be available for PRO users in the future.", "feedback")} className="w-full md:w-auto px-10 py-5 bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-inner cursor-not-allowed flex items-center justify-center gap-2"><span className="text-xl">🔒</span> Locked</button>
                         </div>
                     </div>
                 </div>
@@ -533,6 +610,68 @@ export function BusinessView() {
                         <DebouncedColorPicker label="Accent Color" value={state.accentColor || "#10b981"} onChange={(v) => updateState("accentColor", v)} />
                         <DebouncedColorPicker label="Background Color" value={state.bgColor || "#f2f2f7"} onChange={(v) => updateState("bgColor", v)} />
                         <DebouncedColorPicker label="Text Color" value={state.textColor || "#111827"} onChange={(v) => updateState("textColor", v)} />
+                    </div>
+                </Accordion>
+
+                <Accordion id="hero" title="Hero Section" subtitle="Top Banner" icon={LayoutTemplate}>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Hero Image</label>
+                            <label className="block w-full h-40 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 transition-all overflow-hidden relative">
+                                {getSection("hero").content?.image || state.heroImage ? (
+                                    <img src={getSection("hero").content?.image || state.heroImage} className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <ImageIcon size={24} className="text-slate-300 mb-2" />
+                                        <span className="text-[10px] font-black uppercase text-slate-400">Upload Image</span>
+                                    </>
+                                )}
+                                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                    // Let handleImageUpload do its thing for global state.heroImage
+                                    handleImageUpload(e.target.files?.[0], "heroImage");
+                                    // But wait, handleImageUpload doesn't return the URL directly, it updates state.
+                                    // So we'll rely on HeroSection falling back to state.heroImage or state.bizImage
+                                }} disabled={isSyncing} />
+                            </label>
+                            <p className="text-[9px] text-slate-400 uppercase font-bold mt-1">Image uploads may take a moment to reflect here.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Hero Title</label>
+                            <input value={getSection("hero").title || ""} onChange={e => updateSection("hero", { title: e.target.value })} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-black text-sm text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 outline-none focus:border-emerald-500" placeholder="Welcome to our store" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Hero Subtitle</label>
+                            <input value={getSection("hero").subtitle || ""} onChange={e => updateSection("hero", { subtitle: e.target.value })} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5 outline-none focus:border-emerald-500" placeholder="Quality products, delivered" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Button Text</label>
+                            <input value={getSection("hero").content?.buttonText || ""} onChange={e => updateSection("hero", { content: { buttonText: e.target.value } })} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5 outline-none focus:border-emerald-500" placeholder="Shop Now" />
+                        </div>
+                    </div>
+                </Accordion>
+
+                <Accordion id="about" title="About Section" subtitle="Your Story" icon={User}>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">About Title</label>
+                            <input value={getSection("about").title || ""} onChange={e => updateSection("about", { title: e.target.value })} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-black text-sm text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 outline-none focus:border-emerald-500" placeholder="About Us" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">About Content</label>
+                            <textarea value={getSection("about").content?.text || state.aboutUs || ""} onChange={e => {
+                                updateSection("about", { content: { text: e.target.value } });
+                                updateState("aboutUs", e.target.value);
+                            }} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-32 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Write about your store..." />
+                        </div>
+                    </div>
+                </Accordion>
+
+                <Accordion id="footer" title="Footer Tagline" subtitle="Bottom Area" icon={PanelBottom}>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400">Store Tagline (Footer)</label>
+                            <input value={state.tagline || ""} onChange={e => updateState("tagline", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5 outline-none focus:border-emerald-500" placeholder="Premium Products" />
+                        </div>
                     </div>
                 </Accordion>
             </motion.div>
