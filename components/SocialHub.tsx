@@ -111,10 +111,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [interactions, setInteractions] = useState<Record<string, "like" | "dislike" | null>>({});
   
-  // Follow System
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-  const [stats, setStats] = useState({ followers: 0, following: 0, posts: 0 });
-  const [feedFilter, setFeedFilter] = useState<"global" | "following">("global");
+  const [stats, setStats] = useState({ posts: 0 });
 
   // UI & Edit State
   const [activeThread, setActiveThread] = useState<Review | null>(null);
@@ -152,32 +149,9 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const fetchFollowing = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("social_follows").select("following_id").eq("follower_id", user.id);
-    if (data) setFollowingIds(new Set(data.map(f => f.following_id)));
-  };
-
   const fetchStats = async (profileId: string) => {
-    const [follows, followers, posts] = await Promise.all([
-      supabase.from("social_follows").select("*", { count: 'exact', head: true }).eq("follower_id", profileId),
-      supabase.from("social_follows").select("*", { count: 'exact', head: true }).eq("following_id", profileId),
-      supabase.from("store_reviews").select("*", { count: 'exact', head: true }).eq("user_id", profileId)
-    ]);
-    setStats({ following: follows.count || 0, followers: followers.count || 0, posts: posts.count || 0 });
-  };
-
-  const toggleFollow = async (targetId: string) => {
-    if (!user || targetId === user.id) return;
-    const isFollowing = followingIds.has(targetId);
-    if (isFollowing) {
-       setFollowingIds(prev => { const next = new Set(prev); next.delete(targetId); return next; });
-       await supabase.from("social_follows").delete().eq("follower_id", user.id).eq("following_id", targetId);
-    } else {
-       setFollowingIds(prev => new Set([...prev, targetId]));
-       await supabase.from("social_follows").insert({ follower_id: user.id, following_id: targetId });
-       void supabase.from("social_notifications").insert({ user_id: targetId, actor_id: user.id, type: "follow" });
-    }
+    const { count } = await supabase.from("store_reviews").select("*", { count: 'exact', head: true }).eq("user_id", profileId);
+    setStats({ posts: count || 0 });
   };
 
   const fetchProfile = async () => {
@@ -190,7 +164,6 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
       setEditAvatar(data.avatar_url);
       setOnboarding(false);
       fetchStats(user.id);
-      fetchFollowing();
     } else {
       setOnboarding(true);
     }
@@ -208,8 +181,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
       .order("created_at", { ascending: false })
       .range(from, to);
     
-    if (feedFilter === "global") { query = query.not("user_id", "is", null); }
-    else if (feedFilter === "following" && user) { query = query.in("user_id", Array.from(followingIds)); }
+    query = query.not("user_id", "is", null);
 
     const { data } = await query;
     if (data) {
@@ -252,7 +224,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   };
 
   useEffect(() => { fetchProfile(); }, [user]);
-  useEffect(() => { fetchReviews(); }, [storeId, feedFilter, followingIds]);
+  useEffect(() => { fetchReviews(); }, [storeId]);
   useEffect(() => { if (tab === "activity") fetchNotifications(); }, [tab, user]);
   useEffect(() => {
     if (activeChat) {
@@ -429,10 +401,8 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         <AnimatePresence mode="wait">
           {tab === "feed" && (
             <motion.div key="feed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col">
-              <div className="flex border-b border-slate-50 dark:border-zinc-900 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10">
-                 {["global", "following"].map(f => (
-                   <button key={f} onClick={() => setFeedFilter(f as any)} className={cn("flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all", feedFilter === f ? "text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white" : "text-slate-400")}>{f === "global" ? "🌍 Global" : "👥 Following"}</button>
-                 ))}
+              <div className="flex border-b border-slate-50 dark:border-zinc-900 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 px-6 py-4">
+                 <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">🌍 Global Timeline</h2>
               </div>
               <div className="divide-y divide-slate-50 dark:divide-zinc-900">
                 {reviews.map((r, i) => (
@@ -441,7 +411,6 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2"><span className="font-black text-[16px] dark:text-white">{r.author_name}</span>{r.author_is_verified && <Verified size={14} className="text-blue-500 fill-blue-500" />}</div>
-                        {r.user_id !== user?.id && <button onClick={(e) => { e.stopPropagation(); toggleFollow(r.user_id!); }} className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", followingIds.has(r.user_id!) ? "bg-slate-100 dark:bg-zinc-800 text-slate-400" : "bg-emerald-500 text-white shadow-lg")}>{followingIds.has(r.user_id!) ? "Following" : "Follow"}</button>}
                       </div>
                       <p className="text-[16px] text-slate-700 dark:text-zinc-300 leading-relaxed font-medium">{parseMessage(r.message)}</p>
                       {r.tagging_product && (
@@ -520,7 +489,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                       <div className="w-32 h-32 rounded-[3rem] mx-auto shadow-2xl relative"><AvatarIcon src={myProfile.avatar_url} /><button onClick={() => setEditingProfile(true)} className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white dark:border-black flex items-center justify-center text-white"><Settings size={18} /></button></div>
                       <div className="space-y-1"><h2 className="text-4xl font-black tracking-tighter dark:text-white italic uppercase">{myProfile.display_name}</h2><p className="text-lg text-slate-400 font-bold uppercase">@{myProfile.username}</p></div>
                       {myProfile.bio && <p className="text-slate-600 dark:text-zinc-400 font-medium max-w-sm">{myProfile.bio}</p>}
-                      <div className="flex gap-10 py-6"><div className="text-center"><p className="text-2xl font-black dark:text-white">{stats.posts}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p></div><div className="text-center"><p className="text-2xl font-black dark:text-white">{stats.followers}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Followers</p></div><div className="text-center"><p className="text-2xl font-black dark:text-white">{stats.following}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Following</p></div></div>
+                      <div className="flex justify-center py-6"><div className="text-center px-10"><p className="text-2xl font-black dark:text-white">{stats.posts}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p></div></div>
                    </div>
                    <button className="w-full p-6 rounded-3xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"><div className="flex items-center gap-4 text-rose-500"><LogOut size={22} /><span className="text-sm font-black uppercase">Sign Out Social</span></div></button>
                  </div>
