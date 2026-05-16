@@ -149,6 +149,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const [chatText, setChatText] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchFollowing = async () => {
@@ -348,6 +349,17 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     setUploading(false);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, isSetup: boolean) => {
+    const file = e.target.files?.[0]; if (!file || !user) return; setUploading(true);
+    const path = `avatars/${user.id}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("social_media").upload(path, file);
+    if (!error) { 
+        const { data: { publicUrl } } = supabase.storage.from("social_media").getPublicUrl(path); 
+        if (isSetup) setSetupAvatar(publicUrl); else setEditAvatar(publicUrl); 
+    }
+    setUploading(false);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const parseMessage = (text: string) => {
     const parts = text.split(/([@#]\w+)/g);
@@ -377,12 +389,16 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   if (onboarding && user) {
     return (
       <div className="h-full bg-white dark:bg-black p-8 flex flex-col items-center justify-center">
+        <input type="file" ref={avatarInputRef} onChange={(e) => handleAvatarUpload(e, true)} hidden accept="image/*" />
         <div className="w-full max-w-sm space-y-12">
           <div className="text-center space-y-4">
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-28 h-28 rounded-[2.5rem] mx-auto shadow-2xl relative"><AvatarIcon src={setupAvatar} /></motion.div>
             <h2 className="text-3xl font-black dark:text-white italic uppercase">The Setup</h2>
           </div>
-          <div className="flex justify-center gap-3 flex-wrap">{PROF_AVATARS.map(a => (<button key={a.id} onClick={() => setSetupAvatar(a.id)} className={cn("w-12 h-12 rounded-2xl transition-all overflow-hidden", setupAvatar === a.id ? "ring-4 ring-emerald-500 scale-110" : "opacity-60")}><AvatarIcon src={a.id} /></button>))}</div>
+          <div className="flex justify-center gap-3 flex-wrap">
+              {PROF_AVATARS.map(a => (<button key={a.id} onClick={() => setSetupAvatar(a.id)} className={cn("w-12 h-12 rounded-2xl transition-all overflow-hidden", setupAvatar === a.id ? "ring-4 ring-emerald-500 scale-110" : "opacity-60")}><AvatarIcon src={a.id} /></button>))}
+              <button onClick={() => avatarInputRef.current?.click()} className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"><ImagePlus size={20} /></button>
+          </div>
           <div className="space-y-4">
             <input value={setupName} onChange={e => setSetupName(e.target.value)} placeholder="Display Name" className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-900 rounded-3xl outline-none font-bold dark:text-white" />
             <div className="relative"><AtSign size={14} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" /><input value={setupUsername} onChange={e => setSetupUsername(e.target.value)} placeholder="handle" className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-zinc-900 rounded-3xl outline-none font-bold dark:text-white" /></div>
@@ -490,12 +506,16 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                        <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Display Name" className="w-full p-5 bg-slate-50 dark:bg-zinc-900 rounded-3xl dark:text-white font-bold" />
                        <textarea value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Bio..." className="w-full p-5 bg-slate-50 dark:bg-zinc-900 rounded-3xl dark:text-white font-medium min-h-[100px]" />
                        <p className="text-[10px] font-black uppercase text-slate-400 ml-4">Select Avatar</p>
-                       <div className="flex gap-2 flex-wrap">{PROF_AVATARS.map(a => (<button key={a.id} onClick={() => setEditAvatar(a.id)} className={cn("w-10 h-10 rounded-xl overflow-hidden transition-all", editAvatar === a.id ? "ring-4 ring-emerald-500 scale-110" : "opacity-40")}><AvatarIcon src={a.id} /></button>))}</div>
+                       <div className="flex gap-2 flex-wrap">
+                          {PROF_AVATARS.map(a => (<button key={a.id} onClick={() => setEditAvatar(a.id)} className={cn("w-10 h-10 rounded-xl overflow-hidden transition-all", editAvatar === a.id ? "ring-4 ring-emerald-500 scale-110" : "opacity-40")}><AvatarIcon src={a.id} /></button>))}
+                          <button onClick={() => avatarInputRef.current?.click()} className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"><ImagePlus size={16} /></button>
+                       </div>
                        <button onClick={handleUpdateProfile} className="w-full py-5 bg-emerald-500 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl">Save Changes</button>
                     </div>
                  </div>
                ) : (
                  <div className="space-y-12">
+                   <input type="file" ref={avatarInputRef} onChange={(e) => handleAvatarUpload(e, false)} hidden accept="image/*" />
                    <div className="flex flex-col items-center text-center space-y-6">
                       <div className="w-32 h-32 rounded-[3rem] mx-auto shadow-2xl relative"><AvatarIcon src={myProfile.avatar_url} /><button onClick={() => setEditingProfile(true)} className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white dark:border-black flex items-center justify-center text-white"><Settings size={18} /></button></div>
                       <div className="space-y-1"><h2 className="text-4xl font-black tracking-tighter dark:text-white italic uppercase">{myProfile.display_name}</h2><p className="text-lg text-slate-400 font-bold uppercase">@{myProfile.username}</p></div>
