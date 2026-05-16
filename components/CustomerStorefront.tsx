@@ -2,7 +2,7 @@
 
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { 
   Search, 
   ShoppingCart, 
@@ -23,10 +23,176 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
+import * as THREE from "three";
 
 // ==========================================
 // TEMPLATE ENGINE COMPONENTS
 // ==========================================
+
+const Hero4Wireframe = ({ accent }: { accent: string }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!containerRef.current) return;
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        let renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        containerRef.current.appendChild(renderer.domElement);
+
+        const geometry = new THREE.IcosahedronGeometry(2, 4);
+        const positionAttribute = geometry.getAttribute('position');
+        const originalPositions = [];
+        for (let i = 0; i < positionAttribute.count; i++) {
+            originalPositions.push(
+                positionAttribute.getX(i),
+                positionAttribute.getY(i),
+                positionAttribute.getZ(i)
+            );
+        }
+        geometry.userData = { originalPositions };
+
+        const material = new THREE.MeshPhongMaterial({
+            color: new THREE.Color(accent),
+            wireframe: true,
+            transparent: true,
+            opacity: 0.25,
+            emissive: new THREE.Color(accent).multiplyScalar(0.3),
+            shininess: 100
+        });
+
+        let crystalMesh = new THREE.Mesh(geometry, material);
+        scene.add(crystalMesh);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+
+        let animationFrameId: number;
+        let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            mouseX = (e.clientX - window.innerWidth / 2) / 100;
+            mouseY = (e.clientY - window.innerHeight / 2) / 100;
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+
+        const animate = () => {
+            animationFrameId = requestAnimationFrame(animate);
+            const time = Date.now() * 0.001;
+
+            targetX += (mouseX - targetX) * 0.05;
+            targetY += (mouseY - targetY) * 0.05;
+
+            crystalMesh.rotation.y += 0.002;
+            crystalMesh.rotation.x += 0.001;
+
+            const positions = crystalMesh.geometry.attributes.position;
+            const original = crystalMesh.geometry.userData.originalPositions;
+
+            for (let i = 0; i < positions.count; i++) {
+                const ix = i * 3;
+                const iy = i * 3 + 1;
+                const iz = i * 3 + 2;
+                const wave = Math.sin(time + (original[ix] + original[iy] + original[iz])) * 0.15;
+                positions.setXYZ(
+                    i,
+                    original[ix] + wave * (original[ix] / 2),
+                    original[iy] + wave * (original[iy] / 2),
+                    original[iz] + wave * (original[iz] / 2)
+                );
+            }
+            positions.needsUpdate = true;
+
+            crystalMesh.position.x = targetX * 0.5;
+            crystalMesh.position.y = -targetY * 0.5;
+
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        const handleResize = () => {
+            if (!containerRef.current) return;
+            camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(animationFrameId);
+            if (containerRef.current) containerRef.current.removeChild(renderer.domElement);
+            geometry.dispose();
+            material.dispose();
+            renderer.dispose();
+        };
+    }, [accent]);
+    return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />;
+};
+
+const Hero5Particles = ({ accent }: { accent: string }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!containerRef.current) return;
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        let renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        containerRef.current.appendChild(renderer.domElement);
+
+        const particleCount = 2000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for(let i=0; i<particleCount*3; i++) {
+            positions[i] = (Math.random() - 0.5) * 15;
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const material = new THREE.PointsMaterial({
+            color: new THREE.Color(accent),
+            size: 0.05,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        let animationFrameId: number;
+        const animate = () => {
+            animationFrameId = requestAnimationFrame(animate);
+            particles.rotation.y += 0.001;
+            particles.rotation.x += 0.0005;
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        const handleResize = () => {
+            if (!containerRef.current) return;
+            camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(animationFrameId);
+            if (containerRef.current) containerRef.current.removeChild(renderer.domElement);
+            geometry.dispose();
+            material.dispose();
+            renderer.dispose();
+        };
+    }, [accent]);
+    return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />;
+};
 
 const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
     const title = state.heroTitle || state.bizName || "Premium Collection";
@@ -124,6 +290,56 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                     <div style={{ height:4, background:`linear-gradient(90deg, ${accent}, ${accent}44, transparent)` }} />
                 </div>
                 {bg && <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"35%", backgroundImage:`url(${bg})`, backgroundSize:"cover", backgroundPosition:"center", clipPath:"polygon(15% 0, 100% 0, 100% 100%, 0% 100%)" }} />}
+            </div>
+        );
+    }
+
+    // Hero-4: Premium 3D Morphing Wireframe (The User's HTML request)
+    if (templateId === "hero-4") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10" style={{ minHeight: 600, background: "#050505" }}>
+                <Hero4Wireframe accent={accent} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:600, maxWidth: 800 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.03)", backdropFilter:"blur(10px)", fontSize:10, fontWeight:600, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.6)", width:"fit-content", marginBottom:24 }}>
+                        Next-Gen Collection 2024
+                    </div>
+                    <h1 style={{ fontSize:"clamp(3rem,8vw,6rem)", fontWeight:900, lineHeight:1, letterSpacing:"-0.03em", color:"transparent", backgroundImage:"linear-gradient(to right, #ffffff, #a1a1a1)", WebkitBackgroundClip:"text", margin:"0 0 1.5rem 0" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:300, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#000000", fontWeight:800, fontSize:12, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95 group">
+                        {btnText}
+                        <svg className="transition-transform group-hover:translate-x-1" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-5: Premium 3D Particle Cloud
+    if (templateId === "hero-5") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 flex items-center justify-center text-center" style={{ minHeight: 600, background: "#000000" }}>
+                <Hero5Particles accent={accent} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", padding:"4rem 3rem", minHeight:600, justifyContent:"center" }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:8, border:`1px solid ${accent}44`, background:`${accent}11`, backdropFilter:"blur(10px)", fontSize:10, fontWeight:800, letterSpacing:"0.25em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32 }}>
+                        {state.bizName || "The Future"}
+                    </div>
+                    <h1 style={{ fontSize:"clamp(3rem,8vw,6.5rem)", fontWeight:900, lineHeight:1.05, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textShadow: `0 0 40px ${accent}88` }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:400, maxWidth:600, lineHeight:1.6, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", transition:"all 0.3s", boxShadow:`0 20px 40px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 group">
+                        {btnText}
+                        <svg className="transition-transform group-hover:translate-x-2" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                </div>
             </div>
         );
     }
