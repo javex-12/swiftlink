@@ -292,10 +292,52 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const handlePost = async () => {
     if (!message.trim()) return;
     setSubmitting(true);
-    const { error } = await supabase.from("store_reviews").insert({ store_id: storeId, user_id: user?.id, author_name: myProfile?.display_name || "Guest", message: message.trim(), rating, likes: 0, dislikes: 0, attachments: attachments.length > 0 ? attachments : null, tagging_product: taggingProduct });
-    if (error) { addToast("Failed: " + error.message, "error"); }
-    else { setMessage(""); setAttachments([]); setTaggingProduct(null); setTab("feed"); addToast("Shared!"); }
+    
+    const newPostObj = { store_id: storeId, user_id: user?.id, author_name: myProfile?.display_name || "Guest", message: message.trim(), rating, likes: 0, dislikes: 0, attachments: attachments.length > 0 ? attachments : undefined, tagging_product: taggingProduct ?? undefined };
+    
+    // Optimistic Update so the user feels like it saved instantly
+    const tempId = `temp-${Date.now()}`;
+    const optimisticPost: Review = {
+      ...newPostObj,
+      id: tempId,
+      created_at: new Date().toISOString(),
+      author_avatar: myProfile?.avatar_url || "User",
+      author_is_verified: myProfile?.is_verified || false
+    };
+    
+    setReviews(prev => [optimisticPost, ...prev]);
+    setMessage(""); setAttachments([]); setTaggingProduct(null); setTab("feed"); addToast("Shared!", "success");
     setSubmitting(false);
+
+    const { error, data } = await supabase.from("store_reviews").insert(newPostObj).select("id").single();
+    if (error) { 
+       addToast("Failed: " + error.message, "error"); 
+       setReviews(prev => prev.filter(r => r.id !== tempId)); // revert
+    } else if (data) {
+       // Swap temp ID with real ID silently
+       setReviews(prev => prev.map(r => r.id === tempId ? { ...r, id: data.id } : r));
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !activeThread) return;
+    
+    const commentObj = { review_id: activeThread.id, author_name: myProfile?.display_name || "Guest", message: newComment.trim() };
+    const tempId = `temp-comment-${Date.now()}`;
+    const optimisticComment = { ...commentObj, id: tempId, created_at: new Date().toISOString() };
+    
+    setComments(prev => [...prev, optimisticComment]);
+    setNewComment("");
+
+    const { error } = await supabase.from("store_review_comments").insert(commentObj);
+    if (error) {
+       addToast("Failed to post reply: " + error.message, "error");
+       setComments(prev => prev.filter(c => c.id !== tempId));
+    } else {
+       if (user && activeThread.user_id && activeThread.user_id !== user.id) {
+           void supabase.from("social_notifications").insert({ user_id: activeThread.user_id, actor_id: user.id, type: "comment", post_id: activeThread.id });
+       }
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

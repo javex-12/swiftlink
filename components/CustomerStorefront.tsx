@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
 import { SectionRenderer } from "./sections/SectionRenderer";
-import { SocialPage } from "./SocialPage";
+import { SocialHub } from "./SocialHub";
 
 type Screen = "home" | "product" | "cart" | "success" | "search";
 
@@ -171,6 +171,19 @@ export function CustomerStorefront({
   const accentColor = s.accentColor || "#10b981";
   const bgColor = s.bgColor || "#f2f2f7";
   const textColor = s.textColor || "#111827";
+
+  // --- RENDER EARLY RETURN FOR COMMUNITY ---
+  // This completely detaches SocialHub from the Storefront wrappers, 
+  // guaranteeing it is 100% full screen.
+  if (screen === "community" && s.id) {
+    return (
+      <SocialHub 
+        storeId={s.id} 
+        accentColor={accentColor} 
+        onBack={() => { setScreen("home"); setActiveTab("home"); }} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center selection:bg-emerald-500 selection:text-white"
@@ -641,17 +654,6 @@ export function CustomerStorefront({
         </div>}
 
       </div>
-
-      {/* COMMUNITY SCREEN TAKEOVER (Moved here for true full-screen) */}
-      {screen === "community" && effectiveState?.id && (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-black">
-          <SocialHub 
-            storeId={effectiveState.id} 
-            accentColor={effectiveState.accentColor} 
-            onBack={() => { setScreen("home"); setActiveTab("home"); }} 
-          />
-        </div>
-      )}
 
       <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar {
