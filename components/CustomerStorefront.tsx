@@ -18,9 +18,6 @@ import {
   Home, 
   ArrowRight,
   CheckCircle2,
-  Instagram,
-  Twitter,
-  Facebook,
   Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -174,8 +171,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
                 <h3 className="text-2xl font-black text-gray-900 italic uppercase">{state.bizName}</h3>
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{state.tagline}</p>
                 <div className="flex justify-center gap-4">
-                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><Instagram size={20} /></a>}
-                    {state.socials?.twitter && <a href={state.socials.twitter} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><Twitter size={20} /></a>}
+                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {state.socials?.twitter && <a href={state.socials.twitter} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
                 </div>
                 <p className="text-[10px] text-gray-300 font-black uppercase pt-8">Powered by SwiftLink</p>
             </footer>
@@ -193,8 +190,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
             <div className="space-y-6">
                 <h4 className="font-black text-xs uppercase tracking-[0.2em] text-gray-500">Connect</h4>
                 <div className="flex gap-4">
-                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><Instagram size={16} /></a>}
-                    {state.socials?.facebook && <a href={state.socials.facebook} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><Facebook size={16} /></a>}
+                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {state.socials?.facebook && <a href={state.socials.facebook} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
                     {state.socials?.website && <a href={state.socials.website} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><Globe size={16} /></a>}
                 </div>
                 {(state.contactEmail || state.contactAddress) && (
