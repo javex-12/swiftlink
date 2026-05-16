@@ -29,22 +29,51 @@ import type { ShopState, Product } from "@/lib/types";
 // ==========================================
 
 const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
-    const title = state.heroTitle || `Welcome to ${state.bizName}`;
-    const subtitle = state.heroSubtitle || "Discover our premium collection";
+    const title = state.heroTitle || state.bizName || "Premium Store";
+    const subtitle = state.heroSubtitle || "Discover our curated collection";
     const btnText = state.heroButtonText || "Shop Now";
     const bg = state.heroImage || state.bizImage;
+    const accent = state.accentColor || "#10b981";
 
-    // Template 2: Immersive Background
+    // Template 1 (Default): Full-bleed hero — works with OR without image
+    if (!templateId || templateId === "hero-1") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10" style={{ minHeight: 340 }}>
+                {/* Background */}
+                <div className="absolute inset-0" style={{ background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, ${accent}22 0%, ${accent}08 100%)` }} />
+                {bg && <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />}
+                {!bg && <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}18 0%, transparent 70%)` }} />}
+                {/* Content */}
+                <div className={`relative z-10 flex flex-col justify-end p-8 md:p-16`} style={{ minHeight: 340 }}>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 w-fit" style={{ backgroundColor: accent, color: "white" }}>
+                        <span>✦</span> {state.bizName || "Collection"}
+                    </div>
+                    <h1 className={`text-4xl md:text-6xl font-black tracking-tighter leading-[1.05] mb-4 ${bg ? "text-white" : "text-gray-900"}`}>
+                        {title}
+                    </h1>
+                    <p className={`text-sm md:text-base font-medium max-w-md mb-8 leading-relaxed ${bg ? "text-white/80" : "text-gray-500"}`}>
+                        {subtitle}
+                    </p>
+                    <button className="w-fit px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform flex items-center gap-3 text-white"
+                        style={{ backgroundColor: accent }}>
+                        {btnText} <ArrowRight size={16} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 2: Immersive Full-Screen Background
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full h-[60vh] min-h-[400px] flex flex-col items-center justify-center text-center p-6 rounded-[2.5rem] overflow-hidden shadow-2xl mb-12">
-                <div className="absolute inset-0 bg-gray-900">
-                    {bg && <img src={bg} className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay" />}
+            <div className="relative w-full h-[60vh] min-h-[420px] flex flex-col items-center justify-center text-center p-6 rounded-[2.5rem] overflow-hidden shadow-2xl mb-12">
+                <div className="absolute inset-0" style={{ backgroundColor: accent, background: bg ? undefined : `linear-gradient(135deg, ${accent}, ${accent}88)` }}>
+                    {bg && <img src={bg} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" alt="" />}
                 </div>
                 <div className="relative z-10 max-w-2xl">
                     <h1 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter drop-shadow-2xl">{title}</h1>
-                    <p className="mt-4 text-sm md:text-lg text-white/90 font-bold drop-shadow-md">{subtitle}</p>
-                    <button className="mt-8 px-8 py-4 bg-emerald-500 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform">{btnText}</button>
+                    <p className="mt-4 text-sm md:text-lg text-white/80 font-bold">{subtitle}</p>
+                    <button className="mt-8 px-8 py-4 bg-white font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform rounded-full" style={{ color: accent }}>{btnText}</button>
                 </div>
             </div>
         );
@@ -54,32 +83,18 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
     if (templateId === "hero-3") {
         return (
             <div className="py-20 md:py-32 text-center px-4 mb-12">
+                <div className="inline-block text-[10px] font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full border mb-8" style={{ borderColor: accent, color: accent }}>
+                    {state.bizName}
+                </div>
                 <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-tight max-w-3xl mx-auto">{title}</h1>
                 <p className="mt-6 text-lg md:text-xl text-gray-500 font-medium max-w-xl mx-auto">{subtitle}</p>
-                <button className="mt-10 px-10 py-5 bg-gray-900 text-white rounded-2xl font-black text-sm active:scale-95 transition-transform shadow-xl">{btnText}</button>
+                <button className="mt-10 px-10 py-5 rounded-2xl font-black text-sm active:scale-95 transition-transform shadow-xl text-white" style={{ backgroundColor: accent }}>{btnText}</button>
             </div>
         );
     }
 
-    // Template 1 (Default): Split Layout
-    return (
-        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 mb-16 py-8">
-            <div className="flex-1 text-center md:text-left space-y-6">
-                <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1] uppercase italic">{title}</h1>
-                <p className="text-sm md:text-lg text-gray-500 font-bold max-w-md mx-auto md:mx-0 leading-relaxed">{subtitle}</p>
-                <div className="pt-4 flex justify-center md:justify-start">
-                    <button className="px-8 py-4 bg-emerald-500 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-transform flex items-center gap-3">
-                        {btnText} <ArrowRight size={16} />
-                    </button>
-                </div>
-            </div>
-            {bg && (
-                <div className="w-full md:w-1/2 aspect-square md:aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl relative border-8 border-white/50">
-                    <img src={bg} className="w-full h-full object-cover" />
-                </div>
-            )}
-        </div>
-    );
+    // Fallback: same as hero-1
+    return <HeroTemplate state={state} templateId="hero-1" />;
 };
 
 const CatalogTemplate = ({ state, templateId, products, onProductClick }: { state: ShopState, templateId: string, products: Product[], onProductClick: (p: Product) => void }) => {
@@ -163,43 +178,50 @@ const AboutTemplate = ({ state, templateId }: { state: ShopState, templateId: st
 };
 
 const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
+    const accent = state.accentColor || "#10b981";
+    const socials = state.socials as any || {};
     
-    // Template 2: Centered Modern
+    // Template 2: Minimal centered
     if (templateId === "footer-2") {
         return (
-            <footer className="py-20 text-center border-t border-black/[0.05] mt-20 space-y-8">
+            <footer className="py-16 text-center border-t border-black/[0.06] mt-20 space-y-6">
                 <h3 className="text-2xl font-black text-gray-900 italic uppercase">{state.bizName}</h3>
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{state.tagline}</p>
-                <div className="flex justify-center gap-4">
-                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
-                    {state.socials?.twitter && <a href={state.socials.twitter} target="_blank" className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:shadow-lg transition-all"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                {state.tagline && <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">{state.tagline}</p>}
+                <div className="flex justify-center gap-3">
+                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {socials.twitter && <a href={socials.twitter} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
                 </div>
-                <p className="text-[10px] text-gray-300 font-black uppercase pt-8">Powered by SwiftLink</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300">Powered by SwiftLink</p>
             </footer>
         );
     }
 
-    // Template 1 (Default): Split Details
+    // Template 1 (Default): Branded card — uses theme accent color, not hardcoded black
     return (
-        <footer className="bg-gray-900 rounded-t-[3rem] md:rounded-[3rem] p-10 md:p-16 mt-20 md:mb-10 text-white flex flex-col md:flex-row gap-12 justify-between">
-            <div className="space-y-6 max-w-sm">
-                <h3 className="text-3xl font-black italic uppercase">{state.bizName}</h3>
-                <p className="text-gray-400 font-medium text-sm leading-relaxed">{state.tagline}</p>
-                <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em]">Powered by SwiftLink</p>
-            </div>
-            <div className="space-y-6">
-                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-gray-500">Connect</h4>
-                <div className="flex gap-4">
-                    {state.socials?.instagram && <a href={state.socials.instagram} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
-                    {state.socials?.facebook && <a href={state.socials.facebook} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
-                    {state.socials?.website && <a href={state.socials.website} target="_blank" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><Globe size={16} /></a>}
+        <footer className="rounded-[2.5rem] p-10 md:p-16 mt-20 mb-8 flex flex-col md:flex-row gap-10 justify-between" style={{ backgroundColor: `${accent}12`, border: `1px solid ${accent}22` }}>
+            <div className="space-y-4 max-w-sm">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
+                        <Zap size={16} fill="currentColor" />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-900 italic uppercase">{state.bizName}</h3>
                 </div>
-                {(state.contactEmail || state.contactAddress) && (
-                    <div className="space-y-2 pt-4 border-t border-white/5">
-                        {state.contactEmail && <p className="text-xs text-gray-400 font-medium">{state.contactEmail}</p>}
-                        {state.contactAddress && <p className="text-xs text-gray-400 font-medium">{state.contactAddress}</p>}
+                {state.tagline && <p className="text-gray-500 font-medium text-sm leading-relaxed">{state.tagline}</p>}
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
+            </div>
+            <div className="space-y-5">
+                {(state.contactEmail || state.contactAddress || state.phone) && (
+                    <div className="space-y-2">
+                        {state.contactEmail && <p className="text-xs text-gray-500 font-medium">{state.contactEmail}</p>}
+                        {state.phone && <p className="text-xs text-gray-500 font-medium">{state.phone}</p>}
+                        {state.contactAddress && <p className="text-xs text-gray-500 font-medium">{state.contactAddress}</p>}
                     </div>
                 )}
+                <div className="flex gap-3">
+                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {socials.facebook && <a href={socials.facebook} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
+                    {socials.website && <a href={socials.website} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><Globe size={16} /></a>}
+                </div>
             </div>
         </footer>
     );
@@ -659,11 +681,12 @@ export function CustomerStorefront({
         </div>
 
         {/* BOTTOM NAVIGATION BAR */}
-        {screen !== "community" && <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
+        <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
           <div className="flex items-center w-full max-w-screen-lg mx-auto md:bg-white md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12">
             {[
               { id: "home", icon: Home, label: "Store" },
               { id: "search", icon: Search, label: "Search" },
+              { id: "community", icon: MessageCircle, label: "Reviews" },
               { id: "cart", icon: ShoppingCart, label: "Cart", badge: cartItemCount },
             ].map(({ id, icon: Icon, label, badge }) => (
               <button key={id} onClick={() => goTab(id as any)} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "text-gray-900" : "text-gray-300 hover:text-gray-400"}`}>
@@ -675,7 +698,7 @@ export function CustomerStorefront({
               </button>
             ))}
           </div>
-        </div>}
+        </div>
       </div>
     </div>
   );

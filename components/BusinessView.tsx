@@ -222,21 +222,40 @@ export function BusinessView() {
   return (
     <div className="pb-32 font-sans bg-slate-50/50 dark:bg-black min-h-screen transition-colors duration-300">
       
-      {/* FLOATING SAVE BUTTON */}
-      <AnimatePresence>
-        {isDirty && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-full px-6 py-3 shadow-2xl">
-             <div className="flex items-center gap-2">
-                 <AlertTriangle size={16} className="text-amber-400" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Unsaved Changes</span>
-             </div>
-             <div className="w-px h-6 bg-white/20 dark:bg-black/20" />
-             <button onClick={saveChanges} className="flex items-center gap-2 bg-emerald-500 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
-                 <Save size={14} /> Save Now
-             </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* FLOATING SAVE BUTTON — CSS only, no mount/unmount = no layout reflow = no keyboard snap */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "2rem",
+          left: "50%",
+          transform: `translateX(-50%) translateY(${isDirty ? "0" : "80px"})`,
+          opacity: isDirty ? 1 : 0,
+          pointerEvents: isDirty ? "auto" : "none",
+          transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease",
+          zIndex: 100,
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          backgroundColor: "#0f172a",
+          color: "white",
+          borderRadius: "9999px",
+          padding: "0.75rem 1.5rem",
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+          whiteSpace: "nowrap"
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={16} className="text-amber-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Unsaved Changes</span>
+        </div>
+        <div style={{ width: 1, height: 24, backgroundColor: "rgba(255,255,255,0.2)" }} />
+        <button
+          onMouseDown={(e) => { e.preventDefault(); saveChanges(); }}
+          className="flex items-center gap-2 bg-emerald-500 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 active:scale-95 transition-all"
+        >
+          <Save size={14} /> Save Now
+        </button>
+      </div>
 
       <main className="max-w-7xl mx-auto space-y-10 px-4 md:px-6 pt-8">
         

@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase } from "@/lib/supabase-client";
 import { 
-  Shield, LogOut, Trash2, ArrowRight, User, Zap, 
-  Bell, Globe, Settings, Mail, Smartphone,
-  CheckCircle2, AlertCircle, Clock
+  User, Zap, Bell, Globe, Settings, Smartphone,
+  CheckCircle2, AlertCircle, Clock, Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +14,21 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function AccountPage() {
   const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast } =
     useSwiftLink();
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    const path = `${user.id}/profile/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true });
+    if (error) { addToast('Upload failed: ' + error.message, 'error'); setUploadingAvatar(false); return; }
+    const { data: { publicUrl } } = supabase.storage.from('branding').getPublicUrl(path);
+    updateState('bizImage', publicUrl);
+    addToast('Profile picture updated!', 'success');
+    setUploadingAvatar(false);
+  };
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
@@ -86,14 +100,23 @@ export default function AccountPage() {
             <div className="lg:col-span-1 space-y-6">
                 {/* Profile Card */}
                 <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm text-center">
+                    <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                     <div className="relative w-24 h-24 mx-auto mb-4 group">
-                        <div className="w-full h-full rounded-[2rem] bg-slate-100 dark:bg-black border-2 border-slate-50 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-inner">
-                            {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" /> : <User size={32} className="text-slate-300" />}
-                        </div>
-                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white dark:border-zinc-900">
+                        <label
+                          htmlFor="account-avatar-upload"
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="block w-full h-full rounded-[2rem] bg-slate-100 dark:bg-black border-2 border-slate-50 dark:border-white/5 overflow-hidden shadow-inner cursor-pointer relative"
+                        >
+                            {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="Profile" /> : <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-slate-300" /></div>}
+                            <div className={cn("absolute inset-0 bg-black/40 flex items-center justify-center rounded-[2rem] transition-opacity", uploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                                {uploadingAvatar ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera size={20} className="text-white" />}
+                            </div>
+                        </label>
+                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white dark:border-zinc-900 pointer-events-none">
                             <CheckCircle2 size={16} />
                         </div>
                     </div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Tap to change photo</p>
                     <h3 className="text-lg font-black text-slate-900 dark:text-white italic uppercase tracking-tight truncate">{state.bizName || "New Merchant"}</h3>
                     <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-1 mb-6">{authLabel}</p>
                     

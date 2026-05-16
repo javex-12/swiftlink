@@ -175,19 +175,19 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     const from = append ? reviews.length : 0;
     const to = from + limit - 1;
 
-    let query = supabase
+    // Fetch ALL posts globally — no store_id filter for the social feed
+    const { data } = await supabase
       .from("store_reviews")
-      .select(`*, social_profiles:user_id (display_name, username, avatar_url, bio, is_verified)`)
+      .select(`*, social_profiles:user_id (display_name, username, avatar_url, is_verified)`)
       .order("created_at", { ascending: false })
       .range(from, to);
-    
-    query = query.not("user_id", "is", null);
 
-    const { data } = await query;
     if (data) {
         const normalized = (data as any[]).map(r => ({ 
-            ...r, likes: r.likes || 0, dislikes: r.dislikes || 0,
-            author_name: (r.social_profiles as any)?.display_name || r.author_name,
+            ...r, 
+            likes: r.likes || 0, 
+            dislikes: r.dislikes || 0,
+            author_name: (r.social_profiles as any)?.display_name || r.author_name || "User",
             author_avatar: (r.social_profiles as any)?.avatar_url || "User",
             author_is_verified: (r.social_profiles as any)?.is_verified || false
         }));
@@ -324,10 +324,20 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, isSetup: boolean) => {
     const file = e.target.files?.[0]; if (!file || !user) return; setUploading(true);
     const path = `avatars/${user.id}/${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from("social_media").upload(path, file);
+    const { error } = await supabase.storage.from("social_media").upload(path, file, { upsert: true });
     if (!error) { 
         const { data: { publicUrl } } = supabase.storage.from("social_media").getPublicUrl(path); 
-        if (isSetup) setSetupAvatar(publicUrl); else setEditAvatar(publicUrl); 
+        if (isSetup) {
+          setSetupAvatar(publicUrl);
+        } else {
+          // Save to DB immediately on upload in edit mode
+          setEditAvatar(publicUrl);
+          await supabase.from("social_profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+          setMyProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : prev);
+          addToast("Avatar updated!", "success");
+        }
+    } else {
+      addToast("Upload failed: " + error.message, "error");
     }
     setUploading(false);
   };
@@ -486,7 +496,14 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                  <div className="space-y-12">
                    <input type="file" ref={avatarInputRef} onChange={(e) => handleAvatarUpload(e, false)} hidden accept="image/*" />
                    <div className="flex flex-col items-center text-center space-y-6">
-                      <div className="w-32 h-32 rounded-[3rem] mx-auto shadow-2xl relative"><AvatarIcon src={myProfile.avatar_url} /><button onClick={() => setEditingProfile(true)} className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white dark:border-black flex items-center justify-center text-white"><Settings size={18} /></button></div>
+                      <div className="w-32 h-32 rounded-[3rem] mx-auto shadow-2xl relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                        <div className="w-full h-full rounded-[3rem] overflow-hidden"><AvatarIcon src={myProfile.avatar_url} /></div>
+                        <div className="absolute inset-0 rounded-[3rem] bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {uploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera size={24} className="text-white" />}
+                          <span className="text-[9px] text-white font-black uppercase mt-2">Change</span>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingProfile(true); }} className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-emerald-500 border-4 border-white dark:border-black flex items-center justify-center text-white z-10"><Settings size={18} /></button>
+                      </div>
                       <div className="space-y-1"><h2 className="text-4xl font-black tracking-tighter dark:text-white italic uppercase">{myProfile.display_name}</h2><p className="text-lg text-slate-400 font-bold uppercase">@{myProfile.username}</p></div>
                       {myProfile.bio && <p className="text-slate-600 dark:text-zinc-400 font-medium max-w-sm">{myProfile.bio}</p>}
                       <div className="flex justify-center py-6"><div className="text-center px-10"><p className="text-2xl font-black dark:text-white">{stats.posts}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p></div></div>
