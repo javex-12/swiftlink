@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ShopState, PageSection, Product, StoreReview } from "@/lib/schema";
 import { supabase } from "@/lib/supabase-client";
@@ -14,6 +14,65 @@ import {
   Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
+
+// ─────────────────────────────────────────────────────────────
+// STABLE INPUT: only fires onChange on blur — zero re-renders while typing
+// This permanently fixes the mobile keyboard snap issue
+// ─────────────────────────────────────────────────────────────
+function StableInput({ value, onChange, className, placeholder, type = "text" }: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  placeholder?: string;
+  type?: string;
+}) {
+  const [local, setLocal] = useState(value);
+  // Sync if parent value changes externally (e.g. store switch)
+  const prevValue = useRef(value);
+  useEffect(() => {
+    if (prevValue.current !== value) {
+      setLocal(value);
+      prevValue.current = value;
+    }
+  }, [value]);
+  return (
+    <input
+      type={type}
+      value={local}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) { onChange(local); prevValue.current = local; } }}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+}
+
+function StableTextarea({ value, onChange, className, placeholder, rows }: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  placeholder?: string;
+  rows?: number;
+}) {
+  const [local, setLocal] = useState(value);
+  const prevValue = useRef(value);
+  useEffect(() => {
+    if (prevValue.current !== value) {
+      setLocal(value);
+      prevValue.current = value;
+    }
+  }, [value]);
+  return (
+    <textarea
+      value={local}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) { onChange(local); prevValue.current = local; } }}
+      className={className}
+      placeholder={placeholder}
+      rows={rows}
+    />
+  );
+}
 
 export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance" | "inbox">("store");
@@ -347,11 +406,11 @@ export function BusinessView() {
                         <div className="flex-1 space-y-6 w-full">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">Business Name</label>
-                                <input type="text" value={localState.bizName || ""} onChange={(e) => updateLocalState("bizName", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-black text-lg md:text-xl text-slate-900 dark:text-white outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="Elite Fashion" />
+                                <StableInput type="text" value={localState.bizName || ""} onChange={(v) => updateLocalState("bizName", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-black text-lg md:text-xl text-slate-900 dark:text-white outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="Elite Fashion" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">WhatsApp Number</label>
-                                <input type="tel" value={localState.phone || ""} onChange={(e) => updateLocalState("phone", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="+234..." />
+                                <StableInput type="tel" value={localState.phone || ""} onChange={(v) => updateLocalState("phone", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="+234..." />
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
@@ -381,17 +440,17 @@ export function BusinessView() {
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">
                                 <User size={12} /> Bio / About You
                             </label>
-                            <textarea value={localState.bio || ""} onChange={(e) => updateLocalState("bio", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
+                            <StableTextarea value={localState.bio || ""} onChange={(v) => updateLocalState("bio", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 ml-1"><Mail size={12} /> Contact Email</label>
-                                <input type="email" value={localState.contactEmail || ""} onChange={(e) => updateLocalState("contactEmail", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="hello@brand.com" />
+                                <StableInput type="email" value={localState.contactEmail || ""} onChange={(v) => updateLocalState("contactEmail", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="hello@brand.com" />
                             </div>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 ml-1"><MapPin size={12} /> Address</label>
-                                <input type="text" value={localState.contactAddress || ""} onChange={(e) => updateLocalState("contactAddress", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="Lagos, Nigeria" />
+                                <StableInput type="text" value={localState.contactAddress || ""} onChange={(v) => updateLocalState("contactAddress", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="Lagos, Nigeria" />
                             </div>
                         </div>
 
@@ -404,7 +463,7 @@ export function BusinessView() {
                             ].map(({ key, icon: Icon, placeholder }) => (
                                 <div key={key} className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl px-4 py-3 border border-slate-100 dark:border-white/5">
                                     <Icon size={16} className="text-slate-400 shrink-0" />
-                                    <input type="url" value={(localState.socials as any)?.[key] || ""} onChange={(e) => updateLocalState("socials", { ...(localState.socials || {}), [key]: e.target.value })} className="flex-1 bg-transparent text-sm font-bold text-slate-600 dark:text-zinc-400 outline-none placeholder:text-slate-300" placeholder={placeholder} />
+                                    <StableInput type="url" value={(localState.socials as any)?.[key] || ""} onChange={(v) => updateLocalState("socials", { ...(localState.socials || {}), [key]: v })} className="flex-1 bg-transparent text-sm font-bold text-slate-600 dark:text-zinc-400 outline-none placeholder:text-slate-300" placeholder={placeholder} />
                                 </div>
                             ))}
                         </div>
@@ -510,7 +569,7 @@ export function BusinessView() {
                             </div>
 
                             <div className="flex-1 space-y-6 min-w-0">
-                                <input value={p.name || ""} onChange={(e) => updateProductLocal(p.id, "name", e.target.value)} className="w-full font-black text-2xl md:text-3xl outline-none bg-transparent text-slate-900 dark:text-white uppercase italic" placeholder="Product Name" />
+                                <StableInput value={p.name || ""} onChange={(v) => updateProductLocal(p.id, "name", v)} className="w-full font-black text-2xl md:text-3xl outline-none bg-transparent text-slate-900 dark:text-white uppercase italic" placeholder="Product Name" />
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="space-y-2">
@@ -538,7 +597,7 @@ export function BusinessView() {
                                     </div>
                                 </div>
 
-                                <textarea value={p.description || ""} onChange={(e) => updateProductLocal(p.id, "description", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-24 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Describe your product..." />
+                                <StableTextarea value={p.description || ""} onChange={(v) => updateProductLocal(p.id, "description", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-24 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Describe your product..." />
 
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-3 cursor-pointer">

@@ -29,73 +29,109 @@ import type { ShopState, Product } from "@/lib/types";
 // ==========================================
 
 const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
-    const title = state.heroTitle || state.bizName || "Premium Store";
+    const title = state.heroTitle || state.bizName || "Premium Collection";
     const subtitle = state.heroSubtitle || "Discover our curated collection";
     const btnText = state.heroButtonText || "Shop Now";
     const bg = state.heroImage || state.bizImage;
     const accent = state.accentColor || "#10b981";
 
-    // Template 1 (Default): Full-bleed hero — works with OR without image
+    // Hero-1: Cinematic dark with animated orbs & glassmorphism
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10" style={{ minHeight: 340 }}>
-                {/* Background */}
-                <div className="absolute inset-0" style={{ background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, ${accent}22 0%, ${accent}08 100%)` }} />
-                {bg && <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />}
-                {!bg && <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}18 0%, transparent 70%)` }} />}
+            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10" style={{ minHeight: 420, background: "#050505" }}>
+                {/* Animated background orbs */}
+                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
+                    <div style={{ position:"absolute", top:"-20%", right:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, animation:"pulse 6s ease-in-out infinite" }} />
+                    <div style={{ position:"absolute", bottom:"-20%", left:"-10%", width:400, height:400, borderRadius:"50%", background:`radial-gradient(circle, ${accent}22 0%, transparent 70%)`, animation:"pulse 8s ease-in-out infinite 2s" }} />
+                    {bg && <img src={bg} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.15, mixBlendMode:"luminosity" }} />}
+                </div>
+                {/* Subtle grid lines */}
+                <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
                 {/* Content */}
-                <div className={`relative z-10 flex flex-col justify-end p-8 md:p-16`} style={{ minHeight: 340 }}>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 w-fit" style={{ backgroundColor: accent, color: "white" }}>
-                        <span>✦</span> {state.bizName || "Collection"}
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"3rem 2.5rem", minHeight:420 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.05)", backdropFilter:"blur(12px)", fontSize:10, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.6)", width:"fit-content", marginBottom:24 }}>
+                        <span style={{ width:6, height:6, borderRadius:"50%", background:accent, display:"inline-block" }} />
+                        {state.bizName || "New Collection"}
                     </div>
-                    <h1 className={`text-4xl md:text-6xl font-black tracking-tighter leading-[1.05] mb-4 ${bg ? "text-white" : "text-gray-900"}`}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:900, lineHeight:1.02, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1rem 0", fontStyle:"italic" }}>
                         {title}
                     </h1>
-                    <p className={`text-sm md:text-base font-medium max-w-md mb-8 leading-relaxed ${bg ? "text-white/80" : "text-gray-500"}`}>
+                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.45)", fontWeight:400, maxWidth:480, lineHeight:1.7, margin:"0 0 2rem 0" }}>
                         {subtitle}
                     </p>
-                    <button className="w-fit px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform flex items-center gap-3 text-white"
-                        style={{ backgroundColor: accent }}>
-                        {btnText} <ArrowRight size={16} />
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }}>
+                        {btnText}
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </button>
+                </div>
+                <style>{`@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.1);opacity:1} }`}</style>
+            </div>
+        );
+    }
+
+    // Hero-2: Full-bleed image with editorial dark overlay
+    if (templateId === "hero-2") {
+        return (
+            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10" style={{ minHeight: 500 }}>
+                <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
+                <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
+                {/* Accent color bar */}
+                <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:accent }} />
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"4rem 3rem", minHeight:500 }}>
+                    <p style={{ fontSize:10, fontWeight:900, letterSpacing:"0.35em", textTransform:"uppercase", color:accent, marginBottom:16 }}>
+                        {state.bizName || "Premium Brand"}
+                    </p>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:900, lineHeight:1, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", maxWidth:700 }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:420, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }}>
+                        {btnText}
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Template 2: Immersive Full-Screen Background
-    if (templateId === "hero-2") {
-        return (
-            <div className="relative w-full h-[60vh] min-h-[420px] flex flex-col items-center justify-center text-center p-6 rounded-[2.5rem] overflow-hidden shadow-2xl mb-12">
-                <div className="absolute inset-0" style={{ backgroundColor: accent, background: bg ? undefined : `linear-gradient(135deg, ${accent}, ${accent}88)` }}>
-                    {bg && <img src={bg} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" alt="" />}
-                </div>
-                <div className="relative z-10 max-w-2xl">
-                    <h1 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter drop-shadow-2xl">{title}</h1>
-                    <p className="mt-4 text-sm md:text-lg text-white/80 font-bold">{subtitle}</p>
-                    <button className="mt-8 px-8 py-4 bg-white font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform rounded-full" style={{ color: accent }}>{btnText}</button>
-                </div>
-            </div>
-        );
-    }
-
-    // Template 3: Minimalist Typography
+    // Hero-3: Light editorial magazine style
     if (templateId === "hero-3") {
         return (
-            <div className="py-20 md:py-32 text-center px-4 mb-12">
-                <div className="inline-block text-[10px] font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full border mb-8" style={{ borderColor: accent, color: accent }}>
-                    {state.bizName}
+            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10 bg-white" style={{ minHeight: 400 }}>
+                <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:400 }}>
+                    {/* Top bar */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:"#aaa" }}>{state.bizName}</span>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:"#aaa" }}>New Collection</span>
+                    </div>
+                    {/* Main content */}
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3rem 2.5rem" }}>
+                        <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.04em", color:"#0a0a0a", margin:"0 0 1.5rem 0" }}>
+                            {title}
+                        </h1>
+                        <div style={{ display:"flex", alignItems:"center", gap:"2rem", flexWrap:"wrap" }}>
+                            <p style={{ fontSize:"0.95rem", color:"#888", fontWeight:400, maxWidth:360, lineHeight:1.7, margin:0 }}>
+                                {subtitle}
+                            </p>
+                            <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }}>
+                                {btnText} →
+                            </button>
+                        </div>
+                    </div>
+                    {/* Bottom accent */}
+                    <div style={{ height:4, background:`linear-gradient(90deg, ${accent}, ${accent}44, transparent)` }} />
                 </div>
-                <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-tight max-w-3xl mx-auto">{title}</h1>
-                <p className="mt-6 text-lg md:text-xl text-gray-500 font-medium max-w-xl mx-auto">{subtitle}</p>
-                <button className="mt-10 px-10 py-5 rounded-2xl font-black text-sm active:scale-95 transition-transform shadow-xl text-white" style={{ backgroundColor: accent }}>{btnText}</button>
+                {bg && <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"35%", backgroundImage:`url(${bg})`, backgroundSize:"cover", backgroundPosition:"center", clipPath:"polygon(15% 0, 100% 0, 100% 100%, 0% 100%)" }} />}
             </div>
         );
     }
 
-    // Fallback: same as hero-1
     return <HeroTemplate state={state} templateId="hero-1" />;
 };
+
+
 
 const CatalogTemplate = ({ state, templateId, products, onProductClick }: { state: ShopState, templateId: string, products: Product[], onProductClick: (p: Product) => void }) => {
     
