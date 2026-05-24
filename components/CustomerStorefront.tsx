@@ -1215,11 +1215,14 @@ export function CustomerStorefront({
       updateCart, 
       cartItemCount,
       sendWhatsAppOrder,
-      logEvent
+      logEvent,
+      user
   } = useSwiftLink();
 
   const [publicState, setPublicState] = useState<ShopState | null>(null);
   const effectiveState = shopId ? publicState : state;
+  
+  const isStoreOwner = isEditable || (user && effectiveState && effectiveState.ownerId === user.id);
   
   const [screen, setScreen] = useState<"home" | "product" | "cart" | "search" | "success" | "community">("home");
   const [activeTab, setActiveTab] = useState<"home" | "search" | "cart" | "community">("home");
@@ -1241,8 +1244,9 @@ export function CustomerStorefront({
           supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).order("created_at", { ascending: false })
             .then(async ({ data: reviewsData }) => {
                 if (reviewsData) {
-                    setReviews(reviewsData);
-                    const reviewIds = reviewsData.map(r => r.id);
+                    const filteredReviews = reviewsData.filter(r => !effectiveState.ownerId || r.user_id !== effectiveState.ownerId);
+                    setReviews(filteredReviews);
+                    const reviewIds = filteredReviews.map(r => r.id);
                     if (reviewIds.length > 0) {
                         const { data: commentsData } = await supabase
                           .from("store_review_comments")
@@ -1663,9 +1667,11 @@ export function CustomerStorefront({
                       </button>
                       <h2 className="text-sm md:text-xl font-black text-gray-900 tracking-tight">Customer Reviews</h2>
                     </div>
-                    <button onClick={() => setShowReviewForm(true)} className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md">
-                      + Write Review
-                    </button>
+                    {!isStoreOwner && (
+                      <button onClick={() => setShowReviewForm(true)} className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md">
+                        + Write Review
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1715,15 +1721,19 @@ export function CustomerStorefront({
                     ) : reviews.length === 0 ? (
                       <div className="py-20 flex flex-col items-center text-center bg-white rounded-3xl p-8 border border-black/[0.01] shadow-sm">
                         <MessageCircle size={48} className="text-gray-200 mb-4" />
-                        <h3 className="text-base font-black text-gray-900 uppercase">Be the first to review</h3>
-                        <p className="text-xs text-gray-400 max-w-xs mt-2 leading-relaxed">Have you purchased from us? Share your experience with the community today.</p>
-                        <button onClick={() => setShowReviewForm(true)} className="mt-6 px-6 py-3 bg-gray-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md">
-                          Leave a Feedback
-                        </button>
+                        <h3 className="text-base font-black text-gray-900 uppercase">No reviews yet</h3>
+                        <p className="text-xs text-gray-400 max-w-xs mt-2 leading-relaxed">
+                          {isStoreOwner ? "When customers leave feedback for your store, they will appear here." : "Have you purchased from us? Share your experience with the community today."}
+                        </p>
+                        {!isStoreOwner && (
+                          <button onClick={() => setShowReviewForm(true)} className="mt-6 px-6 py-3 bg-gray-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md">
+                            Leave a Feedback
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {reviews.map((r) => {
+                        {reviews.filter(r => !isStoreOwner || r.author_id !== user?.id).map((r) => {
                           const reviewerComments = comments[r.id] || [];
                           return (
                             <div key={r.id} className="bg-white rounded-3xl p-6 border border-black/[0.01] shadow-sm space-y-4">
