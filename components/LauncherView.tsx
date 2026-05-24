@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { Store, Truck, BarChart3, Settings, Link as LinkIcon, ExternalLink, Zap, Users, Package, MessageSquare, Bell, Shield, ArrowRight } from "lucide-react";
+import { Store, Truck, BarChart3, Settings, Link as LinkIcon, ExternalLink, Zap, Users, Package, Check, MessageSquare, Bell, Shield, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

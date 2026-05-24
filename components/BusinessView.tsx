@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ShopState, PageSection, Product, StoreReview } from "@/lib/schema";
 import { supabase } from "@/lib/supabase-client";
@@ -14,6 +14,7 @@ import {
   Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
+import { CustomerStorefrontPreview } from "./CustomerStorefront";
 
 // ─────────────────────────────────────────────────────────────
 // STABLE INPUT: only fires onChange on blur — zero re-renders while typing
@@ -243,43 +244,230 @@ export function BusinessView() {
       </div>
   );
 
-  const TemplateSelector = ({ type, current, onChange }: { type: string, current: string, onChange: (v: string) => void }) => {
-      // Generate 10 templates, 1-5 free, 6-10 PRO
-      const templates = Array.from({ length: 10 }).map((_, i) => ({
-          id: `${type}-${i + 1}`,
-          name: `Design ${i + 1}`,
-          isPro: i >= 5
-      }));
-      return (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {templates.map(t => (
-                  <button
-                      key={t.id}
-                      onClick={() => {
-                          if (t.isPro && !isProUser) {
-                              addSystemNotification("Pro Feature", "This template is exclusively for PRO users.", "feedback");
-                              return;
-                          }
-                          onChange(t.id);
-                      }}
-                      className={cn(
-                          "relative p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 aspect-[4/3]",
-                          current === t.id 
-                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                              : "border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-zinc-900 text-slate-400 hover:border-slate-300 dark:hover:border-white/20"
-                      )}
-                  >
-                      {t.isPro && <span className="absolute top-2 right-2 text-[10px]">🔒</span>}
-                      <LayoutTemplate size={24} className={current === t.id ? "text-emerald-500" : "text-slate-300 dark:text-zinc-700"} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">{t.name}</span>
-                  </button>
-              ))}
-          </div>
-      );
+  // ─── Template metadata ──────────────────────────────────────────
+  const TEMPLATE_META: Record<string, { id: string; name: string; desc: string; dark: boolean; isPro: boolean; icon: React.ReactNode }[]> = {
+    hero: [
+      { id:"hero-1",  name:"Ambient Orbs",    desc:"Dark glass with glowing orb animations",       dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#050505"/><circle cx="45" cy="8" r="12" fill="#10b981" opacity=".25"/><circle cx="10" cy="35" r="9" fill="#10b981" opacity=".15"/><rect x="8" y="26" width="28" height="3" rx="1.5" fill="white" opacity=".9"/><rect x="8" y="31" width="18" height="2" rx="1" fill="white" opacity=".4"/><rect x="8" y="36" width="14" height="5" rx="2.5" fill="white" opacity=".9"/></> },
+      { id:"hero-2",  name:"Editorial Dark",  desc:"Full bleed overlay with accent bar",           dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#111"/><rect x="0" y="0" width="3" height="40" fill="#10b981"/><rect x="8" y="8" width="6" height="2" rx="1" fill="#10b981"/><rect x="8" y="15" width="38" height="5" rx="1.5" fill="white" opacity=".9"/><rect x="8" y="22" width="24" height="2" rx="1" fill="white" opacity=".4"/><rect x="8" y="28" width="16" height="6" rx="2.5" fill="#10b981"/></> },
+      { id:"hero-3",  name:"Magazine Light",  desc:"Clean editorial with clipped image mask",      dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="0" width="60" height="5" fill="#f8f8f8"/><rect x="8" y="1" width="20" height="2" rx="1" fill="#ccc"/><rect x="8" y="12" width="30" height="4" rx="1.5" fill="#111" opacity=".9"/><rect x="8" y="18" width="20" height="2" rx="1" fill="#999"/><rect x="8" y="23" width="14" height="5" rx="2.5" fill="#111"/><rect x="42" y="0" width="18" height="40" rx="0" fill="#e5e5e5"/></> },
+      { id:"hero-4",  name:"Torus Knot 3D",   desc:"Live 3D glowing torus knot canvas",           dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#020205"/><ellipse cx="45" cy="20" rx="12" ry="14" fill="none" stroke="#10b981" strokeWidth="1.5" opacity=".6"/><ellipse cx="45" cy="20" rx="7" ry="9" fill="none" stroke="#10b981" strokeWidth="1" opacity=".3"/><rect x="6" y="12" width="28" height="4" rx="1.5" fill="white" opacity=".9"/><rect x="6" y="19" width="20" height="2" rx="1" fill="white" opacity=".4"/><rect x="6" y="24" width="14" height="6" rx="2.5" fill="#10b981"/></> },
+      { id:"hero-5",  name:"Cyber Grid 3D",   desc:"Animated wireframe floor mesh canvas",        dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#050b0a"/><line x1="0" y1="32" x2="60" y2="32" stroke="#10b981" strokeWidth=".5" opacity=".3"/><line x1="10" y1="40" x2="30" y2="32" stroke="#10b981" strokeWidth=".5" opacity=".2"/><line x1="50" y1="40" x2="30" y2="32" stroke="#10b981" strokeWidth=".5" opacity=".2"/><rect x="12" y="10" width="36" height="5" rx="1.5" fill="transparent" stroke="none"/><rect x="8" y="10" width="44" height="5" rx="1.5" fill="white" opacity=".1"/><text x="30" y="17" textAnchor="middle" fill="white" fontSize="5" fontWeight="900" opacity=".9">YOUR TITLE</text><rect x="18" y="22" width="24" height="6" rx="3" fill="white"/></> },
+      { id:"hero-6",  name:"Cosmic Particles", desc:"Deep-space particle universe canvas",        dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#000"/><circle cx="10" cy="5" r="1" fill="#10b981" opacity=".8"/><circle cx="25" cy="12" r=".7" fill="white" opacity=".5"/><circle cx="45" cy="8" r="1.2" fill="#10b981" opacity=".6"/><circle cx="55" cy="20" r=".8" fill="white" opacity=".4"/><circle cx="30" cy="30" r=".6" fill="#10b981" opacity=".7"/><circle cx="5" cy="28" r="1" fill="white" opacity=".3"/><rect x="10" y="14" width="40" height="5" rx="2" fill="white" opacity=".9"/><rect x="15" y="21" width="30" height="2" rx="1" fill="white" opacity=".4"/><rect x="20" y="27" width="20" height="6" rx="3" fill="#10b981"/></> },
+      { id:"hero-7",  name:"DNA Helix 3D",    desc:"Organic rotating DNA helix canvas",           dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#03020c"/><path d="M48 2 Q52 10 48 18 Q44 26 48 34 Q52 42 48 40" stroke="#10b981" strokeWidth="1.5" fill="none" opacity=".7"/><path d="M54 2 Q50 10 54 18 Q58 26 54 34 Q50 42 54 40" stroke="#6366f1" strokeWidth="1.5" fill="none" opacity=".5"/><rect x="6" y="14" width="30" height="4" rx="2" fill="white" opacity=".9"/><rect x="6" y="21" width="22" height="2" rx="1" fill="white" opacity=".4"/><rect x="6" y="27" width="16" height="5" rx="2.5" fill="white"/></> },
+      { id:"hero-8",  name:"Starfield Warp",  desc:"Hyperspace starfield warp speed canvas",      dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#000"/><line x1="30" y1="20" x2="2" y2="2" stroke="white" strokeWidth=".5" opacity=".3"/><line x1="30" y1="20" x2="58" y2="2" stroke="white" strokeWidth=".5" opacity=".3"/><line x1="30" y1="20" x2="58" y2="38" stroke="white" strokeWidth=".5" opacity=".3"/><line x1="30" y1="20" x2="2" y2="38" stroke="white" strokeWidth=".5" opacity=".3"/><rect x="5" y="14" width="30" height="4" rx="2" fill="white" opacity=".9"/><rect x="5" y="21" width="22" height="2" rx="1" fill="white" opacity=".5"/><rect x="5" y="27" width="14" height="5" rx="2.5" fill="#10b981"/></> },
+      { id:"hero-9",  name:"Wave Mesh 3D",    desc:"Oceanic animated wireframe wave canvas",      dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#050811"/><path d="M0 30 Q15 22 30 30 Q45 38 60 30" stroke="#10b981" strokeWidth="1" fill="none" opacity=".4"/><path d="M0 34 Q15 26 30 34 Q45 42 60 34" stroke="#10b981" strokeWidth=".7" fill="none" opacity=".2"/><rect x="10" y="10" width="40" height="5" rx="2" fill="white" opacity=".9"/><rect x="14" y="18" width="32" height="2" rx="1" fill="white" opacity=".4"/><rect x="18" y="24" width="24" height="6" rx="3" fill="white"/></> },
+      { id:"hero-10", name:"Neon Rings 3D",   desc:"Cyberpunk neon ring tunnel canvas",           dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#0a000f"/><ellipse cx="30" cy="20" rx="25" ry="16" fill="none" stroke="#a855f7" strokeWidth="1" opacity=".5"/><ellipse cx="30" cy="20" rx="17" ry="10" fill="none" stroke="#10b981" strokeWidth="1" opacity=".4"/><ellipse cx="30" cy="20" rx="9" ry="5" fill="none" stroke="#a855f7" strokeWidth="1" opacity=".3"/><rect x="10" y="16" width="40" height="5" rx="2" fill="white" opacity=".9"/></> },
+    ],
+    catalog: [
+      { id:"catalog-1",  name:"Clean Grid",      desc:"Classic borderless product grid",          dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#f8f8f8"/><rect x="3" y="3" width="17" height="22" rx="3" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="22" y="3" width="17" height="22" rx="3" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="41" y="3" width="17" height="22" rx="3" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="4" y="27" width="12" height="2" rx="1" fill="#111" opacity=".7"/><rect x="4" y="31" width="8" height="2" rx="1" fill="#10b981" opacity=".9"/></> },
+      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list with image & details",     dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="4" width="12" height="12" rx="2" fill="#e5e5e5"/><rect x="17" y="5" width="25" height="2.5" rx="1" fill="#111" opacity=".8"/><rect x="17" y="9" width="18" height="2" rx="1" fill="#999"/><rect x="17" y="13" width="12" height="2.5" rx="1" fill="#10b981"/><rect x="3" y="18" width="12" height="12" rx="2" fill="#e5e5e5"/><rect x="17" y="19" width="25" height="2.5" rx="1" fill="#111" opacity=".8"/><rect x="17" y="23" width="18" height="2" rx="1" fill="#999"/><rect x="17" y="27" width="12" height="2.5" rx="1" fill="#10b981"/></> },
+      { id:"catalog-3",  name:"Glassmorphic",    desc:"Frosted glass cards with neon edges",      dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#1a1a2e"/><rect x="3" y="3" width="17" height="22" rx="4" fill="white" fillOpacity=".1" stroke="white" strokeWidth=".5" strokeOpacity=".2"/><rect x="22" y="3" width="17" height="22" rx="4" fill="white" fillOpacity=".1" stroke="white" strokeWidth=".5" strokeOpacity=".2"/><rect x="41" y="3" width="17" height="22" rx="4" fill="white" fillOpacity=".1" stroke="white" strokeWidth=".5" strokeOpacity=".2"/><rect x="4" y="27" width="14" height="2" rx="1" fill="white" opacity=".7"/><rect x="4" y="31" width="9" height="2" rx="1" fill="#10b981" opacity=".9"/></> },
+      { id:"catalog-4",  name:"Cyber Dark",      desc:"Charcoal panels with green neon trim",     dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#09090b"/><rect x="3" y="3" width="17" height="22" rx="3" fill="#18181b" stroke="#10b981" strokeWidth=".5" strokeOpacity=".3"/><rect x="22" y="3" width="17" height="22" rx="3" fill="#18181b" stroke="#10b981" strokeWidth=".5" strokeOpacity=".3"/><rect x="41" y="3" width="17" height="22" rx="3" fill="#18181b" stroke="#10b981" strokeWidth=".5" strokeOpacity=".3"/><rect x="4" y="27" width="14" height="2" rx="1" fill="#10b981" opacity=".8"/><rect x="4" y="31" width="9" height="2" rx="1" fill="#10b981" opacity=".5"/></> },
+      { id:"catalog-5",  name:"Swipe Carousel",  desc:"Horizontal scrollable cards",              dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#f8f8f8"/><rect x="3" y="6" width="15" height="28" rx="4" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="20" y="6" width="15" height="28" rx="4" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="37" y="6" width="15" height="28" rx="4" fill="white" stroke="#eee" strokeWidth=".5" opacity=".5"/><rect x="57" y="6" width="5" height="28" rx="2" fill="#e5e5e5" opacity=".5"/></> },
+      { id:"catalog-6",  name:"Spec Sheet",      desc:"Compact table-style product listing",      dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="6" width="55" height="7" rx="2" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="5" y="8" width="6" height="3" rx="1" fill="#e5e5e5"/><rect x="13" y="9" width="20" height="2" rx="1" fill="#111" opacity=".6"/><rect x="48" y="8" width="8" height="3" rx="1.5" fill="#10b981"/><rect x="3" y="15" width="55" height="7" rx="2" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="5" y="17" width="6" height="3" rx="1" fill="#e5e5e5"/><rect x="13" y="18" width="20" height="2" rx="1" fill="#111" opacity=".6"/></> },
+      { id:"catalog-7",  name:"Polaroid Retro",  desc:"Square photos with handwritten style",     dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#faf8f5"/><rect x="4" y="3" width="16" height="20" fill="white" stroke="#e5e5e5" strokeWidth="1"/><rect x="5" y="4" width="14" height="12" fill="#e5e5e5"/><rect x="5" y="18" width="14" height="2" rx=".5" fill="#888"/><rect x="22" y="5" width="16" height="18" fill="white" stroke="#e5e5e5" strokeWidth="1" transform="rotate(2 22 5)"/><rect x="23" y="6" width="14" height="10" fill="#e5e5e5" transform="rotate(2 22 5)"/></> },
+      { id:"catalog-8",  name:"Masonry Grid",    desc:"Asymmetric column masonry layout",         dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="3" width="17" height="26" rx="3" fill="#e5e5e5"/><rect x="22" y="3" width="17" height="16" rx="3" fill="#e5e5e5"/><rect x="22" y="21" width="17" height="12" rx="3" fill="#e5e5e5" opacity=".6"/><rect x="41" y="3" width="17" height="20" rx="3" fill="#e5e5e5" opacity=".8"/><rect x="41" y="25" width="17" height="8" rx="3" fill="#e5e5e5" opacity=".4"/></> },
+      { id:"catalog-9",  name:"Hover Reveal",    desc:"Details emerge only on hover",             dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#f1f5f9"/><rect x="3" y="3" width="17" height="22" rx="3" fill="#d0d0d0"/><rect x="22" y="3" width="17" height="22" rx="3" fill="#d0d0d0"/><rect x="22" y="17" width="17" height="8" rx="0" fill="rgba(0,0,0,.5)"/><rect x="24" y="19" width="12" height="2" rx="1" fill="white" opacity=".9"/><rect x="24" y="23" width="8" height="1.5" rx=".75" fill="#10b981"/><rect x="41" y="3" width="17" height="22" rx="3" fill="#d0d0d0"/></> },
+      { id:"catalog-10", name:"Brutalist",       desc:"Bold borders and offset shadow",           dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#fffbeb"/><rect x="3" y="3" width="16" height="21" rx="0" fill="white" stroke="black" strokeWidth="2"/><rect x="5" y="5" width="12" height="14" rx="0" fill="#e5e5e5"/><rect x="3" y="26" width="12" height="2.5" rx="0" fill="black"/><rect x="3" y="30" width="8" height="2.5" rx="0" fill="#10b981"/><rect x="23" y="3" width="16" height="21" rx="0" fill="white" stroke="black" strokeWidth="2"/><rect x="43" y="3" width="16" height="21" rx="0" fill="white" stroke="black" strokeWidth="2"/></> },
+    ],
+    about: [
+      { id:"about-1",  name:"Story Card",    desc:"Clean card with rich typography",         dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white" stroke="#eee" strokeWidth=".5"/><rect x="6" y="8" width="30" height="4" rx="2" fill="#111" opacity=".9"/><rect x="6" y="15" width="48" height="2" rx="1" fill="#999"/><rect x="6" y="19" width="44" height="2" rx="1" fill="#999" opacity=".7"/><rect x="6" y="23" width="36" height="2" rx="1" fill="#999" opacity=".5"/></> },
+      { id:"about-2",  name:"Center Quote",  desc:"Large italic centered brand quote",       dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="0" width="60" height="1" fill="#eee"/><rect x="0" y="39" width="60" height="1" fill="#eee"/><text x="30" y="14" textAnchor="middle" fill="#10b981" fontSize="8" opacity=".3">"</text><rect x="12" y="16" width="36" height="3" rx="1.5" fill="#111" opacity=".7"/><rect x="16" y="21" width="28" height="2" rx="1" fill="#999"/><rect x="18" y="25" width="24" height="2" rx="1" fill="#999" opacity=".7"/></> },
+      { id:"about-3",  name:"Split Color",   desc:"Contrast split-panel accent layout",      dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="0" width="25" height="40" rx="0" fill="#10b981" fillOpacity=".1"/><rect x="5" y="10" width="14" height="4" rx="2" fill="#10b981" opacity=".7"/><rect x="30" y="8" width="25" height="2.5" rx="1" fill="#999"/><rect x="30" y="13" width="22" height="2" rx="1" fill="#999" opacity=".7"/><rect x="30" y="18" width="18" height="2" rx="1" fill="#999" opacity=".5"/></> },
+      { id:"about-4",  name:"Pillars Grid",  desc:"3 core value columns layout",            dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="24" y="3" width="12" height="2.5" rx="1" fill="#111" opacity=".8"/><rect x="3" y="10" width="17" height="22" rx="3" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="22" y="10" width="17" height="22" rx="3" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="41" y="10" width="17" height="22" rx="3" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><text x="11.5" y="21" textAnchor="middle" fill="#10b981" fontSize="6" fontWeight="900" opacity=".7">01</text><text x="30.5" y="21" textAnchor="middle" fill="#10b981" fontSize="6" fontWeight="900" opacity=".7">02</text><text x="49.5" y="21" textAnchor="middle" fill="#10b981" fontSize="6" fontWeight="900" opacity=".7">03</text></> },
+      { id:"about-5",  name:"Cyber Block",   desc:"Dark monospaced terminal aesthetic",      dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#09090b"/><text x="5" y="10" fill="#10b981" fontSize="5">&gt; ABOUT_US</text><rect x="5" y="13" width="33" height="2" rx="1" fill="#3f3f46"/><rect x="5" y="17" width="28" height="2" rx="1" fill="#3f3f46" opacity=".7"/><rect x="5" y="21" width="33" height="2" rx="1" fill="#3f3f46" opacity=".5"/><rect x="42" y="13" width="13" height="15" fill="none" stroke="#3f3f46" strokeWidth=".5"/><text x="48.5" y="21" textAnchor="middle" fill="#10b981" fontSize="4">LIVE</text></> },
+      { id:"about-6",  name:"Frosted Float", desc:"Glassmorphic card with ambient glow",    dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#1a1a2e"/><circle cx="10" cy="10" r="12" fill="#10b981" opacity=".2" filter="blur(4px)"/><rect x="8" y="8" width="44" height="26" rx="6" fill="white" fillOpacity=".08" stroke="white" strokeWidth=".5" strokeOpacity=".2"/><rect x="12" y="12" width="20" height="3" rx="1.5" fill="white" opacity=".9"/><rect x="12" y="17" width="30" height="2" rx="1" fill="white" opacity=".4"/><rect x="12" y="21" width="26" height="2" rx="1" fill="white" opacity=".3"/></> },
+      { id:"about-7",  name:"Timeline",      desc:"Milestone history timeline display",      dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="15" y="3" width="1" height="35" fill="#e5e5e5"/><circle cx="15.5" cy="10" r="3" fill="#10b981"/><circle cx="15.5" cy="22" r="3" fill="#10b981" opacity=".5"/><circle cx="15.5" cy="34" r="3" fill="#10b981" opacity=".3"/><rect x="22" y="8" width="30" height="4" rx="2" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="22" y="20" width="30" height="4" rx="2" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/><rect x="22" y="32" width="30" height="4" rx="2" fill="#f8f8f8" stroke="#eee" strokeWidth=".5"/></> },
+      { id:"about-8",  name:"Brutalist",     desc:"Heavy black borders and oversized type",  dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#fff7ed"/><rect x="3" y="3" width="55" height="35" rx="0" fill="none" stroke="black" strokeWidth="2.5"/><rect x="5" y="6" width="15" height="5" rx="0" fill="#fde68a" stroke="black" strokeWidth="1.5"/><rect x="5" y="14" width="50" height="6" rx="0" fill="none"/><text x="6" y="20" fill="black" fontSize="7" fontWeight="900">DIRECTIVE.</text><rect x="5" y="22" width="50" height="1.5" fill="black"/></> },
+      { id:"about-9",  name:"Serif Strip",   desc:"Minimal editorial serif typography",      dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="4" width="60" height=".7" fill="#ddd"/><rect x="0" y="36" width="60" height=".7" fill="#ddd"/><rect x="5" y="10" width="18" height="3" rx="0" fill="#111" opacity=".9"/><rect x="5" y="15" width="16" height="2" rx="0" fill="#111" opacity=".5"/><rect x="28" y="10" width="26" height="2" rx="0" fill="#999"/><rect x="28" y="14" width="24" height="2" rx="0" fill="#999" opacity=".7"/><rect x="28" y="18" width="22" height="2" rx="0" fill="#999" opacity=".5"/></> },
+      { id:"about-10", name:"Aura Glow",     desc:"Pulsing rainbow gradient aura card",      dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><ellipse cx="30" cy="20" rx="28" ry="18" fill="none" stroke="url(#g1)" strokeWidth="1.5" opacity=".5"/><defs><linearGradient id="g1" x1="0" y1="0" x2="60" y2="40" gradientUnits="userSpaceOnUse"><stop stopColor="#10b981"/><stop offset=".5" stopColor="#6366f1"/><stop offset="1" stopColor="#a855f7"/></linearGradient></defs><rect x="12" y="14" width="36" height="4" rx="2" fill="#111" opacity=".9"/><rect x="16" y="21" width="28" height="2" rx="1" fill="#999"/></> },
+    ],
+    footer: [
+      { id:"footer-1",  name:"Branded Card",   desc:"Accent-tinted card with contact info",   dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#f0fdf4"/><rect x="3" y="4" width="54" height="32" rx="4" fill="#10b981" fillOpacity=".08" stroke="#10b981" strokeWidth=".5" strokeOpacity=".3"/><rect x="7" y="10" width="6" height="6" rx="1.5" fill="#10b981"/><rect x="15" y="11" width="16" height="3" rx="1.5" fill="#111" opacity=".8"/><rect x="15" y="15" width="10" height="1.5" rx=".75" fill="#999"/><rect x="35" y="10" width="18" height="1.5" rx=".75" fill="#999"/><rect x="35" y="13" width="14" height="1.5" rx=".75" fill="#999"/><rect x="35" y="16" width="16" height="1.5" rx=".75" fill="#999"/></> },
+      { id:"footer-2",  name:"Minimal Center", desc:"Centered logo + socials strip",          dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="2" width="60" height=".7" fill="#eee"/><rect x="20" y="10" width="20" height="4" rx="2" fill="#111" opacity=".8"/><rect x="25" y="17" width="10" height="2" rx="1" fill="#999"/><rect x="20" y="23" width="5" height="5" rx="2.5" fill="#10b981"/><rect x="27" y="23" width="5" height="5" rx="2.5" fill="#10b981" opacity=".7"/><rect x="34" y="23" width="5" height="5" rx="2.5" fill="#10b981" opacity=".5"/><rect x="22" y="31" width="16" height="1.5" rx=".75" fill="#ddd"/></> },
+      { id:"footer-3",  name:"Directory",      desc:"Multi-column links & brand footer",      dark:false, isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="4" width="12" height="3" rx="1.5" fill="#111" opacity=".8"/><rect x="3" y="9" width="10" height="1.5" rx=".75" fill="#999"/><rect x="3" y="12" width="10" height="1.5" rx=".75" fill="#999" opacity=".7"/><rect x="3" y="15" width="10" height="1.5" rx=".75" fill="#999" opacity=".5"/><rect x="22" y="4" width="10" height="2" rx="1" fill="#10b981" opacity=".5"/><rect x="22" y="9" width="10" height="1.5" rx=".75" fill="#999"/><rect x="22" y="12" width="8" height="1.5" rx=".75" fill="#999" opacity=".7"/><rect x="42" y="4" width="10" height="2" rx="1" fill="#10b981" opacity=".5"/><rect x="42" y="9" width="12" height="1.5" rx=".75" fill="#999"/><rect x="42" y="12" width="10" height="1.5" rx=".75" fill="#999" opacity=".7"/><rect x="0" y="30" width="60" height=".7" fill="#eee"/><rect x="3" y="33" width="20" height="1.5" rx=".75" fill="#ddd"/><rect x="38" y="33" width="20" height="1.5" rx=".75" fill="#ddd"/></> },
+      { id:"footer-4",  name:"Dark Panel",     desc:"Premium dark with accent directory",     dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#09090b"/><rect x="0" y="0" width="60" height="40" rx="6" stroke="#27272a" strokeWidth=".7" fill="none"/><rect x="4" y="5" width="6" height="6" rx="1.5" fill="#10b981"/><rect x="12" y="6" width="16" height="3" rx="1.5" fill="white" opacity=".9"/><rect x="4" y="14" width="14" height="1.5" rx=".75" fill="#52525b"/><rect x="4" y="17" width="12" height="1.5" rx=".75" fill="#52525b" opacity=".7"/><rect x="33" y="6" width="8" height="1.5" rx=".75" fill="#10b981" opacity=".6"/><rect x="33" y="10" width="20" height="1.5" rx=".75" fill="#52525b"/><rect x="33" y="13" width="18" height="1.5" rx=".75" fill="#52525b" opacity=".7"/><rect x="0" y="32" width="60" height=".7" fill="#27272a"/></> },
+      { id:"footer-5",  name:"Email Subscribe", desc:"Subscribe form embedded in footer",     dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="4" width="54" height="26" rx="4" fill="#10b981" fillOpacity=".06" stroke="#10b981" strokeWidth=".5" strokeOpacity=".3"/><rect x="18" y="8" width="24" height="3" rx="1.5" fill="#111" opacity=".8"/><rect x="22" y="13" width="16" height="2" rx="1" fill="#999"/><rect x="8" y="19" width="30" height="5" rx="2" fill="white" stroke="#ddd" strokeWidth=".7"/><rect x="40" y="19" width="13" height="5" rx="2" fill="#10b981"/></> },
+      { id:"footer-6",  name:"Glass Bar",      desc:"Frosted glass floating pill footer",     dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#0f172a"/><rect x="5" y="14" width="50" height="14" rx="5" fill="white" fillOpacity=".07" stroke="white" strokeWidth=".5" strokeOpacity=".2"/><rect x="9" y="18" width="5" height="5" rx="1.5" fill="#10b981"/><rect x="16" y="19" width="14" height="2.5" rx="1" fill="white" opacity=".8"/><rect x="35" y="18" width="5" height="5" rx="2.5" fill="#10b981" opacity=".7"/><rect x="42" y="18" width="5" height="5" rx="2.5" fill="#10b981" opacity=".5"/></> },
+      { id:"footer-7",  name:"Brutalist",      desc:"Massive name + bold rule lines",         dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="3" y="4" width="54" height="3" fill="black"/><rect x="3" y="11" width="40" height="6" rx="0" fill="none"/><text x="4" y="17" fill="black" fontSize="7" fontWeight="900">STORE NAME</text><rect x="3" y="21" width="30" height="1.5" fill="black" opacity=".2"/><rect x="3" y="36" width="54" height="1" fill="black" opacity=".1"/></> },
+      { id:"footer-8",  name:"Contact Badges", desc:"Pill badges for quick contact access",   dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="4" y="10" width="18" height="8" rx="4" fill="#f8f8f8" stroke="#eee" strokeWidth=".7"/><rect x="24" y="10" width="16" height="8" rx="4" fill="#f8f8f8" stroke="#eee" strokeWidth=".7"/><rect x="42" y="10" width="14" height="8" rx="4" fill="#f8f8f8" stroke="#eee" strokeWidth=".7"/><rect x="22" y="22" width="16" height="2.5" rx="1" fill="#111" opacity=".7"/><rect x="24" y="26" width="12" height="1.5" rx=".75" fill="#ddd"/></> },
+      { id:"footer-9",  name:"Cyber Terminal", desc:"Monospaced dark console telemetry",      dark:true,  isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#09090b"/><rect x="0" y="0" width="60" height="40" rx="6" stroke="#27272a" strokeWidth=".7" fill="none"/><text x="4" y="10" fill="#10b981" fontSize="4">&gt; ENTITY_ID</text><text x="4" y="15" fill="white" fontSize="5" fontWeight="900">STORE_NAME</text><text x="24" y="10" fill="#10b981" fontSize="4">&gt; CONTACT</text><text x="24" y="15" fill="#52525b" fontSize="3.5">email@store.com</text><text x="44" y="10" fill="#10b981" fontSize="4">&gt; SOCIAL</text><text x="44" y="15" fill="#52525b" fontSize="3.5">instagram</text><rect x="0" y="28" width="60" height=".5" fill="#27272a"/><text x="4" y="34" fill="#3f3f46" fontSize="3">SYS.YEAR: 2026</text></> },
+      { id:"footer-10", name:"Minimal Strip",  desc:"Single row copyright strip",             dark:false, isPro:true,  icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="white"/><rect x="0" y="17" width="60" height=".7" fill="#eee"/><rect x="4" y="20" width="18" height="2" rx="1" fill="#ccc"/><rect x="25" y="19" width="5" height="4" rx="2" fill="#10b981"/><rect x="32" y="19" width="5" height="4" rx="2" fill="#10b981" opacity=".7"/><rect x="39" y="19" width="5" height="4" rx="2" fill="#10b981" opacity=".5"/><rect x="47" y="20" width="10" height="2" rx="1" fill="#ccc"/></> },
+    ],
   };
+
+  const [previewModal, setPreviewModal] = React.useState<{ type: "hero" | "catalog" | "about" | "footer"; templateId: string } | null>(null);
+
+  const TemplateSelector = ({ type, current, onChange }: { type: "hero" | "catalog" | "about" | "footer"; current: string; onChange: (v: string) => void }) => {
+    const templates = TEMPLATE_META[type] || [];
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {templates.map(t => (
+          <div key={t.id} className="relative group">
+            <button
+              onClick={() => {
+                if (t.isPro && !isProUser) {
+                  addSystemNotification("Pro Feature", "This template is exclusively for PRO users.", "feedback");
+                  return;
+                }
+                onChange(t.id);
+              }}
+              className={cn(
+                "relative w-full p-0 rounded-2xl border-2 transition-all overflow-hidden group flex flex-col",
+                current === t.id
+                  ? "border-emerald-500 ring-2 ring-emerald-500/20"
+                  : "border-slate-100 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20"
+              )}
+            >
+              {/* Visual thumbnail */}
+              <div className={cn("w-full aspect-[3/2] flex items-center justify-center relative overflow-hidden", t.dark ? "bg-zinc-950" : "bg-slate-50")}>
+                <svg viewBox="0 0 60 40" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                  {t.icon}
+                </svg>
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
+                {/* Selected checkmark */}
+                {current === t.id && (
+                  <div className="absolute top-1.5 left-1.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                )}
+                {/* Pro badge */}
+                {t.isPro && !isProUser && (
+                  <div className="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md">PRO</div>
+                )}
+              </div>
+              {/* Label */}
+              <div className={cn("px-2 py-2 text-left", current === t.id ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-white dark:bg-zinc-900")}>
+                <p className={cn("text-[9px] font-black uppercase tracking-wider truncate", current === t.id ? "text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-zinc-400")}>{t.name}</p>
+              </div>
+            </button>
+            {/* Preview eye button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setPreviewModal({ type, templateId: t.id }); }}
+              className="absolute bottom-[2.2rem] right-1.5 w-6 h-6 bg-black/70 hover:bg-black/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+              title="Live Preview"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ─── Live Preview Modal ──────────────────────────────────────────
+  const LivePreviewModal = () => {
+    if (!previewModal) return null;
+    const { type, templateId } = previewModal;
+    const meta = TEMPLATE_META[type]?.find(t => t.id === templateId);
+    const isPro = meta?.isPro ?? false;
+
+    const mockState = {
+      ...localState,
+      heroTitle: localState.heroTitle || localState.bizName || "Premium Collection",
+      heroSubtitle: localState.heroSubtitle || "Crafted for those who value quality and aesthetic above all else.",
+      heroButtonText: localState.heroButtonText || "Shop Now",
+      aboutUs: localState.aboutUs || "We are a passionate team dedicated to bringing you the finest products with unmatched customer service and same-day delivery options.",
+      currency: localState.currency || "₦",
+    };
+
+    const SECTION_LABEL: Record<string, string> = {
+      hero: "Hero Section",
+      catalog: "Catalogue Section",
+      about: "About Us Section",
+      footer: "Footer Section",
+    };
+
+    return (
+      <div
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+        onClick={() => setPreviewModal(null)}
+      >
+        <div
+          className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-zinc-950 rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-white/5 shrink-0">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{SECTION_LABEL[type]} Preview</p>
+              <h3 className="text-base font-black text-gray-900 dark:text-white uppercase">{meta?.name || templateId}</h3>
+              {meta?.desc && <p className="text-xs text-gray-400 mt-0.5">{meta.desc}</p>}
+            </div>
+            <button
+              onClick={() => setPreviewModal(null)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-all"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Preview area */}
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-zinc-900">
+            {isPro && !isProUser ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
+                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-2xl flex items-center justify-center text-3xl">🔒</div>
+                <h4 className="font-black text-gray-900 dark:text-white uppercase">Pro Template</h4>
+                <p className="text-sm text-gray-400 max-w-xs">Upgrade to SwiftLink Pro to unlock this template and 20+ other premium designs.</p>
+                <button className="px-6 py-3 bg-amber-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-amber-400 transition-colors">
+                  Upgrade to Pro
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden border border-black/[0.04] dark:border-white/5 shadow-sm bg-white dark:bg-black">
+                {/* Render different template previews */}
+                {type === "hero" && (
+                  <div className="text-xs text-center text-gray-400 py-3 border-b border-black/[0.04] dark:border-white/5">
+                    Live preview — hero section with your store settings
+                  </div>
+                )}
+                <div className={cn("p-4", type === "footer" && "bg-white dark:bg-zinc-950")}>
+                  <CustomerStorefrontPreview type={type} templateId={templateId} state={mockState as any} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-black/[0.06] dark:border-white/5 shrink-0 bg-white dark:bg-zinc-950">
+            <button
+              onClick={() => setPreviewModal(null)}
+              className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-gray-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Close
+            </button>
+            <button
+              disabled={isPro && !isProUser}
+              onClick={() => {
+                if (isPro && !isProUser) {
+                  addSystemNotification("Pro Feature", "This template is exclusively for PRO users.", "feedback");
+                  return;
+                }
+                const fieldMap: Record<"hero" | "catalog" | "about" | "footer", keyof ShopState> = { hero: "heroTemplateId", catalog: "catalogTemplateId", about: "aboutTemplateId", footer: "footerTemplateId" };
+                updateLocalState(fieldMap[type], templateId);
+                setPreviewModal(null);
+              }}
+              className={cn(
+                "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white transition-all",
+                isPro && !isProUser
+                  ? "bg-amber-400 cursor-not-allowed"
+                  : "bg-emerald-500 hover:bg-emerald-400 active:scale-95"
+              )}
+            >
+              {isPro && !isProUser ? "🔒 Pro Only" : "✓ Apply Design"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   return (
     <div className="pb-32 font-sans bg-slate-50/50 dark:bg-black min-h-screen transition-colors duration-300">
+      <LivePreviewModal />
       
       {/* FLOATING SAVE BUTTON — CSS only, no mount/unmount = no layout reflow = no keyboard snap */}
       <div
@@ -653,9 +841,9 @@ export function BusinessView() {
                                     </label>
                                 </div>
                                 <div className="space-y-3">
-                                    <input value={localState.heroTitle || ""} onChange={e => updateLocalState("heroTitle", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-black text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5" placeholder="Welcome to our store" />
-                                    <input value={localState.heroSubtitle || ""} onChange={e => updateLocalState("heroSubtitle", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Quality products, delivered" />
-                                    <input value={localState.heroButtonText || ""} onChange={e => updateLocalState("heroButtonText", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Shop Now" />
+                                    <StableInput value={localState.heroTitle || ""} onChange={(v) => updateLocalState("heroTitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-black text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5" placeholder="Welcome to our store" />
+                                    <StableInput value={localState.heroSubtitle || ""} onChange={(v) => updateLocalState("heroSubtitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Quality products, delivered" />
+                                    <StableInput value={localState.heroButtonText || ""} onChange={(v) => updateLocalState("heroButtonText", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Shop Now" />
                                 </div>
                             </div>
                         </div>
@@ -670,9 +858,9 @@ export function BusinessView() {
                     <div className="space-y-6">
                         <TemplateSelector type="about" current={localState.aboutTemplateId || "about-1"} onChange={(v) => updateLocalState("aboutTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">About Content</h4>
-                            <textarea value={localState.aboutUs || ""} onChange={e => updateLocalState("aboutUs", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none h-32 border border-slate-100" placeholder="Write your brand story here..." />
-                        </div>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">About Content</h4>
+                                    <StableTextarea value={localState.aboutUs || ""} onChange={(v) => updateLocalState("aboutUs", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none h-32 border border-slate-100" placeholder="Write your brand story here..." />
+                                </div>
                     </div>
                 </Accordion>
 
@@ -680,9 +868,9 @@ export function BusinessView() {
                     <div className="space-y-6">
                         <TemplateSelector type="footer" current={localState.footerTemplateId || "footer-1"} onChange={(v) => updateLocalState("footerTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Footer Content</h4>
-                            <input value={localState.tagline || ""} onChange={e => updateLocalState("tagline", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 border border-slate-100" placeholder="Premium Products Tagline" />
-                        </div>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Footer Content</h4>
+                                    <StableInput value={localState.tagline || ""} onChange={(v) => updateLocalState("tagline", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 border border-slate-100" placeholder="Premium Products Tagline" />
+                                </div>
                     </div>
                 </Accordion>
             </motion.div>

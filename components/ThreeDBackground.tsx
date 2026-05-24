@@ -10,11 +10,13 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
         if (!containerRef.current) return;
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.1, 1000);
+        const initialWidth = containerRef.current.clientWidth || 800;
+        const initialHeight = containerRef.current.clientHeight || 550;
+        const camera = new THREE.PerspectiveCamera(75, initialWidth / initialHeight, 0.1, 1000);
         camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        renderer.setSize(initialWidth, initialHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         containerRef.current.appendChild(renderer.domElement);
 
@@ -233,15 +235,26 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
 
         const handleResize = () => {
             if (!containerRef.current) return;
-            camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+            const w = containerRef.current.clientWidth || 800;
+            const h = containerRef.current.clientHeight || 550;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+            renderer.setSize(w, h);
         };
         window.addEventListener('resize', handleResize);
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => {
+                handleResize();
+            });
+            resizeObserver.observe(containerRef.current);
+        }
 
         return () => {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('resize', handleResize);
+            if (resizeObserver) resizeObserver.disconnect();
             cancelAnimationFrame(animationFrameId);
             
             // Extensive ThreeJS cleanup
@@ -261,6 +274,6 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
     }, [type, accentColor]);
 
     return (
-        <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen" />
+        <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />
     );
 }

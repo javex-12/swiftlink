@@ -23,6 +23,8 @@ import {
   ChevronUp,
   ChevronDown as ChevronDownIcon,
   type LucideIcon,
+  Zap,
+  Shield,
 } from "lucide-react";
 import { CustomerStorefront } from "./CustomerStorefront";
 import type { PageSection, SectionType } from "@/lib/schema";
@@ -703,7 +705,8 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
                         )}
                     </AnimatePresence>
                   </button>
-                ))}
+                );
+              })}
                 
                 {/* Community / Code Hook */}
                 <button 

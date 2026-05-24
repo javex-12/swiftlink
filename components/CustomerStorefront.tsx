@@ -18,12 +18,25 @@ import {
   Home, 
   ArrowRight,
   CheckCircle2,
-  Globe
+  Globe,
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase-client";
 import type { ShopState, Product } from "@/lib/types";
 import * as THREE from "three";
+import dynamic from "next/dynamic";
+
+const ThreeDBackground = dynamic(
+  () => import("./ThreeDBackground").then((m) => m.ThreeDBackground),
+  { ssr: false }
+);
+
+const SocialHub = dynamic(
+  () => import("./SocialHub").then((m) => m.SocialHub),
+  { ssr: false }
+);
+
 
 // ==========================================
 // TEMPLATE ENGINE COMPONENTS
@@ -204,7 +217,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
     // Hero-1: Cinematic dark with animated orbs & glassmorphism
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10" style={{ minHeight: 420, background: "#050505" }}>
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 450, background: "#050505" }}>
                 {/* Animated background orbs */}
                 <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
                     <div style={{ position:"absolute", top:"-20%", right:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, animation:"pulse 6s ease-in-out infinite" }} />
@@ -214,18 +227,18 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 {/* Subtle grid lines */}
                 <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
                 {/* Content */}
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"3rem 2.5rem", minHeight:420 }}>
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"3.5rem 3rem", minHeight:450 }}>
                     <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.05)", backdropFilter:"blur(12px)", fontSize:10, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.6)", width:"fit-content", marginBottom:24 }}>
                         <span style={{ width:6, height:6, borderRadius:"50%", background:accent, display:"inline-block" }} />
                         {state.bizName || "New Collection"}
                     </div>
-                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:900, lineHeight:1.02, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1rem 0", fontStyle:"italic" }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.02, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1rem 0", fontStyle:"italic", textTransform:"uppercase" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.45)", fontWeight:400, maxWidth:480, lineHeight:1.7, margin:"0 0 2rem 0" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }}>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95">
                         {btnText}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
@@ -238,7 +251,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
     // Hero-2: Full-bleed image with editorial dark overlay
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10" style={{ minHeight: 500 }}>
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-xl" style={{ minHeight: 500 }}>
                 <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
                 <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
                 {/* Accent color bar */}
@@ -253,7 +266,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                     <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:420, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }}>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }} className="hover:scale-105 active:scale-95 transition-transform">
                         {btnText}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
@@ -265,23 +278,23 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
     // Hero-3: Light editorial magazine style
     if (templateId === "hero-3") {
         return (
-            <div className="relative w-full rounded-[2rem] overflow-hidden mb-10 bg-white" style={{ minHeight: 400 }}>
-                <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:400 }}>
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm" style={{ minHeight: 420 }}>
+                <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:420 }}>
                     {/* Top bar */}
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:"#aaa" }}>{state.bizName}</span>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:"#aaa" }}>New Collection</span>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:"#999" }}>{state.bizName}</span>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:"#999" }}>New Season</span>
                     </div>
                     {/* Main content */}
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3rem 2.5rem" }}>
-                        <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.04em", color:"#0a0a0a", margin:"0 0 1.5rem 0" }}>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3.5rem 2.5rem" }}>
+                        <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#0a0a0a", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                             {title}
                         </h1>
                         <div style={{ display:"flex", alignItems:"center", gap:"2rem", flexWrap:"wrap" }}>
-                            <p style={{ fontSize:"0.95rem", color:"#888", fontWeight:400, maxWidth:360, lineHeight:1.7, margin:0 }}>
+                            <p style={{ fontSize:"0.95rem", color:"#666", fontWeight:400, maxWidth:360, lineHeight:1.7, margin:0 }}>
                                 {subtitle}
                             </p>
-                            <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }}>
+                            <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }} className="hover:scale-105 active:scale-95 transition-transform">
                                 {btnText} →
                             </button>
                         </div>
@@ -294,50 +307,183 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
         );
     }
 
-    // Hero-4: Premium 3D Morphing Wireframe (The User's HTML request)
+    // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
     if (templateId === "hero-4") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10" style={{ minHeight: 600, background: "#050505" }}>
-                <Hero4Wireframe accent={accent} />
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#020205" }}>
+                <ThreeDBackground type={1} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(2,2,5,0.9) 30%, rgba(2,2,5,0.4) 60%, transparent 100%)", zIndex: 5 }} />
                 
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:600, maxWidth: 800 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.03)", backdropFilter:"blur(10px)", fontSize:10, fontWeight:600, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.6)", width:"fit-content", marginBottom:24 }}>
-                        Next-Gen Collection 2024
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 650 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:8, border:`1px solid ${accent}44`, background:`${accent}11`, fontSize:9, fontWeight:800, letterSpacing:"0.25em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:24 }}>
+                        🔒 Luxury Node Active
                     </div>
-                    <h1 style={{ fontSize:"clamp(3rem,8vw,6rem)", fontWeight:900, lineHeight:1, letterSpacing:"-0.03em", color:"transparent", backgroundImage:"linear-gradient(to right, #ffffff, #a1a1a1)", WebkitBackgroundClip:"text", margin:"0 0 1.5rem 0" }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:300, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:460, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#000000", fontWeight:800, fontSize:12, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95 group">
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
-                        <svg className="transition-transform group-hover:translate-x-1" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        <svg className="transition-transform group-hover:translate-x-1" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Hero-5: Premium 3D Particle Cloud
+    // Hero-5: Cyber Grid Floor (3D Canvas - No Image Required)
     if (templateId === "hero-5") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 flex items-center justify-center text-center" style={{ minHeight: 600, background: "#000000" }}>
-                <Hero5Particles accent={accent} />
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
+                <ThreeDBackground type={2} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050b0a 10%, rgba(5,11,10,0.5) 100%)", zIndex: 5 }} />
                 
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", padding:"4rem 3rem", minHeight:600, justifyContent:"center" }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:8, border:`1px solid ${accent}44`, background:`${accent}11`, backdropFilter:"blur(10px)", fontSize:10, fontWeight:800, letterSpacing:"0.25em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32 }}>
-                        {state.bizName || "The Future"}
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.4)", backdropFilter:"blur(12px)", fontSize:10, fontWeight:700, letterSpacing:"0.3em", textTransform:"uppercase", color:"#ffffff", width:"fit-content", marginBottom:28 }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background:accent, display:"inline-block" }} className="animate-ping" />
+                        Hyper commerce grid
                     </div>
-                    <h1 style={{ fontSize:"clamp(3rem,8vw,6.5rem)", fontWeight:900, lineHeight:1.05, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textShadow: `0 0 40px ${accent}88` }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"transparent", backgroundImage:`linear-gradient(135deg, #ffffff, ${accent})`, WebkitBackgroundClip:"text", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:400, maxWidth:600, lineHeight:1.6, marginBottom:"3rem" }}>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", transition:"all 0.3s", boxShadow:`0 20px 40px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 group">
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 44px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:"0 20px 40px -15px rgba(255,255,255,0.3)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-6: Cosmic Particles Universe (3D Canvas - No Image Required)
+    if (templateId === "hero-6") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl" style={{ minHeight: 580, background: "#000000" }}>
+                <ThreeDBackground type={5} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.85) 90%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:580 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:12, border:`1px solid ${accent}33`, background:`${accent}08`, fontSize:9, fontWeight:800, letterSpacing:"0.3em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32, textShadow:`0 0 10px ${accent}44` }}>
+                        ✨ Cosmic Particles V2
+                    </div>
+                    <h1 style={{ fontSize:"clamp(3rem,9vw,6rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 50px ${accent}44` }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:300, maxWidth:600, lineHeight:1.6, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", boxShadow:`0 25px 50px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <svg className="transition-transform group-hover:translate-x-2" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-7: DNA Matrix Helix (3D Canvas - No Image Required)
+    if (templateId === "hero-7") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#03020c" }}>
+                <ThreeDBackground type={8} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #03020c 45%, rgba(3,2,12,0.6) 80%, transparent 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 650 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.06)", background:"rgba(255,255,255,0.02)", backdropFilter:"blur(8px)", fontSize:9, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.5)", width:"fit-content", marginBottom:24 }}>
+                        Organic tech structure
+                    </div>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:460, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#03020c", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.2)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <ArrowRight size={16} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-8: Futuristic Starfield Warp (3D Canvas - No Image Required)
+    if (templateId === "hero-8") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#000000" }}>
+                <ThreeDBackground type={9} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(135deg, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0.5) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 700 }}>
+                    <p style={{ fontSize:11, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:accent, marginBottom:16, textShadow:`0 0 10px ${accent}44` }}>
+                        Warp Speed Delivery
+                    </p>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"oblique" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 38px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 transition-transform">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-9: Oceanic Wave Mesh (3D Canvas - No Image Required)
+    if (templateId === "hero-9") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050811" }}>
+                <ThreeDBackground type={7} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050811 15%, rgba(5,8,17,0.4) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:9999, border:`1px solid ${accent}22`, background:"rgba(0,0,0,0.6)", fontSize:9, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:24 }}>
+                        Fluid Dynamics Active
+                    </div>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#050811", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.15)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <ArrowRight size={14} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-10: Neon Rings Tunnel (3D Canvas - No Image Required)
+    if (templateId === "hero-10") {
+        return (
+            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 560, background: "#0a000f" }}>
+                <ThreeDBackground type={10} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle, transparent 20%, #0a000f 90%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:560 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 18px", borderRadius:9999, border:`1px solid ${accent}55`, background:`${accent}11`, fontSize:10, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32, textShadow:`0 0 8px ${accent}66` }}>
+                        Cybernetic Portal Active
+                    </div>
+                    <h1 style={{ fontSize:"clamp(2.8rem,8.5vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 40px ${accent}aa` }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.65)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
                     </button>
                 </div>
             </div>
@@ -350,26 +496,189 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
 
 
 const CatalogTemplate = ({ state, templateId, products, onProductClick }: { state: ShopState, templateId: string, products: Product[], onProductClick: (p: Product) => void }) => {
-    
+    const accent = state.accentColor || "#10b981";
+
     // Template 2: Magazine List
     if (templateId === "catalog-2") {
         return (
             <div className="space-y-6">
                 {products.map(p => (
-                    <button key={p.id} onClick={() => onProductClick(p)} className="w-full flex items-center gap-6 p-4 rounded-[2rem] bg-white shadow-sm hover:shadow-xl transition-all group text-left border border-black/[0.02]">
-                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-[1.5rem] overflow-hidden bg-gray-50 shrink-0 relative">
-                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 bg-white px-2 py-1 rounded-md shadow-sm">Sold Out</span></div>}
+                    <button key={p.id} onClick={() => onProductClick(p)} className="w-full flex items-center gap-6 p-4 rounded-[2rem] bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all group text-left border border-black/[0.02] dark:border-white/5">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-[1.5rem] overflow-hidden bg-gray-50 dark:bg-zinc-800 shrink-0 relative">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-2 py-1 rounded-md shadow-sm">Sold Out</span></div>}
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                {p.badge === "hot" && <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 px-2 py-0.5 rounded">Hot</span>}
-                                {p.badge === "new" && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">New</span>}
+                                {p.badge === "hot" && <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded">Hot</span>}
+                                {p.badge === "new" && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded">New</span>}
                             </div>
-                            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight">{p.name}</h3>
+                            <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white leading-tight">{p.name}</h3>
                             <p className="text-xs text-gray-400 mt-1 line-clamp-2">{p.description}</p>
-                            <p className="text-lg md:text-xl font-black text-emerald-600 mt-3">{state.currency}{Number(p.price).toLocaleString()}</p>
+                            <p className="text-lg md:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-3">{state.currency}{Number(p.price).toLocaleString()}</p>
                         </div>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 3: Glassmorphic Cards
+    if (templateId === "catalog-3") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group rounded-[2rem] p-4 bg-white/10 dark:bg-white/[0.03] backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-xl hover:bg-white/20 dark:hover:bg-white/5 transition-all">
+                        <div className="w-full aspect-[4/5] rounded-[1.5rem] overflow-hidden bg-white/5 shadow-inner mb-4 relative">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[10px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl">Sold Out</span></div>}
+                        </div>
+                        <h3 className="font-black text-sm md:text-base text-gray-900 dark:text-white truncate px-1">{p.name}</h3>
+                        <p className="font-bold text-[10px] md:text-xs text-gray-400 mt-1 px-1 line-clamp-1">{p.description}</p>
+                        <p className="font-black text-sm md:text-lg text-emerald-600 dark:text-emerald-400 mt-2 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 4: Cyber Dark Cards
+    if (templateId === "catalog-4") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group p-3 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] transition-all">
+                        <div className="w-full aspect-[4/5] rounded-xl overflow-hidden mb-3 relative bg-zinc-900 border border-zinc-800">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-black/70 flex items-center justify-center"><span className="text-[8px] font-black uppercase text-white bg-red-600/90 px-3 py-1.5 rounded tracking-widest border border-red-500">Out of Stock</span></div>}
+                        </div>
+                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest px-1">Node // Code 0{p.id % 9}</span>
+                        <h3 className="font-black text-xs md:text-sm text-white truncate px-1 mt-1">{p.name}</h3>
+                        <p className="font-bold text-[10px] text-zinc-500 mt-0.5 px-1 truncate">{p.description}</p>
+                        <p className="font-black text-xs md:text-base text-emerald-400 mt-2 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 5: Compact Swipe Carousel
+    if (templateId === "catalog-5") {
+        return (
+            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 scroll-smooth snap-x snap-mandatory">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="w-[180px] md:w-[240px] shrink-0 text-left group snap-start">
+                        <div className="w-full aspect-[3/4] rounded-[2rem] overflow-hidden bg-white dark:bg-zinc-900 shadow-sm mb-3 relative border border-black/[0.02] dark:border-white/5 group-hover:shadow-md transition-all">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-lg">Sold Out</span></div>}
+                        </div>
+                        <h3 className="font-black text-xs md:text-sm text-gray-900 dark:text-white truncate px-1">{p.name}</h3>
+                        <p className="font-black text-xs md:text-sm text-emerald-600 dark:text-emerald-400 mt-1 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 6: Detailed Table Spec Sheet
+    if (templateId === "catalog-6") {
+        return (
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-black/[0.04] dark:border-white/5 shadow-sm">
+                <div className="divide-y divide-black/[0.04] dark:divide-white/5">
+                    {products.map(p => (
+                        <div key={p.id} className="flex items-center justify-between p-4 gap-4 hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-zinc-800">
+                                    <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="font-black text-xs md:text-sm text-gray-900 dark:text-white uppercase truncate">{p.name}</h4>
+                                    <p className="text-[10px] text-gray-400 truncate max-w-[200px] md:max-w-xs">{p.description}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="font-black text-xs md:text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{state.currency}{Number(p.price).toLocaleString()}</span>
+                                <button onClick={() => onProductClick(p)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-emerald-500 dark:hover:bg-emerald-400 hover:text-white dark:hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors shrink-0">
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Template 7: Polaroid Retro
+    if (templateId === "catalog-7") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-10 bg-[#faf8f5] dark:bg-zinc-950 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col bg-white dark:bg-zinc-900 p-4 shadow-md border border-stone-100 dark:border-zinc-800 hover:rotate-1 hover:scale-102 transition-all">
+                        <div className="w-full aspect-square overflow-hidden bg-stone-100 mb-4 relative">
+                            <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/75 dark:bg-black/75 flex items-center justify-center"><span className="text-[10px] font-black text-red-600 border-2 border-red-600 px-2 py-1 rotate-12 uppercase">Sold Out</span></div>}
+                        </div>
+                        <h3 className="font-black text-xs md:text-sm text-stone-850 dark:text-white italic tracking-tight">{p.name}</h3>
+                        <p className="font-serif text-[10px] text-stone-400 mt-1 italic leading-tight truncate">{p.description}</p>
+                        <p className="font-black text-xs md:text-base text-stone-800 dark:text-stone-300 mt-3 text-right">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 8: Asymmetric Masonry
+    if (templateId === "catalog-8") {
+        return (
+            <div className="columns-2 md:columns-3 gap-4 space-y-4">
+                {products.map((p, idx) => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="break-inside-avoid w-full flex flex-col text-left group bg-white dark:bg-zinc-905 rounded-[2rem] p-4 border border-black/[0.02] dark:border-white/5 hover:shadow-xl transition-all">
+                        <div className={`w-full rounded-[1.5rem] overflow-hidden mb-4 relative ${idx % 3 === 0 ? "aspect-[4/5]" : idx % 3 === 1 ? "aspect-square" : "aspect-[3/4]"}`}>
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-905 dark:text-white bg-white dark:bg-zinc-800 px-3 py-1 rounded">Sold Out</span></div>}
+                        </div>
+                        <h3 className="font-black text-sm text-gray-900 dark:text-white truncate px-1">{p.name}</h3>
+                        <p className="font-black text-sm text-emerald-600 dark:text-emerald-400 mt-1 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 9: Hover Reveal Cards
+    if (templateId === "catalog-9") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group relative overflow-hidden rounded-[2rem] aspect-[4/5] bg-slate-100 dark:bg-zinc-800">
+                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                        
+                        <div className="absolute inset-0 flex flex-col justify-end p-5 z-10 transition-transform duration-500 translate-y-3 group-hover:translate-y-0">
+                            <h3 className="font-black text-base text-white truncate">{p.name}</h3>
+                            <p className="font-medium text-[10px] text-white/60 line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-0.5">{p.description}</p>
+                            <p className="font-black text-base text-emerald-400 mt-2">{state.currency}{Number(p.price).toLocaleString()}</p>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 10: Brutalist Poster
+    if (templateId === "catalog-10") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group bg-yellow-100/10 dark:bg-zinc-900 border-[3px] border-black dark:border-white p-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-[0_0_0_0_#000] dark:hover:shadow-[0_0_0_0_#fff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all">
+                        <div className="w-full aspect-[4/5] border-2 border-black dark:border-white overflow-hidden mb-3 relative">
+                            <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/90 dark:bg-black/90 flex items-center justify-center border-b-2 border-black dark:border-white"><span className="text-[11px] font-black uppercase text-black dark:text-white border-2 border-black dark:border-white px-3 py-1">SOLD OUT</span></div>}
+                        </div>
+                        <h3 className="font-black text-xs md:text-sm text-gray-900 dark:text-white uppercase tracking-tight">{p.name}</h3>
+                        <p className="font-black text-xs md:text-lg text-emerald-600 dark:text-emerald-400 mt-1">{state.currency}{Number(p.price).toLocaleString()}</p>
                     </button>
                 ))}
             </div>
@@ -381,8 +690,8 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {products.map(p => (
                 <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group">
-                    <div className="w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-sm mb-4 relative border border-black/[0.02] group-hover:shadow-xl transition-all">
-                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div className="w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-white dark:bg-zinc-905 shadow-sm mb-4 relative border border-black/[0.02] dark:border-white/5 group-hover:shadow-xl transition-all">
+                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
                         
                         {/* Badges */}
                         <div className="absolute top-3 left-3 flex flex-col gap-1">
@@ -392,14 +701,14 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
                         </div>
 
                         {p.outOfStock && (
-                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-900 bg-white px-4 py-2 rounded-xl shadow-lg">Sold Out</span>
+                            <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl shadow-lg">Sold Out</span>
                             </div>
                         )}
                     </div>
-                    <h3 className="font-black text-sm md:text-lg text-gray-900 truncate px-1">{p.name}</h3>
+                    <h3 className="font-black text-sm md:text-lg text-gray-905 dark:text-white truncate px-1">{p.name}</h3>
                     <p className="font-bold text-xs md:text-sm text-gray-400 mt-1 px-1 line-clamp-1">{p.description}</p>
-                    <p className="font-black text-sm md:text-xl text-emerald-600 mt-2 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    <p className="font-black text-sm md:text-xl text-emerald-600 dark:text-emerald-400 mt-2 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
                 </button>
             ))}
         </div>
@@ -407,24 +716,183 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
 };
 
 const AboutTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
-    if (!state.aboutUs) return null;
+    const aboutText = state.aboutUs || "Welcome to our store! We are dedicated to providing the highest quality products and exceptional customer service. Explore our collection and discover curated items tailored just for you.";
+    const accent = state.accentColor || "#10b981";
 
-    // Template 2: Centered Elegant
+    // Template 2: Centered Elegant Quote
     if (templateId === "about-2") {
         return (
-            <div className="py-20 text-center max-w-3xl mx-auto border-y border-black/[0.05] my-20">
+            <div className="py-20 text-center max-w-3xl mx-auto border-y border-black/[0.05] dark:border-white/5 my-20">
                 <Zap size={32} className="text-emerald-500 mx-auto mb-6 opacity-20" />
-                <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-[0.2em] mb-8">The Brand</h2>
-                <p className="text-lg md:text-2xl text-gray-600 font-medium leading-relaxed italic">&quot;{state.aboutUs}&quot;</p>
+                <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-8">The Brand</h2>
+                <p className="text-lg md:text-2xl text-gray-600 dark:text-zinc-300 font-medium leading-relaxed italic">&quot;{aboutText}&quot;</p>
+            </div>
+        );
+    }
+
+    // Template 3: Split Color Pane
+    if (templateId === "about-3") {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 rounded-[2.5rem] overflow-hidden my-20 shadow-lg border border-black/[0.02] dark:border-white/5 bg-white dark:bg-zinc-900">
+                <div className="p-8 md:p-16 flex flex-col justify-center" style={{ backgroundColor: `${accent}10` }}>
+                    <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.25em] mb-4">Established</span>
+                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white italic uppercase tracking-tighter leading-none mb-4">Our Roots</h2>
+                    <div className="w-12 h-1 rounded-full" style={{ backgroundColor: accent }} />
+                </div>
+                <div className="p-8 md:p-16 flex items-center bg-white dark:bg-zinc-900">
+                    <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400 font-medium leading-relaxed">{aboutText}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 4: Core Pillars Grid
+    if (templateId === "about-4") {
+        return (
+            <div className="my-20 space-y-10">
+                <div className="text-center max-w-2xl mx-auto">
+                    <h2 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Our Philosophy</h2>
+                    <p className="text-xs text-emerald-500 font-bold uppercase tracking-widest mt-2">Built on three core pillars</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                        { title: "Authenticity", desc: "Every product is selected with a direct connection to genuine, verifiable origins." },
+                        { title: "Craftsmanship", desc: "We focus on premium finishes, high durability materials, and strict tolerances." },
+                        { title: "Active Support", desc: "Real humans responding on WhatsApp, guiding you from dispatch to delivery." }
+                    ].map((pillar, i) => (
+                        <div key={i} className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 border border-black/[0.02] dark:border-white/5 shadow-sm">
+                            <span className="text-2xl font-black text-emerald-500">0{i+1}</span>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white mt-4 uppercase">{pillar.title}</h3>
+                            <p className="text-xs text-gray-500 mt-2 leading-relaxed">{pillar.desc}</p>
+                        </div>
+                    ))}
+                </div>
+                <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 border border-black/[0.02] dark:border-white/5 text-center shadow-sm">
+                    <p className="text-sm text-gray-600 dark:text-zinc-400 leading-relaxed font-medium max-w-3xl mx-auto">{aboutText}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 5: Cyber Grid Block
+    if (templateId === "about-5") {
+        return (
+            <div className="my-20 bg-black/40 border border-zinc-800 p-8 md:p-12 rounded-3xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 font-mono text-[8px] text-zinc-650 dark:text-zinc-600 uppercase">// node_identity // active</div>
+                <h2 className="font-mono text-emerald-500 text-xs uppercase tracking-widest mb-6">&gt; ABOUT_US_PROTOCOL</h2>
+                <div className="grid md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 space-y-4">
+                        <p className="font-mono text-zinc-350 text-xs md:text-sm leading-relaxed">&gt; {aboutText}</p>
+                    </div>
+                    <div className="border-l border-zinc-800 pl-6 flex flex-col justify-between py-2">
+                        <div className="font-mono text-[10px] text-zinc-500 uppercase">
+                            Status: <span className="text-emerald-500">Optimal</span><br/>
+                            Nodes: <span className="text-white">Active</span><br/>
+                            Currency: <span className="text-white">{state.currency}</span>
+                        </div>
+                        <div className="font-mono text-[8px] text-zinc-600 uppercase mt-4">SYS.LOC: Global Terminal</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 6: Frosted Glass Float
+    if (templateId === "about-6") {
+        return (
+            <div className="my-20 bg-white/10 dark:bg-white/[0.02] backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-[3rem] p-8 md:p-16 shadow-2xl relative">
+                <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full blur-[60px]" style={{ backgroundColor: `${accent}33` }} />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full blur-[60px]" style={{ backgroundColor: `${accent}22` }} />
+                <div className="relative z-10 max-w-3xl">
+                    <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.3em] mb-4 block">The Vision</span>
+                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-6">Designed For Excellence</h2>
+                    <p className="text-sm md:text-base text-gray-700 dark:text-zinc-300 font-medium leading-relaxed">{aboutText}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 7: Milestone Timeline
+    if (templateId === "about-7") {
+        return (
+            <div className="my-20 space-y-12">
+                <div className="text-center max-w-2xl mx-auto">
+                    <h2 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Our Timeline</h2>
+                    <p className="text-xs text-emerald-500 font-bold uppercase tracking-widest mt-2">A legacy of constant evolution</p>
+                </div>
+                <div className="relative border-l-2 border-slate-100 dark:border-zinc-800 ml-4 md:ml-32 space-y-12">
+                    {[
+                        { year: "2021", title: "The Foundation", desc: "Started as a small direct-to-consumer store with simple chat integration." },
+                        { year: "2024", title: "Automated Dispatch", desc: "Scaled backend capabilities, introducing automated logistics maps." },
+                        { year: "2026", title: "SwiftLink Pro", desc: "Migrated to next-gen visual editing systems and responsive storefront grids." }
+                    ].map((step, i) => (
+                        <div key={i} className="relative pl-8 md:pl-12">
+                            <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-4 border-white dark:border-black" style={{ backgroundColor: accent }} />
+                            <div className="absolute left-[-90px] top-0.5 text-right font-black text-sm text-slate-300 dark:text-zinc-700 uppercase w-16 hidden md:block">{step.year}</div>
+                            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-black/[0.02] dark:border-white/5 shadow-sm max-w-xl">
+                                <span className="font-black text-xs text-emerald-500 uppercase tracking-widest md:hidden">{step.year} - </span>
+                                <h3 className="font-black text-sm text-gray-900 dark:text-white uppercase">{step.title}</h3>
+                                <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{step.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="bg-slate-50 dark:bg-zinc-900/40 rounded-3xl p-6 md:p-10 border border-slate-100 dark:border-zinc-800 text-center max-w-2xl mx-auto">
+                    <p className="text-xs md:text-sm text-gray-505 dark:text-zinc-400 leading-relaxed font-semibold">{aboutText}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 8: Brutalist Poster Block
+    if (templateId === "about-8") {
+        return (
+            <div className="my-20 bg-orange-100/10 dark:bg-zinc-900 border-[3px] border-black dark:border-white p-8 md:p-12 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)]">
+                <span className="text-[11px] font-black uppercase tracking-widest text-black dark:text-white bg-yellow-300 dark:bg-emerald-600 px-3 py-1.5 border-2 border-black dark:border-white inline-block mb-6">WHO WE ARE</span>
+                <h2 className="text-3xl md:text-6xl font-black text-black dark:text-white uppercase tracking-tighter leading-none mb-6">THE CREATIVE DIRECTIVE.</h2>
+                <p className="text-sm md:text-lg text-black dark:text-zinc-300 font-black leading-relaxed uppercase border-t-2 border-black dark:border-white pt-6">{aboutText}</p>
+            </div>
+        );
+    }
+
+    // Template 9: Minimalist Serif Strip
+    if (templateId === "about-9") {
+        return (
+            <div className="py-20 my-20 border-t border-b border-black/[0.08] dark:border-white/10 max-w-4xl mx-auto">
+                <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+                    <div className="md:col-span-1">
+                        <h2 className="font-serif text-2xl md:text-3xl font-light text-slate-900 dark:text-white italic leading-tight">A dedication to modern design, directly from us.</h2>
+                    </div>
+                    <div className="md:col-span-2">
+                        <p className="font-serif text-sm md:text-base text-slate-655 dark:text-zinc-450 leading-relaxed font-light">{aboutText}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Template 10: Aura Gradient Card
+    if (templateId === "about-10") {
+        return (
+            <div className="my-20 relative p-1 rounded-[3rem] overflow-hidden">
+                {/* Pulsing gradient background aura */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-blue-500/20 to-purple-500/20 animate-pulse blur-3xl opacity-50" />
+                <div className="relative z-10 bg-white/80 dark:bg-black/60 backdrop-blur-xl rounded-[2.8rem] p-8 md:p-16 border border-white/40 dark:border-white/5 shadow-2xl text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-blue-500 flex items-center justify-center text-white mx-auto mb-8 shadow-lg shadow-emerald-500/10">
+                        <Sparkles size={28} />
+                    </div>
+                    <h2 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-6">Our Legacy</h2>
+                    <p className="text-sm md:text-lg text-gray-650 dark:text-zinc-300 font-medium leading-relaxed max-w-2xl mx-auto">{aboutText}</p>
+                </div>
             </div>
         );
     }
 
     // Template 1 (Default): Card
     return (
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-16 shadow-xl shadow-black/[0.02] border border-black/[0.01] my-20">
-            <h2 className="text-2xl md:text-4xl font-black text-gray-900 italic uppercase tracking-tighter mb-6">Our Story</h2>
-            <p className="text-sm md:text-base text-gray-600 font-medium leading-relaxed max-w-2xl">{state.aboutUs}</p>
+        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 md:p-16 shadow-xl shadow-black/[0.02] border border-black/[0.01] dark:border-white/5 my-20">
+            <h2 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white italic uppercase tracking-tighter mb-6">Our Story</h2>
+            <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400 font-medium leading-relaxed max-w-2xl">{aboutText}</p>
         </div>
     );
 };
@@ -432,23 +900,270 @@ const AboutTemplate = ({ state, templateId }: { state: ShopState, templateId: st
 const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
     const accent = state.accentColor || "#10b981";
     const socials = state.socials as any || {};
-    
+
     // Template 2: Minimal centered
     if (templateId === "footer-2") {
         return (
-            <footer className="py-16 text-center border-t border-black/[0.06] mt-20 space-y-6">
-                <h3 className="text-2xl font-black text-gray-900 italic uppercase">{state.bizName}</h3>
+            <footer className="py-16 text-center border-t border-black/[0.06] dark:border-white/5 mt-20 space-y-6">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white italic uppercase">{state.bizName}</h3>
                 {state.tagline && <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">{state.tagline}</p>}
                 <div className="flex justify-center gap-3">
-                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
-                    {socials.twitter && <a href={socials.twitter} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {socials.twitter && <a href={socials.twitter} target="_blank" className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
                 </div>
                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300">Powered by SwiftLink</p>
             </footer>
         );
     }
 
-    // Template 1 (Default): Branded card — uses theme accent color, not hardcoded black
+    // Template 3: Multi-Column Directory
+    if (templateId === "footer-3") {
+        return (
+            <footer className="mt-20 mb-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-10 md:p-16 border border-black/[0.03] dark:border-white/5 shadow-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+                    <div className="col-span-2 md:col-span-1 space-y-4">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
+                            <Zap size={16} fill="currentColor" />
+                        </div>
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{state.bizName}</h3>
+                        {state.tagline && <p className="text-gray-400 text-xs leading-relaxed">{state.tagline}</p>}
+                    </div>
+                    <div className="space-y-3">
+                        <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400">Shop</h4>
+                        {["All Products", "New Arrivals", "Best Sellers", "Discounts"].map(l => (
+                            <p key={l} className="text-xs text-gray-600 dark:text-zinc-400 font-medium hover:text-emerald-500 cursor-pointer transition-colors">{l}</p>
+                        ))}
+                    </div>
+                    <div className="space-y-3">
+                        <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400">Support</h4>
+                        {["Contact Us", "WhatsApp Chat", "Returns Policy", "FAQ"].map(l => (
+                            <p key={l} className="text-xs text-gray-600 dark:text-zinc-400 font-medium hover:text-emerald-500 cursor-pointer transition-colors">{l}</p>
+                        ))}
+                    </div>
+                    <div className="space-y-3">
+                        <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-400">Connect</h4>
+                        <div className="flex gap-2 flex-wrap">
+                            {socials.instagram && <a href={socials.instagram} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                            {socials.facebook && <a href={socials.facebook} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
+                            {socials.twitter && <a href={socials.twitter} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                            {socials.website && <a href={socials.website} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105" style={{ backgroundColor: accent }}><Globe size={14} /></a>}
+                        </div>
+                        {state.contactEmail && <p className="text-[10px] text-gray-400 break-all">{state.contactEmail}</p>}
+                        {state.phone && <p className="text-[10px] text-gray-400">{state.phone}</p>}
+                    </div>
+                </div>
+                <div className="mt-10 pt-6 border-t border-black/[0.04] dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-300">© {new Date().getFullYear()} {state.bizName}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-300">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 4: Premium Dark Panel
+    if (templateId === "footer-4") {
+        return (
+            <footer className="mt-20 mb-8 bg-zinc-950 rounded-[2.5rem] p-10 md:p-16 border border-zinc-800">
+                <div className="flex flex-col md:flex-row gap-12 justify-between">
+                    <div className="space-y-5 max-w-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}>
+                                <Zap size={16} fill="currentColor" />
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight">{state.bizName}</h3>
+                        </div>
+                        {state.tagline && <p className="text-zinc-500 text-sm leading-relaxed">{state.tagline}</p>}
+                        <div className="flex gap-3">
+                            {socials.instagram && <a href={socials.instagram} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white transition-all hover:scale-105"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                            {socials.twitter && <a href={socials.twitter} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white transition-all hover:scale-105"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                            {socials.website && <a href={socials.website} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white transition-all hover:scale-105"><Globe size={14} /></a>}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-10">
+                        <div className="space-y-3">
+                            <h4 className="text-[9px] font-black uppercase tracking-widest" style={{ color: accent }}>Catalogue</h4>
+                            {["All Items", "Featured", "New In", "Sale"].map(l => (
+                                <p key={l} className="text-xs text-zinc-500 font-medium hover:text-white cursor-pointer transition-colors">{l}</p>
+                            ))}
+                        </div>
+                        <div className="space-y-3">
+                            <h4 className="text-[9px] font-black uppercase tracking-widest" style={{ color: accent }}>Contact</h4>
+                            {state.contactEmail && <p className="text-xs text-zinc-500 break-all">{state.contactEmail}</p>}
+                            {state.phone && <p className="text-xs text-zinc-500">{state.phone}</p>}
+                            {state.contactAddress && <p className="text-xs text-zinc-500">{state.contactAddress}</p>}
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-10 pt-6 border-t border-zinc-800 flex justify-between items-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">© {new Date().getFullYear()} {state.bizName}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 5: Contact Feedback Strip
+    if (templateId === "footer-5") {
+        return (
+            <footer className="mt-20 mb-8 space-y-0">
+                <div className="rounded-[2.5rem] p-10 md:p-16 text-center" style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)`, border: `1px solid ${accent}22` }}>
+                    <h3 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4">Stay Connected</h3>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md mx-auto mb-8">Questions? We're always on standby. Reach out and we'll respond on WhatsApp within minutes.</p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                        <input type="email" placeholder="Your email address..." className="flex-1 px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 text-sm font-medium outline-none" />
+                        <button className="px-6 py-3 rounded-xl text-white text-xs font-black uppercase tracking-wider whitespace-nowrap" style={{ backgroundColor: accent }}>Subscribe</button>
+                    </div>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-4 pt-6 pb-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-300">{state.bizName}</p>
+                    <div className="flex gap-3">
+                        {socials.instagram && <a href={socials.instagram} target="_blank" className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                        {socials.website && <a href={socials.website} target="_blank" className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><Globe size={13} /></a>}
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-300">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 6: Glassmorphic Floating Bar
+    if (templateId === "footer-6") {
+        return (
+            <footer className="mt-20 mb-8">
+                <div className="rounded-[2.5rem] p-6 md:p-10 bg-white/10 dark:bg-white/[0.03] backdrop-blur-xl border border-white/25 dark:border-white/5 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
+                            <Zap size={16} fill="currentColor" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{state.bizName}</h3>
+                            {state.tagline && <p className="text-[10px] text-gray-400 truncate max-w-[200px]">{state.tagline}</p>}
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        {socials.instagram && <a href={socials.instagram} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                        {socials.twitter && <a href={socials.twitter} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                        {socials.website && <a href={socials.website} target="_blank" className="w-9 h-9 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><Globe size={14} /></a>}
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 7: Brutalist Block
+    if (templateId === "footer-7") {
+        return (
+            <footer className="mt-20 mb-8 border-t-[4px] border-black dark:border-white pt-8">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+                    <div className="space-y-3">
+                        <h3 className="text-3xl md:text-5xl font-black text-black dark:text-white uppercase leading-none">{state.bizName}</h3>
+                        {state.tagline && <p className="text-xs text-black/50 dark:text-white/40 uppercase tracking-widest font-black">{state.tagline}</p>}
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        {state.contactEmail && (
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black dark:bg-white flex items-center justify-center"><MessageCircle size={14} className="text-white dark:text-black" /></div>
+                                <p className="text-xs font-black text-black dark:text-white uppercase">{state.contactEmail}</p>
+                            </div>
+                        )}
+                        {state.phone && (
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black dark:bg-white flex items-center justify-center"><Zap size={14} className="text-white dark:text-black" fill="currentColor" /></div>
+                                <p className="text-xs font-black text-black dark:text-white uppercase">{state.phone}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="mt-8 border-t-2 border-black/10 dark:border-white/10 pt-4 flex justify-between items-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/20">© {new Date().getFullYear()}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-black/30 dark:text-white/20">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 8: Floating Contact Badges
+    if (templateId === "footer-8") {
+        return (
+            <footer className="mt-20 mb-8 space-y-6">
+                <div className="flex flex-wrap gap-3 justify-center">
+                    {state.contactEmail && (
+                        <div className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-black/[0.06] dark:border-white/10 bg-white dark:bg-zinc-900 shadow-sm">
+                            <MessageCircle size={14} className="text-emerald-500" />
+                            <span className="text-xs font-black text-gray-700 dark:text-zinc-300">{state.contactEmail}</span>
+                        </div>
+                    )}
+                    {state.phone && (
+                        <div className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-black/[0.06] dark:border-white/10 bg-white dark:bg-zinc-900 shadow-sm">
+                            <Zap size={14} style={{ color: accent }} fill="currentColor" />
+                            <span className="text-xs font-black text-gray-700 dark:text-zinc-300">{state.phone}</span>
+                        </div>
+                    )}
+                    {socials.instagram && (
+                        <a href={socials.instagram} target="_blank" className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-black/[0.06] dark:border-white/10 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: accent }}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                            <span className="text-xs font-black text-gray-700 dark:text-zinc-300">Instagram</span>
+                        </a>
+                    )}
+                </div>
+                <div className="text-center space-y-2">
+                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">{state.bizName}</h3>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300">Powered by SwiftLink</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 9: Cyber Telemetry
+    if (templateId === "footer-9") {
+        return (
+            <footer className="mt-20 mb-8 bg-zinc-950 rounded-3xl p-8 md:p-12 border border-zinc-800 font-mono">
+                <div className="grid md:grid-cols-3 gap-8">
+                    <div className="space-y-3">
+                        <p className="text-[9px] uppercase tracking-widest" style={{ color: accent }}>&gt; ENTITY_ID</p>
+                        <p className="text-lg font-black text-white uppercase">{state.bizName}</p>
+                        {state.tagline && <p className="text-[10px] text-zinc-600">{state.tagline}</p>}
+                    </div>
+                    <div className="space-y-3">
+                        <p className="text-[9px] uppercase tracking-widest" style={{ color: accent }}>&gt; CONTACT_NODES</p>
+                        {state.contactEmail && <p className="text-[10px] text-zinc-400">{state.contactEmail}</p>}
+                        {state.phone && <p className="text-[10px] text-zinc-400">{state.phone}</p>}
+                        {state.contactAddress && <p className="text-[10px] text-zinc-600">{state.contactAddress}</p>}
+                    </div>
+                    <div className="space-y-3">
+                        <p className="text-[9px] uppercase tracking-widest" style={{ color: accent }}>&gt; SOCIAL_LINKS</p>
+                        <div className="flex gap-3 flex-wrap">
+                            {socials.instagram && <a href={socials.instagram} target="_blank" className="text-[10px] text-zinc-500 hover:text-white transition-colors">instagram</a>}
+                            {socials.twitter && <a href={socials.twitter} target="_blank" className="text-[10px] text-zinc-500 hover:text-white transition-colors">twitter</a>}
+                            {socials.website && <a href={socials.website} target="_blank" className="text-[10px] text-zinc-500 hover:text-white transition-colors">website</a>}
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-8 pt-4 border-t border-zinc-800 flex justify-between items-center">
+                    <p className="text-[8px] uppercase tracking-widest text-zinc-700">SYS.YEAR: {new Date().getFullYear()}</p>
+                    <p className="text-[8px] uppercase tracking-widest text-zinc-700">POWERED_BY: SWIFTLINK_PROTOCOL</p>
+                </div>
+            </footer>
+        );
+    }
+
+    // Template 10: Minimal Strip
+    if (templateId === "footer-10") {
+        return (
+            <footer className="mt-20 mb-8 py-6 border-t border-black/[0.05] dark:border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">{state.bizName}</p>
+                <div className="flex gap-2">
+                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:scale-110 transition-transform" style={{ backgroundColor: accent }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {socials.twitter && <a href={socials.twitter} target="_blank" className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:scale-110 transition-transform" style={{ backgroundColor: accent }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>}
+                    {socials.website && <a href={socials.website} target="_blank" className="w-7 h-7 rounded-lg flex items-center justify-center text-white hover:scale-110 transition-transform" style={{ backgroundColor: accent }}><Globe size={12} /></a>}
+                </div>
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-300">Powered by SwiftLink</p>
+            </footer>
+        );
+    }
+
+    // Template 1 (Default): Branded card
     return (
         <footer className="rounded-[2.5rem] p-10 md:p-16 mt-20 mb-8 flex flex-col md:flex-row gap-10 justify-between" style={{ backgroundColor: `${accent}12`, border: `1px solid ${accent}22` }}>
             <div className="space-y-4 max-w-sm">
@@ -456,7 +1171,7 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
                         <Zap size={16} fill="currentColor" />
                     </div>
-                    <h3 className="text-xl font-black text-gray-900 italic uppercase">{state.bizName}</h3>
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white italic uppercase">{state.bizName}</h3>
                 </div>
                 {state.tagline && <p className="text-gray-500 font-medium text-sm leading-relaxed">{state.tagline}</p>}
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
@@ -470,9 +1185,9 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
                     </div>
                 )}
                 <div className="flex gap-3">
-                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
-                    {socials.facebook && <a href={socials.facebook} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
-                    {socials.website && <a href={socials.website} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}><Globe size={16} /></a>}
+                    {socials.instagram && <a href={socials.instagram} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
+                    {socials.facebook && <a href={socials.facebook} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>}
+                    {socials.website && <a href={socials.website} target="_blank" className="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><Globe size={16} /></a>}
                 </div>
             </div>
         </footer>
@@ -916,6 +1631,20 @@ export function CustomerStorefront({
               </motion.div>
             )}
 
+            {/* COMMUNITY/REVIEWS SCREEN */}
+            {screen === "community" && (
+              <motion.div key="community" initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }} transition={{ type: "spring", stiffness: 250, damping: 30 }} className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-black overflow-hidden">
+                <div className="flex-1 overflow-hidden">
+                  <SocialHub
+                    storeId={s.id || "swiftlink"}
+                    accentColor={accentColor}
+                    defaultTab="feed"
+                    onBack={() => { setScreen("home"); setActiveTab("home"); }}
+                  />
+                </div>
+              </motion.div>
+            )}
+
             {/* SUCCESS SCREEN */}
             {screen === "success" && (
               <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white flex flex-col items-center justify-center p-10 text-center">
@@ -952,6 +1681,54 @@ export function CustomerStorefront({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PREVIEW EXPORT — renders a single section template for the Live Preview Modal
+// Called from BusinessView's LivePreviewModal component.
+// ─────────────────────────────────────────────────────────────────────────────
+export function CustomerStorefrontPreview({
+  type,
+  templateId,
+  state,
+}: {
+  type: "hero" | "catalog" | "about" | "footer";
+  templateId: string;
+  state: ShopState;
+}) {
+  // Build a tiny mock product list for catalog previews
+  const mockProducts: Product[] = [
+    { id: 1, name: "Premium Item", description: "Handcrafted with care", price: 12500, image: "", images: [], outOfStock: false, category: "Featured" },
+    { id: 2, name: "Signature Piece", description: "Limited edition quality", price: 8900, image: "", images: [], outOfStock: false, category: "New" },
+    { id: 3, name: "Classic Collection", description: "Timeless design excellence", price: 15000, image: "", images: [], outOfStock: false, category: "Popular" },
+  ];
+
+  const accent = state.accentColor || "#10b981";
+
+  const wrapperClass = type === "hero"
+    ? "min-h-[340px] relative overflow-hidden"
+    : type === "catalog"
+    ? "py-4 px-2"
+    : type === "about"
+    ? "py-4 px-2"
+    : "px-2 py-2";
+
+  return (
+    <div className={wrapperClass}>
+      {type === "hero" && (
+        <HeroTemplate state={state} templateId={templateId} />
+      )}
+      {type === "catalog" && (
+        <CatalogTemplate state={state} templateId={templateId} products={mockProducts} onProductClick={() => {}} />
+      )}
+      {type === "about" && (
+        <AboutTemplate state={state} templateId={templateId} />
+      )}
+      {type === "footer" && (
+        <FooterTemplate state={state} templateId={templateId} />
+      )}
     </div>
   );
 }
