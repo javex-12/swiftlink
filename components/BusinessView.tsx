@@ -11,7 +11,7 @@ import {
   Plus, Trash2, RefreshCw, Sparkles, Palette, 
   ExternalLink, Layout, Smartphone, Globe, ChevronDown, Store, FileText, X,
   MessageSquare, Mail, MapPin, User, Video, AtSign, Hash, Link2,
-  Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle
+  Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle, Star
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { CustomerStorefrontPreview } from "./CustomerStorefront";
@@ -81,6 +81,8 @@ export function BusinessView() {
   const [reviews, setReviews] = useState<StoreReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
 
   const {
     state: globalState,
@@ -112,6 +114,28 @@ export function BusinessView() {
   const updateLocalState = (field: keyof ShopState, value: any) => {
     setLocalState(prev => ({ ...prev, [field]: value }));
     setIsDirty(true);
+  };
+
+  const submitReply = async (reviewId: string) => {
+    const replyMessage = replyInputs[reviewId]?.trim();
+    if (!replyMessage) return;
+
+    const { data, error } = await supabase.from("store_review_comments").insert({
+        review_id: reviewId,
+        author_name: localState.bizName || "Store Owner",
+        message: replyMessage
+    }).select().single();
+
+    if (!error && data) {
+        setComments(prev => ({
+            ...prev,
+            [reviewId]: [...(prev[reviewId] || []), data]
+        }));
+        setReplyInputs(prev => ({ ...prev, [reviewId]: "" }));
+        addToast("Reply posted successfully!", "success");
+    } else {
+        addToast("Failed to post reply", "error");
+    }
   };
 
   const updateProductLocal = (id: number, field: keyof Product, value: any) => {
@@ -198,7 +222,28 @@ export function BusinessView() {
     if (activeTab !== "inbox" || !localState.id) return;
     setReviewsLoading(true);
     supabase.from("store_reviews").select("*").eq("store_id", localState.id).order("created_at", { ascending: false }).limit(50)
-      .then(({ data }) => { if (data) setReviews(data as StoreReview[]); setReviewsLoading(false); });
+      .then(async ({ data }) => {
+          if (data) {
+              setReviews(data as StoreReview[]);
+              const reviewIds = data.map(r => r.id);
+              if (reviewIds.length > 0) {
+                  const { data: commentsData } = await supabase
+                    .from("store_review_comments")
+                    .select("*")
+                    .in("review_id", reviewIds)
+                    .order("created_at", { ascending: true });
+                  if (commentsData) {
+                      const grouped: Record<string, any[]> = {};
+                      commentsData.forEach(c => {
+                          if (!grouped[c.review_id]) grouped[c.review_id] = [];
+                          grouped[c.review_id].push(c);
+                      });
+                      setComments(grouped);
+                  }
+              }
+          }
+          setReviewsLoading(false);
+      });
   }, [activeTab, localState.id]);
 
   const categories = localState.categories || [];
@@ -628,7 +673,7 @@ export function BusinessView() {
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">
                                 <User size={12} /> Bio / About You
                             </label>
-                            <StableTextarea value={localState.bio || ""} onChange={(v) => updateLocalState("bio", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
+                            <StableTextarea value={localState.aboutUs || localState.bio || ""} onChange={(v) => { updateLocalState("aboutUs", v); updateLocalState("bio", v); }} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -858,9 +903,9 @@ export function BusinessView() {
                     <div className="space-y-6">
                         <TemplateSelector type="about" current={localState.aboutTemplateId || "about-1"} onChange={(v) => updateLocalState("aboutTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">About Content</h4>
-                                    <StableTextarea value={localState.aboutUs || ""} onChange={(v) => updateLocalState("aboutUs", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none h-32 border border-slate-100" placeholder="Write your brand story here..." />
-                                </div>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">About Content</h4>
+                            <StableTextarea value={localState.aboutUs || localState.bio || ""} onChange={(v) => { updateLocalState("aboutUs", v); updateLocalState("bio", v); }} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none h-32 border border-slate-100" placeholder="Write your brand story here..." />
+                        </div>
                     </div>
                 </Accordion>
 
@@ -890,20 +935,73 @@ export function BusinessView() {
                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No reviews yet</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {reviews.map((r) => (
-                                <div key={r.id} className="bg-slate-50 dark:bg-zinc-900 p-5 rounded-3xl">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm">{r.author_name?.charAt(0).toUpperCase()}</div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-900 dark:text-white">{r.author_name}</p>
+                        <div className="space-y-6">
+                            {reviews.map((r) => {
+                                const revComments = comments[r.id] || [];
+                                return (
+                                    <div key={r.id} className="bg-slate-50 dark:bg-zinc-900 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 space-y-4">
+                                        <div className="flex items-start justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-black text-sm shadow-inner">
+                                                    {r.author_name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white">{r.author_name}</p>
+                                                    <p className="text-[9px] text-slate-400 mt-0.5">
+                                                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Stars */}
+                                            <div className="flex gap-0.5 bg-amber-500/10 px-2.5 py-1 rounded-xl">
+                                                {Array.from({ length: 5 }).map((_, i) => (
+                                                    <Star key={i} size={10} className={i < (r.rating || 5) ? "text-amber-400 fill-amber-400" : "text-gray-200"} />
+                                                ))}
                                             </div>
                                         </div>
+                                        
+                                        {/* Message */}
+                                        <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed pl-1">
+                                            {r.message}
+                                        </p>
+
+                                        {/* Existing Replies */}
+                                        {revComments.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3 pl-4 md:pl-8">
+                                                {revComments.map((c) => (
+                                                    <div key={c.id} className="bg-white dark:bg-black/50 p-4 rounded-2xl border border-slate-100 dark:border-white/5">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            <h5 className="font-black text-[10px] text-slate-900 dark:text-white uppercase">{c.author_name}</h5>
+                                                            <span className="text-[7px] font-black uppercase text-white bg-emerald-500 px-1 rounded">Store Owner</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed font-semibold pl-3">{c.message}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Reply Box */}
+                                        <div className="pt-4 border-t border-slate-100 dark:border-zinc-800 flex gap-3 max-w-xl">
+                                            <input 
+                                                type="text" 
+                                                value={replyInputs[r.id] || ""} 
+                                                onChange={(e) => setReplyInputs(prev => ({ ...prev, [r.id]: e.target.value }))} 
+                                                placeholder="Write an official reply..." 
+                                                className="flex-1 bg-white dark:bg-black p-3.5 rounded-xl text-xs font-medium dark:text-white outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all"
+                                            />
+                                            <button 
+                                                onClick={() => submitReply(r.id)} 
+                                                disabled={!replyInputs[r.id]?.trim()}
+                                                className="px-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-102 active:scale-98 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                                            >
+                                                Reply
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">{r.message}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
