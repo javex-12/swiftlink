@@ -53,42 +53,46 @@ const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1506629905607-d9c297d0a8a6?w=600",
 ];
 
-const templates: Record<GalleryType, SectionTemplate[]> = {
-  hero: Array.from({ length: 10 }, (_, i) => ({
-    id: `hero-${i + 1}`,
+const HERO_TEMPLATES: SectionTemplate[] = [
+  {
+    id: "hero-3d",
     type: "hero",
-    name: [
-      "Spotlight",
-      "Editorial",
-      "Split Showcase",
-      "Drop Launch",
-      "Minimal Luxury",
-      "Streetwear",
-      "Bold Sale",
-      "New Arrivals",
-      "Premium Banner",
-      "Founder Pick",
-    ][i],
-    title: [
-      "The New Collection",
-      "Built for Everyday Style",
-      "Fresh Drops, Fast Delivery",
-      "Launch Week Picks",
-      "Quiet Luxury Essentials",
-      "Street Ready Staples",
-      "Limited Sale Live Now",
-      "New Arrivals Just Landed",
-      "Premium Finds for Less",
-      "Handpicked by the Store",
-    ][i],
-    subtitle: "Curated products selected for customers who want quality without the wait.",
-    content: { buttonText: i === 6 ? "Shop Sale" : "Shop Now", image: HERO_IMAGES[i], templateId: `hero-${i + 1}` },
-    styles: {
-      borderRadius: ["24px", "12px", "32px", "18px", "4px", "28px", "20px", "16px", "36px", "10px"][i],
-      minHeight: ["340px", "300px", "360px", "320px", "280px", "360px", "300px", "340px", "380px", "320px"][i],
-    },
-    preview: HERO_IMAGES[i],
-  })),
+    name: "3D Ambient",
+    title: "The New Standard",
+    subtitle: "Experience the world's most powerful WhatsApp storefront.",
+    content: { buttonText: "Explore Now", templateId: "hero-3d" },
+    preview: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&q=80", // Placeholder, we'll use a CSS-based icon later
+  },
+  {
+    id: "hero-warp",
+    type: "hero",
+    name: "Warp Grid",
+    title: "Scale at Speed",
+    subtitle: "High-velocity commerce for the modern brand.",
+    content: { buttonText: "Start Shopping", templateId: "hero-warp" },
+    preview: "https://images.unsplash.com/photo-1639322537228-f710d846310a?w=600&q=80",
+  },
+  {
+    id: "hero-1",
+    type: "hero",
+    name: "Spotlight",
+    title: "The New Collection",
+    subtitle: "Curated products selected for quality without the wait.",
+    content: { buttonText: "Shop Now", image: HERO_IMAGES[0], templateId: "hero-1" },
+    preview: HERO_IMAGES[0],
+  },
+  {
+    id: "hero-2",
+    type: "hero",
+    name: "Editorial",
+    title: "Built for Style",
+    content: { buttonText: "Browse", image: HERO_IMAGES[1], templateId: "hero-2" },
+    preview: HERO_IMAGES[1],
+  },
+];
+
+const templates: Record<GalleryType, SectionTemplate[]> = {
+  hero: HERO_TEMPLATES,
   catalog: Array.from({ length: 10 }, (_, i) => ({
     id: `catalog-${i + 1}`,
     type: "catalog",
@@ -623,24 +627,56 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="no-scrollbar grid flex-1 gap-4 overflow-y-auto pr-1 pb-20">
-                {templates[showGallery].map((template) => (
+                {templates[showGallery].map((template) => {
+                  const isProTemplate = template.id === 'hero-3d' || template.id === 'hero-warp' || template.id === 'hero-industrial';
+                  const isProUser = state.plan === 'pro' || state.plan === 'business';
+                  const isLocked = isProTemplate && !isProUser;
+
+                  return (
                   <button
                     key={template.id}
                     onMouseEnter={() => setHoveredTemplate(template.id)}
                     onMouseLeave={() => setHoveredTemplate(null)}
-                    onClick={() => applyTemplate(template)}
-                    className="group relative min-h-32 overflow-hidden rounded-[1.5rem] border-2 border-transparent bg-slate-50 text-left transition-all hover:border-emerald-500 hover:shadow-2xl dark:bg-black/40"
+                    onClick={() => !isLocked && applyTemplate(template)}
+                    className={cn(
+                        "group relative min-h-32 overflow-hidden rounded-[1.5rem] border-2 text-left transition-all hover:shadow-2xl dark:bg-black/40",
+                        isLocked ? "opacity-50 cursor-not-allowed border-white/5" : "border-transparent hover:border-emerald-500 hover:scale-[1.02]"
+                    )}
                   >
-                    {template.preview ? (
+                    {/* SVG THUMBNAIL FOR SPECIAL TEMPLATES */}
+                    {template.id === 'hero-3d' ? (
+                        <div className="absolute inset-0 bg-[#020617] flex items-center justify-center">
+                            <div className="w-16 h-16 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
+                            <div className="w-8 h-8 bg-emerald-500 rounded-lg rotate-12 flex items-center justify-center">
+                                <Sparkles size={16} className="text-white" />
+                            </div>
+                        </div>
+                    ) : template.id === 'hero-warp' ? (
+                        <div className="absolute inset-0 bg-[#020617] flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:20px_20px]" />
+                            <Zap size={24} className="text-emerald-500 relative z-10" />
+                        </div>
+                    ) : template.preview ? (
                       <img src={template.preview} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40 grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-800 dark:to-zinc-900 opacity-50" />
                     )}
+
                     <div className="relative z-10 flex h-full min-h-32 flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{template.type}</span>
+                      <div className="flex items-center justify-between">
+                         <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{template.type}</span>
+                         {isProTemplate && <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[7px] font-black rounded uppercase">Pro</span>}
+                      </div>
                       <span className="text-base font-black uppercase text-white tracking-tight">{template.name}</span>
                       <span className="mt-1 text-[10px] font-bold text-white/60 leading-tight line-clamp-1">{template.title}</span>
                     </div>
+
+                    {isLocked && (
+                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+                            <Shield size={24} className="text-white/40 mb-2" />
+                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/60">Upgrade Required</span>
+                        </div>
+                    )}
 
                     {/* LOUPE / ZOOM PREVIEW ON HOVER */}
                     <AnimatePresence>

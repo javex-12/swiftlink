@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { CountrySelector } from "@/components/CountrySelector";
 
 const PERKS = [
   "Launch your store in 60 seconds",
@@ -18,17 +19,6 @@ const PERKS = [
   "Professional dispatch tracking",
   "Works on all your devices",
 ];
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 48 48" className="w-5 h-5" aria-hidden>
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-    </svg>
-  );
-}
 
 type Mode = "signup" | "login";
 
@@ -40,13 +30,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState<"google" | "email" | "reset" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
   
   const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
-  // 1. Detect if user is already logged in (Google Redirect returns here)
   useEffect(() => {
     setMounted(true);
     const m = searchParams.get("mode") as Mode;
@@ -54,18 +42,12 @@ export default function SignupPage() {
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log("Logged in session detected, moving to dashboard...");
-        router.push("/pro");
-      }
+      if (session) router.push("/pro");
     };
     checkUser();
     
-    // Also listen for state changes (handles the #access_token in URL)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        router.push("/pro");
-      }
+      if (session) router.push("/pro");
     });
 
     return () => subscription.unsubscribe();
@@ -126,16 +108,12 @@ export default function SignupPage() {
     setError(null);
     try {
       if (!credentialResponse.credential) throw new Error("No ID token returned from Google");
-      
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: credentialResponse.credential,
       });
-      
       if (error) throw error;
-      
       if (data.user) {
-        // Automatically save their store state and redirect
         await saveUserStore(data.user.id, data.user.email);
         router.push("/pro");
       }
@@ -191,118 +169,154 @@ export default function SignupPage() {
     }
   };
 
-  if (!mounted) return <div className="min-h-screen bg-[#080d18]" />;
+  if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
 
   return (
-    <main className="min-h-screen bg-[#080d18] flex relative overflow-hidden font-sans text-slate-200">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-blue-500/8 rounded-full blur-[100px]" />
+    <main className="min-h-screen bg-[#020617] flex relative overflow-hidden font-sans selection:bg-emerald-500/30">
+      {/* High-Fidelity Background Layer */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
       </div>
 
-      <div className="hidden lg:flex flex-col justify-between w-[44%] p-14 xl:p-20 relative z-10 border-r border-white/[0.06]">
-        <Link href="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="SwiftLink" className="w-10 h-10" />
-          <span className="text-2xl font-black text-white">SwiftLink<span className="text-emerald-400">Pro</span></span>
-        </Link>
-        <div>
-          <h1 className="text-5xl font-black text-white leading-tight mb-5 tracking-tight">Your Business,<br /><span className="text-emerald-400 italic">Supercharged.</span></h1>
-          <div className="space-y-4">
-            {PERKS.map((perk) => (
-              <div key={perk} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                    <CheckCircle2 size={12} className="text-emerald-400" />
-                </div>
-                <span className="text-slate-400 text-sm font-semibold">{perk}</span>
+      {/* Split Layout: Visual Branding */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] p-24 xl:p-32 relative z-10 border-r border-white/[0.03]">
+        <div className="relative group">
+           <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-[0_20px_40px_rgba(255,255,255,0.1)] group-hover:rotate-3 transition-all duration-500">
+                <img src="/logo.png" alt="SwiftLink" className="w-7 h-7" />
               </div>
-            ))}
-          </div>
+              <span className="text-2xl font-black text-white tracking-tighter uppercase italic">SwiftLink<span className="text-emerald-500 not-italic ml-1">PRO</span></span>
+           </Link>
         </div>
-        <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Store link · Catalog · WhatsApp orders</p>
+
+        <div className="max-w-xl">
+           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
+             <h1 className="text-7xl xl:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-12">
+               SELL MORE<br />ON WHATSAPP<br /><span className="text-emerald-500 italic">EVERY DAY.</span>
+             </h1>
+             <p className="text-lg text-slate-400 font-medium leading-relaxed max-w-sm">
+               The professional workspace for Nigeria&apos;s most ambitious commerce brands.
+             </p>
+           </motion.div>
+           <div className="mt-20 flex items-center gap-12">
+              <div>
+                 <p className="text-4xl font-black text-white italic tracking-tighter mb-1">60s</p>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Setup Node</p>
+              </div>
+              <div className="w-px h-10 bg-white/5" />
+              <div>
+                 <p className="text-4xl font-black text-white italic tracking-tighter mb-1">Zero</p>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Commissions</p>
+              </div>
+           </div>
+        </div>
+        <p className="text-[9px] text-slate-700 font-black uppercase tracking-[0.5em] leading-none">Global Infrastructure • Optimized for Scale</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-5 relative z-10">
-        <div className="w-full max-w-md">
-          <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08] rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-            
+      {/* Auth Interface */}
+      <div className="flex-1 flex items-center justify-center p-8 sm:p-16 relative z-10 bg-white dark:bg-transparent">
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-sm">
+          <div className="mb-14">
+             <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 uppercase italic">
+               {mode === "signup" ? "Sign Up" : "Log In"}
+             </h2>
+             <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+               {mode === "signup" ? "Join the community of elite vendors." : "Sign in to manage your operations."}
+             </p>
+          </div>
+
+          <div className="space-y-10">
+            <div className="flex bg-slate-50 dark:bg-white/[0.03] p-1.5 rounded-2xl border border-slate-200 dark:border-white/[0.05]">
+               {(["signup", "login"] as Mode[]).map((m) => (
+                 <button key={m} onClick={() => {setMode(m); setError(null);}} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all ${mode === m ? "bg-white dark:bg-[#020617] text-slate-900 dark:text-white shadow-xl" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}>
+                   {m === "signup" ? "Sign Up" : "Log In"}
+                 </button>
+               ))}
+            </div>
+
             <AnimatePresence mode="wait">
               {step === "form" ? (
-                <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
-                  <div className="flex bg-white/[0.05] rounded-2xl p-1.5 mb-8">
-                    {(["signup", "login"] as Mode[]).map((m) => (
-                      <button key={m} onClick={() => {setMode(m); setError(null);}} className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === m ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20" : "text-slate-500 hover:text-slate-300"}`}>
-                        {m === "signup" ? "Sign Up" : "Log In"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Google OAuth Provider Wrapper */}
-                  <div className="w-full flex justify-center mb-2 overflow-hidden">
+                <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
+                  <div className="w-full flex justify-center">
                     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={handleGoogleError}
                         shape="pill"
                         theme="filled_black"
+                        size="large"
+                        width="100%"
                         text={mode === "signup" ? "signup_with" : "signin_with"}
                       />
                     </GoogleOAuthProvider>
                   </div>
-                  {loading === "google" && <p className="text-[10px] text-center text-emerald-500 font-bold uppercase tracking-widest mt-2 animate-pulse">Syncing with Google...</p>}
 
-                  <div className="flex items-center gap-3 my-8">
-                    <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Secure email login</span>
-                    <div className="flex-1 h-px bg-white/10" />
+                  <div className="relative flex items-center justify-center py-2">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-white/[0.05]"></div></div>
+                    <span className="relative px-6 bg-white dark:bg-[#020617] text-[8px] font-black uppercase text-slate-400 dark:text-slate-800 tracking-[0.4em]">Node Authentication</span>
                   </div>
 
-                  {error && <motion.div initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 text-xs font-bold flex gap-3"><AlertCircle size={16} className="shrink-0"/>{error}</motion.div>}
-                  {message && <motion.div initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl mb-6 text-xs font-bold flex gap-3"><CheckCircle2 size={16} className="shrink-0"/>{message}</motion.div>}
-
-                  <form onSubmit={handleEmailAuth} className="space-y-4">
+                  {error && (
+                    <motion.div initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="flex gap-4 p-5 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                       <AlertCircle size={18} className="text-red-500 shrink-0" />
+                       <p className="text-[11px] font-bold text-red-500 dark:text-red-400 italic leading-relaxed">{error}</p>
+                    </motion.div>
+                  )}
+                  
+                  <form onSubmit={handleEmailAuth} className="space-y-6">
                     {mode === "signup" && (
-                      <div className="space-y-4">
-                        <input required type="text" value={form.bizName} onChange={e => setForm({...form, bizName: e.target.value})} placeholder="Business Name" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
-                        <div className="flex flex-col sm:flex-row gap-3">
-                           <div className="relative shrink-0">
-                                <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="w-full sm:w-auto min-h-[52px] h-full bg-white/5 border border-white/10 text-white pl-4 pr-8 py-4 sm:py-0 rounded-2xl text-sm font-bold outline-none appearance-none cursor-pointer">
-                                    <option className="bg-slate-900" value="+234">🇳🇬 +234</option>
-                                    <option className="bg-slate-900" value="+1">🇺🇸 +1</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-slate-500">▼</div>
-                           </div>
-                           <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="WhatsApp Number" className="flex-1 w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
+                      <>
+                        <div className="space-y-1">
+                           <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 ml-1">Business Name</label>
+                           <input required type="text" value={form.bizName} onChange={e => setForm({...form, bizName: e.target.value})} placeholder="e.g. Emerald Luxe" className="w-full bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.08] focus:border-emerald-500/30 text-slate-900 dark:text-white px-5 py-4 rounded-xl outline-none font-bold text-sm transition-all placeholder:text-slate-300 dark:placeholder:text-slate-800" />
                         </div>
-                      </div>
+                        <div className="space-y-1">
+                           <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 ml-1">WhatsApp Line</label>
+                           <div className="flex gap-3">
+                              <CountrySelector value={countryCode} onChange={setCountryCode} />
+                              <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="808 000 0000" className="flex-1 w-full bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.08] focus:border-emerald-500/30 text-slate-900 dark:text-white px-5 py-4 rounded-xl outline-none font-bold text-sm transition-all placeholder:text-slate-300 dark:placeholder:text-slate-800" />
+                           </div>
+                        </div>
+                      </>
                     )}
-                    <input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Email Address" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
-                    <div className="relative">
-                      <input required type={showPassword ? "text" : "password"} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Password" className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 text-white px-5 py-4 rounded-2xl outline-none font-bold text-sm transition-all" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
+                    <div className="space-y-1">
+                       <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 ml-1">Work Email</label>
+                       <input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="you@business.com" className="w-full bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.08] focus:border-emerald-500/30 text-slate-900 dark:text-white px-5 py-4 rounded-xl outline-none font-bold text-sm transition-all placeholder:text-slate-300 dark:placeholder:text-slate-800" />
                     </div>
-                    <button type="submit" disabled={loading !== null} className="w-full py-4.5 bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-[0.15em] hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50 mt-2">
-                      {loading === "email" ? <Loader2 className="animate-spin" size={20} /> : <>{mode === "signup" ? "Create Command Center" : "Login to Center"} <ArrowRight size={20} /></>}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 ml-1">Secure Password</label>
+                      <div className="relative group">
+                        <input required type={showPassword ? "text" : "password"} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.08] focus:border-emerald-500/30 text-slate-900 dark:text-white px-5 py-4 rounded-xl outline-none font-bold text-sm transition-all placeholder:text-slate-300 dark:placeholder:text-slate-800" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
+                      </div>
+                    </div>
+                    <button type="submit" disabled={loading !== null} className="w-full mt-6 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[11px] font-black uppercase tracking-[0.3em] hover:bg-emerald-500 hover:text-white transition-all duration-500 flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(0,0,0,0.1)] active:scale-[0.98] disabled:opacity-50 group">
+                      {loading === "email" ? <Loader2 className="animate-spin" size={20} /> : (
+                        <><span>{mode === "signup" ? "Sign Up" : "Log In"}</span><ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
+                      )}
                     </button>
                   </form>
                 </motion.div>
               ) : (
-                <motion.div key="verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="text-center py-4">
-                  <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
-                    <MessageSquare size={32} className="text-emerald-400" />
+                <motion.div key="verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
+                  <div className="w-20 h-20 bg-emerald-500/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 border border-emerald-500/10">
+                    <MessageSquare size={32} className="text-emerald-500" />
                   </div>
-                  <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Check your inbox</h2>
-                  <p className="text-sm text-slate-400 mb-8 px-4">We sent a secure verification link to <br/><span className="text-white font-bold">{form.email}</span></p>
-                  <div className="bg-white/5 rounded-2xl p-5 border border-white/10 mb-8 text-xs text-slate-500 font-medium leading-relaxed">Click the link in the email to activate your business. You can then return here to log in.</div>
-                  <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-4 bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl">I&apos;ve verified my email</button>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter uppercase italic">Check your email.</h2>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-12 leading-relaxed">We sent a verification link to <br /><span className="text-slate-900 dark:text-white font-bold">{form.email}</span></p>
+                  <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Back to Login</button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <Link href="/?v=landing" className="block text-center mt-10 text-slate-500 hover:text-emerald-400 font-bold text-[11px] uppercase tracking-[0.2em] transition-all">
-            <Zap size={12} className="inline mr-2 -mt-0.5" /> Return to landing
-          </Link>
-        </div>
+
+          <div className="mt-20 pt-10 border-t border-slate-200 dark:border-white/[0.03] flex items-center justify-between">
+             <Link href="/?v=landing" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-emerald-500 transition-colors">Return to Hub</Link>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-800">SwiftLink Pro v1.0.1</p>
+          </div>
+        </motion.div>
       </div>
     </main>
   );

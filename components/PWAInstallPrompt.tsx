@@ -3,12 +3,20 @@
 import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // If we are on landing page, never show the prompt
+    if (pathname === "/") {
+      setShowPrompt(false);
+      return;
+    }
+
     // Listen for the beforeinstallprompt event
     const handler = (e: Event) => {
       e.preventDefault();

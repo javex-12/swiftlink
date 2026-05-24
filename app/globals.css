@@ -7,6 +7,9 @@
   --primary-dark: #059669;
   --surface: #ffffff;
   --text-main: #0f172a;
+  --bg-dark: #020617; /* Deep Navy Slate */
+  --card-dark: #0f172a; /* Slate 900 */
+  --border-dark: rgba(255, 255, 255, 0.04);
 }
 
 body {
@@ -17,19 +20,20 @@ body {
 }
 
 .dark body {
-  background-color: #000000;
+  background-color: var(--bg-dark);
   color: #f8fafc;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dark .glass {
-  background: rgba(0, 0, 0, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .iphone-frame {

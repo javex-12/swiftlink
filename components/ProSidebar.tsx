@@ -41,23 +41,20 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "flex flex-col border-slate-200 dark:border-slate-800 bg-white dark:bg-black transition-all duration-300 ease-in-out max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-0 max-lg:z-50 max-lg:w-72 max-lg:shadow-2xl lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:border-r overflow-hidden",
+          "flex flex-col border-slate-200 dark:border-white/[0.05] bg-white dark:bg-[#020617] transition-all duration-300 ease-in-out max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-0 max-lg:z-50 max-lg:w-72 max-lg:shadow-2xl lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:border-r overflow-hidden",
           mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
           isHovered ? "lg:w-64" : "lg:w-20"
         )}
       >
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 h-20 shrink-0 overflow-hidden bg-slate-50/50 dark:bg-black">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-slate-900 shadow-lg overflow-hidden shrink-0">
+        <div className="p-5 border-b border-slate-100 dark:border-white/[0.05] flex items-center gap-3 h-20 shrink-0 bg-slate-50/50 dark:bg-[#020617]">
+          <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-slate-900 shadow-lg overflow-hidden shrink-0 transition-transform group-hover:scale-105">
              {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <img src="/logo.png" className="w-6 h-6 object-contain" alt="SL" />}
           </div>
-          <div className={cn("min-w-0 transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
+          <div className={cn("min-w-0 transition-all duration-300", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-2")}>
             <div className="flex items-center gap-2">
               <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white leading-tight block truncate uppercase italic">
                 {state.bizName || "SwiftLink Pro"}
               </span>
-              {state.plan === "pro" && (
-                <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded uppercase tracking-tighter shadow-lg shadow-emerald-500/20">Pro</span>
-              )}
             </div>
             <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-500">
               Control Panel
@@ -65,8 +62,8 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           </div>
         </div>
 
-        <nav className="p-3 flex-1 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
-          <p className={cn("px-3 pt-4 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <p className={cn("px-3 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
             Management
           </p>
           {navItems.map((item) => {
@@ -97,7 +94,7 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5 overflow-hidden">
+        <div className="p-3 border-t border-slate-100 dark:border-white/[0.05] space-y-1.5 overflow-hidden">
           <p className={cn("px-3 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
             System
           </p>
@@ -139,7 +136,7 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           </button>
         </div>
 
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 h-20 shrink-0 flex items-center overflow-hidden">
+        <div className="p-3 border-t border-slate-100 dark:border-white/[0.05] h-20 shrink-0 flex items-center overflow-hidden">
           <button
             onClick={handleSignOut}
             className={cn(

@@ -98,8 +98,8 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
-          <span className="text-xl font-black tracking-tight text-slate-900">
-            SwiftLink<span className="text-emerald-500">Pro</span>
+          <span className="text-xl font-black tracking-tight text-slate-900 uppercase italic">
+            SwiftLink
           </span>
         </div>
 
@@ -542,7 +542,7 @@ const Footer = () => (
           <div className="col-span-1 md:col-span-2">
              <div className="flex items-center gap-2 mb-6">
                <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
-               <span className="text-xl font-black text-slate-900 uppercase italic">SwiftLink<span className="text-emerald-500">Pro</span></span>
+               <span className="text-xl font-black text-slate-900 uppercase italic">SwiftLink</span>
              </div>
              <p className="text-slate-500 font-medium max-w-xs leading-relaxed">
                 The high-performance command center for modern WhatsApp commerce.
@@ -576,10 +576,9 @@ const Footer = () => (
   </footer>
 );
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
-    <main className="bg-white min-h-screen">
+    <main className="bg-white min-h-screen text-slate-900 selection:bg-emerald-500/30">
       <Navbar />
       <Hero />
       <Features />
