@@ -123,7 +123,9 @@ export function BusinessView() {
     const { data, error } = await supabase.from("store_review_comments").insert({
         review_id: reviewId,
         author_name: localState.bizName || "Store Owner",
-        message: replyMessage
+        author_id: user?.id || null,
+        message: replyMessage,
+        store_id: localState.id
     }).select().single();
 
     if (!error && data) {
@@ -134,7 +136,8 @@ export function BusinessView() {
         setReplyInputs(prev => ({ ...prev, [reviewId]: "" }));
         addToast("Reply posted successfully!", "success");
     } else {
-        addToast("Failed to post reply", "error");
+        console.error("[submitReply] Supabase error:", error);
+        addToast(`Reply failed: ${error?.message || "Check Supabase table/RLS"}`, "error");
     }
   };
 
@@ -224,8 +227,10 @@ export function BusinessView() {
     supabase.from("store_reviews").select("*").eq("store_id", localState.id).order("created_at", { ascending: false }).limit(50)
       .then(async ({ data }) => {
           if (data) {
-              setReviews(data as StoreReview[]);
-              const reviewIds = data.map(r => r.id);
+              // Filter out any reviews the store owner themselves submitted
+              const filteredData = data.filter(r => !user || r.author_id !== user.id);
+              setReviews(filteredData as StoreReview[]);
+              const reviewIds = filteredData.map(r => r.id);
               if (reviewIds.length > 0) {
                   const { data: commentsData } = await supabase
                     .from("store_review_comments")
@@ -899,13 +904,12 @@ export function BusinessView() {
                     <TemplateSelector type="catalog" current={localState.catalogTemplateId || "catalog-1"} onChange={(v) => updateLocalState("catalogTemplateId", v)} />
                 </Accordion>
 
-                <Accordion id="about_tpl" title="About Template" subtitle="Brand Story Design" icon={LayoutTemplate}>
-                    <div className="space-y-6">
+                <Accordion id="about_tpl" title="About Section Style" subtitle="Brand Story Template" icon={LayoutTemplate}>
+                    <div className="space-y-4">
+                        <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-widest px-1">
+                            Pick the visual layout for your About section. Edit the actual text content under <span className="text-emerald-500">Inventory → About & Socials</span>.
+                        </p>
                         <TemplateSelector type="about" current={localState.aboutTemplateId || "about-1"} onChange={(v) => updateLocalState("aboutTemplateId", v)} />
-                        <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">About Content</h4>
-                            <StableTextarea value={localState.aboutUs || localState.bio || ""} onChange={(v) => { updateLocalState("aboutUs", v); updateLocalState("bio", v); }} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none h-32 border border-slate-100" placeholder="Write your brand story here..." />
-                        </div>
                     </div>
                 </Accordion>
 

@@ -1244,7 +1244,7 @@ export function CustomerStorefront({
           supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).order("created_at", { ascending: false })
             .then(async ({ data: reviewsData }) => {
                 if (reviewsData) {
-                    const filteredReviews = reviewsData.filter(r => !effectiveState.ownerId || r.user_id !== effectiveState.ownerId);
+            const filteredReviews = reviewsData.filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId);
                     setReviews(filteredReviews);
                     const reviewIds = filteredReviews.map(r => r.id);
                     if (reviewIds.length > 0) {
@@ -1275,6 +1275,7 @@ export function CustomerStorefront({
       const { data, error } = await supabase.from("store_reviews").insert({
           store_id: effectiveState.id,
           author_name: newReview.name,
+          author_id: user?.id || null,
           message: newReview.message,
           rating: newReview.rating
       }).select().single();
