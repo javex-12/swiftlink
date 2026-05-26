@@ -111,6 +111,22 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [interactions, setInteractions] = useState<Record<string, "like" | "dislike" | null>>({});
   
+  const activeUsers = useMemo(() => {
+    const seen = new Set();
+    const list: { id: string; name: string; avatar?: string }[] = [];
+    for (const r of reviews) {
+      if (r.user_id && !seen.has(r.user_id)) {
+        seen.add(r.user_id);
+        list.push({
+          id: r.user_id,
+          name: r.author_name,
+          avatar: r.author_avatar,
+        });
+      }
+    }
+    return list.slice(0, 10);
+  }, [reviews]);
+  
   const [stats, setStats] = useState({ posts: 0 });
 
   // UI & Edit State
@@ -179,6 +195,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     const { data } = await supabase
       .from("store_reviews")
       .select(`*, social_profiles:user_id (display_name, username, avatar_url, is_verified)`)
+      .eq("type", "post")
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -263,10 +280,21 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   };
 
   const handlePost = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !user) return;
     setSubmitting(true);
     
-    const newPostObj = { store_id: storeId, user_id: user?.id, author_name: myProfile?.display_name || "Guest", message: message.trim(), rating, likes: 0, dislikes: 0, attachments: attachments.length > 0 ? attachments : undefined, tagging_product: taggingProduct ?? undefined };
+    const newPostObj = {
+      store_id: storeId,
+      user_id: user.id,
+      author_name: myProfile?.display_name || "Guest",
+      message: message.trim(),
+      type: "post",
+      rating,
+      likes: 0,
+      dislikes: 0,
+      attachments: attachments.length > 0 ? attachments : undefined,
+      tagging_product: taggingProduct ?? undefined
+    };
     
     // Optimistic Update so the user feels like it saved instantly
     const tempId = `temp-${Date.now()}`;
@@ -414,6 +442,20 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
               <div className="flex border-b border-slate-50 dark:border-zinc-900 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 px-6 py-4">
                  <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">🌍 Global Timeline</h2>
               </div>
+              {activeUsers.length > 0 && (
+                <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 py-4 border-b border-slate-100 dark:border-zinc-900 bg-slate-50/50 dark:bg-zinc-950/20">
+                   {activeUsers.map(u => (
+                     <div key={u.id} className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group" onClick={() => { setActiveChat({ id: u.id, display_name: u.name, username: u.name, avatar_url: u.avatar || "User" }); }}>
+                       <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-emerald-500 to-purple-500 group-hover:scale-105 transition-all">
+                         <div className="w-full h-full rounded-full border-2 border-white dark:border-black overflow-hidden bg-white dark:bg-zinc-900">
+                           <AvatarIcon src={u.avatar} />
+                         </div>
+                       </div>
+                       <span className="text-[9px] font-black text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors max-w-[55px] truncate">{u.name}</span>
+                     </div>
+                   ))}
+                </div>
+              )}
               <div className="divide-y divide-slate-50 dark:divide-zinc-900">
                 {reviews.map((r, i) => (
                   <article key={r.id} className="p-5 md:p-10 flex gap-5 hover:bg-slate-50/30 dark:hover:bg-zinc-900/20 transition-colors group cursor-pointer" onClick={() => { setActiveThread(r); fetchComments(r.id); }}>
@@ -508,7 +550,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                       {myProfile.bio && <p className="text-slate-600 dark:text-zinc-400 font-medium max-w-sm">{myProfile.bio}</p>}
                       <div className="flex justify-center py-6"><div className="text-center px-10"><p className="text-2xl font-black dark:text-white">{stats.posts}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Posts</p></div></div>
                    </div>
-                   <button className="w-full p-6 rounded-3xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"><div className="flex items-center gap-4 text-rose-500"><LogOut size={22} /><span className="text-sm font-black uppercase">Sign Out Social</span></div></button>
+                   <button onClick={onBack} className="w-full p-6 rounded-3xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"><div className="flex items-center gap-4 text-rose-500"><LogOut size={22} /><span className="text-sm font-black uppercase">Sign Out Social</span></div></button>
                  </div>
                )}
             </motion.div>
@@ -534,11 +576,11 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         )}
       </AnimatePresence>
 
-      <nav className="shrink-0 bg-white/80 dark:bg-black/80 backdrop-blur-3xl border-t border-slate-100 dark:border-zinc-900 px-8 pb-10 pt-4 fixed bottom-0 left-0 right-0 z-40">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-slate-200/80 dark:border-zinc-800/80 px-6 py-2.5 rounded-[2rem] shadow-2xl">
+        <div className="flex items-center justify-between gap-2">
           <NavItem id="feed" icon={Home} label="Timeline" />
           <NavItem id="search" icon={Search} label="Explore" />
-          <button onClick={() => setTab("post")} className="w-16 h-16 bg-slate-900 dark:bg-white rounded-3xl flex items-center justify-center text-white dark:text-black shadow-2xl -mt-10 border-4 border-white dark:border-black shrink-0"><PlusCircle size={32} /></button>
+          <button onClick={() => setTab("post")} className="w-14 h-14 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 transition-all shrink-0"><PlusCircle size={28} /></button>
           <NavItem id="activity" icon={Bell} label="Activity" />
           <NavItem id="profile" icon={User} label="Me" />
         </div>

@@ -224,7 +224,7 @@ export function BusinessView() {
   useEffect(() => {
     if (activeTab !== "inbox" || !localState.id) return;
     setReviewsLoading(true);
-    supabase.from("store_reviews").select("*").eq("store_id", localState.id).order("created_at", { ascending: false }).limit(50)
+    supabase.from("store_reviews").select("*").eq("store_id", localState.id).neq("type", "post").order("created_at", { ascending: false }).limit(50)
       .then(async ({ data }) => {
           if (data) {
               // Filter out any reviews the store owner themselves submitted
@@ -738,6 +738,12 @@ export function BusinessView() {
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">Products</h2>
                     <button
                         onClick={() => {
+                            const currentPlan = globalState.plan || "free";
+                            const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
+                            if (localState.products.length >= maxProducts) {
+                                addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
+                                return;
+                            }
                             const newP: Product = { id: Date.now(), name: "New Product", price: 0, description: "", image: "", images: [], outOfStock: false };
                             updateLocalState("products", [newP, ...localState.products]);
                         }}

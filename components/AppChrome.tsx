@@ -100,7 +100,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             >
               <h2 className="text-white text-xl font-black tracking-[0.2em] uppercase italic">SwiftLink<span className="text-emerald-500">Pro</span></h2>
               <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400 animate-pulse">
-                Initializing Command Center
+                Loading Command Center...
               </p>
             </motion.div>
           </motion.div>

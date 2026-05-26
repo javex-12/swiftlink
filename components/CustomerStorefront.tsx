@@ -219,9 +219,9 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
         return (
             <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 450, background: "#050505" }}>
                 {/* Animated background orbs */}
+                {/* Animated 3D background */}
                 <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
-                    <div style={{ position:"absolute", top:"-20%", right:"-10%", width:500, height:500, borderRadius:"50%", background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, animation:"pulse 6s ease-in-out infinite" }} />
-                    <div style={{ position:"absolute", bottom:"-20%", left:"-10%", width:400, height:400, borderRadius:"50%", background:`radial-gradient(circle, ${accent}22 0%, transparent 70%)`, animation:"pulse 8s ease-in-out infinite 2s" }} />
+                    <ThreeDBackground type={4} accentColor={accent} />
                     {bg && <img src={bg} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.15, mixBlendMode:"luminosity" }} />}
                 </div>
                 {/* Subtle grid lines */}
@@ -253,6 +253,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
         return (
             <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-xl" style={{ minHeight: 500 }}>
                 <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
+                <ThreeDBackground type={3} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
                 {/* Accent color bar */}
                 <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:accent }} />
@@ -303,6 +304,9 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                     <div style={{ height:4, background:`linear-gradient(90deg, ${accent}, ${accent}44, transparent)` }} />
                 </div>
                 {bg && <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"35%", backgroundImage:`url(${bg})`, backgroundSize:"cover", backgroundPosition:"center", clipPath:"polygon(15% 0, 100% 0, 100% 100%, 0% 100%)" }} />}
+                <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:0, mixBlendMode:"difference" }}>
+                     <ThreeDBackground type={6} accentColor={accent} />
+                </div>
             </div>
         );
     }
@@ -1241,7 +1245,7 @@ export function CustomerStorefront({
   useEffect(() => {
       if (screen === "community" && effectiveState?.id) {
           setReviewsLoading(true);
-          supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).order("created_at", { ascending: false })
+          supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).neq("type", "post").order("created_at", { ascending: false })
             .then(async ({ data: reviewsData }) => {
                 if (reviewsData) {
             const filteredReviews = reviewsData.filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId);

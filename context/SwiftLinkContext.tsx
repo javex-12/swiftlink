@@ -142,7 +142,9 @@ export function SwiftLinkProvider({
         if (loadedStores.length > 0 && !state.id) {
             setState(loadedStores[0]);
         }
+        return loadedStores;
     }
+    return [];
   }, [state.id]);
 
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
@@ -468,74 +470,31 @@ export function SwiftLinkProvider({
 
                                         if (u) {
 
-                    
-
                                             setIsSupabaseActive(true);
 
-                    
-
-                                            void fetchStores(u.id);
-
-                    
-
-                                            const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
-
-                    
-
-                    
-
-                        
-
-                        if (isOwnerRef.current) {
-
-                                                        supabase.from('stores').select('state_json').eq('id', u.id).single().then(({ data }) => {
-
-                                                            // If no data, use default but FORCE the ID to be the user's UID
-
-                                                            let nextState = data?.state_json ? (data.state_json as ShopState) : defaultShopState();
-
-                                                            
-
-                                                            // CRITICAL: Ensure 'sections' exists even for legacy users
-                                                            if (!nextState.sections || nextState.sections.length === 0) {
-                                                                nextState.sections = [
-                                                                    {
-                                                                        id: 'catalog-auto',
-                                                                        type: 'catalog',
-                                                                        title: 'Our Collection',
-                                                                        isVisible: true,
-                                                                        order: 0,
-                                                                        content: {},
-                                                                        styles: {}
-                                                                    }
-                                                                ];
-                                                            }
-                            
-                                                            // CRITICAL: Always ensure the state ID matches the authenticated user ID
-                                                            nextState = { ...nextState, id: u.id };
-
-                            
-
-                                
-
-                                if (isGodMode) {
-
-                                    nextState = { ...nextState, plan: "pro" };
-
-                                }
-
-                                
-
-                                setState(nextState);
-
-                                // Sync back to local storage immediately
-
-                                localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
-
-                            });
-
-                        }
-
+                                            void fetchStores(u.id).then((storesList) => {
+                                                if (isOwnerRef.current) {
+                                                    const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+                                                    if (storesList && storesList.length > 0) {
+                                                        let nextState = storesList[0];
+                                                        // Ensure sections exist
+                                                        if (!nextState.sections || nextState.sections.length === 0) {
+                                                            nextState.sections = [{ id: 'catalog-auto', type: 'catalog', title: 'Our Collection', isVisible: true, order: 0, content: {}, styles: {} }];
+                                                        }
+                                                        if (isGodMode) nextState = { ...nextState, plan: "pro" };
+                                                        
+                                                        setState(nextState);
+                                                        localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
+                                                    } else {
+                                                        // Fallback for brand new users without a store
+                                                        let nextState = defaultShopState();
+                                                        nextState = { ...nextState, id: u.id, ownerId: u.id };
+                                                        if (isGodMode) nextState = { ...nextState, plan: "pro" };
+                                                        
+                                                        setState(nextState);
+                                                    }
+                                                }
+                                            });
                     } else {
 
             

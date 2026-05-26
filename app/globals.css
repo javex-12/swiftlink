@@ -24,6 +24,27 @@ body {
   color: #f8fafc;
 }
 
+/* Premium not-too-black dark mode overrides */
+.dark .bg-black,
+.dark .dark\:bg-black {
+  background-color: #0c0e12 !important;
+}
+
+.dark .bg-black\/80,
+.dark .dark\:bg-black\/80 {
+  background-color: rgba(12, 14, 18, 0.8) !important;
+}
+
+.dark .bg-black\/60,
+.dark .dark\:bg-black\/60 {
+  background-color: rgba(12, 14, 18, 0.6) !important;
+}
+
+.dark .bg-black\/95,
+.dark .dark\:bg-black\/95 {
+  background-color: rgba(12, 14, 18, 0.95) !important;
+}
+
 .glass {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px);

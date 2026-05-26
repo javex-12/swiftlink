@@ -51,7 +51,7 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
             const mat = new THREE.MeshPhongMaterial({ color, wireframe: true, transparent: true, opacity: 0.3, emissive: color.clone().multiplyScalar(0.4) });
             const mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
-            objects.push(mesh);
+            objects.push({ update: () => { mesh.rotation.x += 0.01; mesh.rotation.y += 0.01; } });
         } 
         else if (type === 2) {
             // Type 2: Cyber Grid Floor
