@@ -112,11 +112,11 @@ type SwiftLinkContextValue = {
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
-// EMAILS THAT GET PRO AUTOMATICALLY
-const GOD_MODE_EMAILS = [
-  "michaeldosunmu22@gmail.com", // You
-  "dosunmumichael26@gmail.com", // Your other email
-];
+// EMAILS THAT GET PREMIUM PLANS AUTOMATICALLY
+const PRIVILEGED_USERS: Record<string, "pro" | "business"> = {
+  "michaeldosunmu22@gmail.com": "business", 
+  "dosunmumichael26@gmail.com": "pro",
+};
 
 const PROTECTED_PATHS = ["/pro", "/business", "/dispatch", "/account", "/cart"];
 
@@ -166,7 +166,7 @@ export function SwiftLinkProvider({
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
@@ -176,6 +176,10 @@ export function SwiftLinkProvider({
     if (saved) {
       setTheme(saved);
       if (saved === "dark") document.documentElement.classList.add("dark");
+      else document.documentElement.classList.remove("dark");
+    } else {
+      // Default to dark if no preference saved
+      document.documentElement.classList.add("dark");
     }
   }, []);
 
@@ -474,14 +478,18 @@ export function SwiftLinkProvider({
 
                                             void fetchStores(u.id).then((storesList) => {
                                                 if (isOwnerRef.current) {
-                                                    const isGodMode = u.email && GOD_MODE_EMAILS.includes(u.email);
+                                                    const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
+                                                    
                                                     if (storesList && storesList.length > 0) {
                                                         let nextState = storesList[0];
-                                                        // Ensure sections exist
+                                                        // CRITICAL: Ensure sections exist to prevent client-side exception
                                                         if (!nextState.sections || nextState.sections.length === 0) {
-                                                            nextState.sections = [{ id: 'catalog-auto', type: 'catalog', title: 'Our Collection', isVisible: true, order: 0, content: {}, styles: {} }];
+                                                            nextState.sections = [
+                                                                { id: 'hero-default', type: 'hero', title: 'Welcome', subtitle: 'Quality products', isVisible: true, order: 0, content: {}, styles: {} },
+                                                                { id: 'catalog-default', type: 'catalog', title: 'Collection', isVisible: true, order: 1, content: {}, styles: {} }
+                                                            ];
                                                         }
-                                                        if (isGodMode) nextState = { ...nextState, plan: "pro" };
+                                                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
                                                         
                                                         setState(nextState);
                                                         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
@@ -489,7 +497,7 @@ export function SwiftLinkProvider({
                                                         // Fallback for brand new users without a store
                                                         let nextState = defaultShopState();
                                                         nextState = { ...nextState, id: u.id, ownerId: u.id };
-                                                        if (isGodMode) nextState = { ...nextState, plan: "pro" };
+                                                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
                                                         
                                                         setState(nextState);
                                                     }

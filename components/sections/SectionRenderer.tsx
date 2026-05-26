@@ -51,7 +51,7 @@ export function SectionRenderer({
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+  const sortedSections = [...(sections || [])].sort((a, b) => a.order - b.order);
 
   return (
     <div className="relative w-full">

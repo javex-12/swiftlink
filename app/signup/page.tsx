@@ -64,10 +64,13 @@ export default function SignupPage() {
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
       const slug = getPublicStoreSlug({ storeUsername, bizName });
       
-      const GOD_MODE_EMAILS = ["michaeldosunmu22@gmail.com", "dosunmumichael26@gmail.com"];
+      const PRIVILEGED_USERS: Record<string, "pro" | "business"> = {
+        "michaeldosunmu22@gmail.com": "business", 
+        "dosunmumichael26@gmail.com": "pro",
+      };
       const emailToCheck = email || form.email;
-      const isGodMode = emailToCheck && GOD_MODE_EMAILS.includes(emailToCheck);
-      const initialPlan = isGodMode ? "pro" : (searchParams.get("plan") || "free");
+      const assignedPlan = emailToCheck ? PRIVILEGED_USERS[emailToCheck] : null;
+      const initialPlan = assignedPlan || (searchParams.get("plan") || "free");
 
       const nextState = {
         id: uid,
