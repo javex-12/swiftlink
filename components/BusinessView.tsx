@@ -11,15 +11,25 @@ import {
   Plus, Trash2, RefreshCw, Sparkles, Palette, 
   ExternalLink, Layout, Smartphone, Globe, ChevronDown, Store, FileText, X,
   MessageSquare, Mail, MapPin, User, Video, AtSign, Hash, Link2,
-  Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle, Star
+  Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle, Star,
+  Dices
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { CustomerStorefrontPreview } from "./CustomerStorefront";
 
-// ─────────────────────────────────────────────────────────────
-// STABLE INPUT: only fires onChange on blur — zero re-renders while typing
-// This permanently fixes the mobile keyboard snap issue
-// ─────────────────────────────────────────────────────────────
+const PRESET_PALETTES = [
+    { name: "Emerald (Default)", accent: "#10b981", bg: "#f2f2f7", surface: "#ffffff", text: "#111827", btn: "#10b981" },
+    { name: "Midnight Indigo", accent: "#6366f1", bg: "#020617", surface: "#0f172a", text: "#f8fafc", btn: "#6366f1" },
+    { name: "Luxury Gold", accent: "#d4af37", bg: "#0a0a0a", surface: "#161616", text: "#ffffff", btn: "#d4af37" },
+    { name: "Rose Garden", accent: "#e11d48", bg: "#fff1f2", surface: "#ffffff", text: "#881337", btn: "#e11d48" },
+    { name: "Slate & Amber", accent: "#f59e0b", bg: "#f8fafc", surface: "#ffffff", text: "#0f172a", btn: "#0f172a" },
+    { name: "Deep Forest", accent: "#059669", bg: "#f0fdf4", surface: "#ffffff", text: "#064e3b", btn: "#059669" },
+    { name: "Cyberpunk", accent: "#ff00ff", bg: "#050505", surface: "#111111", text: "#00ffff", btn: "#ff00ff" },
+    { name: "Minimalist", accent: "#000000", bg: "#ffffff", surface: "#fafafa", text: "#000000", btn: "#000000" },
+];
+
+// ... rest of StableInput and StableTextarea ...
+
 function StableInput({ value, onChange, className, placeholder, type = "text" }: {
   value: string;
   onChange: (v: string) => void;
@@ -294,7 +304,28 @@ export function BusinessView() {
       </div>
   );
 
+  const DiceButton = ({ onClick, title = "Randomize" }: { onClick: () => void, title?: string }) => {
+      const [isSpinning, setIsSpinning] = useState(false);
+      const handleDiceClick = () => {
+          setIsSpinning(true);
+          onClick();
+          setTimeout(() => setIsSpinning(false), 600);
+      };
+      return (
+          <button 
+              onClick={handleDiceClick}
+              title={title}
+              className="p-3 bg-slate-50 dark:bg-zinc-900 text-slate-400 hover:text-emerald-500 rounded-xl transition-all active:scale-90"
+          >
+              <motion.div animate={isSpinning ? { rotate: 360, scale: [1, 1.2, 1] } : {}} transition={{ duration: 0.5, ease: "easeInOut" }}>
+                  <Dices size={18} />
+              </motion.div>
+          </button>
+      );
+  };
+
   // ─── Template metadata ──────────────────────────────────────────
+
   const TEMPLATE_META: Record<string, { id: string; name: string; desc: string; dark: boolean; isPro: boolean; icon: React.ReactNode }[]> = {
     hero: [
       { id:"hero-1",  name:"Ambient Orbs",    desc:"Dark glass with glowing orb animations",       dark:true,  isPro:false, icon:<><rect x="0" y="0" width="60" height="40" rx="6" fill="#050505"/><circle cx="45" cy="8" r="12" fill="#10b981" opacity=".25"/><circle cx="10" cy="35" r="9" fill="#10b981" opacity=".15"/><rect x="8" y="26" width="28" height="3" rx="1.5" fill="white" opacity=".9"/><rect x="8" y="31" width="18" height="2" rx="1" fill="white" opacity=".4"/><rect x="8" y="36" width="14" height="5" rx="2.5" fill="white" opacity=".9"/></> },
@@ -515,8 +546,34 @@ export function BusinessView() {
   };
 
 
+  const randomizePalette = () => {
+      const p = PRESET_PALETTES[Math.floor(Math.random() * PRESET_PALETTES.length)];
+      setLocalState(prev => ({
+          ...prev,
+          accentColor: p.accent,
+          bgColor: p.bg,
+          surfaceColor: p.surface,
+          textColor: p.text,
+          buttonColor: p.btn
+      }));
+      setIsDirty(true);
+      addToast(`Applied ${p.name} palette!`, "success");
+  };
+
+  const randomizeTemplate = (type: "hero" | "catalog" | "about" | "footer") => {
+      const templates = TEMPLATE_META[type];
+      // Only pick free templates if user is not pro
+      const available = templates.filter(t => isProUser || !t.isPro);
+      const t = available[Math.floor(Math.random() * available.length)];
+      const fieldMap: Record<string, keyof ShopState> = { hero: "heroTemplateId", catalog: "catalogTemplateId", about: "aboutTemplateId", footer: "footerTemplateId" };
+      updateLocalState(fieldMap[type], t.id);
+      addToast(`Applied ${t.name} template!`, "success");
+  };
+
   return (
     <div className="pb-32 font-sans bg-slate-50/50 dark:bg-black min-h-screen transition-colors duration-300">
+
+
       <LivePreviewModal />
       
       {/* FLOATING SAVE BUTTON — CSS only, no mount/unmount = no layout reflow = no keyboard snap */}
@@ -865,17 +922,29 @@ export function BusinessView() {
             <motion.div key="design" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-8">
                 
                 <Accordion id="visual" title="Color System" subtitle="Global Palette" icon={Palette}>
-                    <div className="space-y-6 pb-4 grid grid-cols-2 md:grid-cols-5 gap-6">
-                        <ColorPicker label="Accent Color" value={localState.accentColor || "#10b981"} onChange={(v) => updateLocalState("accentColor", v)} />
-                        <ColorPicker label="Background" value={localState.bgColor || "#f2f2f7"} onChange={(v) => updateLocalState("bgColor", v)} />
-                        <ColorPicker label="Surface/Cards" value={localState.surfaceColor || "#ffffff"} onChange={(v) => updateLocalState("surfaceColor", v)} />
-                        <ColorPicker label="Text Color" value={localState.textColor || "#111827"} onChange={(v) => updateLocalState("textColor", v)} />
-                        <ColorPicker label="Button Color" value={localState.buttonColor || "#10b981"} onChange={(v) => updateLocalState("buttonColor", v)} />
+                    <div className="flex flex-col md:flex-row gap-8">
+                        <div className="flex-1 space-y-6 grid grid-cols-2 md:grid-cols-5 gap-6">
+                            <ColorPicker label="Accent Color" value={localState.accentColor || "#10b981"} onChange={(v) => updateLocalState("accentColor", v)} />
+                            <ColorPicker label="Background" value={localState.bgColor || "#f2f2f7"} onChange={(v) => updateLocalState("bgColor", v)} />
+                            <ColorPicker label="Surface/Cards" value={localState.surfaceColor || "#ffffff"} onChange={(v) => updateLocalState("surfaceColor", v)} />
+                            <ColorPicker label="Text Color" value={localState.textColor || "#111827"} onChange={(v) => updateLocalState("textColor", v)} />
+                            <ColorPicker label="Button Color" value={localState.buttonColor || "#10b981"} onChange={(v) => updateLocalState("buttonColor", v)} />
+                        </div>
+                        <div className="shrink-0 flex items-center pt-4 md:pt-0">
+                            <div className="flex flex-col items-center gap-2">
+                                <DiceButton onClick={randomizePalette} title="Random Palette" />
+                                <span className="text-[8px] font-black uppercase text-slate-400">Randomize</span>
+                            </div>
+                        </div>
                     </div>
                 </Accordion>
 
                 <Accordion id="hero" title="Hero Template" subtitle="Top Banner Design" icon={LayoutTemplate}>
                     <div className="space-y-6">
+                        <div className="flex justify-between items-end px-1">
+                            <p className="text-[10px] font-black uppercase text-slate-400">Choose a Layout</p>
+                            <DiceButton onClick={() => randomizeTemplate("hero")} title="Random Hero" />
+                        </div>
                         <TemplateSelector type="hero" current={localState.heroTemplateId || "hero-1"} onChange={(v) => updateLocalState("heroTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Hero Content Overrides</h4>
@@ -907,20 +976,31 @@ export function BusinessView() {
                 </Accordion>
 
                 <Accordion id="catalog" title="Catalog Template" subtitle="Products Grid Design" icon={LayoutTemplate}>
-                    <TemplateSelector type="catalog" current={localState.catalogTemplateId || "catalog-1"} onChange={(v) => updateLocalState("catalogTemplateId", v)} />
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-end px-1">
+                            <p className="text-[10px] font-black uppercase text-slate-400">Choose a Layout</p>
+                            <DiceButton onClick={() => randomizeTemplate("catalog")} title="Random Catalog" />
+                        </div>
+                        <TemplateSelector type="catalog" current={localState.catalogTemplateId || "catalog-1"} onChange={(v) => updateLocalState("catalogTemplateId", v)} />
+                    </div>
                 </Accordion>
 
                 <Accordion id="about_tpl" title="About Section Style" subtitle="Brand Story Template" icon={LayoutTemplate}>
                     <div className="space-y-4">
-                        <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-widest px-1">
-                            Pick the visual layout for your About section. Edit the actual text content under <span className="text-emerald-500">Inventory → About & Socials</span>.
-                        </p>
+                        <div className="flex justify-between items-end px-1">
+                            <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-widest">Pick visual layout</p>
+                            <DiceButton onClick={() => randomizeTemplate("about")} title="Random About" />
+                        </div>
                         <TemplateSelector type="about" current={localState.aboutTemplateId || "about-1"} onChange={(v) => updateLocalState("aboutTemplateId", v)} />
                     </div>
                 </Accordion>
 
                 <Accordion id="footer_tpl" title="Footer Template" subtitle="Bottom Area Design" icon={PanelBottom}>
                     <div className="space-y-6">
+                        <div className="flex justify-between items-end px-1">
+                            <p className="text-[10px] font-black uppercase text-slate-400">Choose a Layout</p>
+                            <DiceButton onClick={() => randomizeTemplate("footer")} title="Random Footer" />
+                        </div>
                         <TemplateSelector type="footer" current={localState.footerTemplateId || "footer-1"} onChange={(v) => updateLocalState("footerTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Footer Content</h4>
