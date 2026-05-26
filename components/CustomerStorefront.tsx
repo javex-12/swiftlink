@@ -1791,61 +1791,60 @@ export function CustomerStorefront({
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Write Review Modal Overlay */}
-                <AnimatePresence>
-                  {showReviewForm && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                      {/* Backdrop */}
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReviewForm(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+                  {/* Write Review Modal Overlay */}
+                  <AnimatePresence>
+                    {showReviewForm && (
+                      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReviewForm(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
 
-                      {/* Modal Panel */}
-                      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 md:p-8 w-full max-w-md shadow-2xl border border-black/[0.05] dark:border-white/5 space-y-6 z-10">
-                        <div>
-                          <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Share Your Experience</h3>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Submit feedback to {s.bizName || "our store"}</p>
-                        </div>
-
-                        <div className="space-y-4">
-                          {/* Name Input */}
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Name</label>
-                            <input type="text" value={newReview.name} onChange={(e) => setNewReview(prev => ({ ...prev, name: e.target.value }))} placeholder="Alex Carter" className="w-full px-5 py-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-black/5 dark:border-white/5 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-emerald-500/20" />
+                        {/* Modal Panel */}
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 md:p-8 w-full max-w-md shadow-2xl border border-black/[0.05] dark:border-white/5 space-y-6 z-10">
+                          <div>
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Share Your Experience</h3>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Submit feedback to {s.bizName || "our store"}</p>
                           </div>
 
-                          {/* Star Rating selector */}
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Rating</label>
-                            <div className="flex gap-2 bg-gray-50 dark:bg-zinc-800 rounded-2xl p-4 justify-center border border-black/5 dark:border-white/5">
-                              {[1, 2, 3, 4, 5].map((stars) => (
-                                <button key={stars} onClick={() => setNewReview(prev => ({ ...prev, rating: stars }))} className="hover:scale-125 transition-transform">
-                                  <Star size={24} className={stars <= newReview.rating ? "text-amber-400 fill-amber-400" : "text-gray-300"} />
-                                </button>
-                              ))}
+                          <div className="space-y-4">
+                            {/* Name Input */}
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Name</label>
+                              <input type="text" value={newReview.name} onChange={(e) => setNewReview(prev => ({ ...prev, name: e.target.value }))} placeholder="Alex Carter" className="w-full px-5 py-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-black/5 dark:border-white/5 text-sm font-bold text-gray-900 placeholder:text-gray-400 outline-none focus:border-emerald-500/20" />
+                            </div>
+
+                            {/* Star Rating selector */}
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Rating</label>
+                              <div className="flex gap-2 bg-gray-50 dark:bg-zinc-800 rounded-2xl p-4 justify-center border border-black/5 dark:border-white/5">
+                                {[1, 2, 3, 4, 5].map((stars) => (
+                                  <button key={stars} onClick={() => setNewReview(prev => ({ ...prev, rating: stars }))} className="hover:scale-125 transition-transform">
+                                    <Star size={24} className={stars <= newReview.rating ? "text-amber-400 fill-amber-400" : "text-gray-300"} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Message Input */}
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Review</label>
+                              <textarea value={newReview.message} onChange={(e) => setNewReview(prev => ({ ...prev, message: e.target.value }))} placeholder="Tell others what you loved about our service and products..." className="w-full px-5 py-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-black/5 dark:border-white/5 text-sm font-medium text-gray-900 placeholder:text-gray-400 outline-none resize-none h-28 focus:border-emerald-500/20" />
                             </div>
                           </div>
 
-                          {/* Message Input */}
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Review</label>
-                            <textarea value={newReview.message} onChange={(e) => setNewReview(prev => ({ ...prev, message: e.target.value }))} placeholder="Tell others what you loved about our service and products..." className="w-full px-5 py-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl border border-black/5 dark:border-white/5 text-sm font-medium text-gray-900 placeholder:text-gray-400 outline-none resize-none h-28 focus:border-emerald-500/20" />
+                          {/* Actions */}
+                          <div className="flex gap-3">
+                            <button onClick={() => setShowReviewForm(false)} className="flex-1 py-4 bg-gray-105 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-600 dark:text-zinc-350 transition-colors border border-black/5">
+                              Cancel
+                            </button>
+                            <button onClick={submitReview} disabled={!newReview.name || !newReview.message} className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:pointer-events-none shadow-lg">
+                              Submit
+                            </button>
                           </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-3">
-                          <button onClick={() => setShowReviewForm(false)} className="flex-1 py-4 bg-gray-105 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-600 dark:text-zinc-350 transition-colors border border-black/5">
-                            Cancel
-                          </button>
-                          <button onClick={submitReview} disabled={!newReview.name || !newReview.message} className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:pointer-events-none shadow-lg">
-                            Submit
-                          </button>
-                        </div>
-                      </motion.div>
-                    </div>
-                  )}
-                </AnimatePresence>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
               </motion.div>
             )}
 

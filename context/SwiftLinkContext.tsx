@@ -1229,11 +1229,19 @@ export function SwiftLinkProvider({
       addToast("Your cart is empty.", "error");
       return;
     }
-    const phone = state.phone.replace(/\D/g, "");
+    // Strip everything except digits
+    let phone = state.phone.replace(/\D/g, "");
+    
+    // If it starts with 0 and is likely a local number, we have a problem because we don't know the country.
+    // However, if the user used our CountrySelector, the state.phone already has +234 etc.
+    // If state.phone was "+234 808...", digits is "234808...".
+    // If state.phone was "0808..." and they are in Nigeria, they need 234.
+    
     if (!phone) {
       addToast("This store has no WhatsApp number configured yet.", "error");
       return;
     }
+
     if (state.isLive === false) {
       addToast("This store is not accepting orders right now.", "error");
       return;

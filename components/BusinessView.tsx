@@ -723,7 +723,22 @@ export function BusinessView() {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">WhatsApp Number</label>
-                                <StableInput type="tel" value={localState.phone || ""} onChange={(v) => updateLocalState("phone", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="+234..." />
+                                <div className="flex gap-3">
+                                   <div className="shrink-0">
+                                      <CountrySelector 
+                                        value={localState.phone?.startsWith('+') ? localState.phone.split(' ')[0] : "+234"} 
+                                        onChange={(code) => {
+                                            const current = localState.phone || "";
+                                            const pure = current.replace(/^\+\d+\s?/, "");
+                                            updateLocalState("phone", `${code} ${pure}`);
+                                        }} 
+                                      />
+                                   </div>
+                                   <StableInput type="tel" value={localState.phone?.replace(/^\+\d+\s?/, "") || ""} onChange={(v) => {
+                                       const code = localState.phone?.startsWith('+') ? localState.phone.split(' ')[0] : "+234";
+                                       updateLocalState("phone", `${code} ${v}`);
+                                   }} className="flex-1 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="808 000 0000" />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
