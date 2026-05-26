@@ -217,7 +217,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-1: Cinematic dark with animated orbs & glassmorphism
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 450, background: "#050505" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 450, background: "#050505" }}>
                 {/* Animated background orbs */}
                 {/* Animated 3D background */}
                 <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
@@ -251,7 +251,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-2: Full-bleed image with editorial dark overlay
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-xl" style={{ minHeight: 500 }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-xl" style={{ minHeight: 500 }}>
                 <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
                 <ThreeDBackground type={3} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
@@ -279,7 +279,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-3: Light editorial magazine style
     if (templateId === "hero-3") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm" style={{ minHeight: 420 }}>
+            <div className="relative w-full overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm" style={{ minHeight: 420 }}>
                 <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:420 }}>
                     {/* Top bar */}
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
@@ -314,7 +314,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
     if (templateId === "hero-4") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#020205" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#020205" }}>
                 <ThreeDBackground type={1} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(2,2,5,0.9) 30%, rgba(2,2,5,0.4) 60%, transparent 100%)", zIndex: 5 }} />
                 
@@ -337,7 +337,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-5: Cyber Grid Floor (3D Canvas - No Image Required)
     if (templateId === "hero-5") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
                 <ThreeDBackground type={2} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050b0a 10%, rgba(5,11,10,0.5) 100%)", zIndex: 5 }} />
                 
@@ -360,7 +360,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-6: Cosmic Particles Universe (3D Canvas - No Image Required)
     if (templateId === "hero-6") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl" style={{ minHeight: 580, background: "#000000" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl" style={{ minHeight: 580, background: "#000000" }}>
                 <ThreeDBackground type={5} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.85) 90%)", zIndex: 5 }} />
                 
@@ -383,7 +383,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-7: DNA Matrix Helix (3D Canvas - No Image Required)
     if (templateId === "hero-7") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#03020c" }}>
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#03020c" }}>
                 <ThreeDBackground type={8} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #03020c 45%, rgba(3,2,12,0.6) 80%, transparent 100%)", zIndex: 5 }} />
                 
@@ -406,7 +406,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-8: Futuristic Starfield Warp (3D Canvas - No Image Required)
     if (templateId === "hero-8") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#000000" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#000000" }}>
                 <ThreeDBackground type={9} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(135deg, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0.5) 100%)", zIndex: 5 }} />
                 
@@ -429,7 +429,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-9: Oceanic Wave Mesh (3D Canvas - No Image Required)
     if (templateId === "hero-9") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050811" }}>
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050811" }}>
                 <ThreeDBackground type={7} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050811 15%, rgba(5,8,17,0.4) 100%)", zIndex: 5 }} />
                 
@@ -452,7 +452,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-10: Neon Rings Tunnel (3D Canvas - No Image Required)
     if (templateId === "hero-10") {
         return (
-            <div className="relative w-full rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 560, background: "#0a000f" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 560, background: "#0a000f" }}>
                 <ThreeDBackground type={10} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle, transparent 20%, #0a000f 90%)", zIndex: 5 }} />
                 
@@ -1876,7 +1876,7 @@ export function CustomerStorefront({
 
         {/* BOTTOM NAVIGATION BAR */}
         <div className="fixed bottom-0 left-0 right-0 z-[100] backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 75, backgroundColor: `${bgColor}f2` }}>
-          <div className="flex items-center w-full max-w-screen-lg mx-auto md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12" style={{ backgroundColor: surfaceColor }}>
+          <div className="flex items-center w-full max-w-screen-lg mx-auto md:px-8 md:py-2 md:w-fit md:gap-12">
             {[
               { id: "home", icon: Home, label: "Store" },
               { id: "search", icon: Search, label: "Search" },

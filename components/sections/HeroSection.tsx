@@ -40,7 +40,7 @@ export function HeroSection({ section, state }: { section: PageSection; state: S
         onMouseMove={handleMouseMove}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="relative w-full overflow-hidden bg-[#020617] rounded-[2.5rem] min-h-[500px] md:min-h-[650px] flex flex-col items-center justify-center text-center px-6 md:px-12 group mb-12 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-white/5"
+        className="relative w-full overflow-hidden bg-[#020617] min-h-[500px] md:min-h-[650px] flex flex-col items-center justify-center text-center px-6 md:px-12 group mb-12 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-white/5"
       >
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
            <Suspense fallback={null}>
@@ -75,7 +75,7 @@ export function HeroSection({ section, state }: { section: PageSection; state: S
     return (
       <motion.section 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        className="relative w-full overflow-hidden bg-[#020617] rounded-[2.5rem] min-h-[500px] md:min-h-[600px] flex items-center px-8 md:px-20 mb-12 border border-white/5"
+        className="relative w-full overflow-hidden bg-[#020617] min-h-[500px] md:min-h-[600px] flex items-center px-8 md:px-20 mb-12 border border-white/5"
       >
         <div className="absolute inset-0 z-0">
            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1)_0%,transparent_70%)]" />
@@ -97,7 +97,7 @@ export function HeroSection({ section, state }: { section: PageSection; state: S
   return (
     <motion.section 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="relative w-full overflow-hidden bg-slate-900 rounded-[2.5rem] min-h-[400px] flex items-center px-12 mb-12"
+      className="relative w-full overflow-hidden bg-slate-900 min-h-[400px] flex items-center px-12 mb-12"
       style={{ backgroundImage: `url(${content.image || ""})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
       <div className="absolute inset-0 bg-black/60" />

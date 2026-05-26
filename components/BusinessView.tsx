@@ -292,17 +292,35 @@ export function BusinessView() {
       );
   };
 
-  const ColorPicker = ({ value, onChange, label }: { value: string, onChange: (val: string) => void, label: string }) => (
-      <div>
-          <p className="text-[10px] font-black uppercase text-slate-400 mb-2">{label}</p>
-          <input 
-              type="color" 
-              value={value || "#ffffff"} 
-              onChange={(e) => onChange(e.target.value)} 
-              className="w-20 h-10 rounded-xl overflow-hidden cursor-pointer border border-slate-200 dark:border-zinc-700" 
-          />
-      </div>
-  );
+  const StableColorPicker = ({ value, onChange, label }: { value: string, onChange: (val: string) => void, label: string }) => {
+      const [local, setLocal] = useState(value);
+      const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+      useEffect(() => {
+        setLocal(value);
+      }, [value]);
+
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const next = e.target.value;
+        setLocal(next);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          onChange(next);
+        }, 50);
+      };
+
+      return (
+          <div>
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">{label}</p>
+              <input 
+                  type="color" 
+                  value={local || "#ffffff"} 
+                  onChange={handleChange} 
+                  className="w-20 h-10 rounded-xl overflow-hidden cursor-pointer border border-slate-200 dark:border-zinc-700 hover:scale-105 transition-transform" 
+              />
+          </div>
+      );
+  };
 
   const DiceButton = ({ onClick, title = "Randomize" }: { onClick: () => void, title?: string }) => {
       const [isSpinning, setIsSpinning] = useState(false);
@@ -924,11 +942,11 @@ export function BusinessView() {
                 <Accordion id="visual" title="Color System" subtitle="Global Palette" icon={Palette}>
                     <div className="flex flex-col md:flex-row gap-8">
                         <div className="flex-1 space-y-6 grid grid-cols-2 md:grid-cols-5 gap-6">
-                            <ColorPicker label="Accent Color" value={localState.accentColor || "#10b981"} onChange={(v) => updateLocalState("accentColor", v)} />
-                            <ColorPicker label="Background" value={localState.bgColor || "#f2f2f7"} onChange={(v) => updateLocalState("bgColor", v)} />
-                            <ColorPicker label="Surface/Cards" value={localState.surfaceColor || "#ffffff"} onChange={(v) => updateLocalState("surfaceColor", v)} />
-                            <ColorPicker label="Text Color" value={localState.textColor || "#111827"} onChange={(v) => updateLocalState("textColor", v)} />
-                            <ColorPicker label="Button Color" value={localState.buttonColor || "#10b981"} onChange={(v) => updateLocalState("buttonColor", v)} />
+                            <StableColorPicker label="Accent Color" value={localState.accentColor || "#10b981"} onChange={(v) => updateLocalState("accentColor", v)} />
+                            <StableColorPicker label="Background" value={localState.bgColor || "#f2f2f7"} onChange={(v) => updateLocalState("bgColor", v)} />
+                            <StableColorPicker label="Surface/Cards" value={localState.surfaceColor || "#ffffff"} onChange={(v) => updateLocalState("surfaceColor", v)} />
+                            <StableColorPicker label="Text Color" value={localState.textColor || "#111827"} onChange={(v) => updateLocalState("textColor", v)} />
+                            <StableColorPicker label="Button Color" value={localState.buttonColor || "#10b981"} onChange={(v) => updateLocalState("buttonColor", v)} />
                         </div>
                         <div className="shrink-0 flex items-center pt-4 md:pt-0">
                             <div className="flex flex-col items-center gap-2">
