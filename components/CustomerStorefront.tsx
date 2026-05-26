@@ -207,7 +207,7 @@ const Hero5Particles = ({ accent }: { accent: string }) => {
     return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />;
 };
 
-const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
+const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, templateId: string, onShopClick?: () => void }) => {
     const title = state.heroTitle || state.bizName || "Premium Collection";
     const subtitle = state.heroSubtitle || "Discover our curated collection";
     const btnText = state.heroButtonText || "Shop Now";
@@ -238,7 +238,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                     <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.45)", fontWeight:400, maxWidth:480, lineHeight:1.7, margin:"0 0 2rem 0" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95">
                         {btnText}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
@@ -267,7 +267,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                     <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:420, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }} className="hover:scale-105 active:scale-95 transition-transform">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }} className="hover:scale-105 active:scale-95 transition-transform">
                         {btnText}
                         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
@@ -295,7 +295,7 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                             <p style={{ fontSize:"0.95rem", color:"#666", fontWeight:400, maxWidth:360, lineHeight:1.7, margin:0 }}>
                                 {subtitle}
                             </p>
-                            <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }} className="hover:scale-105 active:scale-95 transition-transform">
+                            <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }} className="hover:scale-105 active:scale-95 transition-transform">
                                 {btnText} →
                             </button>
                         </div>
@@ -319,16 +319,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(2,2,5,0.9) 30%, rgba(2,2,5,0.4) 60%, transparent 100%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 650 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:8, border:`1px solid ${accent}44`, background:`${accent}11`, fontSize:9, fontWeight:800, letterSpacing:"0.25em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:24 }}>
-                        🔒 Luxury Node Active
-                    </div>
                     <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:460, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <svg className="transition-transform group-hover:translate-x-1" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </button>
@@ -345,17 +342,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050b0a 10%, rgba(5,11,10,0.5) 100%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.4)", backdropFilter:"blur(12px)", fontSize:10, fontWeight:700, letterSpacing:"0.3em", textTransform:"uppercase", color:"#ffffff", width:"fit-content", marginBottom:28 }}>
-                        <span style={{ width:8, height:8, borderRadius:"50%", background:accent, display:"inline-block" }} className="animate-ping" />
-                        Hyper commerce grid
-                    </div>
                     <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"transparent", backgroundImage:`linear-gradient(135deg, #ffffff, ${accent})`, WebkitBackgroundClip:"text", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 44px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:"0 20px 40px -15px rgba(255,255,255,0.3)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 44px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:"0 20px 40px -15px rgba(255,255,255,0.3)" }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <Zap size={14} fill="currentColor" />
                     </button>
@@ -372,16 +365,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.85) 90%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:580 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:12, border:`1px solid ${accent}33`, background:`${accent}08`, fontSize:9, fontWeight:800, letterSpacing:"0.3em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32, textShadow:`0 0 10px ${accent}44` }}>
-                        ✨ Cosmic Particles V2
-                    </div>
                     <h1 style={{ fontSize:"clamp(3rem,9vw,6rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 50px ${accent}44` }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:300, maxWidth:600, lineHeight:1.6, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", boxShadow:`0 25px 50px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", boxShadow:`0 25px 50px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <svg className="transition-transform group-hover:translate-x-2" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                     </button>
@@ -398,16 +388,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #03020c 45%, rgba(3,2,12,0.6) 80%, transparent 100%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 650 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.06)", background:"rgba(255,255,255,0.02)", backdropFilter:"blur(8px)", fontSize:9, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.5)", width:"fit-content", marginBottom:24 }}>
-                        Organic tech structure
-                    </div>
                     <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:460, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#03020c", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.2)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#03020c", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.2)" }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <ArrowRight size={16} />
                     </button>
@@ -424,16 +411,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(135deg, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0.5) 100%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 700 }}>
-                    <p style={{ fontSize:11, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:accent, marginBottom:16, textShadow:`0 0 10px ${accent}44` }}>
-                        Warp Speed Delivery
-                    </p>
                     <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"oblique" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 38px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 transition-transform">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 38px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 transition-transform">
                         {btnText}
                         <Zap size={14} fill="currentColor" />
                     </button>
@@ -450,16 +434,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050811 15%, rgba(5,8,17,0.4) 100%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:9999, border:`1px solid ${accent}22`, background:"rgba(0,0,0,0.6)", fontSize:9, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:24 }}>
-                        Fluid Dynamics Active
-                    </div>
                     <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#050811", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.15)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#050811", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.15)" }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <ArrowRight size={14} />
                     </button>
@@ -476,16 +457,13 @@ const HeroTemplate = ({ state, templateId }: { state: ShopState, templateId: str
                 <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle, transparent 20%, #0a000f 90%)", zIndex: 5 }} />
                 
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:560 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 18px", borderRadius:9999, border:`1px solid ${accent}55`, background:`${accent}11`, fontSize:10, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:accent, width:"fit-content", marginBottom:32, textShadow:`0 0 8px ${accent}66` }}>
-                        Cybernetic Portal Active
-                    </div>
                     <h1 style={{ fontSize:"clamp(2.8rem,8.5vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 40px ${accent}aa` }}>
                         {title}
                     </h1>
                     <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.65)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
                         <Zap size={14} fill="currentColor" />
                     </button>
@@ -1402,7 +1380,7 @@ export function CustomerStorefront({
   const buttonColor = s.buttonColor || accentColor;
 
   return (
-    <div className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white"
+    <div className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full"
          style={{ 
             backgroundColor: bgColor,
             "--theme-color": accentColor, 
@@ -1416,13 +1394,14 @@ export function CustomerStorefront({
          .text-emerald-500 { color: var(--theme-color) !important; }
          .text-emerald-600 { color: color-mix(in srgb, var(--theme-color) 80%, black) !important; }
          .border-emerald-500 { border-color: var(--theme-color) !important; }
-         .bg-\\[\\#f2f2f7\\] { background-color: var(--bg-color) !important; }
+         .bg-\\[\\#f2f2f7\\], .bg-gray-100 { background-color: var(--bg-color) !important; }
          .text-gray-900 { color: var(--text-color) !important; }
          .bg-white { background-color: var(--surface-color) !important; border-color: color-mix(in srgb, var(--text-color) 5%, transparent) !important; }
          .bg-gray-50 { background-color: color-mix(in srgb, var(--surface-color) 90%, black) !important; }
-         .bg-gray-100 { background-color: color-mix(in srgb, var(--surface-color) 95%, black) !important; }
          .text-gray-500, .text-gray-400 { color: color-mix(in srgb, var(--text-color) 60%, transparent) !important; }
          .bg-gray-900 { background-color: color-mix(in srgb, var(--text-color) 90%, black) !important; color: var(--bg-color) !important; }
+         header.storefront-header, div.storefront-header { background-color: var(--bg-color) !important; }
+         footer.storefront-footer, div.storefront-footer, footer { background-color: var(--bg-color) !important; }
       `}</style>
       
       <div className="w-full max-w-screen-xl min-h-screen flex flex-col relative overflow-hidden md:shadow-[0_0_100px_rgba(0,0,0,0.05)]">
@@ -1434,7 +1413,7 @@ export function CustomerStorefront({
               <motion.div key="home" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden">
                 
                 {/* Fixed Header */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0">
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header" style={{ backgroundColor: bgColor }}>
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-3 md:py-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
@@ -1463,12 +1442,20 @@ export function CustomerStorefront({
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
+
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+
+                  {/* NEW TEMPLATE ENGINE - Full bleed, broken out of max-w container */}
+                  <div className="w-full">
+                    <HeroTemplate state={s} templateId={s.heroTemplateId || "hero-1"} onShopClick={() => {
+                        const target = document.querySelector(".sticky.top-0.z-40");
+                        if(target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }} />
+                  </div>
+
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-8">
                     
-                    {/* NEW TEMPLATE ENGINE */}
-                    <HeroTemplate state={s} templateId={s.heroTemplateId || "hero-1"} />
-
                     {/* CATEGORIES BAR */}
                     <div className="pb-8 sticky top-0 z-40 backdrop-blur-xl pt-2">
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
@@ -1488,8 +1475,11 @@ export function CustomerStorefront({
 
                     <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); setScreen("product"); logEvent("product_click", { productId: p.id }); }} />
                     <AboutTemplate state={s} templateId={s.aboutTemplateId || "about-1"} />
-                    <FooterTemplate state={s} templateId={s.footerTemplateId || "footer-1"} />
+                  </div>
 
+                  {/* Footer Template - Full bleed, broken out of max-w container */}
+                  <div className="w-full">
+                    <FooterTemplate state={s} templateId={s.footerTemplateId || "footer-1"} />
                   </div>
                   <div className="h-24" />
                 </div>
