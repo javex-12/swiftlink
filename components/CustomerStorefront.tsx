@@ -217,7 +217,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-1: Cinematic dark with animated orbs & glassmorphism
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 450, background: "#050505" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
                 {/* Animated background orbs */}
                 {/* Animated 3D background */}
                 <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
@@ -251,7 +251,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-2: Full-bleed image with editorial dark overlay
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-xl" style={{ minHeight: 500 }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-xl min-h-[80vh] md:min-h-[500px]">
                 <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
                 <ThreeDBackground type={3} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
@@ -279,7 +279,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-3: Light editorial magazine style
     if (templateId === "hero-3") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm" style={{ minHeight: 420 }}>
+            <div className="relative w-full overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm min-h-[80vh] md:min-h-[420px]">
                 <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:420 }}>
                     {/* Top bar */}
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
@@ -314,7 +314,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
     if (templateId === "hero-4") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#020205" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
                 <ThreeDBackground type={1} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(2,2,5,0.9) 30%, rgba(2,2,5,0.4) 60%, transparent 100%)", zIndex: 5 }} />
                 

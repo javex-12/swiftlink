@@ -46,12 +46,25 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
         // SCENE GENERATORS (1 to 10)
         // ---------------------------------------------------------
         if (type === 1) {
-            // Type 1: Glowing Torus Knot
-            const geo = new THREE.TorusKnotGeometry(2, 0.5, 100, 16);
-            const mat = new THREE.MeshPhongMaterial({ color, wireframe: true, transparent: true, opacity: 0.3, emissive: color.clone().multiplyScalar(0.4) });
+            // Type 1: High-Fidelity Torus Knot
+            const geo = new THREE.TorusKnotGeometry(2, 0.6, 200, 32);
+            const mat = new THREE.MeshPhysicalMaterial({ 
+                color, 
+                metalness: 0.9, 
+                roughness: 0.1, 
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                emissive: color.clone().multiplyScalar(0.2),
+                transparent: true,
+                opacity: 0.8
+            });
             const mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
-            objects.push({ update: () => { mesh.rotation.x += 0.01; mesh.rotation.y += 0.01; } });
+            objects.push({ update: (t: number) => { 
+                mesh.rotation.x = t * 0.2; 
+                mesh.rotation.y = t * 0.3;
+                mesh.scale.setScalar(1 + Math.sin(t) * 0.05);
+            } });
         } 
         else if (type === 2) {
             // Type 2: Cyber Grid Floor
@@ -63,46 +76,73 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
             objects.push({ update: (t: number) => { grid.position.z = (t * 2) % 1; } });
         }
         else if (type === 3) {
-            // Type 3: Floating Cubes
-            const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-            const mat = new THREE.MeshPhongMaterial({ color, wireframe: true, transparent: true, opacity: 0.5, emissive: color.clone().multiplyScalar(0.2) });
-            for(let i=0; i<50; i++) {
+            // Type 3: Floating Cinematic Shards
+            const geo = new THREE.TetrahedronGeometry(1);
+            const mat = new THREE.MeshPhysicalMaterial({ 
+                color, 
+                transparent: true, 
+                opacity: 0.6, 
+                metalness: 0.5, 
+                roughness: 0, 
+                transmission: 0.5, 
+                thickness: 2 
+            });
+            for(let i=0; i<40; i++) {
                 const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*15);
+                mesh.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*20, (Math.random()-0.5)*20);
                 mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                const scale = 0.2 + Math.random() * 0.8;
+                mesh.scale.setScalar(scale);
                 scene.add(mesh);
+                mesh.userData = { 
+                    rx: (Math.random()-0.5)*0.01, 
+                    ry: (Math.random()-0.5)*0.01,
+                    py: Math.random() * Math.PI * 2
+                };
                 objects.push({
-                    mesh, 
-                    rx: Math.random()*0.02, ry: Math.random()*0.02, 
-                    update: () => { mesh.rotation.x += mesh.userData.rx; mesh.rotation.y += mesh.userData.ry; }
+                    update: (t: number) => { 
+                        mesh.rotation.x += mesh.userData.rx; 
+                        mesh.rotation.y += mesh.userData.ry; 
+                        mesh.position.y += Math.sin(t + mesh.userData.py) * 0.005;
+                    }
                 });
-                mesh.userData = { rx: Math.random()*0.02, ry: Math.random()*0.02 };
             }
         }
         else if (type === 4) {
-            // Type 4: Morphing Wireframe Icosahedron (The User's specific request)
-            const geometry = new THREE.IcosahedronGeometry(2, 4);
+            // Type 4: Abstract Organic Fluid Sphere
+            const geometry = new THREE.IcosahedronGeometry(2, 12);
+            const material = new THREE.MeshStandardMaterial({ 
+                color, 
+                flatShading: false,
+                wireframe: false,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: color.clone().multiplyScalar(0.1)
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            
             const positionAttribute = geometry.getAttribute('position');
-            const originalPositions = [];
-            for (let i = 0; i < positionAttribute.count; i++) {
-                originalPositions.push(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i));
-            }
-            geometry.userData = { originalPositions };
-            const material = new THREE.MeshPhongMaterial({ color, wireframe: true, transparent: true, opacity: 0.25, emissive: color.clone().multiplyScalar(0.3), shininess: 100 });
-            const crystalMesh = new THREE.Mesh(geometry, material);
-            scene.add(crystalMesh);
+            const originalPositions = new Float32Array(positionAttribute.array);
+
             objects.push({
                 update: (t: number) => {
-                    crystalMesh.rotation.y += 0.002;
-                    crystalMesh.rotation.x += 0.001;
-                    const positions = crystalMesh.geometry.attributes.position as THREE.BufferAttribute;
-                    const original = crystalMesh.geometry.userData.originalPositions;
-                    for (let i = 0; i < positions.count; i++) {
-                        const ix = i * 3, iy = i * 3 + 1, iz = i * 3 + 2;
-                        const wave = Math.sin(t * 2 + (original[ix] + original[iy] + original[iz])) * 0.15;
-                        positions.setXYZ(i, original[ix] + wave * (original[ix] / 2), original[iy] + wave * (original[iy] / 2), original[iz] + wave * (original[iz] / 2));
+                    mesh.rotation.y += 0.005;
+                    const positions = geometry.attributes.position.array as Float32Array;
+                    for (let i = 0; i < positions.length; i += 3) {
+                        const x = originalPositions[i];
+                        const y = originalPositions[i+1];
+                        const z = originalPositions[i+2];
+                        
+                        const noise = Math.sin(x * 1.5 + t) * Math.cos(y * 1.5 + t) * Math.sin(z * 1.5 + t);
+                        const factor = 1 + noise * 0.15;
+                        
+                        positions[i] = x * factor;
+                        positions[i+1] = y * factor;
+                        positions[i+2] = z * factor;
                     }
-                    positions.needsUpdate = true;
+                    geometry.attributes.position.needsUpdate = true;
+                    geometry.computeVertexNormals();
                 }
             });
         }
@@ -118,20 +158,29 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
             objects.push({ update: () => { points.rotation.y += 0.001; points.rotation.x += 0.0005; }});
         }
         else if (type === 6) {
-            // Type 6: Abstract Spheres Array
-            const geo = new THREE.SphereGeometry(0.8, 32, 32);
-            const mat = new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.2, emissive: color.clone().multiplyScalar(0.1), wireframe: true });
+            // Type 6: Floating Aurora Rings
             const group = new THREE.Group();
-            for(let i=0; i<5; i++) {
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.x = (i - 2) * 2.5;
-                group.add(mesh);
+            const ringGeo = new THREE.TorusGeometry(3, 0.02, 16, 100);
+            for(let i=0; i<8; i++) {
+                const ringMat = new THREE.MeshBasicMaterial({ 
+                    color, 
+                    transparent: true, 
+                    opacity: (1 - i/8) * 0.5,
+                    blending: THREE.AdditiveBlending
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.random() * Math.PI;
+                ring.rotation.y = Math.random() * Math.PI;
+                ring.scale.setScalar(0.5 + i * 0.2);
+                group.add(ring);
+                objects.push({
+                    update: (t: number) => {
+                        ring.rotation.x += 0.002 * (i + 1);
+                        ring.rotation.y += 0.001 * (i + 1);
+                    }
+                });
             }
             scene.add(group);
-            objects.push({ update: (t: number) => { 
-                group.rotation.y = Math.sin(t*0.5) * 0.5; 
-                group.children.forEach((c, i) => c.position.y = Math.sin(t + i) * 0.5);
-            }});
         }
         else if (type === 7) {
             // Type 7: Wave Mesh (Oceanic wireframe)
