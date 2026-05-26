@@ -886,7 +886,7 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
     // Template 2: Minimal centered
     if (templateId === "footer-2") {
         return (
-            <footer className="py-16 text-center border-t border-black/[0.06] dark:border-white/5 mt-20 space-y-6">
+            <footer className="py-16 text-center border-t border-black/[0.06] dark:border-white/5 mt-20 space-y-6 w-full bg-white dark:bg-zinc-950 storefront-footer">
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white italic uppercase">{state.bizName}</h3>
                 {state.tagline && <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">{state.tagline}</p>}
                 <div className="flex justify-center gap-3">
@@ -901,8 +901,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
     // Template 3: Multi-Column Directory
     if (templateId === "footer-3") {
         return (
-            <footer className="mt-20 mb-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-10 md:p-16 border border-black/[0.03] dark:border-white/5 shadow-sm">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+            <footer className="mt-20 bg-white dark:bg-zinc-900 p-10 md:p-16 border-t border-black/[0.03] dark:border-white/5 w-full storefront-footer">
+                <div className="max-w-screen-xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-10">
                     <div className="col-span-2 md:col-span-1 space-y-4">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
                             <Zap size={16} fill="currentColor" />
@@ -945,8 +945,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
     // Template 4: Premium Dark Panel
     if (templateId === "footer-4") {
         return (
-            <footer className="mt-20 mb-8 bg-zinc-950 rounded-[2.5rem] p-10 md:p-16 border border-zinc-800">
-                <div className="flex flex-col md:flex-row gap-12 justify-between">
+            <footer className="mt-20 bg-zinc-950 p-10 md:p-16 border-t border-zinc-800 w-full storefront-footer">
+                <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row gap-12 justify-between">
                     <div className="space-y-5 max-w-xs">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: accent }}>
@@ -987,8 +987,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
     // Template 5: Contact Feedback Strip
     if (templateId === "footer-5") {
         return (
-            <footer className="mt-20 mb-8 space-y-0">
-                <div className="rounded-[2.5rem] p-10 md:p-16 text-center" style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)`, border: `1px solid ${accent}22` }}>
+            <footer className="mt-20 w-full storefront-footer">
+                <div className="p-10 md:p-16 text-center w-full" style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)`, borderTop: `1px solid ${accent}22` }}>
                     <h3 className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4">Stay Connected</h3>
                     <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md mx-auto mb-8">Questions? We're always on standby. Reach out and we'll respond on WhatsApp within minutes.</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
@@ -996,7 +996,7 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
                         <button className="px-6 py-3 rounded-xl text-white text-xs font-black uppercase tracking-wider whitespace-nowrap" style={{ backgroundColor: accent }}>Subscribe</button>
                     </div>
                 </div>
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-4 pt-6 pb-2">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 px-8 pt-6 pb-6 bg-white dark:bg-zinc-950 border-t border-black/5 dark:border-white/5">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-300">{state.bizName}</p>
                     <div className="flex gap-3">
                         {socials.instagram && <a href={socials.instagram} target="_blank" className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:scale-105 transition-transform" style={{ backgroundColor: accent }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>}
@@ -1147,7 +1147,7 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
 
     // Template 1 (Default): Branded card
     return (
-        <footer className="rounded-[2.5rem] p-10 md:p-16 mt-20 mb-8 flex flex-col md:flex-row gap-10 justify-between" style={{ backgroundColor: `${accent}12`, border: `1px solid ${accent}22` }}>
+        <footer className="p-10 md:p-20 mt-20 flex flex-col md:flex-row gap-10 justify-between w-full border-t border-black/5 dark:border-white/5 storefront-footer" style={{ backgroundColor: `${accent}08` }}>
             <div className="space-y-4 max-w-sm">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: accent }}>
@@ -1380,7 +1380,7 @@ export function CustomerStorefront({
   const buttonColor = s.buttonColor || accentColor;
 
   return (
-    <div className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full"
+    <div className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-hidden"
          style={{ 
             backgroundColor: bgColor,
             "--theme-color": accentColor, 
@@ -1394,27 +1394,28 @@ export function CustomerStorefront({
          .text-emerald-500 { color: var(--theme-color) !important; }
          .text-emerald-600 { color: color-mix(in srgb, var(--theme-color) 80%, black) !important; }
          .border-emerald-500 { border-color: var(--theme-color) !important; }
-         .bg-\\[\\#f2f2f7\\], .bg-gray-100 { background-color: var(--bg-color) !important; }
+         .bg-gray-100 { background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color)) !important; }
          .text-gray-900 { color: var(--text-color) !important; }
-         .bg-white { background-color: var(--surface-color) !important; border-color: color-mix(in srgb, var(--text-color) 5%, transparent) !important; }
-         .bg-gray-50 { background-color: color-mix(in srgb, var(--surface-color) 90%, black) !important; }
+         .bg-white { background-color: var(--surface-color) !important; border-color: color-mix(in srgb, var(--text-color) 10%, transparent) !important; }
+         .bg-gray-50 { background-color: color-mix(in srgb, var(--surface-color) 95%, var(--text-color)) !important; }
          .text-gray-500, .text-gray-400 { color: color-mix(in srgb, var(--text-color) 60%, transparent) !important; }
-         .bg-gray-900 { background-color: color-mix(in srgb, var(--text-color) 90%, black) !important; color: var(--bg-color) !important; }
+         .bg-gray-900 { background-color: var(--text-color) !important; color: var(--bg-color) !important; }
          header.storefront-header, div.storefront-header { background-color: var(--bg-color) !important; }
          footer.storefront-footer, div.storefront-footer, footer { background-color: var(--bg-color) !important; }
+         .custom-scrollbar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 20%, transparent); }
       `}</style>
       
-      <div className="w-full max-w-screen-xl min-h-screen flex flex-col relative overflow-hidden md:shadow-[0_0_100px_rgba(0,0,0,0.05)]">
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+      <div className="w-full min-h-screen flex flex-col relative overflow-x-hidden">
+        <div className="flex-1 flex flex-col relative">
           <AnimatePresence mode="wait">
             
             {/* HOME SCREEN */}
             {screen === "home" && (
-              <motion.div key="home" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden">
+              <motion.div key="home" {...pageAnim} className="absolute inset-0 flex flex-col">
                 
                 {/* Fixed Header */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header" style={{ backgroundColor: bgColor }}>
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-3 md:py-5 flex items-center justify-between">
+                <div className="backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header" style={{ backgroundColor: `${bgColor}e6` }}>
+                  <div className="w-full px-4 md:px-12 py-3 md:py-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
                         {s.bizImage ? <img src={s.bizImage} className="w-full h-full object-cover" /> : <Zap size={14} fill="white" className="text-white" />}
@@ -1425,11 +1426,11 @@ export function CustomerStorefront({
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <button onClick={() => goTab("search")} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
-                        <Search size={16} className="text-gray-500" />
+                      <button onClick={() => goTab("search")} className="p-1.5 hover:bg-black/5 rounded-full transition-colors">
+                        <Search size={16} className="text-gray-900" />
                       </button>
-                      <button onClick={() => goTab("cart")} className="relative p-1.5 hover:bg-gray-100 rounded-full transition-colors">
-                        <ShoppingCart size={16} className="text-gray-500" />
+                      <button onClick={() => goTab("cart")} className="relative p-1.5 hover:bg-black/5 rounded-full transition-colors">
+                        <ShoppingCart size={16} className="text-gray-900" />
                         <AnimatePresence>
                           {cartItemCount > 0 && (
                             <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
@@ -1444,53 +1445,54 @@ export function CustomerStorefront({
 
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col">
 
-                  {/* NEW TEMPLATE ENGINE - Full bleed, broken out of max-w container */}
+                  {/* NEW TEMPLATE ENGINE - Full bleed */}
                   <div className="w-full">
                     <HeroTemplate state={s} templateId={s.heroTemplateId || "hero-1"} onShopClick={() => {
-                        const target = document.querySelector(".sticky.top-0.z-40");
+                        const target = document.getElementById("sl-catalog");
                         if(target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                     }} />
                   </div>
 
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-8">
-                    
-                    {/* CATEGORIES BAR */}
-                    <div className="pb-8 sticky top-0 z-40 backdrop-blur-xl pt-2">
-                        <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
-                            {categories.map((c) => (
-                            <button
-                                key={c}
-                                onClick={() => setActiveCategory(c)}
-                                className={`flex-shrink-0 px-5 py-2 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-black transition-all active:scale-95 ${
-                                activeCategory === c ? "shadow-lg bg-gray-900 text-white" : "border border-black/[0.05] bg-white text-gray-500 hover:brightness-95"
-                                }`}
-                            >
-                                {c}
-                            </button>
-                            ))}
+                  <div className="w-full flex-1">
+                    <div className="max-w-screen-xl mx-auto px-4 md:px-12 py-4 md:py-8">
+                        
+                        {/* CATEGORIES BAR */}
+                        <div id="sl-catalog" className="pb-8 sticky top-0 z-40 backdrop-blur-xl pt-2">
+                            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+                                {categories.map((c) => (
+                                <button
+                                    key={c}
+                                    onClick={() => setActiveCategory(c)}
+                                    className={`flex-shrink-0 px-5 py-2 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-black transition-all active:scale-95 ${
+                                    activeCategory === c ? "shadow-lg bg-gray-900 text-white" : "border border-black/[0.05] bg-white text-gray-900 hover:brightness-95"
+                                    }`}
+                                >
+                                    {c}
+                                </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); setScreen("product"); logEvent("product_click", { productId: p.id }); }} />
-                    <AboutTemplate state={s} templateId={s.aboutTemplateId || "about-1"} />
+                        <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); setScreen("product"); logEvent("product_click", { productId: p.id }); }} />
+                        <AboutTemplate state={s} templateId={s.aboutTemplateId || "about-1"} />
+                    </div>
                   </div>
 
-                  {/* Footer Template - Full bleed, broken out of max-w container */}
-                  <div className="w-full">
+                  {/* Footer Template - Full bleed */}
+                  <div className="w-full mt-auto">
                     <FooterTemplate state={s} templateId={s.footerTemplateId || "footer-1"} />
                   </div>
-                  <div className="h-24" />
                 </div>
               </motion.div>
             )}
 
             {/* PRODUCT DETAIL SCREEN */}
             {screen === "product" && selectedProduct && (
-              <motion.div key="product" {...pageAnim} className="absolute inset-0 flex flex-col bg-white overflow-hidden">
+              <motion.div key="product" {...pageAnim} className="absolute inset-0 flex flex-col bg-white overflow-hidden z-[60]">
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="max-w-screen-lg mx-auto md:flex md:items-stretch md:min-h-screen">
+                  <div className="w-full md:flex md:items-stretch md:min-h-screen">
                     
                     {/* Image Column */}
                     <div className="relative md:w-1/2 md:h-screen">
@@ -1526,7 +1528,7 @@ export function CustomerStorefront({
                     </div>
 
                     {/* Content Column */}
-                    <div className="p-6 md:p-12 md:w-1/2 flex flex-col justify-center">
+                    <div className="p-6 md:p-12 md:w-1/2 flex flex-col justify-center bg-white">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h1 className="text-2xl md:text-4xl font-black text-gray-900 leading-tight">{selectedProduct.name}</h1>
@@ -1559,10 +1561,15 @@ export function CustomerStorefront({
 
             {/* SEARCH SCREEN */}
             {screen === "search" && (
-              <motion.div key="search" {...pageAnim} className="absolute inset-0 flex flex-col bg-[#f2f2f7] overflow-hidden">
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full">
+              <motion.div key="search" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-[60]" style={{ backgroundColor: bgColor }}>
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 md:py-10">
-                    <h2 className="text-sm md:text-2xl font-black text-gray-900 mb-4 md:mb-6 tracking-tight">Search Catalog</h2>
+                    <div className="flex items-center gap-4 mb-4 md:mb-6">
+                        <button onClick={() => goTab("home")} className="p-2 -ml-2 rounded-full hover:bg-black/5 text-gray-900 transition-colors">
+                            <ChevronLeft size={24} />
+                        </button>
+                        <h2 className="text-sm md:text-2xl font-black text-gray-900 tracking-tight">Search Catalog</h2>
+                    </div>
                     <div className="relative">
                       <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input autoFocus type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Try 'hoodie'..." className="w-full pl-12 pr-6 py-4 md:py-6 bg-gray-100 rounded-2xl md:rounded-3xl text-xs md:text-lg font-bold text-gray-900 placeholder:text-gray-400 outline-none border-2 border-transparent focus:border-emerald-500/20 transition-all shadow-inner" />
@@ -1588,14 +1595,18 @@ export function CustomerStorefront({
 
             {/* CART SCREEN */}
             {screen === "cart" && (
-              <motion.div key="cart" {...pageAnim} className="absolute inset-0 flex flex-col bg-[#f2f2f7] overflow-hidden">
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full">
+              <motion.div key="cart" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-[60]" style={{ backgroundColor: bgColor }}>
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 md:py-10 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm md:text-2xl font-black text-gray-900 tracking-tight">Your Shopping Bag</h2>
-                      <p className="text-[10px] md:text-sm text-gray-400 font-bold mt-1 uppercase tracking-wider">{cartItemCount} items selected</p>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => goTab("home")} className="p-2 -ml-2 rounded-full hover:bg-black/5 text-gray-900 transition-colors">
+                            <ChevronLeft size={24} />
+                        </button>
+                        <div>
+                        <h2 className="text-sm md:text-2xl font-black text-gray-900 tracking-tight">Your Shopping Bag</h2>
+                        <p className="text-[10px] md:text-sm text-gray-400 font-bold mt-1 uppercase tracking-wider">{cartItemCount} items selected</p>
+                        </div>
                     </div>
-                    <button onClick={() => goTab("home")} className="p-2 md:p-3 bg-gray-100 rounded-full text-gray-900"><X size={20} /></button>
                   </div>
                 </div>
 
@@ -1652,13 +1663,13 @@ export function CustomerStorefront({
 
             {/* COMMUNITY/REVIEWS SCREEN */}
             {screen === "community" && (
-              <motion.div key="community" {...pageAnim} className="absolute inset-0 flex flex-col bg-[#f2f2f7] overflow-hidden z-50">
+              <motion.div key="community" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-50" style={{ backgroundColor: bgColor }}>
                 {/* Header */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full shrink-0 z-10">
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full shrink-0 z-10 storefront-header">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <button onClick={() => { setScreen("home"); setActiveTab("home"); }} className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-900 transition-colors">
-                        <ChevronLeft size={20} />
+                      <button onClick={() => { setScreen("home"); setActiveTab("home"); }} className="p-2 -ml-2 rounded-full hover:bg-black/5 text-gray-900 transition-colors">
+                        <ChevronLeft size={24} />
                       </button>
                       <h2 className="text-sm md:text-xl font-black text-gray-900 tracking-tight">Customer Reviews</h2>
                     </div>
@@ -1671,7 +1682,7 @@ export function CustomerStorefront({
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-8">
                     
                     {/* Rating Stats Summary Panel */}
@@ -1727,7 +1738,7 @@ export function CustomerStorefront({
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pb-24">
                         {reviews.filter(r => !isStoreOwner || r.author_id !== user?.id).map((r) => {
                           const reviewerComments = comments[r.id] || [];
                           return (
@@ -1789,6 +1800,7 @@ export function CustomerStorefront({
                     )}
                   </div>
                 </div>
+                <div className="h-20 shrink-0" />
 
                 {/* Write Review Modal Overlay */}
                 <AnimatePresence>
@@ -1848,7 +1860,7 @@ export function CustomerStorefront({
 
             {/* SUCCESS SCREEN */}
             {screen === "success" && (
-              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white flex flex-col items-center justify-center p-10 text-center">
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-white flex flex-col items-center justify-center p-10 text-center z-[70]">
                 <div className="max-w-md mx-auto space-y-6">
                   <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.6, repeat: Infinity }} className="w-24 h-24 md:w-32 md:h-32 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 size={48} className="text-emerald-500" />
@@ -1863,8 +1875,8 @@ export function CustomerStorefront({
         </div>
 
         {/* BOTTOM NAVIGATION BAR */}
-        <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 70 }}>
-          <div className="flex items-center w-full max-w-screen-lg mx-auto md:bg-white md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12">
+        <div className="fixed bottom-0 left-0 right-0 z-[100] backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 75, backgroundColor: `${bgColor}f2` }}>
+          <div className="flex items-center w-full max-w-screen-lg mx-auto md:shadow-2xl md:rounded-full md:px-8 md:py-2 md:w-fit md:gap-12" style={{ backgroundColor: surfaceColor }}>
             {[
               { id: "home", icon: Home, label: "Store" },
               { id: "search", icon: Search, label: "Search" },
@@ -1873,10 +1885,10 @@ export function CustomerStorefront({
             ].map(({ id, icon: Icon, label, badge }) => (
               <button key={id} onClick={() => goTab(id as any)} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "text-gray-900" : "text-gray-300 hover:text-gray-400"}`}>
                 <div className="relative">
-                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" strokeWidth={activeTab === id ? 2.5 : 1.5} />
+                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" style={{ color: activeTab === id ? textColor : undefined }} strokeWidth={activeTab === id ? 2.5 : 1.5} />
                   {badge != null && badge > 0 && <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-emerald-500 text-white text-[7px] font-black rounded-full flex items-center justify-center">{badge}</span>}
                 </div>
-                <span className={`text-[8px] font-black uppercase tracking-widest ${activeTab === id ? "text-gray-900" : "text-gray-300"}`}>{label}</span>
+                <span className={`text-[8px] font-black uppercase tracking-widest`} style={{ color: activeTab === id ? textColor : undefined }}>{label}</span>
               </button>
             ))}
           </div>
