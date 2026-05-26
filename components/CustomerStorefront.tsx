@@ -1490,9 +1490,8 @@ export function CustomerStorefront({
 
             {/* PRODUCT DETAIL SCREEN */}
             {screen === "product" && selectedProduct && (
-              <motion.div key="product" {...pageAnim} className="absolute inset-0 flex flex-col bg-white overflow-hidden z-[60]">
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="w-full md:flex md:items-stretch md:min-h-screen">
+              <motion.div key="product" {...pageAnim} className="fixed inset-0 flex flex-col bg-white overflow-y-auto custom-scrollbar z-[110]">
+                <div className="w-full md:flex md:items-stretch md:min-h-screen">
                     
                     {/* Image Column */}
                     <div className="relative md:w-1/2 md:h-screen">
@@ -1555,13 +1554,12 @@ export function CustomerStorefront({
                       </div>
                     </div>
                   </div>
-                </div>
               </motion.div>
             )}
 
             {/* SEARCH SCREEN */}
             {screen === "search" && (
-              <motion.div key="search" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-[60]" style={{ backgroundColor: bgColor }}>
+              <motion.div key="search" {...pageAnim} className="fixed inset-0 flex flex-col overflow-y-auto custom-scrollbar z-[110]" style={{ backgroundColor: bgColor }}>
                 <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 md:py-10">
                     <div className="flex items-center gap-4 mb-4 md:mb-6">
@@ -1576,9 +1574,8 @@ export function CustomerStorefront({
                     </div>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-4">
-                    {searchQuery && filteredProducts.map((p) => (
+                <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-4">
+                  {searchQuery && filteredProducts.map((p) => (
                       <button key={p.id} onClick={() => { setSelectedProduct(p); setScreen("product"); }} className="w-full flex items-center gap-4 md:gap-8 bg-white p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm hover:shadow-xl active:scale-[0.98] transition-all group border border-black/[0.01]">
                         <img src={p.image} className="w-16 h-16 md:w-32 md:h-32 object-cover rounded-xl md:rounded-[1.5rem] flex-shrink-0 group-hover:scale-105 transition-transform" />
                         <div className="flex-1 text-left">
@@ -1589,13 +1586,12 @@ export function CustomerStorefront({
                       </button>
                     ))}
                   </div>
-                </div>
               </motion.div>
             )}
 
             {/* CART SCREEN */}
             {screen === "cart" && (
-              <motion.div key="cart" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-[60]" style={{ backgroundColor: bgColor }}>
+              <motion.div key="cart" {...pageAnim} className="fixed inset-0 flex flex-col overflow-y-auto custom-scrollbar z-[110]" style={{ backgroundColor: bgColor }}>
                 <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 md:py-10 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -1610,9 +1606,8 @@ export function CustomerStorefront({
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6">
-                    {cartItemCount === 0 ? (
+                <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6">
+                  {cartItemCount === 0 ? (
                       <div className="flex flex-col items-center justify-center py-20 text-center">
                         <ShoppingCart size={40} className="text-gray-200 mb-8" />
                         <p className="text-xs md:text-base font-black text-gray-400 uppercase tracking-[0.2em]">Bag is empty</p>
@@ -1657,15 +1652,14 @@ export function CustomerStorefront({
                       </div>
                     )}
                   </div>
-                </div>
               </motion.div>
             )}
 
             {/* COMMUNITY/REVIEWS SCREEN */}
             {screen === "community" && (
-              <motion.div key="community" {...pageAnim} className="absolute inset-0 flex flex-col overflow-hidden z-50" style={{ backgroundColor: bgColor }}>
+              <motion.div key="community" {...pageAnim} className="fixed inset-0 flex flex-col overflow-y-auto custom-scrollbar z-[110]" style={{ backgroundColor: bgColor }}>
                 {/* Header */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full shrink-0 z-10 storefront-header">
+                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full shrink-0 z-10 storefront-header sticky top-0">
                   <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-4 md:py-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <button onClick={() => { setScreen("home"); setActiveTab("home"); }} className="p-2 -ml-2 rounded-full hover:bg-black/5 text-gray-900 transition-colors">
@@ -1681,9 +1675,7 @@ export function CustomerStorefront({
                   </div>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-8">
+                <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-8">
                     
                     {/* Rating Stats Summary Panel */}
                     {reviews.length > 0 && (
@@ -1800,7 +1792,6 @@ export function CustomerStorefront({
                     )}
                   </div>
                 </div>
-                <div className="h-20 shrink-0" />
 
                 {/* Write Review Modal Overlay */}
                 <AnimatePresence>
