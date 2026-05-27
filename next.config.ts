@@ -20,6 +20,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/:path(pro|business|account|cart|dispatch|signup|reset-password)(.*)",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow",
+          },
+        ],
+      },
+      {
         source: "/sw.js",
         headers: [
           {

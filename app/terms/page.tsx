@@ -1,5 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowLeft, ShieldCheck, FileText, Lock } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "Read the SwiftLink Pro terms of service for business accounts, storefront usage, payments, and commerce responsibilities.",
+  alternates: {
+    canonical: "/terms",
+  },
+};
 
 export default function TermsPage() {
   return (

@@ -14,33 +14,95 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 const site = "https://swiftlinkpro.vercel.app";
+const siteName = "SwiftLink Pro";
+const title = "SwiftLink Pro | WhatsApp Storefront Builder for Small Businesses";
+const description =
+  "Launch a fast WhatsApp storefront, product catalog, order flow, and delivery tracking portal for your business with SwiftLink Pro.";
 
 export const metadata: Metadata = {
-  title: "SwiftLink Pro | Command Center",
-  description:
-    "Turn your WhatsApp into a professional online catalog with SwiftLink Pro.",
+  metadataBase: new URL(site),
+  applicationName: siteName,
+  title: {
+    default: title,
+    template: `%s | ${siteName}`,
+  },
+  description,
   keywords: [
     "WhatsApp store",
+    "WhatsApp storefront",
+    "WhatsApp catalog",
+    "online storefront builder",
     "online catalog",
+    "small business ecommerce",
+    "delivery tracking",
+    "Nigeria ecommerce",
     "SwiftLink Pro",
     "e-commerce",
   ],
+  authors: [{ name: "SwiftLink Pro" }],
+  creator: "SwiftLink Pro",
+  publisher: "SwiftLink Pro",
+  category: "Business Software",
+  alternates: {
+    canonical: "/",
+  },
   icons: [{ rel: "icon", url: "/logo.png" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
+    siteName,
+    locale: "en_US",
     url: site,
-    title: "SwiftLink Pro | Professional WhatsApp Storefront",
-    description:
-      "Launch your online catalog in 60 seconds. Real-time live commerce for WhatsApp business.",
-    images: [`${site}/logo.png`],
+    title,
+    description,
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "SwiftLink Pro logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SwiftLink Pro | Professional WhatsApp Storefront",
-    description:
-      "Launch your online catalog in 60 seconds. Real-time live commerce for WhatsApp business.",
-    images: [`${site}/logo.png`],
+    title,
+    description,
+    images: ["/logo.png"],
   },
+};
+
+const softwareJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: siteName,
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: site,
+  image: `${site}/logo.png`,
+  description,
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "NGN",
+  },
+  featureList: [
+    "WhatsApp storefront builder",
+    "Product catalog management",
+    "Customer cart and WhatsApp ordering",
+    "Delivery tracking portal",
+    "Storefront visual editor",
+  ],
 };
 
 export default function RootLayout({
@@ -51,6 +113,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={plusJakarta.variable}>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
