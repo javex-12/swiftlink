@@ -18,7 +18,7 @@ import {
   getPublicStoreSlug,
   normalizeStoreUsername,
 } from "@/lib/utils";
-import { defaultShopState, loadStateLocal, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
+import { defaultShopState, loadStateLocal, normalizeShopState, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
@@ -137,7 +137,7 @@ export function SwiftLinkProvider({
   const fetchStores = useCallback(async (userId: string) => {
     const { data } = await supabase.from('stores').select('id, owner_id, state_json').eq('owner_id', userId);
     if (data) {
-        const loadedStores = data.map((s: any) => ({ ...(s.state_json as ShopState), id: s.id, ownerId: s.owner_id }));
+        const loadedStores = data.map((s: any) => normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id }));
         setStores(loadedStores);
         if (loadedStores.length > 0 && !state.id) {
             setState(loadedStores[0]);
@@ -172,14 +172,16 @@ export function SwiftLinkProvider({
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
 
   useEffect(() => {
-    const saved = localStorage.getItem("swiftlink_theme") as "light" | "dark";
+    const saved = typeof window !== "undefined" ? localStorage.getItem("swiftlink_theme") as "light" | "dark" : null;
     if (saved) {
       setTheme(saved);
       if (saved === "dark") document.documentElement.classList.add("dark");
       else document.documentElement.classList.remove("dark");
     } else {
-      // Default to dark if no preference saved
+      // DEFAULT TO DARK
+      setTheme("dark");
       document.documentElement.classList.add("dark");
+      localStorage.setItem("swiftlink_theme", "dark");
     }
   }, []);
 
@@ -473,22 +475,14 @@ export function SwiftLinkProvider({
                     
 
                                         if (u) {
-
                                             setIsSupabaseActive(true);
+                                            const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
 
                                             void fetchStores(u.id).then((storesList) => {
                                                 if (isOwnerRef.current) {
-                                                    const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
-                                                    
                                                     if (storesList && storesList.length > 0) {
                                                         let nextState = storesList[0];
-                                                        // CRITICAL: Ensure sections exist to prevent client-side exception
-                                                        if (!nextState.sections || nextState.sections.length === 0) {
-                                                            nextState.sections = [
-                                                                { id: 'hero-default', type: 'hero', title: 'Welcome', subtitle: 'Quality products', isVisible: true, order: 0, content: {}, styles: {} },
-                                                                { id: 'catalog-default', type: 'catalog', title: 'Collection', isVisible: true, order: 1, content: {}, styles: {} }
-                                                            ];
-                                                        }
+                                                        nextState = normalizeShopState(nextState);
                                                         if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
                                                         
                                                         setState(nextState);
@@ -525,7 +519,7 @@ export function SwiftLinkProvider({
     if (sid && isSupabaseConfigured()) {
        supabase.from('stores').select('state_json').eq('id', sid).single().then(({ data }) => {
            if (data?.state_json) {
-               setState(prev => ({ ...prev, ...(data.state_json as ShopState), id: sid }));
+               setState(prev => normalizeShopState({ ...prev, ...(data.state_json as Partial<ShopState>), id: sid }));
            }
        });
 
@@ -533,7 +527,7 @@ export function SwiftLinkProvider({
          .channel('store-updates')
          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores', filter: `id=eq.${sid}` }, payload => {
             if (payload.new?.state_json) {
-                setState(prev => ({ ...prev, ...(payload.new.state_json as ShopState), id: sid }));
+                setState(prev => normalizeShopState({ ...prev, ...(payload.new.state_json as Partial<ShopState>), id: sid }));
             }
          })
          .subscribe();

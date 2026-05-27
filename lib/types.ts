@@ -68,6 +68,32 @@ export const defaultShopState = (): ShopState => ({
   isLive: true,
 });
 
+export function normalizeShopState(input?: Partial<ShopState> | null): ShopState {
+  const base = defaultShopState();
+  const next = { ...base, ...(input || {}) } as ShopState;
+
+  next.products = Array.isArray(next.products) ? next.products : [];
+  next.deliveries = Array.isArray(next.deliveries) ? next.deliveries : [];
+  next.categories = Array.isArray(next.categories) ? next.categories : [];
+  next.notifications = Array.isArray(next.notifications) ? next.notifications : [];
+  next.testimonials = Array.isArray(next.testimonials) ? next.testimonials : [];
+  next.socials = next.socials || {};
+  next.sections =
+    Array.isArray(next.sections) && next.sections.length > 0
+      ? next.sections.map((section, order) => ({
+          ...section,
+          id: section.id || `section-${order}`,
+          type: section.type || "catalog",
+          isVisible: section.isVisible !== false,
+          order: typeof section.order === "number" ? section.order : order,
+          content: section.content || {},
+          styles: section.styles || {},
+        }))
+      : base.sections;
+
+  return next;
+}
+
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = {
   primaryColor: "#10b981",
   background: "light",
@@ -112,7 +138,7 @@ export function loadStateLocal(): ShopState {
   try {
     if (typeof window !== "undefined") {
       const s = localStorage.getItem("swiftlink_state");
-      if (s) return { ...base, ...JSON.parse(s) };
+      if (s) return normalizeShopState(JSON.parse(s));
     }
   } catch {
     /* ignore */
