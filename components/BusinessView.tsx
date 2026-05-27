@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { CustomerStorefrontPreview } from "./CustomerStorefront";
+import { CountrySelector } from "./CountrySelector";
 
 const PRESET_PALETTES = [
     { name: "Emerald (Default)", accent: "#10b981", bg: "#f2f2f7", surface: "#ffffff", text: "#111827", btn: "#10b981" },
@@ -727,7 +728,7 @@ export function BusinessView() {
                                    <div className="shrink-0">
                                       <CountrySelector 
                                         value={localState.phone?.startsWith('+') ? localState.phone.split(' ')[0] : "+234"} 
-                                        onChange={(code) => {
+                                        onChange={(code: string) => {
                                             const current = localState.phone || "";
                                             const pure = current.replace(/^\+\d+\s?/, "");
                                             updateLocalState("phone", `${code} ${pure}`);
