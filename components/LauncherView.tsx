@@ -34,7 +34,7 @@ export function LauncherView() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
          <div>
             <div className="flex items-center gap-3 mb-4">
-               <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-500 uppercase tracking-widest">System Active</div>
+               <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-500 uppercase tracking-widest">Business is Live</div>
                <div className="px-2 py-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{state.plan?.toUpperCase()} PLAN</div>
             </div>
             <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase leading-none">
@@ -55,10 +55,10 @@ export function LauncherView() {
       {/* Stats Ribbon */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
          {[
-            { label: "Gross Volume", value: `${state.currency}${grossVolume.toLocaleString()}`, trend: "+0%", icon: BarChart3 },
-            { label: "Active Sessions", value: "1", trend: "Live", icon: Users },
+            { label: "Total Sales", value: `${state.currency}${grossVolume.toLocaleString()}`, trend: "+0%", icon: BarChart3 },
+            { label: "Active Customers", value: "1", trend: "Live", icon: Users },
             { label: "Conversion", value: `${conversionRate}%`, trend: "Real-time", icon: Zap },
-            { label: "System Health", value: "100%", trend: "Optimal", icon: Shield },
+            { label: "Network Status", value: "100%", trend: "Optimal", icon: Shield },
          ].map((stat, i) => (
             <div key={i} className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05] p-6 rounded-2xl flex items-center justify-between group hover:border-emerald-500/20 transition-all">
                <div>

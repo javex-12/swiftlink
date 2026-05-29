@@ -212,12 +212,12 @@ const Hero = () => {
             <FadeUp delay={0.4} className="mt-12 opacity-50 flex items-center justify-center lg:justify-start gap-8">
                <div className="flex flex-col">
                   <span className="text-2xl font-black text-slate-900 tracking-tighter">60s</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Setup Time</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Ready in</span>
                </div>
                <div className="w-px h-8 bg-slate-200" />
                <div className="flex flex-col">
                   <span className="text-2xl font-black text-slate-900 tracking-tighter">0%</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Transaction Fee</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Extra Fees</span>
                </div>
                <div className="w-px h-8 bg-slate-200" />
                <div className="flex flex-col">
@@ -565,7 +565,7 @@ const Footer = () => (
           </div>
        </div>
        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-200/60 gap-4">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 SwiftLink Pro Hub.</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 SwiftLink Workspace.</p>
           <div className="flex gap-6">
              {["Twitter", "Instagram", "WhatsApp"].map(social => (
                 <span key={social} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">{social}</span>

@@ -678,12 +678,12 @@ export function BusinessView() {
 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="text-center lg:text-left">
-                <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Engine Room</h1>
-                <p className="text-slate-400 dark:text-zinc-500 font-bold text-xs mt-1 uppercase tracking-[0.2em]">Manage inventory, branding, and operations.</p>
+                <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Workspace</h1>
+                <p className="text-slate-400 dark:text-zinc-500 font-bold text-xs mt-1 uppercase tracking-[0.2em]">Manage products, branding, and orders.</p>
             </div>
             <div className="flex justify-center">
                 <div className="flex bg-white dark:bg-zinc-900/50 p-1.5 rounded-2xl shadow-sm border border-slate-100 dark:border-white/5">
-                    <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("store")}>Inventory</button>
+                    <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("store")}>Products</button>
                     <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("appearance")}>Design</button>
                     <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "inbox" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("inbox")}>Inbox</button>
                 </div>
