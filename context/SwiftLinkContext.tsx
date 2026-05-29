@@ -207,7 +207,10 @@ export function SwiftLinkProvider({
   const createNewStore = useCallback(async (name: string) => {
     if (!user) return;
     const newId = crypto.randomUUID();
-    const newState = { ...defaultShopState(), id: newId, ownerId: user.id, bizName: name };
+    const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] : null;
+    
+    let newState = { ...defaultShopState(), id: newId, ownerId: user.id, bizName: name };
+    if (assignedPlan) newState = { ...newState, plan: assignedPlan };
     
     const { error } = await supabase.from('stores').insert({
         id: newId,

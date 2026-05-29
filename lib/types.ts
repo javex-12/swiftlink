@@ -72,7 +72,12 @@ export function normalizeShopState(input?: Partial<ShopState> | null): ShopState
   const base = defaultShopState();
   const next = { ...base, ...(input || {}) } as ShopState;
 
-  next.products = Array.isArray(next.products) ? next.products : [];
+  next.products = Array.isArray(next.products) 
+    ? next.products.map(p => ({
+        ...p,
+        image: p.image || (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : "")
+      })) 
+    : [];
   next.deliveries = Array.isArray(next.deliveries) ? next.deliveries : [];
   next.categories = Array.isArray(next.categories) ? next.categories : [];
   next.notifications = Array.isArray(next.notifications) ? next.notifications : [];

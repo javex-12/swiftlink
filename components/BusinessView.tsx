@@ -86,6 +86,11 @@ function StableTextarea({ value, onChange, className, placeholder, rows }: {
   );
 }
 
+const PRIVILEGED_USERS: Record<string, string> = {
+    "michaeldosunmu22@gmail.com": "business", 
+    "dosunmumichael26@gmail.com": "pro",
+};
+
 export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance" | "inbox">("store");
   const [expandedSection, setExpandedSection] = useState<string>("");
@@ -155,7 +160,17 @@ export function BusinessView() {
   const updateProductLocal = (id: number, field: keyof Product, value: any) => {
     setLocalState(prev => ({
       ...prev,
-      products: prev.products.map(p => p.id === id ? { ...p, [field]: value } : p)
+      products: prev.products.map(p => {
+          if (p.id === id) {
+              const updated = { ...p, [field]: value };
+              // SYNC: Ensure p.image (thumbnail) is always the first image from gallery
+              if (field === "images" && Array.isArray(value) && value.length > 0) {
+                  updated.image = value[0];
+              }
+              return updated;
+          }
+          return p;
+      })
     }));
     setIsDirty(true);
   };
@@ -195,8 +210,11 @@ export function BusinessView() {
   };
 
   const handleCreateNew = async () => {
-    const isPro = globalState.plan === "pro" || globalState.plan === "business";
-    if (!isPro && stores.length >= 1) {
+    const userEmail = user?.email || "";
+    const assignedPlan = PRIVILEGED_USERS[userEmail];
+    const isPremium = assignedPlan === "pro" || assignedPlan === "business" || globalState.plan === "pro" || globalState.plan === "business";
+
+    if (!isPremium && stores.length >= 1) {
         addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");
         return;
     }
