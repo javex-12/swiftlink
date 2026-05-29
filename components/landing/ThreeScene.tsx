@@ -2,71 +2,71 @@
 
 import { useRef, useMemo, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, PerspectiveCamera, MeshTransmissionMaterial, Octahedron } from "@react-three/drei";
+import { Points, PointMaterial, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 
-function GeometricCore() {
-  const meshRef = useRef<THREE.Group>(null!);
+function StarField() {
+  const ref = useRef<THREE.Points>(null!);
+  
+  // Generate a high-performance particle cloud
+  const [positions, step] = useMemo(() => {
+    const pos = new Float32Array(1500 * 3);
+    for (let i = 0; i < 1500; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 12;
+    }
+    return [pos, 0.002];
+  }, []);
 
   useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    meshRef.current.rotation.y = t * 0.2;
-    meshRef.current.rotation.z = t * 0.1;
+    ref.current.rotation.y += step;
+    ref.current.rotation.x += step / 2;
   });
 
   return (
-    <group ref={meshRef}>
-      {/* Primary Crystal */}
-      <Float speed={3} rotationIntensity={1} floatIntensity={2}>
-        <mesh scale={1.8}>
-          <octahedronGeometry args={[1, 0]} />
-          <MeshTransmissionMaterial
-            backside
-            samples={4}
-            thickness={1}
-            chromaticAberration={0.025}
-            anisotropy={0.1}
-            distortion={0.1}
-            distortionScale={0.1}
-            temporalDistortion={0.1}
-            clearcoat={1}
-            color="#10b981"
-          />
-        </mesh>
-      </Float>
-
-      {/* Wireframe Shell */}
-      <mesh scale={2.2}>
-        <octahedronGeometry args={[1, 0]} />
-        <meshBasicMaterial color="#10b981" wireframe transparent opacity={0.1} />
-      </mesh>
-
-      {/* Orbiting Shards */}
-      {[...Array(3)].map((_, i) => (
-        <Float key={i} speed={4} rotationIntensity={2} floatIntensity={1.5}>
-           <mesh position={[Math.sin(i * 2) * 3, Math.cos(i * 2) * 3, 0]} scale={0.4}>
-              <octahedronGeometry args={[1, 0]} />
-              <meshStandardMaterial color="#10b981" emissive="#10b981" emissiveIntensity={2} />
-           </mesh>
-        </Float>
-      ))}
+    <group rotation={[0, 0, Math.PI / 4]}>
+      <Points ref={ref} positions={positions} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          color="#10b981"
+          size={0.04}
+          sizeAttenuation={true}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </Points>
     </group>
+  );
+}
+
+function AmbientLightOrb() {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    ref.current.position.y = Math.sin(t * 0.5) * 0.2;
+    ref.current.scale.setScalar(1 + Math.sin(t * 0.8) * 0.05);
+  });
+
+  return (
+    <mesh ref={ref}>
+      <sphereGeometry args={[2, 32, 32]} />
+      <meshBasicMaterial color="#10b981" transparent opacity={0.03} />
+    </mesh>
   );
 }
 
 export default function ThreeScene() {
   return (
-    <div className="w-full h-full relative pointer-events-none">
+    <div className="w-full h-full relative pointer-events-none opacity-80">
       <Canvas
-        camera={{ position: [0, 0, 6], fov: 40 }}
+        camera={{ position: [0, 0, 5], fov: 60 }}
         gl={{ antialias: true, alpha: true }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} />
-          <pointLight position={[-10, -10, -10]} color="#10b981" intensity={1} />
-          <GeometricCore />
+          <StarField />
+          <AmbientLightOrb />
         </Suspense>
       </Canvas>
     </div>

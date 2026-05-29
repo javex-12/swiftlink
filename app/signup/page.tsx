@@ -161,10 +161,10 @@ export default function SignupPage() {
     }
   };
 
-  if (!mounted) return <div className="h-screen bg-[#020617]" />;
+  if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
 
   return (
-    <main className="h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative overflow-hidden font-sans selection:bg-emerald-500/30">
+    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30">
       {/* Brand Side: Responsive, High-Fidelity */}
       <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f]">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
