@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 import { getPublicStoreSlug } from "@/lib/utils";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import dynamic from "next/dynamic";
 
@@ -41,10 +42,8 @@ export default function SignupPage() {
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        if (session.user.email_confirmed_at || session.user.app_metadata.provider !== 'email') {
-           router.push("/pro");
-        }
+      if (session && session.user.email_confirmed_at) {
+        router.push("/pro");
       }
     };
     checkUser();
@@ -103,21 +102,29 @@ export default function SignupPage() {
     }
   }, [form.email, searchParams]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading("google");
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      if (!credentialResponse.credential) throw new Error("No ID token returned from Google");
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/pro`,
-        }
+        token: credentialResponse.credential,
       });
       if (error) throw error;
+      if (data.user) {
+        await saveUserStore(data.user.id, data.user.email);
+        router.push("/pro");
+      }
     } catch (e: any) {
       setError(e.message || "Google Sign-In failed.");
       setLoading(null);
     }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Sign-In was cancelled.");
+    setLoading(null);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -256,19 +263,18 @@ export default function SignupPage() {
             <AnimatePresence mode="wait">
               {step === "form" ? (
                 <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-                  <div className="w-full">
-                    <button 
-                        onClick={handleGoogleLogin}
-                        disabled={loading === "google"}
-                        className="w-full flex items-center justify-center gap-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                        {loading === "google" ? <Loader2 className="animate-spin" size={20} /> : (
-                            <>
-                                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c1.61-1.48 2.53-3.66 2.53-6.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/></svg>
-                                <span className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">{mode === "signup" ? "Sign up" : "Log in"} with Google</span>
-                            </>
-                        )}
-                    </button>
+                  <div className="w-full flex justify-center">
+                    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        shape="pill"
+                        theme="filled_black"
+                        size="large"
+                        width="100%"
+                        text={mode === "signup" ? "signup_with" : "signin_with"}
+                      />
+                    </GoogleOAuthProvider>
                   </div>
 
                   <div className="relative flex items-center justify-center py-2">
