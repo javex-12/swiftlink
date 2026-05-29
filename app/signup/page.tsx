@@ -59,9 +59,6 @@ export default function SignupPage() {
       const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
       const slug = getPublicStoreSlug({ storeUsername, bizName });
-      const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
-      const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
-      const slug = getPublicStoreSlug({ storeUsername, bizName });
       
       const PRIVILEGED_USERS: Record<string, "pro" | "business"> = {
         "michaeldosunmu22@gmail.com": "business", 
