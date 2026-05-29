@@ -56,8 +56,11 @@ CREATE POLICY "Owner can delete stores"
 
 ALTER TABLE public.slugs ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Public can view slugs"          ON public.slugs;
-DROP POLICY IF EXISTS "Authenticated can upsert slugs" ON public.slugs;
+-- Drop all possible existing slugs policies
+DROP POLICY IF EXISTS "Public can view slugs"           ON public.slugs;
+DROP POLICY IF EXISTS "Authenticated can upsert slugs"  ON public.slugs;
+DROP POLICY IF EXISTS "Authenticated can update slugs"  ON public.slugs;
+DROP POLICY IF EXISTS "Authenticated can insert slugs"  ON public.slugs;
 
 CREATE POLICY "Public can view slugs"
   ON public.slugs FOR SELECT USING (true);
