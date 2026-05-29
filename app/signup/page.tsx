@@ -2,13 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, AlertCircle, Loader2, MessageSquare, ChevronLeft, Eye, EyeOff
+  ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone, ChevronLeft
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
-import { getPublicStoreSlug } from "@/lib/utils";
+import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import dynamic from "next/dynamic";
@@ -22,7 +22,7 @@ export default function SignupPage() {
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("signup");
-  const [loading, setLoading] = useState<"google" | "email" | null>(null);
+  const [loading, setLoading] = useState<"google" | "email" | "reset" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
@@ -34,17 +34,10 @@ export default function SignupPage() {
     setMounted(true);
     const m = searchParams.get("mode") as Mode;
     if (m === "login" || m === "signup") setMode(m);
-    
-    const err = searchParams.get("error");
-    if (err === "unverified") {
-      setError("Please check your email to verify your account.");
-    }
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user.email_confirmed_at) {
-        router.push("/pro");
-      }
+      if (session) router.push("/pro");
     };
     checkUser();
   }, [searchParams, router]);
@@ -100,7 +93,7 @@ export default function SignupPage() {
     } catch (err) {
       console.error("Store Save Error:", err);
     }
-  }, [form.email, searchParams]);
+  }, [form.email]);
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading("google");
@@ -139,11 +132,6 @@ export default function SignupPage() {
         });
         if (authError) throw authError;
         if (data.user) {
-          if (!data.user.email_confirmed_at) {
-            setError("Your email isn't verified yet. Please check your inbox.");
-            setLoading(null);
-            return;
-          }
           await saveUserStore(data.user.id, data.user.email);
           router.push("/pro");
         }
@@ -153,27 +141,22 @@ export default function SignupPage() {
           email: form.email,
           password: form.password,
           options: {
-            data: { display_name: form.bizName, phone: formattedPhone },
-            emailRedirectTo: `${window.location.origin}/pro`
+            data: { display_name: form.bizName, phone: formattedPhone }
           }
         });
         if (authError) throw authError;
-        
-        if (data.user && !data.session) {
-          setStep("verify");
-          setLoading(null);
-        } else if (data.user && data.session) {
+        if (data.user) {
           await saveUserStore(data.user.id, data.user.email, {
             bizName: form.bizName,
             phone: formattedPhone,
             storeUsername: form.storeUsername,
           });
-          router.push("/pro");
+          if (data.session) router.push("/pro");
+          else setStep("verify");
         }
       }
     } catch (e: any) {
-      const msg = e.message || "";
-      setError(msg.toLowerCase().includes("invalid login credentials") ? "Invalid email or password." : msg);
+      setError(e.message);
       setLoading(null);
     }
   };
@@ -181,17 +164,18 @@ export default function SignupPage() {
   if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
 
   return (
-    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-x-hidden">
+    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto">
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay" />
       </div>
 
-      {/* Brand Side */}
+      {/* Brand Side: Responsive, High-Fidelity */}
       <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen lg:h-screen lg:sticky lg:top-0">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
-           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
              <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
            </div>
            <span className="text-xl font-black text-white tracking-tighter uppercase italic">SwiftLink<span className="text-emerald-500 not-italic ml-1">PRO</span></span>
@@ -230,11 +214,13 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Form Side */}
+      {/* Form Side: Centered, Pixel-Perfect */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen">
+        {/* Mobile Header Decor */}
         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 lg:hidden" />
         
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-sm">
+          {/* Mobile Back Button */}
           <Link href="/" className="lg:hidden flex items-center gap-2 text-slate-400 mb-8 hover:text-emerald-500 transition-colors">
              <ChevronLeft size={16} /> <span className="text-[10px] font-black uppercase tracking-widest">Back to Store</span>
           </Link>
