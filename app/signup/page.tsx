@@ -42,7 +42,7 @@ export default function SignupPage() {
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && session.user.email_confirmed_at) {
         router.push("/pro");
       }
     };
@@ -139,6 +139,11 @@ export default function SignupPage() {
         });
         if (authError) throw authError;
         if (data.user) {
+          if (!data.user.email_confirmed_at) {
+            setError("Your email isn't verified yet. Please check your inbox.");
+            setLoading(null);
+            return;
+          }
           await saveUserStore(data.user.id, data.user.email);
           router.push("/pro");
         }
@@ -181,13 +186,12 @@ export default function SignupPage() {
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay" />
       </div>
 
-      {/* Brand Side: Responsive, High-Fidelity */}
+      {/* Brand Side */}
       <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen lg:h-screen lg:sticky lg:top-0">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
-           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
+           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
              <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
            </div>
            <span className="text-xl font-black text-white tracking-tighter uppercase italic">SwiftLink<span className="text-emerald-500 not-italic ml-1">PRO</span></span>
@@ -226,13 +230,11 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Form Side: Centered, Pixel-Perfect */}
+      {/* Form Side */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen">
-        {/* Mobile Header Decor */}
         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 lg:hidden" />
         
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-sm">
-          {/* Mobile Back Button */}
           <Link href="/" className="lg:hidden flex items-center gap-2 text-slate-400 mb-8 hover:text-emerald-500 transition-colors">
              <ChevronLeft size={16} /> <span className="text-[10px] font-black uppercase tracking-widest">Back to Store</span>
           </Link>
@@ -266,7 +268,7 @@ export default function SignupPage() {
                         shape="pill"
                         theme="filled_black"
                         size="large"
-                        width="100%"
+                        width="350px"
                         text={mode === "signup" ? "signup_with" : "signin_with"}
                       />
                     </GoogleOAuthProvider>
