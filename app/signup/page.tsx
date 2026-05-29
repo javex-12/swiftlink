@@ -164,9 +164,16 @@ export default function SignupPage() {
   if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
 
   return (
-    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30">
+    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay" />
+      </div>
+
       {/* Brand Side: Responsive, High-Fidelity */}
-      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f]">
+      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
              <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
@@ -208,7 +215,7 @@ export default function SignupPage() {
       </div>
 
       {/* Form Side: Centered, Pixel-Perfect */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617]">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen">
         {/* Mobile Header Decor */}
         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 lg:hidden" />
         
@@ -304,7 +311,7 @@ export default function SignupPage() {
                   <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-emerald-500/20">
                     <MessageSquare size={32} className="text-emerald-500" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter uppercase italic">Check your email.</h2>
+                  <h2 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic">Check your email.</h2>
                   <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-12 leading-relaxed">We sent a secure link to <br /><span className="text-slate-900 dark:text-white font-bold">{form.email}</span></p>
                   <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Back to Login</button>
                 </motion.div>

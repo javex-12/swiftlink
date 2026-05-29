@@ -142,7 +142,7 @@ const Hero = () => {
   const reduceMotion = usePrefersReducedMotion();
 
   return (
-    <section className="relative h-screen w-full px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa]">
+    <section className="relative min-h-screen pt-32 sm:pt-40 pb-16 px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa]">
       {/* Dynamic Background Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
         <div className="absolute top-[10%] left-[5%] w-[40%] aspect-square bg-emerald-100/40 rounded-full blur-[120px] animate-pulse" />
@@ -177,30 +177,32 @@ const Hero = () => {
               </p>
             </FadeUp>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4">
-              <Link
-                href="/signup"
-                className="bg-slate-900 text-white px-8 py-5 rounded-2xl text-base font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200"
-              >
-                Start Selling Now <ArrowRight size={18} />
-              </Link>
-              <button
-                onClick={scrollToDemo}
-                className="flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-slate-700 bg-white border border-slate-200 font-black hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
-              >
-                Watch Demo <Sparkles size={18} className="text-emerald-500" />
-              </button>
-            </div>
+            <FadeUp delay={0.3}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4">
+                <Link
+                  href="/signup"
+                  className="bg-slate-900 text-white px-8 py-5 rounded-2xl text-base font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200"
+                >
+                  Start Selling Now <ArrowRight size={18} />
+                </Link>
+                <button
+                  onClick={scrollToDemo}
+                  className="flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-slate-700 bg-white border border-slate-200 font-black hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                >
+                  Watch Demo <Sparkles size={18} className="text-emerald-500" />
+                </button>
+              </div>
+            </FadeUp>
             
             <FadeUp delay={0.4} className="mt-12 opacity-50 flex items-center justify-center lg:justify-start gap-8">
                <div className="flex flex-col">
                   <span className="text-2xl font-black text-slate-900 tracking-tighter">60s</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Ready in</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Setup Time</span>
                </div>
                <div className="w-px h-8 bg-slate-200" />
                <div className="flex flex-col">
                   <span className="text-2xl font-black text-slate-900 tracking-tighter">0%</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Extra Fees</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Transaction Fee</span>
                </div>
                <div className="w-px h-8 bg-slate-200" />
                <div className="flex flex-col">
@@ -213,10 +215,13 @@ const Hero = () => {
           {/* ── Right: Hero Visual ───────── */}
           <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center">
             <div className="relative w-full max-w-[500px] aspect-square lg:aspect-auto lg:h-[700px]">
+              {/* Background Glass Plate */}
               <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border border-white/60 rounded-[3rem] -rotate-2 transform hidden lg:block" />
+              
               <div className="relative h-full w-full flex items-center justify-center overflow-visible">
                 {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
 
+                {/* Modern Floating Badges */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8, x: 20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -270,10 +275,10 @@ const Features = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sm:mb-24">
           <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
-            Workspace Capabilities
+            The Command Center
           </motion.span>
           <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
-            Everything you need.<br />None of the noise.
+            Everything you need,<br />none of the noise.
           </h2>
         </div>
 
