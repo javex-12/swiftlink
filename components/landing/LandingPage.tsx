@@ -157,7 +157,7 @@ const Hero = () => {
   const reduceMotion = usePrefersReducedMotion();
 
   return (
-    <section className="relative min-h-[90vh] lg:min-h-screen pt-28 sm:pt-32 pb-16 px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa]">
+    <section className="relative h-screen min-h-[600px] max-h-[1000px] w-full px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa]">
       {/* Dynamic Background Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
         <div className="absolute top-[10%] left-[5%] w-[40%] aspect-square bg-emerald-100/40 rounded-full blur-[120px] animate-pulse" />
@@ -165,11 +165,11 @@ const Hero = () => {
       </div>
 
       <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center">
           {/* ── Left: Copy ─────────────────────────────── */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <FadeUp delay={0}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 shadow-sm rounded-full mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 shadow-sm rounded-full mb-6">
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -179,14 +179,14 @@ const Hero = () => {
             </FadeUp>
 
             <FadeUp delay={0.1}>
-              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-slate-900 leading-[0.95] tracking-tight mb-8">
+              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-slate-900 leading-[0.95] tracking-tight mb-6">
                 Sell on <span className="text-emerald-500">WhatsApp</span> <br className="hidden sm:block" />
                 <span className="italic font-serif opacity-90">like a Pro.</span>
               </h1>
             </FadeUp>
 
             <FadeUp delay={0.2}>
-              <p className="text-lg sm:text-xl text-slate-500 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
+              <p className="text-base sm:text-lg text-slate-500 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-medium">
                 The high-performance storefront for Nigerian entrepreneurs. 
                 Fast, professional, and built for your phone.
               </p>
@@ -196,44 +196,44 @@ const Hero = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4">
                 <Link
                   href="/signup"
-                  className="bg-slate-900 text-white px-8 py-5 rounded-2xl text-base font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200"
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-sm font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200"
                 >
-                  Start Selling Now <ArrowRight size={18} />
+                  Start Selling <ArrowRight size={18} />
                 </Link>
                 <button
                   onClick={scrollToDemo}
-                  className="flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-slate-700 bg-white border border-slate-200 font-black hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                  className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-slate-700 bg-white border border-slate-200 font-black hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                 >
                   Watch Demo <Sparkles size={18} className="text-emerald-500" />
                 </button>
               </div>
             </FadeUp>
             
-            <FadeUp delay={0.4} className="mt-12 opacity-50 flex items-center justify-center lg:justify-start gap-8">
+            <FadeUp delay={0.4} className="mt-10 opacity-50 flex items-center justify-center lg:justify-start gap-8">
                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 tracking-tighter">60s</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Ready in</span>
+                  <span className="text-xl font-black text-slate-900 tracking-tighter">60s</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Ready in</span>
                </div>
-               <div className="w-px h-8 bg-slate-200" />
+               <div className="w-px h-6 bg-slate-200" />
                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 tracking-tighter">0%</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Extra Fees</span>
+                  <span className="text-xl font-black text-slate-900 tracking-tighter">0%</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Extra Fees</span>
                </div>
-               <div className="w-px h-8 bg-slate-200" />
+               <div className="w-px h-6 bg-slate-200" />
                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 tracking-tighter">Live</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tracking</span>
+                  <span className="text-xl font-black text-slate-900 tracking-tighter">Live</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Tracking</span>
                </div>
             </FadeUp>
           </div>
 
           {/* ── Right: Hero Visual ───────── */}
-          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center">
-            <div className="relative w-full max-w-[500px] aspect-square lg:aspect-auto lg:h-[700px]">
+          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center h-full">
+            <div className="relative w-full max-w-[500px] h-[300px] lg:h-[500px]">
               {/* Background Glass Plate */}
               <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border border-white/60 rounded-[3rem] -rotate-2 transform hidden lg:block" />
               
-              <div className="relative h-full w-full flex items-center justify-center overflow-visible">
+              <div className="relative h-full w-full flex items-center justify-center">
                 {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
 
                 {/* Modern Floating Badges */}
@@ -241,14 +241,14 @@ const Hero = () => {
                   initial={{ opacity: 0, scale: 0.8, x: 20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   transition={{ delay: 0.8, duration: 0.5 }}
-                  className="absolute top-[15%] right-[2%] bg-white border border-slate-100 p-4 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex items-center gap-3 z-30"
+                  className="absolute top-[10%] right-[2%] bg-white border border-slate-100 p-4 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex items-center gap-3 z-30"
                 >
-                  <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
-                    <CheckCircle2 size={20} />
+                  <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
+                    <CheckCircle2 size={16} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-900 uppercase leading-none">Order Received</p>
-                    <p className="text-[12px] font-black text-emerald-500 mt-1">₦72,500.00</p>
+                    <p className="text-[8px] font-black text-slate-900 uppercase leading-none">Order Received</p>
+                    <p className="text-[10px] font-black text-emerald-500 mt-1">₦72,500.00</p>
                   </div>
                 </motion.div>
 
@@ -256,14 +256,14 @@ const Hero = () => {
                   initial={{ opacity: 0, scale: 0.8, x: -20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   transition={{ delay: 1, duration: 0.5 }}
-                  className="absolute bottom-[20%] left-[2%] bg-slate-900 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 z-30"
+                  className="absolute bottom-[15%] left-[2%] bg-slate-900 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 z-30"
                 >
-                  <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
-                    <Truck size={20} className="text-emerald-400" />
+                  <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                    <Truck size={16} className="text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none">Tracking</p>
-                    <p className="text-[11px] font-black mt-1">Driver En-Route</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60 leading-none">Tracking</p>
+                    <p className="text-[10px] font-black mt-1">Driver En-Route</p>
                   </div>
                 </motion.div>
               </div>
