@@ -37,12 +37,12 @@ export default function SignupPage() {
     
     const err = searchParams.get("error");
     if (err === "unverified") {
-      setError("Please verify your email first. Check your inbox!");
+      setError("Please check your email to verify your account.");
     }
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user.email_confirmed_at) {
+      if (session) {
         router.push("/pro");
       }
     };
@@ -139,11 +139,6 @@ export default function SignupPage() {
         });
         if (authError) throw authError;
         if (data.user) {
-          if (!data.user.email_confirmed_at) {
-            setError("Your email isn't verified yet. Please check your inbox.");
-            setLoading(null);
-            return;
-          }
           await saveUserStore(data.user.id, data.user.email);
           router.push("/pro");
         }
@@ -329,7 +324,7 @@ export default function SignupPage() {
                     <MessageSquare size={32} className="text-emerald-500" />
                   </div>
                   <h2 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic">Check your email.</h2>
-                  <p className="text-slate-400 font-medium text-base mb-12 leading-relaxed">We sent a secure link to <br /><span className="text-white font-bold">{form.email}</span></p>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-12 leading-relaxed">We sent a secure link to <br /><span className="text-slate-900 dark:text-white font-bold">{form.email}</span></p>
                   <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Back to Login</button>
                 </motion.div>
               )}

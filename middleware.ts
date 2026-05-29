@@ -44,17 +44,8 @@ export async function middleware(request: NextRequest) {
                           request.nextUrl.pathname.startsWith('/business') ||
                           request.nextUrl.pathname.startsWith('/dispatch');
 
-  if (isProtectedRoute) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/signup?mode=login', request.url))
-    }
-    
-    // THE FIX: Check if email is verified
-    // For Google/Social logins, this is usually true instantly.
-    // For Email/Password, they MUST click the link we send them.
-    if (user.app_metadata.provider === 'email' && !user.email_confirmed_at) {
-      return NextResponse.redirect(new URL('/signup?mode=login&error=unverified', request.url))
-    }
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/signup?mode=login', request.url))
   }
 
   return response
