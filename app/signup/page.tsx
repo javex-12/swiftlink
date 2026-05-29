@@ -34,10 +34,17 @@ export default function SignupPage() {
     setMounted(true);
     const m = searchParams.get("mode") as Mode;
     if (m === "login" || m === "signup") setMode(m);
+    
+    const err = searchParams.get("error");
+    if (err === "unverified") {
+      setError("Please check your email and verify your account before logging in.");
+    }
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) router.push("/pro");
+      if (session && session.user.email_confirmed_at) {
+        router.push("/pro");
+      }
     };
     checkUser();
   }, [searchParams, router]);
@@ -48,6 +55,10 @@ export default function SignupPage() {
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     try {
+      // Only proceed if user is verified or using social login
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email_confirmed_at && user?.app_metadata.provider === 'email') return;
+
       const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
       const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
@@ -132,6 +143,11 @@ export default function SignupPage() {
         });
         if (authError) throw authError;
         if (data.user) {
+          if (!data.user.email_confirmed_at) {
+            setError("Your email isn't verified yet. Please check your inbox for the activation link.");
+            setLoading(null);
+            return;
+          }
           await saveUserStore(data.user.id, data.user.email);
           router.push("/pro");
         }
@@ -141,18 +157,24 @@ export default function SignupPage() {
           email: form.email,
           password: form.password,
           options: {
-            data: { display_name: form.bizName, phone: formattedPhone }
+            data: { display_name: form.bizName, phone: formattedPhone },
+            emailRedirectTo: `${window.location.origin}/pro`
           }
         });
         if (authError) throw authError;
-        if (data.user) {
+        
+        // If session is null, it means confirmation is required
+        if (data.user && !data.session) {
+          setStep("verify");
+          setLoading(null);
+        } else if (data.user && data.session) {
+          // This only happens if auto-confirm is ON in Supabase (not recommended for your case)
           await saveUserStore(data.user.id, data.user.email, {
             bizName: form.bizName,
             phone: formattedPhone,
             storeUsername: form.storeUsername,
           });
-          if (data.session) router.push("/pro");
-          else setStep("verify");
+          router.push("/pro");
         }
       }
     } catch (e: any) {
