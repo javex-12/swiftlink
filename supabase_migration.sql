@@ -1,20 +1,32 @@
 -- ================================================================
--- STORES TABLE — RLS FIX FOR MULTI-STORE SUPPORT
+-- STORES TABLE — MULTI-STORE SCHEMA + RLS FIX
 -- Run this in your Supabase SQL editor
 -- ================================================================
+
+-- 0. DROP the old FK constraint that ties stores.id to auth.users(id).
+--    The original schema had one store per user (store.id = user.id).
+--    Now stores use owner_id for the user reference, so id is a free UUID.
+ALTER TABLE public.stores DROP CONSTRAINT IF EXISTS stores_id_fkey;
+ALTER TABLE public.stores DROP CONSTRAINT IF EXISTS stores_id_key;
+
+-- Also ensure owner_id column exists (in case of old schema)
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
 
 -- 1. Make sure RLS is enabled on the stores table
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 
--- 2. Drop any old/conflicting policies on stores
-DROP POLICY IF EXISTS "Users can view own stores"         ON public.stores;
-DROP POLICY IF EXISTS "Users can insert own stores"       ON public.stores;
-DROP POLICY IF EXISTS "Users can update own stores"       ON public.stores;
-DROP POLICY IF EXISTS "Users can delete own stores"       ON public.stores;
-DROP POLICY IF EXISTS "Public can view stores"            ON public.stores;
-DROP POLICY IF EXISTS "Authenticated users can insert"    ON public.stores;
-DROP POLICY IF EXISTS "Owner can update"                  ON public.stores;
-DROP POLICY IF EXISTS "Owner can delete"                  ON public.stores;
+-- 2. Drop ALL possible existing policies on stores (fully idempotent)
+DROP POLICY IF EXISTS "Users can view own stores"              ON public.stores;
+DROP POLICY IF EXISTS "Users can insert own stores"            ON public.stores;
+DROP POLICY IF EXISTS "Users can update own stores"            ON public.stores;
+DROP POLICY IF EXISTS "Users can delete own stores"            ON public.stores;
+DROP POLICY IF EXISTS "Public can view stores"                 ON public.stores;
+DROP POLICY IF EXISTS "Authenticated users can insert"         ON public.stores;
+DROP POLICY IF EXISTS "Authenticated users can insert stores"  ON public.stores;
+DROP POLICY IF EXISTS "Owner can update"                       ON public.stores;
+DROP POLICY IF EXISTS "Owner can update stores"                ON public.stores;
+DROP POLICY IF EXISTS "Owner can delete"                       ON public.stores;
+DROP POLICY IF EXISTS "Owner can delete stores"                ON public.stores;
 
 -- 3. Allow anyone to read stores (needed for storefront public view)
 CREATE POLICY "Public can view stores"

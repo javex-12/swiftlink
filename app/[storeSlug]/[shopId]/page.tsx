@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { CustomerStorefrontPage } from "@/components/CustomerStorefrontPage";
 
-// Server-side Supabase for metadata (read-only, public data)
+// Server-side Supabase — read-only, uses public anon key
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,6 +24,14 @@ async function getStoreData(shopId: string) {
   }
 }
 
+/** Returns a usable public URL, or null if it's a base64 data URL (unusable by crawlers) */
+function resolveOgImage(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith("data:")) return null; // base64 — crawlers can't load these
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return null;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -31,6 +39,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { shopId } = await params;
   const data = await getStoreData(shopId);
+  const site = "https://swiftlinkpro.vercel.app";
 
   const state = data?.state_json as any;
   const bizName = state?.bizName || data?.biz_name || "SwiftLink Store";
@@ -39,9 +48,17 @@ export async function generateMetadata({
     state?.ogDescription ||
     state?.tagline ||
     `Shop ${bizName} on SwiftLink Pro. Fast WhatsApp ordering, live product catalog.`;
-  const ogImage = state?.ogImage || state?.bizImage || "/logo.png";
 
-  const url = `https://swiftlinkpro.vercel.app/s/${shopId}`;
+  // Prefer explicit ogImage → bizImage → heroImage → product image → site logo
+  // Skip any base64 data URLs — crawlers cannot render them
+  const ogImage =
+    resolveOgImage(state?.ogImage) ||
+    resolveOgImage(state?.bizImage) ||
+    resolveOgImage(state?.heroImage) ||
+    resolveOgImage(state?.products?.[0]?.image) ||
+    `${site}/logo.png`;
+
+  const url = `${site}/s/${shopId}`;
 
   return {
     title: seoTitle,
