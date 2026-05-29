@@ -49,10 +49,6 @@ const nextConfig: NextConfig = {
             value: "SAMEORIGIN",
           },
           {
-            key: "Cross-Origin-Opener-Policy",
-            value: "unsafe-none",
-          },
-          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
