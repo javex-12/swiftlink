@@ -315,7 +315,7 @@ export default function SignupPage() {
                         <><span>{mode === "signup" ? "Enter Workspace" : "Open Dashboard"}</span><ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
                       )}
                     </button>
-                  </button>
+                  </form>
                 </motion.div>
               ) : (
                 <motion.div key="verify" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
