@@ -210,9 +210,9 @@ export function BusinessView() {
   };
 
   const handleCreateNew = async () => {
-    const userEmail = user?.email || "";
-    const assignedPlan = PRIVILEGED_USERS[userEmail];
-    const isPremium = assignedPlan === "pro" || assignedPlan === "business" || globalState.plan === "pro" || globalState.plan === "business";
+    // Check privileged status directly
+    const assignedPlan = PRIVILEGED_USERS[user?.email || ""];
+    const isPremium = assignedPlan === "business" || assignedPlan === "pro" || globalState.plan === "business" || globalState.plan === "pro";
 
     if (!isPremium && stores.length >= 1) {
         addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");
@@ -1058,6 +1058,45 @@ export function BusinessView() {
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Footer Content</h4>
                                     <StableInput value={localState.tagline || ""} onChange={(v) => updateLocalState("tagline", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 border border-slate-100" placeholder="Premium Products Tagline" />
                                 </div>
+                    </div>
+                </Accordion>
+
+                <Accordion id="seo_settings" title="SEO & Meta Tags" subtitle="Search & Share Preview" icon={Globe}>
+                    <div className="space-y-6">
+                        <p className="text-[10px] font-black uppercase text-slate-400">Configure how your site looks on Google, WhatsApp, & Twitter</p>
+                        
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Title (SEO Title)</label>
+                                    <StableInput value={localState.seoTitle || ""} onChange={(v) => updateLocalState("seoTitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3.5 font-bold text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 focus:border-emerald-500 outline-none" placeholder={localState.bizName || "Store name"} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Description (Social Sharing)</label>
+                                    <StableTextarea value={localState.ogDescription || ""} onChange={(v) => updateLocalState("ogDescription", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3.5 font-bold text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 focus:border-emerald-500 outline-none h-24 resize-none" placeholder="Get the best products at the most affordable prices. Fast WhatsApp orders and quick deliveries." />
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Share Image (OG Image)</label>
+                                <label className="block w-full h-40 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
+                                    {localState.ogImage ? (
+                                        <img src={localState.ogImage} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-[10px] font-black uppercase text-slate-400">Upload OG/Meta Image</span>
+                                            <span className="text-[8px] font-bold text-slate-300 uppercase">Recommended: 1200 x 630 px</span>
+                                        </div>
+                                    )}
+                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                        if(e.target.files?.[0]) {
+                                            const url = await uploadImageDirect(e.target.files[0], "branding");
+                                            if (url) updateLocalState("ogImage", url);
+                                        }
+                                    }} />
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </Accordion>
             </motion.div>

@@ -214,120 +214,124 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     const bg = state.heroImage || state.bizImage;
     const accent = state.accentColor || "#10b981";
 
-    // Hero-1: Cinematic dark with animated orbs & glassmorphism
+    // Hero-1: Cinematic dark with animated 3D Sphere & ambient glow
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
-                {/* Animated background orbs */}
-                {/* Animated 3D background */}
-                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#03030a] min-h-[85vh] md:min-h-[520px] rounded-[3rem] mx-auto max-w-[95%]">
+                {/* 3D Fluid Deformation Sphere Canvas */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <ThreeDBackground type={4} accentColor={accent} />
-                    {bg && <img src={bg} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.15, mixBlendMode:"luminosity" }} />}
+                    {bg && <img src={bg} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.08, mixBlendMode:"color-dodge" }} />}
                 </div>
-                {/* Subtle grid lines */}
-                <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" }} />
-                {/* Content */}
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"3.5rem 3rem", minHeight:450 }}>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 16px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.12)", background:"rgba(255,255,255,0.05)", backdropFilter:"blur(12px)", fontSize:10, fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.6)", width:"fit-content", marginBottom:24 }}>
-                        <span style={{ width:6, height:6, borderRadius:"50%", background:accent, display:"inline-block" }} />
-                        {state.bizName || "New Collection"}
+                {/* Visual grid lines & ambient overlays */}
+                <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)", backgroundSize:"30px 30px", pointerEvents:"none" }} />
+                <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] rounded-full blur-[120px] opacity-25 animate-pulse" style={{ backgroundColor: accent }} />
+                {/* Content Layout */}
+                <div className="relative z-10 flex flex-col justify-end p-8 md:p-16 min-h-[85vh] md:min-h-[520px]">
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"8px 20px", borderRadius:9999, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.03)", backdropFilter:"blur(20px)", fontSize:10, fontWeight:900, letterSpacing:"0.25em", textTransform:"uppercase", color:"#ffffff", width:"fit-content", marginBottom:24 }}>
+                        <span className="w-2 h-2 rounded-full animate-ping shrink-0" style={{ backgroundColor: accent }} />
+                        {state.bizName || "Exclusive"}
                     </div>
-                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.02, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1rem 0", fontStyle:"italic", textTransform:"uppercase" }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.45)", fontWeight:400, maxWidth:480, lineHeight:1.7, margin:"0 0 2rem 0" }}>
+                    <p className="text-sm md:text-lg text-white/50 font-medium max-w-xl leading-relaxed mb-10">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 32px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", transition:"all 0.3s" }} className="hover:scale-105 active:scale-95">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:14, padding:"18px 40px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:"0 20px 40px -10px rgba(255,255,255,0.2)" }} className="hover:scale-105 active:scale-95 transition-all group">
                         {btnText}
-                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} />
                     </button>
                 </div>
-                <style>{`@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.1);opacity:1} }`}</style>
             </div>
         );
     }
 
-    // Hero-2: Full-bleed image with editorial dark overlay
+    // Hero-2: Interactive 3D Floating Cinematic Shards with full-bleed editorial design
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-xl min-h-[80vh] md:min-h-[500px]">
-                <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : `linear-gradient(135deg, #0a0a0a 0%, #111827 100%)` }} />
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl min-h-[85vh] md:min-h-[550px] bg-slate-950 rounded-[3rem] mx-auto max-w-[95%]">
+                <div style={{ position:"absolute", inset:0, background: bg ? `url(${bg}) center/cover no-repeat` : undefined, opacity: 0.12, mixBlendMode: "luminosity" }} />
+                {/* 3D Floating Shards Engine */}
                 <ThreeDBackground type={3} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)" }} />
-                {/* Accent color bar */}
-                <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:accent }} />
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"flex-end", padding:"4rem 3rem", minHeight:500 }}>
-                    <p style={{ fontSize:10, fontWeight:900, letterSpacing:"0.35em", textTransform:"uppercase", color:accent, marginBottom:16 }}>
-                        {state.bizName || "Premium Brand"}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent z-5" />
+                {/* Premium border left accent */}
+                <div style={{ position:"absolute", left:0, top:0, bottom:0, width:6, background:`linear-gradient(to bottom, ${accent}, transparent)` }} />
+                
+                <div className="relative z-10 flex flex-col justify-end p-8 md:p-16 min-h-[85vh] md:min-h-[550px] max-w-4xl">
+                    <p style={{ fontSize:11, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:accent, marginBottom:16 }} className="animate-pulse">
+                        // {state.bizName || "Premium Atelier"}
                     </p>
-                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:900, lineHeight:1, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", maxWidth:700 }}>
+                    <h1 style={{ fontSize:"clamp(2.8rem,8vw,6rem)", fontWeight:900, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:420, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                    <p className="text-sm md:text-lg text-white/40 font-medium max-w-md leading-relaxed mb-10">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:8, border:"none", cursor:"pointer", width:"fit-content" }} className="hover:scale-105 active:scale-95 transition-transform">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:14, padding:"18px 42px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -15px ${accent}` }} className="hover:scale-105 active:scale-95 transition-all group">
                         {btnText}
-                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        <ArrowRight className="group-hover:translate-x-1.5 transition-transform" size={16} />
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Hero-3: Light editorial magazine style
+    // Hero-3: Luxury Aurora Floating Rings Split Canvas Layout
     if (templateId === "hero-3") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 bg-white border border-black/[0.04] shadow-sm min-h-[80vh] md:min-h-[420px]">
-                <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:420 }}>
-                    {/* Top bar */}
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:"#999" }}>{state.bizName}</span>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:"#999" }}>New Season</span>
-                    </div>
-                    {/* Main content */}
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3.5rem 2.5rem" }}>
-                        <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#0a0a0a", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
-                            {title}
-                        </h1>
-                        <div style={{ display:"flex", alignItems:"center", gap:"2rem", flexWrap:"wrap" }}>
-                            <p style={{ fontSize:"0.95rem", color:"#666", fontWeight:400, maxWidth:360, lineHeight:1.7, margin:0 }}>
+            <div className="relative w-full overflow-hidden mb-10 bg-white dark:bg-zinc-950 border border-black/[0.05] dark:border-white/5 shadow-2xl min-h-[85vh] md:min-h-[500px] rounded-[3rem] mx-auto max-w-[95%]">
+                <div className="flex flex-col lg:flex-row min-h-[85vh] md:min-h-[500px]">
+                    {/* Left details grid */}
+                    <div className="flex-1 flex flex-col justify-between p-8 md:p-16 z-10">
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid rgba(0,0,0,0.05)", paddingBottom:16 }}>
+                            <span style={{ fontSize:10, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", color:"#999" }}>{state.bizName}</span>
+                            <span style={{ fontSize:10, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:accent }}>[ Live 3D Experience ]</span>
+                        </div>
+                        <div className="my-auto py-8">
+                            <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color: "var(--text-color)", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                                {title}
+                            </h1>
+                            <p className="text-sm md:text-base text-gray-500 max-w-md leading-relaxed mb-8">
                                 {subtitle}
                             </p>
-                            <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", background:"#0a0a0a", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", whiteSpace:"nowrap" }} className="hover:scale-105 active:scale-95 transition-transform">
-                                {btnText} →
+                            <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"var(--text-color)", color:"var(--bg-color)", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(0,0,0,0.15)" }} className="hover:scale-105 active:scale-95 transition-all">
+                                {btnText} <ArrowRight size={14} />
                             </button>
                         </div>
+                        <div style={{ height:4, background:`linear-gradient(90deg, ${accent}, ${accent}44, transparent)` }} />
                     </div>
-                    {/* Bottom accent */}
-                    <div style={{ height:4, background:`linear-gradient(90deg, ${accent}, ${accent}44, transparent)` }} />
-                </div>
-                {bg && <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"35%", backgroundImage:`url(${bg})`, backgroundSize:"cover", backgroundPosition:"center", clipPath:"polygon(15% 0, 100% 0, 100% 100%, 0% 100%)" }} />}
-                <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:0, mixBlendMode:"difference" }}>
-                     <ThreeDBackground type={6} accentColor={accent} />
+                    {/* Right interactive 3D split canvas */}
+                    <div className="relative w-full lg:w-[45%] min-h-[350px] lg:min-h-full bg-slate-50 dark:bg-black/40 border-l border-black/[0.05] dark:border-white/5 overflow-hidden">
+                        <ThreeDBackground type={6} accentColor={accent} />
+                        {bg && <div style={{ position:"absolute", inset:0, backgroundImage:`url(${bg})`, backgroundSize:"cover", backgroundPosition:"center", opacity:0.15 }} />}
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
+    // Hero-4: Premium Glowing Torus Knot 3D Matrix Canvas
     if (templateId === "hero-4") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#010103] min-h-[85vh] md:min-h-[580px] rounded-[3rem] mx-auto max-w-[95%]">
                 <ThreeDBackground type={1} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(2,2,5,0.9) 30%, rgba(2,2,5,0.4) 60%, transparent 100%)", zIndex: 5 }} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #010103 35%, rgba(1,1,3,0.6) 70%, transparent 100%)", zIndex: 5 }} />
+                <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 70% 50%, rgba(255,255,255,0.01) 1px, transparent 1px)", backgroundSize:"20px 20px" }} />
                 
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 650 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:580, maxWidth: 700 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, color:accent, fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:20 }}>
+                        <Sparkles size={12} /> Live Generation Loop
+                    </div>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7.5vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:460, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                    <p className="text-sm md:text-lg text-white/50 font-medium max-w-lg leading-relaxed mb-10">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 group transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:14, padding:"18px 44px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 group transition-all">
                         {btnText}
-                        <svg className="transition-transform group-hover:translate-x-1" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        <ArrowRight className="group-hover:translate-x-1.5 transition-transform" size={16} />
                     </button>
                 </div>
             </div>
@@ -1219,6 +1223,62 @@ export function CustomerStorefront({
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ name: "", message: "", rating: 5 });
   const [comments, setComments] = useState<Record<string, any[]>>({});
+  
+  const scrollPositionRef = useRef<number>(0);
+  const homeScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // BROWSER HISTORY LOGIC FOR HARDWARE BACK BUTTON
+  useEffect(() => {
+    // Push initial history state so we have a state to pop back to
+    if (typeof window !== "undefined") {
+      window.history.replaceState({ screen: "home" }, "");
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const state = e.state;
+      if (state && state.screen) {
+        setScreen(state.screen);
+        if (state.screen === "home") {
+          setActiveTab("home");
+          // Restore scroll position after screen render
+          setTimeout(() => {
+            if (homeScrollContainerRef.current) {
+              homeScrollContainerRef.current.scrollTop = scrollPositionRef.current;
+            }
+          }, 50);
+        }
+      } else {
+        // Fallback: default to home
+        setScreen("home");
+        setActiveTab("home");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Sync manual actions to history state
+  const changeScreen = (nextScreen: typeof screen) => {
+    if (nextScreen === "home") {
+      setScreen("home");
+      setActiveTab("home");
+      window.history.pushState({ screen: "home" }, "");
+      setTimeout(() => {
+        if (homeScrollContainerRef.current) {
+          homeScrollContainerRef.current.scrollTop = scrollPositionRef.current;
+        }
+      }, 50);
+    } else {
+      // If leaving home, save current scroll position
+      if (screen === "home" && homeScrollContainerRef.current) {
+        scrollPositionRef.current = homeScrollContainerRef.current.scrollTop;
+      }
+      setScreen(nextScreen);
+      window.history.pushState({ screen: nextScreen }, "");
+    }
+  };
 
   useEffect(() => {
       if (screen === "community" && effectiveState?.id) {
@@ -1336,18 +1396,18 @@ export function CustomerStorefront({
 
   const goTab = (tab: typeof activeTab) => {
     setActiveTab(tab);
-    if (tab === "home") setScreen("home");
-    else if (tab === "search") setScreen("search");
-    else if (tab === "cart") setScreen("cart");
-    else if (tab === "community") setScreen("community");
+    if (tab === "home") changeScreen("home");
+    else if (tab === "search") changeScreen("search");
+    else if (tab === "cart") changeScreen("cart");
+    else if (tab === "community") changeScreen("community");
   };
 
   const handleOrder = () => {
     logEvent("whatsapp_checkout", { total: totalPrice, items: Object.keys(cart).length });
     sendWhatsAppOrder();
-    setScreen("success");
+    changeScreen("success");
     setTimeout(() => {
-      setScreen("home");
+      changeScreen("home");
       setActiveTab("home");
     }, 3000);
   };
@@ -1405,6 +1465,44 @@ export function CustomerStorefront({
          .custom-scrollbar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 20%, transparent); }
       `}</style>
       
+      {(() => {
+        // Dynamic client-side title/meta tagging
+        if (typeof window !== "undefined" && s) {
+          const finalTitle = s.seoTitle || s.bizName || "Store";
+          if (document.title !== finalTitle) {
+            document.title = finalTitle;
+          }
+          
+          const updateMeta = (nameOrProperty: string, content: string, isProperty = false) => {
+            const selector = isProperty ? `meta[property="${nameOrProperty}"]` : `meta[name="${nameOrProperty}"]`;
+            let element = document.querySelector(selector);
+            if (!element) {
+              element = document.createElement("meta");
+              if (isProperty) {
+                element.setAttribute("property", nameOrProperty);
+              } else {
+                element.setAttribute("name", nameOrProperty);
+              }
+              document.head.appendChild(element);
+            }
+            element.setAttribute("content", content);
+          };
+
+          if (s.ogDescription) {
+            updateMeta("description", s.ogDescription);
+            updateMeta("og:description", s.ogDescription, true);
+            updateMeta("twitter:description", s.ogDescription);
+          }
+          if (s.ogImage) {
+            updateMeta("og:image", s.ogImage, true);
+            updateMeta("twitter:image", s.ogImage);
+          }
+          updateMeta("og:title", finalTitle, true);
+          updateMeta("twitter:title", finalTitle);
+        }
+        return null;
+      })()}
+      
       <div className="w-full min-h-screen flex flex-col relative overflow-x-hidden">
         <div className="flex-1 flex flex-col relative">
           <AnimatePresence mode="wait">
@@ -1445,7 +1543,7 @@ export function CustomerStorefront({
 
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col">
+                <div ref={homeScrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col">
 
                   {/* NEW TEMPLATE ENGINE - Full bleed */}
                   <div className="w-full">
@@ -1475,7 +1573,7 @@ export function CustomerStorefront({
                             </div>
                         </div>
 
-                        <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); setScreen("product"); logEvent("product_click", { productId: p.id }); }} />
+                        <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); changeScreen("product"); logEvent("product_click", { productId: p.id }); }} />
                         <AboutTemplate state={s} templateId={s.aboutTemplateId || "about-1"} />
                     </div>
                   </div>
@@ -1521,7 +1619,7 @@ export function CustomerStorefront({
                         );
                       })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:hidden" />
-                      <button onClick={() => { setScreen("home"); setActiveImgIdx(0); }} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg text-gray-900">
+                      <button onClick={() => { changeScreen("home"); setActiveImgIdx(0); }} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg text-gray-900">
                         <ChevronLeft size={20} />
                       </button>
                     </div>
@@ -1576,7 +1674,7 @@ export function CustomerStorefront({
                 </div>
                 <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-6 space-y-4">
                   {searchQuery && filteredProducts.map((p) => (
-                      <button key={p.id} onClick={() => { setSelectedProduct(p); setScreen("product"); }} className="w-full flex items-center gap-4 md:gap-8 bg-white p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm hover:shadow-xl active:scale-[0.98] transition-all group border border-black/[0.01]">
+                      <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 md:gap-8 bg-white p-3 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm hover:shadow-xl active:scale-[0.98] transition-all group border border-black/[0.01]">
                         <img src={p.image} className="w-16 h-16 md:w-32 md:h-32 object-cover rounded-xl md:rounded-[1.5rem] flex-shrink-0 group-hover:scale-105 transition-transform" />
                         <div className="flex-1 text-left">
                           <p className="text-[11px] md:text-xl font-black text-gray-900 leading-none mb-1 md:mb-3">{p.name}</p>
@@ -1857,7 +1955,7 @@ export function CustomerStorefront({
                   </motion.div>
                   <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight italic uppercase">Order Sent!</h2>
                   <p className="text-sm md:text-lg text-gray-400 font-medium leading-relaxed">We&apos;ve forwarded your request to the store on WhatsApp.</p>
-                  <button onClick={() => { setScreen("home"); setActiveTab("home"); }} className="px-10 py-4 bg-gray-900 text-white text-xs md:text-sm font-black rounded-full active:scale-95 transition-all shadow-xl">BACK TO STORE</button>
+                  <button onClick={() => { changeScreen("home"); setActiveTab("home"); }} className="px-10 py-4 bg-gray-900 text-white text-xs md:text-sm font-black rounded-full active:scale-95 transition-all shadow-xl">BACK TO STORE</button>
                 </div>
               </motion.div>
             )}

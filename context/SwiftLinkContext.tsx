@@ -209,7 +209,7 @@ export function SwiftLinkProvider({
     const newId = crypto.randomUUID();
     const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] : null;
     
-    let newState = { ...defaultShopState(), id: newId, ownerId: user.id, bizName: name };
+    let newState = normalizeShopState({ id: newId, ownerId: user.id, bizName: name });
     if (assignedPlan) newState = { ...newState, plan: assignedPlan };
     
     const { error } = await supabase.from('stores').insert({

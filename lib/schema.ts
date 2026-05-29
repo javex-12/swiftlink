@@ -151,6 +151,11 @@ export type ShopState = {
   heroTitle?: string;
   heroSubtitle?: string;
   heroButtonText?: string;
+
+  // SEO & Social sharing meta settings
+  seoTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
   
   // Legacy fields (Keeping for migration safety)
   themePreset?: "custom" | "fresh" | "bold" | "minimal" | "playful";

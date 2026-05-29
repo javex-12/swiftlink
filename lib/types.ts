@@ -65,6 +65,10 @@ export const defaultShopState = (): ShopState => ({
   deliveryFee: "",
   returnPolicy: "",
 
+  seoTitle: "",
+  ogDescription: "",
+  ogImage: "",
+
   isLive: true,
 });
 
