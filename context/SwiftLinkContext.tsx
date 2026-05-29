@@ -139,13 +139,10 @@ export function SwiftLinkProvider({
     if (data) {
         const loadedStores = data.map((s: any) => normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id }));
         setStores(loadedStores);
-        if (loadedStores.length > 0 && !state.id) {
-            setState(loadedStores[0]);
-        }
         return loadedStores;
     }
     return [];
-  }, [state.id]);
+  }, []);
 
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
@@ -207,10 +204,9 @@ export function SwiftLinkProvider({
   const createNewStore = useCallback(async (name: string) => {
     if (!user) return;
     const newId = crypto.randomUUID();
-    const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] : null;
+    const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] || "business" : "business";
     
-    let newState = normalizeShopState({ id: newId, ownerId: user.id, bizName: name });
-    if (assignedPlan) newState = { ...newState, plan: assignedPlan };
+    const newState = normalizeShopState({ id: newId, ownerId: user.id, bizName: name, plan: assignedPlan });
     
     const { error } = await supabase.from('stores').insert({
         id: newId,
@@ -219,12 +215,21 @@ export function SwiftLinkProvider({
         state_json: newState
     });
 
-    if (!error) {
-        setStores(prev => [...prev, newState]);
-        setState(newState);
-        addToast("New store created!", "success");
+    if (error) {
+        console.error("[createNewStore] Supabase error:", error);
+        addToast(`Store creation failed: ${error.message}`, "error");
+        return;
     }
-  }, [user, addToast]);
+
+    // Optimistically add to local list and switch to it
+    setStores(prev => [...prev, newState]);
+    setState(newState);
+    localStorage.setItem("swiftlink_state", JSON.stringify(newState));
+    addToast(`"${name}" store created!`, "success");
+
+    // Re-fetch from DB to stay in sync (catches any server-side transforms)
+    void fetchStores(user.id);
+  }, [user, addToast, fetchStores]);
 
   const switchStore = useCallback(async (id: string) => {
     const target = stores.find(s => s.id === id);

@@ -210,14 +210,6 @@ export function BusinessView() {
   };
 
   const handleCreateNew = async () => {
-    // Check privileged status directly
-    const assignedPlan = PRIVILEGED_USERS[user?.email || ""];
-    const isPremium = assignedPlan === "business" || assignedPlan === "pro" || globalState.plan === "business" || globalState.plan === "pro";
-
-    if (!isPremium && stores.length >= 1) {
-        addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");
-        return;
-    }
     const name = await (window as any).customPrompt("New Store", "Enter brand name:");
     if (name) {
         await createNewStore(name);

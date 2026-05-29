@@ -1,35 +1,71 @@
 -- ================================================================
--- PART 1 — Run this block FIRST, then run PART 2 below
+-- STORES TABLE — RLS FIX FOR MULTI-STORE SUPPORT
+-- Run this in your Supabase SQL editor
 -- ================================================================
 
--- Add author_id to store_reviews if missing
-ALTER TABLE public.store_reviews
-  ADD COLUMN IF NOT EXISTS author_id uuid;
+-- 1. Make sure RLS is enabled on the stores table
+ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 
--- Create comments table
-CREATE TABLE IF NOT EXISTS public.store_review_comments (
-  id          uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
-  review_id   uuid         NOT NULL REFERENCES public.store_reviews(id) ON DELETE CASCADE,
-  store_id    text,
-  author_name text         NOT NULL DEFAULT 'Store Owner',
-  author_id   uuid,
-  message     text         NOT NULL,
-  created_at  timestamptz  NOT NULL DEFAULT now()
-);
+-- 2. Drop any old/conflicting policies on stores
+DROP POLICY IF EXISTS "Users can view own stores"         ON public.stores;
+DROP POLICY IF EXISTS "Users can insert own stores"       ON public.stores;
+DROP POLICY IF EXISTS "Users can update own stores"       ON public.stores;
+DROP POLICY IF EXISTS "Users can delete own stores"       ON public.stores;
+DROP POLICY IF EXISTS "Public can view stores"            ON public.stores;
+DROP POLICY IF EXISTS "Authenticated users can insert"    ON public.stores;
+DROP POLICY IF EXISTS "Owner can update"                  ON public.stores;
+DROP POLICY IF EXISTS "Owner can delete"                  ON public.stores;
 
-CREATE INDEX IF NOT EXISTS idx_src_review_id
-  ON public.store_review_comments(review_id);
+-- 3. Allow anyone to read stores (needed for storefront public view)
+CREATE POLICY "Public can view stores"
+  ON public.stores FOR SELECT
+  USING (true);
 
--- Enable RLS
+-- 4. Allow any authenticated user to insert — no limit on number of stores per user
+CREATE POLICY "Authenticated users can insert stores"
+  ON public.stores FOR INSERT
+  WITH CHECK (auth.uid() = owner_id);
+
+-- 5. Allow owner to update their own stores
+CREATE POLICY "Owner can update stores"
+  ON public.stores FOR UPDATE
+  USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
+
+-- 6. Allow owner to delete their own stores
+CREATE POLICY "Owner can delete stores"
+  ON public.stores FOR DELETE
+  USING (auth.uid() = owner_id);
+
+
+-- ================================================================
+-- SLUGS TABLE — RLS (needed for store username routing)
+-- ================================================================
+
+ALTER TABLE public.slugs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view slugs"          ON public.slugs;
+DROP POLICY IF EXISTS "Authenticated can upsert slugs" ON public.slugs;
+
+CREATE POLICY "Public can view slugs"
+  ON public.slugs FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated can upsert slugs"
+  ON public.slugs FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated can update slugs"
+  ON public.slugs FOR UPDATE
+  USING (auth.role() = 'authenticated');
+
+
+-- ================================================================
+-- REVIEWS & COMMENTS — unchanged from previous migration
+-- ================================================================
+
 ALTER TABLE public.store_reviews          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_review_comments  ENABLE ROW LEVEL SECURITY;
 
-
--- ================================================================
--- PART 2 — ONLY run this AFTER Part 1 succeeds
--- ================================================================
-
--- Clean up any old/broken policies first
 DROP POLICY IF EXISTS "Public read reviews"   ON public.store_reviews;
 DROP POLICY IF EXISTS "Auth insert reviews"   ON public.store_reviews;
 DROP POLICY IF EXISTS "Owner delete reviews"  ON public.store_reviews;
@@ -37,7 +73,6 @@ DROP POLICY IF EXISTS "Public read comments"  ON public.store_review_comments;
 DROP POLICY IF EXISTS "Auth insert comments"  ON public.store_review_comments;
 DROP POLICY IF EXISTS "Owner delete comments" ON public.store_review_comments;
 
--- store_reviews policies
 CREATE POLICY "Public read reviews"
   ON public.store_reviews FOR SELECT USING (true);
 
@@ -48,7 +83,6 @@ CREATE POLICY "Owner delete reviews"
   ON public.store_reviews FOR DELETE
   USING (auth.uid() = author_id);
 
--- store_review_comments policies
 CREATE POLICY "Public read comments"
   ON public.store_review_comments FOR SELECT USING (true);
 
