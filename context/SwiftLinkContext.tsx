@@ -129,7 +129,7 @@ export function SwiftLinkProvider({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [state, setState] = useState<ShopState>(defaultShopState);
+  const [state, setState] = useState<ShopState>(defaultShopState());
   const [stores, setStores] = useState<ShopState[]>([]);
   const [cart, setCart] = useState<CartMap>({});
   const [user, setUser] = useState<User | null>(null);

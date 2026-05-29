@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, AlertCircle, Loader2, MessageSquare, ChevronLeft
+  ArrowRight, AlertCircle, Loader2, MessageSquare, ChevronLeft, Eye, EyeOff
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -111,10 +111,6 @@ export default function SignupPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/pro`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
         }
       });
       if (error) throw error;
@@ -319,7 +315,7 @@ export default function SignupPage() {
                         <><span>{mode === "signup" ? "Enter Workspace" : "Open Dashboard"}</span><ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
                       )}
                     </button>
-                  </form>
+                  </button>
                 </motion.div>
               ) : (
                 <motion.div key="verify" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center py-10">
@@ -327,7 +323,7 @@ export default function SignupPage() {
                     <MessageSquare size={32} className="text-emerald-500" />
                   </div>
                   <h2 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic">Check your email.</h2>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-12 leading-relaxed">We sent a secure link to <br /><span className="text-slate-900 dark:text-white font-bold">{form.email}</span></p>
+                  <p className="text-slate-400 font-medium text-base mb-12 leading-relaxed">We sent a secure link to <br /><span className="text-white font-bold">{form.email}</span></p>
                   <button onClick={() => {setStep("form"); setMode("login")}} className="w-full py-5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Back to Login</button>
                 </motion.div>
               )}
