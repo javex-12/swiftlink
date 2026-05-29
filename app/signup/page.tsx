@@ -55,11 +55,10 @@ export default function SignupPage() {
     extra?: { bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     try {
-      // Only proceed if user is verified or using social login
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email_confirmed_at && user?.app_metadata.provider === 'email') return;
-
       const { data: storeData } = await supabase.from('stores').select('*').eq('id', uid).single();
+      const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
+      const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
+      const slug = getPublicStoreSlug({ storeUsername, bizName });
       const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
       const slug = getPublicStoreSlug({ storeUsername, bizName });
@@ -121,7 +120,7 @@ export default function SignupPage() {
         router.push("/pro");
       }
     } catch (e: any) {
-      setError("We couldn't sign you in with Google. Please try again.");
+      setError(e.message || "Google Sign-In failed. Please try again.");
       setLoading(null);
     }
   };
@@ -178,7 +177,12 @@ export default function SignupPage() {
         }
       }
     } catch (e: any) {
-      setError(e.message.includes("invalid claim") ? "Incorrect email or password." : e.message);
+      const msg = e.message || "An unexpected error occurred.";
+      if (msg.toLowerCase().includes("invalid login credentials")) {
+        setError("Invalid email or password. Please try again.");
+      } else {
+        setError(msg);
+      }
       setLoading(null);
     }
   };
@@ -186,16 +190,16 @@ export default function SignupPage() {
   if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
 
   return (
-    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto">
+    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto overflow-x-hidden">
       {/* Background Decor */}
-      <div className="absolute inset-0 pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay" />
       </div>
 
       {/* Brand Side: Responsive, High-Fidelity */}
-      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen">
+      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen lg:h-screen lg:sticky lg:top-0">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
              <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
@@ -237,7 +241,7 @@ export default function SignupPage() {
       </div>
 
       {/* Form Side: Centered, Pixel-Perfect */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617]">
         {/* Mobile Header Decor */}
         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 lg:hidden" />
         
