@@ -66,8 +66,9 @@ export function getShopPath(
 ): string {
   if (!state.id) return "/";
   const slug = getPublicStoreSlug(state);
-  if (!slug) return "/";
-  return `/store/${slug}`;
+  if (!slug) return `/store/visit?shop=${state.id}`;
+  // Use BOTH for ultimate reliability (SEO friendly slug + exact shop ID fallback)
+  return `/store/${slug}?shop=${state.id}`;
 }
 
 export type ParsedShopPath =

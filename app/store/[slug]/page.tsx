@@ -63,7 +63,11 @@ export default function StoreByHandlePage() {
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
-    if (shopFromQuery) return;
+    if (shopFromQuery) {
+        setStatus("idle");
+        return;
+    }
+    
     if (!slug) {
       setStatus("not_found");
       return;
