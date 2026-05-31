@@ -201,6 +201,17 @@ export function BusinessView() {
   };
 
   const handleCreateNew = async () => {
+    if (!user) return;
+    
+    // Check privileged status directly using the top-level constant
+    const userEmail = user.email || "";
+    const assignedPlan = PRIVILEGED_USERS[userEmail];
+    const isPremium = assignedPlan === "business" || assignedPlan === "pro" || globalState.plan === "business" || globalState.plan === "pro";
+
+    if (!isPremium && stores.length >= 1) {
+        addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");
+        return;
+    }
     const name = await (window as any).customPrompt("New Store", "Enter brand name:");
     if (name) {
         await createNewStore(name);
@@ -849,7 +860,16 @@ export function BusinessView() {
                                     if (url) {
                                         let name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
                                         name = name.replace(/\b\w/g, c => c.toUpperCase());
-                                        newProducts.push({ id: tempId, name, price: 0, description: "", image: "", images: [url], outOfStock: false, category: "" });
+                                        newProducts.push({ 
+                                            id: tempId, 
+                                            name, 
+                                            price: 0, 
+                                            description: "", 
+                                            image: url, // Set primary image
+                                            images: [url], 
+                                            outOfStock: false, 
+                                            category: "" 
+                                        });
                                     }
                                 }
                                 updateLocalState("products", [...newProducts, ...localState.products]);

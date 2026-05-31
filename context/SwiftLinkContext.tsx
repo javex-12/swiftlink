@@ -242,6 +242,11 @@ export function SwiftLinkProvider({
 
   const transferStore = useCallback(async (targetEmail: string) => {
     if (!user || !state.id) return false;
+    
+    // CRITICAL: Clear any pending syncs before transfer to prevent overwriting ownership
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    setIsSyncing(false);
+
     try {
       const { error } = await supabase.rpc('transfer_store_by_email', {
         store_id_param: state.id,
@@ -252,24 +257,29 @@ export function SwiftLinkProvider({
         addToast(error.message, "error");
         return false;
       }
+      
       addToast("Store transferred successfully!", "success");
-      // Remove the store locally
-      setStores(prev => prev.filter(s => s.id !== state.id));
-      const remainingStores = stores.filter(s => s.id !== state.id);
-      if (remainingStores.length > 0) {
-        setState(remainingStores[0]);
-      } else {
-        // Fallback to default
-        setState(normalizeShopState({ id: crypto.randomUUID(), ownerId: user.id }));
-      }
-      void fetchStores(user.id);
+
+      // Filter out the transferred store from local list
+      const transferredId = state.id;
+      setStores(prev => {
+          const next = prev.filter(s => s.id !== transferredId);
+          // Auto-switch to another store if available
+          if (next.length > 0) {
+              setState(next[0]);
+          } else {
+              setState(normalizeShopState({ id: crypto.randomUUID(), ownerId: user.id }));
+          }
+          return next;
+      });
+
       return true;
     } catch (err: any) {
       console.error(err);
       addToast(err.message || "Failed to transfer store", "error");
       return false;
     }
-  }, [user, state.id, stores, addToast, fetchStores]);
+  }, [user, state.id, addToast]);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
