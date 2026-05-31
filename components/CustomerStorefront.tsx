@@ -27,6 +27,12 @@ import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase-client";
+import dynamic from "next/dynamic";
+
+const ThreeDBackground = dynamic(
+  () => import("./ThreeDBackground").then((m) => m.ThreeDBackground),
+  { ssr: false }
+);
 
 // ==========================================
 // INTERNAL TEMPLATES (COMPONENTS)
@@ -39,29 +45,236 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     const btnText = state.heroButtonText || "Shop Now";
     const image = state.heroImage || state.bizImage;
 
-    // Template 1 (Default): Cinematic Dark
-    if (templateId === "hero-1" || !templateId) {
+    // Hero-1: Cinematic dark with animated 3D Sphere & ambient glow
+    if (!templateId || templateId === "hero-1") {
         return (
             <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
-                <div className="absolute top-0 right-0 w-1/2 h-full bg-[radial-gradient(circle_at_70%_30%,rgba(16,185,129,0.15),transparent_70%)] pointer-events-none" />
-                <div className="flex flex-col md:flex-row items-center h-full">
-                    <div className="p-10 md:p-20 md:w-1/2 z-10">
-                        <h1 className="text-4xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none mb-6">
+                {/* Animated 3D background */}
+                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
+                    <ThreeDBackground type={4} accentColor={accent} />
+                </div>
+                
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(5,5,5,0.95) 30%, rgba(5,5,5,0.2) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:450, maxWidth: 800 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,10vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:500, maxWidth:450, lineHeight:1.6, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 42px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 transition-transform">
+                        {btnText} <ArrowRight size={18} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-2: Interactive 3D Floating Cinematic Shards with full-bleed editorial design
+    if (templateId === "hero-2") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl min-h-[80vh] md:min-h-[500px]" style={{ background: "#0a0a0a" }}>
+                <ThreeDBackground type={3} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(45deg, rgba(0,0,0,0.8) 0%, transparent 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirecton:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:500 }}>
+                    <div style={{ maxWidth: 800 }}>
+                        <div style={{ width:40, height:4, background:accent, margin:"0 auto 2rem" }} />
+                        <h1 style={{ fontSize:"clamp(3rem,12vw,7rem)", fontWeight:950, lineHeight:0.85, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 2rem 0", textTransform:"uppercase" }}>
                             {title}
                         </h1>
-                        <p className="text-slate-400 text-lg font-medium mb-10 max-w-md leading-relaxed">
+                        <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:600, margin:"0 auto 3rem", lineHeight:1.5 }}>
                             {subtitle}
                         </p>
-                        <button onClick={onShopClick} className="px-10 py-5 bg-emerald-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-emerald-500/20 flex items-center gap-3">
-                            {btnText} <ArrowRight size={18} />
+                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"20px 50px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:12, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:4, border:"none", cursor:"pointer" }} className="hover:bg-emerald-500 hover:text-white transition-colors">
+                            {btnText}
                         </button>
                     </div>
-                    {image && (
-                        <div className="md:w-1/2 h-full relative">
-                            <img src={image} className="w-full h-full object-cover md:absolute inset-0" alt="Hero" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent hidden md:block" />
-                        </div>
-                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-3: Luxury Aurora Floating Rings Split Canvas Layout
+    if (templateId === "hero-3") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 bg-white dark:bg-zinc-950 border border-black/[0.03] shadow-sm min-h-[80vh] md:min-h-[420px]">
+                <div className="flex flex-col md:flex-row items-stretch min-h-[420px]">
+                    <div className="flex-1 p-10 md:p-16 flex flex-col justify-center">
+                        <span style={{ color:accent, fontSize:10, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:12, display:"block" }}>New Collection</span>
+                        <h1 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-none mb-6 uppercase">
+                            {title}
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-lg mb-10 max-w-sm">
+                            {subtitle}
+                        </p>
+                        <button onClick={onShopClick} className="w-fit px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full font-black text-xs uppercase tracking-widest hover:translate-y-[-2px] active:translate-y-0 transition-all shadow-xl">
+                            {btnText}
+                        </button>
+                    </div>
+                    <div className="flex-1 relative bg-slate-50 dark:bg-zinc-900 min-h-[300px] md:min-h-full overflow-hidden">
+                        <ThreeDBackground type={6} accentColor={accent} />
+                        {image && <img src={image} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" />}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
+    if (templateId === "hero-4") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
+                <ThreeDBackground type={1} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 70% 50%, transparent 20%, #020205 80%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:550, lineHeight:1.7, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 transition-all">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-5: Cyber Grid Floor (3D Canvas - No Image Required)
+    if (templateId === "hero-5") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
+                <ThreeDBackground type={2} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to bottom, #050b0a 0%, rgba(5,11,10,0.4) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,9vw,6rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.05rem", color:accent, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", marginBottom:"3.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 40px", background:"transparent", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.3em", textTransform:"uppercase", borderRadius:0, border:`2px solid ${accent}`, cursor:"pointer" }} className="hover:bg-emerald-500/10 transition-colors">
+                        {btnText}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-6: Cosmic Particles Universe (3D Canvas - No Image Required)
+    if (templateId === "hero-6") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl" style={{ minHeight: 580, background: "#000000" }}>
+                <ThreeDBackground type={5} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2.5rem", minHeight:580 }}>
+                    <h1 style={{ fontSize:"clamp(3rem,10vw,6.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.02em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:300, maxWidth:650, lineHeight:1.6, marginBottom:"3.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"20px 52px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 0 50px ${accent}44` }} className="hover:shadow-[0_0_80px_rgba(16,185,129,0.4)] transition-all">
+                        {btnText}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-7: Organic DNA Helix (3D Canvas - No Image Required)
+    if (templateId === "hero-7") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-xl border border-white/5" style={{ minHeight: 550, background: "#03020c" }}>
+                <ThreeDBackground type={8} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #03020c 40%, transparent 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 4rem", minHeight:550, maxWidth: 750 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:480, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 44px", background:"#ffffff", color:"#03020c", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer" }} className="hover:bg-emerald-500 hover:text-white transition-colors">
+                        {btnText}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-8: Futuristic Starfield Warp (3D Canvas - No Image Required)
+    if (templateId === "hero-8") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#000000" }}>
+                <ThreeDBackground type={9} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(135deg, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0.5) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 700 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"oblique" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 38px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 transition-transform">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-9: Oceanic Wave Mesh (3D Canvas - No Image Required)
+    if (templateId === "hero-9") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050811" }}>
+                <ThreeDBackground type={7} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050811 15%, rgba(5,8,17,0.4) 100%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#050811", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.15)" }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <ArrowRight size={14} />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Hero-10: Neon Rings Tunnel (3D Canvas - No Image Required)
+    if (templateId === "hero-10") {
+        return (
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 560, background: "#0a000f" }}>
+                <ThreeDBackground type={10} accentColor={accent} />
+                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle, transparent 20%, #0a000f 90%)", zIndex: 5 }} />
+                
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:560 }}>
+                    <h1 style={{ fontSize:"clamp(2.8rem,8.5vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 40px ${accent}aa` }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.65)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 group transition-all">
+                        {btnText}
+                        <Zap size={14} fill="currentColor" />
+                    </button>
                 </div>
             </div>
         );
@@ -77,6 +290,89 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
 };
 
 const CatalogTemplate = ({ state, templateId, products, onProductClick }: { state: ShopState, templateId: string, products: Product[], onProductClick: (p: Product) => void }) => {
+    const accent = state.accentColor || "#10b981";
+
+    // Template 2: Magazine List
+    if (templateId === "catalog-2") {
+        return (
+            <div className="space-y-6">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="w-full flex items-center gap-6 p-4 rounded-[2rem] bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all group text-left border border-black/[0.02] dark:border-white/5">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-[1.5rem] overflow-hidden bg-gray-50 dark:bg-zinc-800 shrink-0 relative">
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-2 py-1 rounded-md shadow-sm">Sold Out</span></div>}
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                {p.badge === "hot" && <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded">Hot</span>}
+                                {p.badge === "new" && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded">New</span>}
+                            </div>
+                            <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white leading-tight">{p.name}</h3>
+                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{p.description}</p>
+                            <p className="text-lg md:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-3">{state.currency}{Number(p.price).toLocaleString()}</p>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 8: Asymmetric Masonry
+    if (templateId === "catalog-8") {
+        return (
+            <div className="columns-2 md:columns-3 gap-4 space-y-4">
+                {products.map((p, idx) => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="break-inside-avoid w-full flex flex-col text-left group bg-white dark:bg-zinc-900 rounded-[2rem] p-4 border border-black/[0.02] dark:border-white/5 hover:shadow-xl transition-all">
+                        <div className={`w-full rounded-[1.5rem] overflow-hidden mb-4 relative ${idx % 3 === 0 ? "aspect-[4/5]" : idx % 3 === 1 ? "aspect-square" : "aspect-[3/4]"}`}>
+                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-3 py-1 rounded">Sold Out</span></div>}
+                        </div>
+                        <h3 className="font-black text-sm text-gray-900 dark:text-white truncate px-1 uppercase tracking-tight">{p.name}</h3>
+                        <p className="font-black text-sm text-emerald-600 dark:text-emerald-400 mt-1 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 9: Hover Reveal Cards
+    if (templateId === "catalog-9") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group relative overflow-hidden rounded-[2rem] aspect-[4/5] bg-slate-100 dark:bg-zinc-800">
+                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                        <div className="absolute inset-0 flex flex-col justify-end p-5 z-10 transition-transform duration-500 translate-y-3 group-hover:translate-y-0">
+                            <h3 className="font-black text-base text-white truncate uppercase tracking-tight">{p.name}</h3>
+                            <p className="font-medium text-[10px] text-white/60 line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-0.5">{p.description}</p>
+                            <p className="font-black text-base text-emerald-400 mt-2">{state.currency}{Number(p.price).toLocaleString()}</p>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 10: Brutalist Poster
+    if (templateId === "catalog-10") {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {products.map(p => (
+                    <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group bg-yellow-100/10 dark:bg-zinc-900 border-[3px] border-black dark:border-white p-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-[0_0_0_0_#000] dark:hover:shadow-[0_0_0_0_#fff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all">
+                        <div className="w-full aspect-[4/5] border-2 border-black dark:border-white overflow-hidden mb-3 relative">
+                            <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                            {p.outOfStock && <div className="absolute inset-0 bg-white/90 dark:bg-black/90 flex items-center justify-center border-b-2 border-black dark:border-white"><span className="text-[11px] font-black uppercase text-black dark:text-white border-2 border-black dark:border-white px-3 py-1">SOLD OUT</span></div>}
+                        </div>
+                        <h3 className="font-black text-xs md:text-sm text-gray-900 dark:text-white uppercase tracking-tight">{p.name}</h3>
+                        <p className="font-black text-xs md:text-lg text-emerald-600 dark:text-emerald-400 mt-1">{state.currency}{Number(p.price).toLocaleString()}</p>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    // Template 1 (Default): Modern Grid
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
             {products.map(p => (
@@ -89,7 +385,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
                             </div>
                         )}
                     </div>
-                    <h3 className="font-black text-sm md:text-lg text-gray-900 dark:text-white truncate px-1 uppercase">{p.name}</h3>
+                    <h3 className="font-black text-sm md:text-lg text-gray-900 dark:text-white truncate px-1 uppercase tracking-tight">{p.name}</h3>
                     <p className="font-black text-sm md:text-xl text-emerald-600 dark:text-emerald-400 mt-1 px-1">{state.currency}{Number(p.price).toLocaleString()}</p>
                 </button>
             ))}
@@ -117,7 +413,7 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
                 <p className="text-gray-500 font-medium text-sm leading-relaxed">{state.tagline || "Premium Products"}</p>
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 text-right">
                 {state.contactEmail && <p className="text-xs text-gray-500 font-medium">{state.contactEmail}</p>}
                 {state.phone && <p className="text-xs text-gray-500 font-medium">{state.phone}</p>}
             </div>
@@ -161,7 +457,6 @@ export function CustomerStorefront({
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [wishlist, setWishlist] = useState<number[]>([]);
   
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -169,6 +464,7 @@ export function CustomerStorefront({
   const [newReview, setNewReview] = useState({ name: "", message: "", rating: 5 });
   const [comments, setComments] = useState<Record<string, any[]>>({});
   
+  const scrollPositionRef = useRef<number>(0);
   const homeScrollContainerRef = useRef<HTMLDivElement>(null);
 
   // ─── BROWSER HISTORY LOGIC ───
@@ -179,7 +475,15 @@ export function CustomerStorefront({
     const handlePopState = (e: PopStateEvent) => {
       const s = e.state?.screen || "home";
       setScreen(s);
-      if (s === "home") setActiveTab("home");
+      if (s === "home") {
+          setActiveTab("home");
+          // Re-apply scroll position
+          requestAnimationFrame(() => {
+              if (homeScrollContainerRef.current) {
+                  homeScrollContainerRef.current.scrollTop = scrollPositionRef.current;
+              }
+          });
+      }
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -188,6 +492,9 @@ export function CustomerStorefront({
 
   const changeScreen = (next: typeof screen) => {
     if (next !== screen) {
+      if (screen === "home" && homeScrollContainerRef.current) {
+          scrollPositionRef.current = homeScrollContainerRef.current.scrollTop;
+      }
       window.history.pushState({ screen: next }, "");
       setScreen(next);
     }
@@ -229,6 +536,24 @@ export function CustomerStorefront({
             });
       }
   }, [screen, effectiveState?.id]);
+
+  const submitReview = async () => {
+      if (!newReview.name || !newReview.message || !effectiveState?.id) return;
+      
+      const { data, error } = await supabase.from("store_reviews").insert({
+          store_id: effectiveState.id,
+          author_name: newReview.name,
+          author_id: user?.id || null,
+          message: newReview.message,
+          rating: newReview.rating
+      }).select().single();
+
+      if (!error && data) {
+          setReviews(prev => [data, ...prev]);
+          setShowReviewForm(false);
+          setNewReview({ name: "", message: "", rating: 5 });
+      }
+  };
 
   useEffect(() => {
     if (!shopId) {
