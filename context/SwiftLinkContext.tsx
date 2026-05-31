@@ -243,13 +243,15 @@ export function SwiftLinkProvider({
   const transferStore = useCallback(async (targetEmail: string) => {
     if (!user || !state.id) return false;
     
+    const transferredId = state.id;
+    
     // CRITICAL: Clear any pending syncs before transfer to prevent overwriting ownership
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     setIsSyncing(false);
 
     try {
       const { error } = await supabase.rpc('transfer_store_by_email', {
-        store_id_param: state.id,
+        store_id_param: transferredId,
         target_email: targetEmail
       });
       if (error) {
@@ -260,26 +262,30 @@ export function SwiftLinkProvider({
       
       addToast("Store transferred successfully!", "success");
 
-      // Filter out the transferred store from local list
-      const transferredId = state.id;
+      // IMMEDIATELY update local lists and clear state for the transferred store
       setStores(prev => {
           const next = prev.filter(s => s.id !== transferredId);
-          // Auto-switch to another store if available
           if (next.length > 0) {
               setState(next[0]);
+              localStorage.setItem("swiftlink_state", JSON.stringify(next[0]));
           } else {
-              setState(normalizeShopState({ id: crypto.randomUUID(), ownerId: user.id }));
+              const fallback = normalizeShopState({ id: crypto.randomUUID(), ownerId: user.id });
+              setState(fallback);
+              localStorage.setItem("swiftlink_state", JSON.stringify(fallback));
           }
           return next;
       });
 
+      // Force refresh stores from server to be absolutely sure
+      await fetchStores(user.id);
+      
       return true;
     } catch (err: any) {
       console.error(err);
       addToast(err.message || "Failed to transfer store", "error");
       return false;
     }
-  }, [user, state.id, addToast]);
+  }, [user, state.id, addToast, fetchStores]);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);

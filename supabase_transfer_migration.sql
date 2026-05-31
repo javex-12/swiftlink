@@ -1,5 +1,5 @@
 -- ================================================================
--- STORE TRANSFER RPC
+-- STORE TRANSFER RPC (ROBUST VERSION)
 -- Run this in your Supabase SQL editor
 -- ================================================================
 
@@ -14,6 +14,7 @@ DECLARE
     target_uid uuid;
     store_owner_id uuid;
     current_state_json jsonb;
+    clean_email text;
 BEGIN
     -- 1. Get the current authenticated user
     current_uid := auth.uid();
@@ -21,7 +22,10 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated';
     END IF;
 
-    -- 2. Verify the caller owns the store
+    -- 2. Clean input
+    clean_email := LOWER(TRIM(target_email));
+
+    -- 3. Verify the caller owns the store
     SELECT owner_id, state_json INTO store_owner_id, current_state_json
     FROM public.stores
     WHERE id = store_id_param;
@@ -34,28 +38,31 @@ BEGIN
         RAISE EXCEPTION 'You do not have permission to transfer this store';
     END IF;
 
-    -- 3. Find the target user by email in auth.users
+    -- 4. Find the target user by email in auth.users (Case-Insensitive)
     SELECT id INTO target_uid
     FROM auth.users
-    WHERE email = target_email
+    WHERE LOWER(email) = clean_email
     LIMIT 1;
 
     IF target_uid IS NULL THEN
-        RAISE EXCEPTION 'User with this email not found on SwiftLink Pro. They must sign up first.';
+        RAISE EXCEPTION 'User with email % not found on SwiftLink Pro. They must sign up first.', target_email;
     END IF;
 
-    -- 4. Prevent transferring to self
+    -- 5. Prevent transferring to self
     IF target_uid = current_uid THEN
         RAISE EXCEPTION 'You already own this store';
     END IF;
 
-    -- 5. Update the owner_id and state_json
-    -- We use jsonb_set to replace the ownerId inside state_json
+    -- 6. Update the owner_id and state_json
     UPDATE public.stores
     SET 
         owner_id = target_uid,
         state_json = jsonb_set(current_state_json, '{ownerId}', to_jsonb(target_uid::text))
     WHERE id = store_id_param;
+
+    -- 7. Log the transfer (optional, but good for tracking)
+    INSERT INTO public.store_events (store_id, event_type, metadata)
+    VALUES (store_id_param, 'store_transferred', jsonb_build_object('from', current_uid, 'to', target_uid, 'email', clean_email));
 
     RETURN true;
 END;
