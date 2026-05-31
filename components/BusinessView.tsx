@@ -100,16 +100,7 @@ export function BusinessView() {
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
 
-  const {
-    state: globalState,
-    stores,
-    switchStore,
-    createNewStore,
-    saveFullState,
-    addToast,
-    addSystemNotification,
-    user
-  } = useSwiftLink();
+  const { state: globalState, updateState, saveFullState, addSystemNotification, addToast, user, stores, switchStore, createNewStore, transferStore } = useSwiftLink();
 
   // MANUAL SAVE LOCAL STATE
   const [localState, setLocalState] = useState<ShopState>(globalState);
@@ -837,21 +828,50 @@ export function BusinessView() {
                 <section className="space-y-6 md:space-y-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">Products</h2>
-                    <button
-                        onClick={() => {
-                            const currentPlan = globalState.plan || "free";
-                            const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
-                            if (localState.products.length >= maxProducts) {
-                                addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
-                                return;
-                            }
-                            const newP: Product = { id: Date.now(), name: "New Product", price: 0, description: "", image: "", images: [], outOfStock: false };
-                            updateLocalState("products", [newP, ...localState.products]);
-                        }}
-                        className="w-full sm:w-auto text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 flex items-center justify-center gap-3 bg-slate-900 dark:bg-emerald-600"
-                    >
-                        <Plus size={16} /> New Product Entry
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <label className="w-full sm:w-auto text-slate-900 dark:text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 hover:dark:bg-emerald-800/50 cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-700">
+                            <Sparkles size={16} className="text-emerald-500" /> Smart Add
+                            <input type="file" multiple accept="image/*" className="hidden" disabled={isUploading} onChange={async (e) => {
+                                if (!e.target.files?.length) return;
+                                const files = Array.from(e.target.files);
+                                const currentPlan = globalState.plan || "free";
+                                const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
+                                if (localState.products.length + files.length > maxProducts) {
+                                    addSystemNotification("Plan Limit Reached", `Your plan allows a maximum of ${maxProducts} products.`, "feedback");
+                                    return;
+                                }
+                                setIsUploading(true);
+                                const newProducts: Product[] = [];
+                                for (let i = 0; i < files.length; i++) {
+                                    const file = files[i];
+                                    const tempId = Date.now() + i;
+                                    const url = await uploadImageDirect(file, `products/${tempId}`);
+                                    if (url) {
+                                        let name = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+                                        name = name.replace(/\b\w/g, c => c.toUpperCase());
+                                        newProducts.push({ id: tempId, name, price: 0, description: "", image: "", images: [url], outOfStock: false, category: "" });
+                                    }
+                                }
+                                updateLocalState("products", [...newProducts, ...localState.products]);
+                                setIsUploading(false);
+                            }} />
+                        </label>
+                        <button
+                            onClick={() => {
+                                const currentPlan = globalState.plan || "free";
+                                const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
+                                if (localState.products.length >= maxProducts) {
+                                    addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
+                                    return;
+                                }
+                                const newP: Product = { id: Date.now(), name: "New Product", price: 0, description: "", image: "", images: [], outOfStock: false };
+                                updateLocalState("products", [newP, ...localState.products]);
+                            }}
+                            className="w-full sm:w-auto text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 flex items-center justify-center gap-3 bg-slate-900 dark:bg-emerald-600"
+                        >
+                            <Plus size={16} /> New Product Entry
+                        </button>
+                    </div>
                     </div>
 
                     <div className="space-y-6 md:space-y-8">
@@ -1091,6 +1111,28 @@ export function BusinessView() {
                         </div>
                     </div>
                 </Accordion>
+                
+                <section className="bg-white dark:bg-black rounded-[3rem] p-8 md:p-10 shadow-sm border border-red-100 dark:border-red-900/30 space-y-6 mt-10">
+                    <div className="px-2">
+                        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-red-500 dark:text-red-400">Danger Zone</h3>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mt-1">Transfer ownership of this store to another user via email. They must be registered on SwiftLink.</p>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 px-2">
+                        <StableInput type="email" placeholder="New owner's email address" value={(window as any)._transferEmail || ""} onChange={(v) => { (window as any)._transferEmail = v; }} className="w-full md:flex-1 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-red-500" />
+                        <button onClick={async () => {
+                            const email = (window as any)._transferEmail;
+                            if (!email) return addToast("Please enter an email", "error");
+                            if (confirm(`Are you SURE you want to transfer this store to ${email}? You will lose access immediately.`)) {
+                                const success = await transferStore(email);
+                                if (success) {
+                                    (window as any)._transferEmail = "";
+                                }
+                            }
+                        }} className="bg-red-500 hover:bg-red-600 text-white font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-lg shadow-red-500/20 whitespace-nowrap">
+                            Transfer Store
+                        </button>
+                    </div>
+                </section>
             </motion.div>
         )}
 

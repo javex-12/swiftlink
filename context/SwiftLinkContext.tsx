@@ -37,6 +37,7 @@ type SwiftLinkContextValue = {
   stores: ShopState[];
   switchStore: (id: string) => Promise<void>;
   createNewStore: (name: string) => Promise<void>;
+  transferStore: (targetEmail: string) => Promise<boolean>;
   cart: CartMap;
   user: User | null;
   isSupabaseActive: boolean;
@@ -238,6 +239,37 @@ export function SwiftLinkProvider({
         addToast(`Switched to ${target.bizName}`, "success");
     }
   }, [stores, addToast]);
+
+  const transferStore = useCallback(async (targetEmail: string) => {
+    if (!user || !state.id) return false;
+    try {
+      const { error } = await supabase.rpc('transfer_store_by_email', {
+        store_id_param: state.id,
+        target_email: targetEmail
+      });
+      if (error) {
+        console.error("[transferStore] error:", error);
+        addToast(error.message, "error");
+        return false;
+      }
+      addToast("Store transferred successfully!", "success");
+      // Remove the store locally
+      setStores(prev => prev.filter(s => s.id !== state.id));
+      const remainingStores = stores.filter(s => s.id !== state.id);
+      if (remainingStores.length > 0) {
+        setState(remainingStores[0]);
+      } else {
+        // Fallback to default
+        setState(normalizeShopState({ id: crypto.randomUUID(), ownerId: user.id }));
+      }
+      void fetchStores(user.id);
+      return true;
+    } catch (err: any) {
+      console.error(err);
+      addToast(err.message || "Failed to transfer store", "error");
+      return false;
+    }
+  }, [user, state.id, stores, addToast, fetchStores]);
 
   const isOwnerRef = useRef(true);
   const userRef = useRef<User | null>(null);
@@ -1290,6 +1322,7 @@ export function SwiftLinkProvider({
     stores,
     switchStore,
     createNewStore,
+    transferStore,
     cart,
     user,
     isSupabaseActive,
