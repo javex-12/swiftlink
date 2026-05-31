@@ -19,7 +19,7 @@ function StoreNotFound({ slug, error }: { slug: string, error?: string }) {
         </div>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
           {isPermissionError 
-            ? "Your Supabase RLS Rules are blocking public access. Please set your rules to allow public reads on 'slugs' and 'stores' tables."
+            ? "Your Supabase RLS Rules are blocking public access. Please set your rules to allow public reads on the 'stores' table."
             : `We couldn't find a SwiftLink store with the handle "${slug}".`}
         </p>
         <div className="flex flex-col gap-3 mt-8">
