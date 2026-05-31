@@ -15,9 +15,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 const site = "https://swiftlinkpro.vercel.app";
 const siteName = "SwiftLink Pro";
-const title = "SwiftLink Pro | WhatsApp Storefront Builder for Small Businesses";
+const title = "SwiftLink Pro | The High-Fidelity WhatsApp Commerce Workspace";
 const description =
-  "Launch a fast WhatsApp storefront, product catalog, order flow, and delivery tracking portal for your business with SwiftLink Pro.";
+  "The elite command center for Nigerian brands. Build cinematic WhatsApp storefronts, manage multiple brands, track real-time dispatch, and dominate your niche with SwiftLink Pro.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
@@ -28,16 +28,16 @@ export const metadata: Metadata = {
   },
   description,
   keywords: [
-    "WhatsApp store",
-    "WhatsApp storefront",
-    "WhatsApp catalog",
-    "online storefront builder",
-    "online catalog",
-    "small business ecommerce",
-    "delivery tracking",
-    "Nigeria ecommerce",
-    "SwiftLink Pro",
-    "e-commerce",
+    "WhatsApp e-commerce Nigeria",
+    "Visual Store Designer",
+    "Cinematic Storefront Templates",
+    "Multi-store management software",
+    "Real-time dispatch tracking Nigeria",
+    "WhatsApp catalog builder pro",
+    "SwiftLink Pro Workspace",
+    "Premium WhatsApp storefront",
+    "No-code ecommerce for vendors",
+    "Nigerian business automation",
   ],
   authors: [{ name: "SwiftLink Pro" }],
   creator: "SwiftLink Pro",

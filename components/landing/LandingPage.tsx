@@ -263,11 +263,11 @@ const Hero = () => {
 // ─── Features (Bento Style) ───────────────────────────────────────────────────
 const Features = () => {
   const features = [
-    { icon: Store, title: "Modern Catalog", description: "Clean, high-performance product listings that convert visitors into customers instantly.", className: "md:col-span-2 md:row-span-2 bg-slate-900 text-white" },
-    { icon: Zap, title: "Instant Setup", description: "Zero technical skills needed. Just name your store and go.", className: "bg-white" },
-    { icon: Truck, title: "Live Tracking", description: "Real-time dispatch tracking. Customers watch their package move on a map.", className: "bg-emerald-50" },
-    { icon: Shield, title: "Reliable Sync", description: "Your inventory stays updated across all devices automatically.", className: "bg-white" },
-    { icon: Smartphone, title: "Mobile Editor", description: "Update your store, add products, and manage orders from anywhere.", className: "md:col-span-2 bg-white border-2 border-slate-100" },
+    { icon: Layout, title: "Visual Designer", description: "Design with 10+ cinematic templates. Full control over typography, colors, and layout aesthetics.", className: "md:col-span-2 md:row-span-2 bg-slate-900 text-white" },
+    { icon: Sparkles, title: "Smart Add", description: "Upload once, sync everywhere. Automatically generates high-res product galleries and thumbnails.", className: "bg-white" },
+    { icon: Truck, title: "Logistics Hub", description: "Real-time dispatch tracking. Customers watch their package move on a live map.", className: "bg-emerald-50" },
+    { icon: Shield, title: "Multi-Brand", description: "Manage multiple stores from a single professional workspace. Perfect for scaling vendors.", className: "bg-white" },
+    { icon: MessageSquare, title: "Social Hub", description: "Integrated community wall for verified customer reviews and real-time social proof.", className: "md:col-span-2 bg-white border-2 border-slate-100" },
   ];
 
   return (
@@ -275,10 +275,10 @@ const Features = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sm:mb-24">
           <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
-            The Command Center
+            The Infrastructure
           </motion.span>
           <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
-            Everything you need,<br />none of the noise.
+            High-Performance tools,<br />built for the elite.
           </h2>
         </div>
 
@@ -319,9 +319,9 @@ const Features = () => {
 // ─── How It Works ─────────────────────────────────────────────────────────────
 const HowItWorks = () => {
   const steps = [
-    { number: "01", title: "Launch your Hub", description: "Name your business and set your WhatsApp number. Your professional link is live instantly." },
-    { number: "02", title: "Showcase Products", description: "Add items with high-res images and variations. Organise your catalog into smart, shareable categories." },
-    { number: "03", title: "Close & Track", description: "Customers order via WhatsApp. You manage the dispatch and they watch the delivery live on a map." },
+    { number: "01", title: "Deploy your Hub", description: "Create your workspace and choose from 10+ cinematic templates. Your professional URL is live in 60s." },
+    { number: "02", title: "Smart Cataloging", description: "Use Smart Add to bulk-upload product imagery. Organise items into high-fidelity, searchable categories." },
+    { number: "03", title: "Scale & Track", description: "Receive orders on WhatsApp. Manage fulfillment through our logistics hub with real-time map tracking." },
   ];
 
   return (
