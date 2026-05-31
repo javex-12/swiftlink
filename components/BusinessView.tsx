@@ -846,9 +846,9 @@ export function BusinessView() {
                                 if (!e.target.files?.length) return;
                                 const files = Array.from(e.target.files);
                                 const currentPlan = globalState.plan || "free";
-                                const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
+                                const maxProducts = (currentPlan === "business" || currentPlan === "pro") ? Infinity : 5;
                                 if (localState.products.length + files.length > maxProducts) {
-                                    addSystemNotification("Plan Limit Reached", `Your plan allows a maximum of ${maxProducts} products.`, "feedback");
+                                    addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
                                     return;
                                 }
                                 setIsUploading(true);
@@ -879,7 +879,7 @@ export function BusinessView() {
                         <button
                             onClick={() => {
                                 const currentPlan = globalState.plan || "free";
-                                const maxProducts = currentPlan === "business" ? Infinity : currentPlan === "pro" ? 20 : 6;
+                                const maxProducts = (currentPlan === "business" || currentPlan === "pro") ? Infinity : 5;
                                 if (localState.products.length >= maxProducts) {
                                     addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
                                     return;
