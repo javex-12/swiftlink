@@ -233,12 +233,6 @@ export function SwiftLinkProvider({
         return;
     }
 
-    // Register slug
-    await supabase.from("slugs").upsert({
-        slug: cleanHandle,
-        shop_id: newId
-    });
-
     // Optimistically add to local list and switch to it
     setStores(prev => [...prev, newState]);
     setState(newState);
@@ -372,18 +366,6 @@ export function SwiftLinkProvider({
 
             if (error) {
               console.error("Supabase Sync Error:", error);
-            } else {
-                const slug = getPublicStoreSlug({
-                  storeUsername: next.storeUsername,
-                  bizName: next.bizName,
-                });
-                if (slug) {
-                  await supabase.from('slugs').upsert({
-                    slug,
-                    shop_id: storeId,
-                    updated_at: new Date().toISOString()
-                  });
-                }
             }
           }
           setIsSyncing(false);

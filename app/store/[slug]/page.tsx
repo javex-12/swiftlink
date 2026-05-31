@@ -78,19 +78,19 @@ export default function StoreByHandlePage() {
     (async () => {
       try {
         const { data, error } = await supabase
-          .from('slugs')
-          .select('shop_id')
-          .eq('slug', slug)
+          .from('stores')
+          .select('id')
+          .eq('store_username', slug)
           .single();
 
         if (cancelled) return;
 
-        if (data?.shop_id) {
-          router.replace(`/store/${slug}?shop=${encodeURIComponent(data.shop_id)}`);
+        if (data?.id) {
+          router.replace(`/store/${slug}?shop=${encodeURIComponent(data.id)}`);
           return;
         }
         
-        if (error && error.code !== 'PGRST116') { // PGRST116 is not found
+        if (error && error.code !== 'PGRST116') { 
            console.error("Supabase Error:", error);
            setErrorMsg(error.message);
         }

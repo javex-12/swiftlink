@@ -85,10 +85,6 @@ export default function SignupPage() {
         updated_at: new Date().toISOString()
       });
 
-      if (slug) {
-        await supabase.from('slugs').upsert({ slug, shop_id: uid, updated_at: new Date().toISOString() });
-      }
-      
       localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
     } catch (err) {
       console.error("Store Save Error:", err);
