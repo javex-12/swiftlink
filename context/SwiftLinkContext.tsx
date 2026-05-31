@@ -207,12 +207,23 @@ export function SwiftLinkProvider({
     const newId = crypto.randomUUID();
     const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] || "business" : "business";
     
-    const newState = normalizeShopState({ id: newId, ownerId: user.id, bizName: name, plan: assignedPlan });
+    // Generate initial handle
+    const baseHandle = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanHandle = baseHandle || `store-${Math.random().toString(36).substring(2, 7)}`;
+    
+    const newState = normalizeShopState({ 
+        id: newId, 
+        ownerId: user.id, 
+        bizName: name, 
+        plan: assignedPlan,
+        storeUsername: cleanHandle 
+    });
     
     const { error } = await supabase.from('stores').insert({
         id: newId,
         owner_id: user.id,
         biz_name: name,
+        store_username: cleanHandle,
         state_json: newState
     });
 
@@ -222,13 +233,19 @@ export function SwiftLinkProvider({
         return;
     }
 
+    // Register slug
+    await supabase.from("slugs").upsert({
+        slug: cleanHandle,
+        shop_id: newId
+    });
+
     // Optimistically add to local list and switch to it
     setStores(prev => [...prev, newState]);
     setState(newState);
     localStorage.setItem("swiftlink_state", JSON.stringify(newState));
     addToast(`"${name}" store created!`, "success");
 
-    // Re-fetch from DB to stay in sync (catches any server-side transforms)
+    // Re-fetch from DB to stay in sync
     void fetchStores(user.id);
   }, [user, addToast, fetchStores]);
 

@@ -239,6 +239,12 @@ export function BusinessView() {
         } else {
             setHandleStatus("available");
             updateLocalState("storeUsername", cleanHandle);
+            
+            // CRITICAL: Upsert to slugs table so the URL works immediately
+            await supabase.from("slugs").upsert({
+                slug: cleanHandle,
+                shop_id: localState.id
+            }, { onConflict: 'slug' });
         }
     }, 600);
     return () => clearTimeout(timeoutId);
