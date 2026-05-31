@@ -383,8 +383,8 @@ const Pricing = () => {
     {
       name: "Starter",
       price: "Free",
-      description: "Perfect for testing the waters.",
-      features: ["5 Live Products", "Basic Tracking", "SwiftLink Branding", "WhatsApp Checkout"],
+      description: "Test the waters with professional tools.",
+      features: ["5 Live Products", "Standard Templates", "SwiftLink Branding", "WhatsApp Checkout"],
       cta: "Start Free",
       variant: "white"
     },
@@ -392,8 +392,8 @@ const Pricing = () => {
       name: "Pro",
       price: "₦5,000",
       period: "/mo",
-      description: "Our most popular choice for growing stores.",
-      features: ["Unlimited Products", "Custom Branding", "Live Map Tracking", "Detailed Analytics", "Priority Support"],
+      description: "Scale your brand with elite aesthetics.",
+      features: ["Unlimited Products", "10+ Cinematic Templates", "Live Map Tracking", "Detailed Analytics", "Custom Branding"],
       cta: "Upgrade to Pro",
       featured: true,
       variant: "black"
@@ -402,8 +402,8 @@ const Pricing = () => {
       name: "Business",
       price: "₦15,000",
       period: "/mo",
-      description: "Enterprise features for established brands.",
-      features: ["Multi-Store Management", "Team Collaboration", "Payment Gateway Integration", "Custom Domain API", "API Access"],
+      description: "Manage multiple brands from one workspace.",
+      features: ["Multi-Store Management", "Social Hub Community", "Bulk 'Smart Add' Tools", "Priority Dispatch Support", "Store Transfer Engine"],
       cta: "Contact Sales",
       variant: "white"
     },
