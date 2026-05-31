@@ -237,7 +237,7 @@ export function SwiftLinkProvider({
     await supabase.from("slugs").upsert({
         slug: cleanHandle,
         shop_id: newId
-    }, { onConflict: 'slug' });
+    });
 
     // Optimistically add to local list and switch to it
     setStores(prev => [...prev, newState]);
@@ -382,7 +382,7 @@ export function SwiftLinkProvider({
                     slug,
                     shop_id: storeId,
                     updated_at: new Date().toISOString()
-                  }, { onConflict: 'slug' });
+                  });
                 }
             }
           }

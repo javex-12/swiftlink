@@ -86,7 +86,7 @@ export default function SignupPage() {
       });
 
       if (slug) {
-        await supabase.from('slugs').upsert({ slug, shop_id: uid, updated_at: new Date().toISOString() }, { onConflict: 'slug' });
+        await supabase.from('slugs').upsert({ slug, shop_id: uid, updated_at: new Date().toISOString() });
       }
       
       localStorage.setItem("swiftlink_state", JSON.stringify(nextState));

@@ -244,7 +244,7 @@ export function BusinessView() {
             await supabase.from("slugs").upsert({
                 slug: cleanHandle,
                 shop_id: localState.id
-            }, { onConflict: 'slug' });
+            });
         }
     }, 600);
     return () => clearTimeout(timeoutId);
