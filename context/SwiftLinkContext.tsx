@@ -382,7 +382,7 @@ export function SwiftLinkProvider({
                     slug,
                     shop_id: storeId,
                     updated_at: new Date().toISOString()
-                  });
+                  }, { onConflict: 'slug' });
                 }
             }
           }
