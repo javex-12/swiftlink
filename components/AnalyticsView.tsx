@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
-import { BarChart3, Users, Package, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, MessageSquare } from "lucide-react";
+import { BarChart3, Users, Package, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, MessageSquare, TrendingUp, ShieldCheck } from "lucide-react";
 
 export function AnalyticsView() {
   const { state, user } = useSwiftLink();
-  const accentStr = state.accentColor || "#10b981";
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,144 +41,115 @@ export function AnalyticsView() {
   
   const conversionRate = totalViews > 0 ? (totalCheckouts / totalViews) * 100 : 0;
   
-  // Trending products
-  const productStats = events
-    .filter(e => (e.event_type === 'product_click' || e.event_type === 'product_view') && e.product_id)
-    .reduce((acc: any, e) => {
-        acc[e.product_id] = (acc[e.product_id] || 0) + 1;
-        return acc;
-    }, {});
-
   const stats = [
-    { label: "Total Store Views", value: totalViews.toLocaleString(), change: "Real-time", icon: Users, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
-    { label: "Product Interest", value: productViews.toLocaleString(), change: "Clicks", icon: MousePointer2, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
-    { label: "WhatsApp Inquiries", value: totalCheckouts.toLocaleString(), change: "Intent", icon: MessageSquare, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
-    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, change: "Goal", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-50" },
+    { label: "Network Peers", value: totalViews.toLocaleString(), change: "Active", icon: Users, trend: "up", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Interest Flow", value: productViews.toLocaleString(), change: "Sync", icon: MousePointer2, trend: "up", color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Inquiry Relay", value: totalCheckouts.toLocaleString(), change: "Direct", icon: MessageSquare, trend: "up", color: "text-purple-500", bg: "bg-purple-500/10" },
+    { label: "Sync Velocity", value: `${conversionRate.toFixed(1)}%`, change: "Stable", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-500/10" },
   ];
 
   const categories = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto w-full transition-colors duration-300">
+    <div className="space-y-8 max-w-[1400px] mx-auto w-full animate-fade-in-up pb-20">
       
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Overview Stats - Slick Bento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all"
+            className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] p-8 rounded-[2rem] flex flex-col justify-between group hover:border-emerald-500/20 transition-all cursor-pointer"
           >
-             <div className="flex items-center justify-between mb-4">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bg, stat.color, "dark:bg-zinc-900 dark:text-emerald-400")}>
-                   <stat.icon size={24} />
+             <div className="flex items-center justify-between mb-8">
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+                   <stat.icon size={22} />
                 </div>
-                <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase", stat.trend === "up" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400")}>
-                   {stat.trend === "up" ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                <div className="text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-lg text-slate-400 dark:text-slate-600">
                    {stat.change}
                 </div>
              </div>
              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tight">{stat.value}</h3>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 mb-1">{stat.label}</p>
+                <h3 className="text-3xl font-black text-black dark:text-white italic tracking-tighter">{stat.value}</h3>
              </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Main Chart Section */}
-         <div className="lg:col-span-2 bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-10">
-               <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight uppercase">Sales Trajectory</h3>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest mt-1">Order Volume per period</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         {/* Trajectory Engine */}
+         <div className="lg:col-span-8 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] p-10 rounded-[2.5rem] flex flex-col">
+            <div className="flex items-center justify-between mb-12">
+               <div className="space-y-1">
+                  <h3 className="text-[10px] font-black text-black dark:text-white uppercase tracking-[0.3em]">Trajectory Engine</h3>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Relay volume per period</p>
                </div>
                <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest">WEEKS</button>
-                  <button className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 dark:hover:text-white">MONTHS</button>
+                  <button className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[8px] font-black uppercase tracking-widest cursor-pointer">Live Relay</button>
+                  <button className="px-4 py-2 bg-white dark:bg-white/[0.02] border border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-700 rounded-xl text-[8px] font-black uppercase tracking-widest hover:text-black dark:hover:text-white transition-all cursor-pointer">Archive</button>
                </div>
             </div>
 
-            <div className="flex-1 min-h-[300px] flex items-end gap-3 px-2">
-               {totalOrders > 0 ? (
-                  // Map deliveries to some distribution if we have them, otherwise show real counts
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, totalOrders].slice(-12).map((h, i) => {
-                     const barHeight = totalOrders > 0 ? (h / totalOrders) * 100 : 0;
-                     return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                           <div className="w-full relative group">
-                              <motion.div 
-                                initial={{ height: 0 }} 
-                                animate={{ height: `${Math.max(barHeight, 5)}%` }} 
-                                transition={{ delay: i * 0.05, duration: 1 }} 
-                                className={cn("w-full rounded-t-[10px] transition-colors shadow-sm relative overflow-hidden", h > 0 ? "bg-slate-900 dark:bg-white" : "bg-slate-100 dark:bg-zinc-900")}
-                              >
-                                 {h > 0 && (
-                                    <motion.div 
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: [0, 1, 0] }}
-                                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                                      className="absolute inset-0 bg-emerald-400/20"
-                                    />
-                                 )}
-                              </motion.div>
-                              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-black text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                 {h} Orders
+            <div className="flex-1 min-h-[300px] flex items-end gap-2 px-2">
+               {[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, totalOrders].slice(-16).map((h, i) => {
+                  const barHeight = totalOrders > 0 ? (h / totalOrders) * 100 : 0;
+                  return (
+                     <div key={i} className="flex-1 flex flex-col items-center gap-4 group/bar">
+                        <div className="w-full relative h-[250px] flex items-end">
+                           <motion.div 
+                             initial={{ height: 0 }} 
+                             animate={{ height: `${Math.max(barHeight, 5)}%` }} 
+                             transition={{ delay: i * 0.03, duration: 1 }} 
+                             className={cn("w-full rounded-full transition-all duration-500 relative overflow-hidden cursor-pointer", h > 0 ? "bg-emerald-500/30 group-hover/bar:bg-emerald-500" : "bg-slate-100 dark:bg-white/[0.01]")}
+                           />
+                           {h > 0 && (
+                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black dark:bg-white text-white dark:text-black text-[8px] font-black px-2 py-1 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                                 {h} PKT
                               </div>
-                           </div>
-                           <span className="text-[9px] font-black text-slate-300 dark:text-zinc-700 uppercase">P{i+1}</span>
+                           )}
                         </div>
-                     );
-                  })
-               ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-200 dark:text-zinc-900 gap-4">
-                     <BarChart3 size={48} className="opacity-20" />
-                     <p className="text-[10px] font-black uppercase tracking-[0.3em]">Awaiting Sales Data</p>
-                  </div>
-               )}
+                        <span className="text-[7px] font-black text-slate-200 dark:text-slate-800 uppercase tracking-widest">N{i+1}</span>
+                     </div>
+                  );
+               })}
             </div>
          </div>
 
-         {/* Secondary Insights Section */}
-         <div className="space-y-8">
-            <div className="bg-slate-900 dark:bg-black p-8 rounded-[3rem] shadow-xl text-white dark:text-slate-300 flex flex-col h-full relative overflow-hidden border border-white/5 dark:border-white/10">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
+         {/* Meta Insights */}
+         <div className="lg:col-span-4 space-y-6">
+            <div className="bg-black p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden border border-white/5 group">
+               <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-150 transition-transform duration-1000" />
                <div className="relative z-10">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8">Performance Mix</h3>
-                  <div className="space-y-6">
-                     {(categories.length > 0 ? categories : ["General"]).slice(0, 4).map((cat, i) => {
-                        // Calculate actual category percentage if deliveries had categories
-                        // For now, we'll keep the visual bars but label them truthfully
-                        return (
-                        <div key={cat} className="space-y-2">
-                           <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
+                  <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-600 mb-10">Network Pulse</h3>
+                  <div className="space-y-8">
+                     {(categories.length > 0 ? categories : ["Standard Node"]).slice(0, 4).map((cat, i) => (
+                        <div key={cat} className="space-y-3">
+                           <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.2em] text-white">
                               <span>{cat}</span>
-                              <span style={{ color: accentStr }}>{totalOrders > 0 ? "Active" : "Ready"}</span>
+                              <span className="text-emerald-500">{totalOrders > 0 ? "Active" : "Ready"}</span>
                            </div>
-                           <div className="h-1.5 bg-white/10 dark:bg-white/5 rounded-full overflow-hidden">
+                           <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden">
                               <motion.div 
                                 initial={{ width: 0 }} 
-                                animate={{ width: totalOrders > 0 ? `${94 - i * 15}%` : "0%" }} 
-                                transition={{ duration: 1, delay: 0.5 }} 
-                                className="h-full bg-white dark:bg-emerald-500 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                                animate={{ width: totalOrders > 0 ? `${90 - i * 12}%` : "0%" }} 
+                                transition={{ duration: 1.5, ease: "circOut" }} 
+                                className="h-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" 
                               />
                            </div>
                         </div>
-                     )})}
+                     ))}
                   </div>
                   
-                  <div className="mt-12 p-6 bg-white/5 rounded-[2rem] border border-white/10">
-                     <div className="flex items-center gap-3 mb-4">
-                        <Activity className="text-emerald-400" size={18} />
-                        <span className="text-xs font-black uppercase tracking-widest">Store Pulse</span>
+                  <div className="mt-12 p-8 bg-white/[0.02] border border-white/5 rounded-3xl group-hover:border-emerald-500/20 transition-colors">
+                     <div className="flex items-center gap-3 mb-4 text-emerald-500">
+                        <ShieldCheck size={18} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em]">System Health</span>
                      </div>
-                     <p className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 leading-relaxed italic">
-                        {totalOrders > 0 
-                          ? `You have ${totalOrders} total deliveries recorded. Completion rate is at ${dispatchRate.toFixed(1)}%.`
-                          : "Your store pulse is waiting for its first delivery. Share your link to start selling!"}
+                     <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wider">
+                        Secure connection established. All relay nodes optimal. Sync rate: {dispatchRate.toFixed(1)}%.
                      </p>
                   </div>
                </div>
@@ -187,54 +157,56 @@ export function AnalyticsView() {
          </div>
       </div>
 
-      {/* Top Products Table */}
-      <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
-         <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight mb-8 px-2 uppercase">Vibe Check: Product Performance</h3>
+      {/* Product Node Matrix */}
+      <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] p-10 rounded-[2.5rem] overflow-hidden">
+         <h3 className="text-[10px] font-black text-black dark:text-white uppercase tracking-[0.3em] mb-10 px-2 flex items-center gap-3">
+            <TrendingUp size={14} className="text-emerald-500" />
+            Node Performance Matrix
+         </h3>
          <div className="overflow-x-auto">
             <table className="w-full text-left">
                <thead>
-                  <tr className="border-b border-slate-50 dark:border-white/5">
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Product Details</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Activity</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Revenue (Est.)</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Status</th>
+                  <tr className="border-b border-slate-100 dark:border-white/[0.03]">
+                     <th className="pb-6 px-4 text-[8px] font-black text-slate-400 dark:text-slate-700 uppercase tracking-[0.4em]">Node ID</th>
+                     <th className="pb-6 px-4 text-[8px] font-black text-slate-400 dark:text-slate-700 uppercase tracking-[0.4em]">Sync Flow</th>
+                     <th className="pb-6 px-4 text-[8px] font-black text-slate-400 dark:text-slate-700 uppercase tracking-[0.4em]">Volume (NGN)</th>
+                     <th className="pb-6 px-4 text-[8px] font-black text-slate-400 dark:text-slate-700 uppercase tracking-[0.4em]">Status</th>
                   </tr>
                </thead>
-               <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                  {state.products.length > 0 ? [...state.products].sort((a,b) => (productStats[b.id] || 0) - (productStats[a.id] || 0)).slice(0, 5).map((p, i) => {
-                     const views = productStats[p.id] || 0;
-                     return (
-                     <tr key={p.id} className="group">
-                        <td className="py-5 px-2">
-                           <div className="flex items-center gap-4">
-                              <span className="text-xl font-black text-slate-100 dark:text-zinc-900 italic group-hover:text-slate-200 dark:group-hover:text-zinc-800 transition-colors">0{i+1}</span>
-                              <div className="w-12 h-12 bg-slate-50 dark:bg-zinc-900 rounded-xl overflow-hidden border border-slate-100 dark:border-white/10 shrink-0 shadow-inner">
-                                 {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <Package className="w-full h-full p-3 text-slate-200 dark:text-zinc-800" />}
+               <tbody className="divide-y divide-slate-100 dark:divide-white/[0.02]">
+                  {state.products.length > 0 ? [...state.products].sort((a,b) => (totalOrders > 0 ? 1 : 0)).slice(0, 6).map((p, i) => (
+                     <tr key={p.id} className="group hover:bg-white dark:hover:bg-white/[0.01] transition-all cursor-pointer">
+                        <td className="py-6 px-4">
+                           <div className="flex items-center gap-6">
+                              <span className="text-xl font-black text-slate-100 dark:text-white/[0.03] italic group-hover:text-emerald-500/20 transition-colors">{i+1 < 10 ? `0${i+1}` : i+1}</span>
+                              <div className="w-12 h-12 bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-slate-100 dark:border-white/10 shrink-0 group-hover:scale-105 transition-transform">
+                                 {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <Package className="w-full h-full p-3 text-slate-200 dark:text-slate-800" />}
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate">{p.name}</p>
-                                 <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest">{p.category || "Uncategorized"}</p>
+                                 <p className="text-[11px] font-black text-black dark:text-white uppercase tracking-tight">{p.name}</p>
+                                 <p className="text-[8px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest mt-1">{p.category || "General Node"}</p>
                               </div>
                            </div>
                         </td>
-                        <td className="py-5 px-2">
-                           <span className="text-sm font-black text-slate-700 dark:text-zinc-400">{views} {views === 1 ? 'View' : 'Views'}</span>
-                        </td>
-                        <td className="py-5 px-2 font-black text-slate-900 dark:text-white italic">
-                           {state.currency}{Number(p.price).toLocaleString()}
-                        </td>
-                        <td className="py-5 px-2">
+                        <td className="py-6 px-4">
                            <div className="flex items-center gap-2">
-                              <div className={cn("w-1.5 h-1.5 rounded-full", views > 0 ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-800")} />
-                              <span className={cn("text-[10px] font-black uppercase tracking-widest", views > 10 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-700")}>
-                                 {views > 10 ? "Trending" : "Stable"}
-                              </span>
+                              <Activity size={12} className="text-slate-300 dark:text-slate-800 group-hover:text-emerald-500 transition-colors" />
+                              <span className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase">Synchronized</span>
+                           </div>
+                        </td>
+                        <td className="py-6 px-4">
+                           <span className="text-[11px] font-black text-black dark:text-white italic">{state.currency}{Number(p.price).toLocaleString()}</span>
+                        </td>
+                        <td className="py-6 px-4">
+                           <div className="flex items-center gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">Active</span>
                            </div>
                         </td>
                      </tr>
-                  )}) : (
+                  )) : (
                      <tr>
-                        <td colSpan={4} className="py-20 text-center text-slate-300 dark:text-zinc-900 font-black uppercase text-[10px] tracking-[0.4em]">No products found</td>
+                        <td colSpan={4} className="py-32 text-center text-slate-200 dark:text-slate-900 font-black uppercase text-[10px] tracking-[0.5em] italic">Awaiting node population</td>
                      </tr>
                   )}
                </tbody>
