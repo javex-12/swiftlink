@@ -4,18 +4,19 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, Store, Zap, Shield, MessageSquare, Layout, Clock, CheckCircle2, Menu, X, ChevronRight, Globe, Sparkles, Smartphone, Box, Truck, TrendingUp,
-  Palette, Typography, Layers, Image as ImageIcon, Camera, ShoppingBag, CreditCard, Star, Heart, Share2, Search, Filter, Monitor, Smartphone as Mobile
+  Palette, Smartphone as MobileIcon, MousePointer2
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { LivePreview } from "./LivePreview";
 
 // ─── Fade-Up helper ───────────────────────────────────────────────────────────
 const FadeUp = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay }}
+    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay }}
     className={className}
   >
     {children}
@@ -37,38 +38,38 @@ const Navbar = () => {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-6 py-6",
-        isScrolled ? "bg-white/90 dark:bg-black/80 backdrop-blur-xl border-b border-slate-100 dark:border-white/5 py-4" : "bg-transparent"
+        isScrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/5 py-4" : "bg-transparent"
       )}
     >
       <div className="max-w-[1400px] mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-slate-900 dark:bg-white rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
             <img src="/logo.png" alt="SL" className="w-5 h-5 object-contain" />
           </div>
-          <span className="text-sm font-black tracking-widest text-slate-900 dark:text-white uppercase italic">
+          <span className="text-sm font-black tracking-widest text-white uppercase italic">
             SwiftLink<span className="text-emerald-500">Pro</span>
           </span>
         </div>
 
         <div className="hidden md:flex items-center gap-10">
-          {["Templates", "Features", "Pricing"].map(item => (
+          {["Features", "Workflow", "Pricing"].map(item => (
             <a 
               key={item}
               href={`#${item.toLowerCase()}`} 
-              className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors"
+              className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-emerald-500 transition-colors"
             >
               {item}
             </a>
           ))}
           <Link
             href="/signup"
-            className="bg-slate-900 dark:bg-white text-white dark:text-black px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all active:scale-95"
+            className="bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
           >
             Start Free
           </Link>
         </div>
 
-        <button className="md:hidden text-slate-900 dark:text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+        <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
@@ -79,13 +80,13 @@ const Navbar = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-full left-0 right-0 bg-white dark:bg-black border-b border-slate-100 dark:border-white/5 px-8 py-10 md:hidden flex flex-col gap-6 shadow-2xl"
+            className="absolute top-full left-0 right-0 bg-black border-b border-white/5 px-8 py-10 md:hidden flex flex-col gap-6 shadow-2xl"
           >
-            {["Templates", "Features", "Pricing"].map(item => (
+            {["Features", "Workflow", "Pricing"].map(item => (
               <a 
                 key={item}
                 href={`#${item.toLowerCase()}`} 
-                className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400"
+                className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item}
@@ -107,108 +108,138 @@ const Navbar = () => {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = () => (
-  <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden bg-white dark:bg-black pt-20">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.03),transparent_70%)] pointer-events-none" />
-    <div className="max-w-4xl mx-auto text-center relative z-10">
-      <FadeUp delay={0}>
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-full mb-8">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Cinematic Storefronts for WhatsApp</span>
+  <section className="relative min-h-screen flex items-center px-6 overflow-hidden bg-black pt-20">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.08),transparent_50%)] pointer-events-none" />
+    
+    <div className="max-w-[1400px] mx-auto w-full relative z-10">
+      <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        {/* Left: Content */}
+        <div className="text-center lg:text-left">
+          <FadeUp delay={0}>
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-10">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+              <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Built for Nigerian Brands</span>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.1}>
+            <h1 className="text-5xl sm:text-7xl lg:text-[100px] font-black text-white leading-[0.9] tracking-tighter mb-10 uppercase italic">
+              Sell on <br />
+              <span className="text-emerald-500">WhatsApp</span> <br />
+              <span className="opacity-40">like a Pro.</span>
+            </h1>
+          </FadeUp>
+
+          <FadeUp delay={0.2}>
+            <p className="text-base sm:text-lg text-slate-400 max-w-lg mx-auto lg:mx-0 mb-12 font-medium leading-relaxed uppercase tracking-wide">
+              The easiest way to build a professional storefront and manage your orders. Fast, sleek, and designed for your phone.
+            </p>
+          </FadeUp>
+
+          <FadeUp delay={0.3}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-5">
+              <Link
+                href="/signup"
+                className="bg-emerald-500 text-white px-10 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-emerald-400 transition-all flex items-center justify-center gap-4 active:scale-95 shadow-2xl shadow-emerald-500/20"
+              >
+                Create Store <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/signup?mode=login"
+                className="bg-white/5 text-white border border-white/10 px-10 py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all flex items-center justify-center gap-4 active:scale-95"
+              >
+                Merchant Login
+              </Link>
+            </div>
+          </FadeUp>
         </div>
-      </FadeUp>
-      <FadeUp delay={0.1}>
-        <h1 className="text-5xl sm:text-7xl md:text-8xl font-black text-slate-900 dark:text-white leading-[1.05] tracking-tight mb-8 italic uppercase">
-          Build a brand <br />
-          <span className="text-emerald-500">not just a store.</span>
-        </h1>
-      </FadeUp>
-      <FadeUp delay={0.2}>
-        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
-          The ultimate collection of high-fidelity templates designed to make your products look expensive and your sales grow faster.
-        </p>
-      </FadeUp>
-      <FadeUp delay={0.3}>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/signup" className="w-full sm:w-auto bg-slate-900 dark:bg-emerald-500 text-white px-10 py-5 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-xl">
-            Choose Your Style
-          </Link>
-          <a href="#templates" className="w-full sm:w-auto px-10 py-5 bg-white dark:bg-white/5 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/10 transition-all active:scale-95">
-            View Templates
-          </a>
-        </div>
-      </FadeUp>
+
+        {/* Right: Preview Visual */}
+        <FadeUp delay={0.2} className="relative flex justify-center h-[600px] sm:h-[700px] items-center">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1),transparent_70%)] pointer-events-none scale-150" />
+            <div className="scale-90 sm:scale-100">
+               <LivePreview />
+            </div>
+            
+            {/* Floating Terminal Badges */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              className="absolute top-[20%] right-[-5%] bg-black/60 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl z-20 hidden sm:flex items-center gap-4"
+            >
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                <TrendingUp size={24} />
+              </div>
+              <div>
+                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Total Sales</p>
+                <p className="text-xl font-black text-white italic tracking-tighter">₦2.4M+</p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              className="absolute bottom-[20%] left-[-5%] bg-black/60 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl z-20 hidden sm:flex items-center gap-4"
+            >
+              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                <Truck size={24} />
+              </div>
+              <div>
+                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Live Tracking</p>
+                <p className="text-xl font-black text-white italic tracking-tighter">Active</p>
+              </div>
+            </motion.div>
+        </FadeUp>
+      </div>
     </div>
   </section>
 );
 
-// ─── Templates Section (The "20 Template Section") ───────────────────────────
-const Templates = () => {
-  const styles = [
-    { name: "OLED Minimal", desc: "Pure blacks and emerald glows.", accent: "bg-emerald-500" },
-    { name: "Tokyo Night", desc: "Neon accents and high contrast.", accent: "bg-purple-500" },
-    { name: "Soft Linen", desc: "Warm whites and elegant serifs.", accent: "bg-amber-100" },
-    { name: "Cyberpunk", desc: "Bold typography and glitches.", accent: "bg-cyan-400" },
-    { name: "Vogue Elite", desc: "Fashion-first editorial layout.", accent: "bg-rose-500" },
-    { name: "Industrial", desc: "Raw textures and brutalist vibes.", accent: "bg-slate-400" },
-    { name: "Glassmorphism", desc: "Layers of blur and transparency.", accent: "bg-white/20" },
-    { name: "Organic Root", desc: "Earthy tones and natural flow.", accent: "bg-orange-700" },
-    { name: "Arctic Ice", desc: "Frosted visuals and cool blues.", accent: "bg-blue-200" },
-    { name: "Royal Gold", desc: "Luxury blacks with gold details.", accent: "bg-yellow-600" },
-    { name: "Mono Bold", desc: "Black and white power design.", accent: "bg-white" },
-    { name: "Candy Pop", desc: "Playful colors and rounded shapes.", accent: "bg-pink-400" },
-    { name: "Modernist", desc: "Clean lines and perfect grid.", accent: "bg-slate-900" },
-    { name: "Neon Jungle", desc: "Dark greens with vibrant pops.", accent: "bg-lime-400" },
-    { name: "Slate Pro", desc: "The ultimate business aesthetic.", accent: "bg-slate-600" },
-    { name: "Velvet Red", desc: "Deep reds for high-end luxury.", accent: "bg-red-800" },
-    { name: "Mint Fresh", desc: "Light, airy, and clean visuals.", accent: "bg-emerald-100" },
-    { name: "Solar Flare", desc: "High energy oranges and yellows.", accent: "bg-orange-500" },
-    { name: "Deep Sea", desc: "Calming blues and deep depth.", accent: "bg-indigo-900" },
-    { name: "Cloud Nine", desc: "Soft shadows and airy layout.", accent: "bg-sky-50" }
+// ─── Features ─────────────────────────────────────────────────────────────────
+const Features = () => {
+  const features = [
+    { icon: Layout, title: "Visual Designer", description: "Design with 20+ cinematic templates. Complete control over your store's look.", className: "md:col-span-2 md:row-span-2 bg-white text-black" },
+    { icon: Sparkles, title: "Easy Uploads", description: "Add your products in seconds and let us handle the styling.", className: "bg-white/5 text-white border-white/10" },
+    { icon: Truck, title: "Order Tracking", description: "Keep customers happy with real-time updates on their package.", className: "bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20" },
+    { icon: Shield, title: "Manage Many", description: "Run multiple brands from a single professional dashboard.", className: "bg-white/5 text-white border-white/10" },
+    { icon: Globe, title: "Global Reach", description: "Sell to anyone, anywhere with localized currency and fast checkout.", className: "md:col-span-2 bg-black text-white border-white/10" },
   ];
 
   return (
-    <section id="templates" className="py-24 sm:py-32 px-6 bg-slate-50 dark:bg-[#050505]">
+    <section id="features" className="py-32 px-6 bg-black">
       <div className="max-w-[1400px] mx-auto">
-        <div className="mb-20 text-center lg:text-left">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 mb-4 block">The Collection</span>
-          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none italic uppercase mb-6">
-            Elite <br />
-            <span className="opacity-30">Styles.</span>
+        <div className="mb-24 text-center lg:text-left">
+          <span className="text-[8px] font-black uppercase tracking-[0.5em] text-emerald-500 mb-6 block">Professional Infrastructure</span>
+          <h2 className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-none uppercase italic">
+            Powerful tools <br />
+            <span className="opacity-30">built for your growth.</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-lg font-medium">Choose from 20 cinematic styles, each engineered for conversion and high-end brand identity.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {styles.map((style, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {features.map((f, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="group bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-[2rem] overflow-hidden hover:border-emerald-500/30 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-2xl"
+              transition={{ delay: i * 0.1 }}
+              className={cn(
+                "p-10 rounded-[2.5rem] border border-transparent flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 group min-h-[350px] cursor-pointer shadow-sm",
+                f.className
+              )}
             >
-              <div className="h-48 relative overflow-hidden bg-slate-100 dark:bg-black">
-                <div className={cn("absolute inset-0 opacity-20 group-hover:scale-110 transition-transform duration-700", style.accent)} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="w-24 h-32 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-white/10 group-hover:-translate-y-2 transition-transform duration-500 flex flex-col p-3 gap-2">
-                      <div className="w-full h-8 bg-slate-100 dark:bg-white/5 rounded-md" />
-                      <div className="w-2/3 h-2 bg-slate-100 dark:bg-white/5 rounded-full" />
-                      <div className="w-full aspect-square bg-slate-50 dark:bg-white/5 rounded-lg" />
-                   </div>
-                </div>
+              <div>
+                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-10 transition-transform group-hover:scale-110 bg-black/5 dark:bg-white/10 shadow-xl">
+                    <f.icon size={28} />
+                 </div>
+                 <h3 className="text-2xl font-black uppercase tracking-tight italic mb-4">{f.title}</h3>
+                 <p className="text-[13px] font-medium leading-relaxed opacity-60 uppercase tracking-wide">
+                    {f.description}
+                 </p>
               </div>
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-2">
-                   <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight italic">{style.name}</h3>
-                   <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Pro</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest leading-relaxed">
-                   {style.desc}
-                </p>
-                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                   <span className="text-[10px] font-black uppercase text-slate-400">Apply Style</span>
-                   <ArrowRight size={14} className="text-emerald-500" />
-                </div>
+              <div className="mt-12 flex justify-end">
+                 <ArrowRight className="opacity-20 group-hover:opacity-100 group-hover:translate-x-3 transition-all" />
               </div>
             </motion.div>
           ))}
@@ -218,44 +249,114 @@ const Templates = () => {
   );
 };
 
-// ─── Features (Bento) ─────────────────────────────────────────────────────────
-const Features = () => {
-  const f = [
-    { t: "Visual Engine", d: "Real-time editor with 100+ customization nodes for your brand.", icon: Palette, c: "bg-slate-900 text-white md:col-span-2" },
-    { t: "Live Relay", d: "Instant WhatsApp order notifications and customer sync.", icon: Zap, c: "bg-emerald-500 text-white" },
-    { t: "Global Scale", d: "Sell to anyone, anywhere with localized currency support.", icon: Globe, c: "bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white border-slate-200 dark:border-white/10" },
-    { t: "Secure Core", d: "Enterprise-grade security for your business data and assets.", icon: Shield, c: "bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white border-slate-200 dark:border-white/10" },
-    { t: "Social Pulse", d: "Built-in review system to build trust with new customers.", icon: MessageSquare, c: "bg-white dark:bg-black text-slate-900 dark:text-white border-slate-200 dark:border-white/10 md:col-span-2" }
+// ─── Workflow ─────────────────────────────────────────────────────────────────
+const Workflow = () => {
+  return (
+    <section id="workflow" className="py-32 px-6 bg-black relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-full opacity-20">
+         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.15),transparent_70%)]" />
+      </div>
+
+      <div className="max-w-[1400px] mx-auto relative z-10">
+        <div className="grid lg:grid-cols-2 gap-32 items-center">
+          <div className="flex justify-center relative order-2 lg:order-1 scale-90 sm:scale-100">
+             <div className="absolute -inset-20 bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" />
+             <div className="relative z-10 bg-white dark:bg-zinc-900 p-4 rounded-[3.5rem] shadow-2xl border border-white/10">
+                <img src="https://images.unsplash.com/photo-1556742049-13d736c7a91d?auto=format&fit=crop&q=80&w=800" className="w-[300px] h-[600px] object-cover rounded-[3rem] opacity-80" alt="Editor" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center text-white">
+                   <Palette size={48} className="mb-6 text-emerald-500" />
+                   <h4 className="text-2xl font-black italic uppercase mb-2">Editor Core</h4>
+                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">24+ High-Fidelity Templates</p>
+                </div>
+             </div>
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <span className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-500 mb-8 block">Operational Flow</span>
+            <h2 className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-none mb-16 uppercase italic">
+              Simple. Fast. <br />
+              <span className="text-emerald-500">Effective.</span>
+            </h2>
+            
+            <div className="space-y-16">
+              {[
+                { n: "01", t: "Deploy Hub", d: "Initialize your workspace. Your professional storefront is live in 60s." },
+                { n: "02", t: "Sync Products", d: "Upload your catalog. Our smart relay engine handles the aesthetics." },
+                { n: "03", t: "Start Selling", d: "Share your link on WhatsApp and watch your orders grow." }
+              ].map((step, i) => (
+                <motion.div key={i} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} className="flex gap-10 group cursor-pointer">
+                  <span className="text-5xl font-black text-white/10 group-hover:text-emerald-500/30 transition-colors duration-700 italic leading-none">{step.n}</span>
+                  <div>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 italic">{step.t}</h3>
+                    <p className="text-[12px] font-medium text-slate-500 leading-relaxed uppercase tracking-wider">{step.d}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+const Pricing = () => {
+  const plans = [
+    { name: "Starter", price: "Free", desc: "Try out the basic tools for your brand.", feat: ["5 Active Products", "Standard Styles", "SwiftLink Branding", "WhatsApp Orders"] },
+    { name: "Pro", price: "₦5K", period: "/mo", desc: "Elite aesthetics for growing vendors.", feat: ["Unlimited Products", "24 Cinematic Styles", "Live Map Tracking", "Sales Insights", "Custom Link"], featured: true },
+    { name: "Enterprise", price: "₦15K", period: "/mo", desc: "Manage multi-brand networks easily.", feat: ["Multi-Store Hub", "Verified Badge", "Priority Relay", "Custom API Nodes", "Transfer Engine"] },
   ];
 
   return (
-    <section id="features" className="py-24 sm:py-32 px-6 bg-white dark:bg-black">
+    <section id="pricing" className="py-32 px-6 bg-black">
       <div className="max-w-[1400px] mx-auto">
-        <div className="text-center mb-20 sm:mb-32">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 mb-6 block">Capabilities</span>
-          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none italic uppercase mb-6">
-            The Infrastructure <br />
-            <span className="opacity-30">of Growth.</span>
+        <div className="text-center mb-32">
+          <span className="text-[8px] font-black uppercase tracking-[0.5em] text-emerald-500 mb-6 block">Access Tiers</span>
+          <h2 className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-none uppercase italic">
+            Start small, <br />
+            <span className="opacity-30">grow big.</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {f.map((item, i) => (
+        <div className="grid lg:grid-cols-3 gap-6">
+          {plans.map((p, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={cn("p-10 rounded-[3rem] border border-transparent flex flex-col justify-between min-h-[350px] group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-1", item.c)}
+              key={p.name}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className={cn(
+                "rounded-[3rem] p-12 border transition-all duration-700 relative overflow-hidden flex flex-col justify-between min-h-[600px] cursor-pointer",
+                p.featured ? "bg-white text-black border-white shadow-[0_0_100px_rgba(255,255,255,0.1)] scale-105 z-10" : "bg-white/5 text-white border-white/10 hover:border-white/20"
+              )}
             >
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                 <item.icon size={28} />
-              </div>
               <div>
-                <h3 className="text-2xl font-black italic uppercase tracking-tight mb-4">{item.t}</h3>
-                <p className="text-sm font-medium opacity-70 leading-relaxed uppercase tracking-widest">{item.d}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.4em] mb-8 opacity-40">{p.name} Plan</p>
+                <div className="flex items-baseline gap-2 mb-6">
+                  <span className="text-5xl font-black tracking-tighter italic">{p.price}</span>
+                  {p.period && <span className="text-xs font-black uppercase tracking-widest opacity-40">{p.period}</span>}
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-widest leading-loose mb-12 opacity-60">{p.desc}</p>
+                
+                <div className="space-y-5 mb-16">
+                   {p.feat.map(f => (
+                     <div key={f} className="flex items-center gap-4">
+                        <CheckCircle2 size={16} className={p.featured ? "text-emerald-500" : "text-emerald-500/50"} />
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{f}</span>
+                     </div>
+                   ))}
+                </div>
               </div>
+
+              <Link
+                href={`/signup?mode=signup&plan=${p.name.toLowerCase()}`}
+                className={cn(
+                  "w-full py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center active:scale-95",
+                  p.featured ? "bg-black text-white hover:bg-emerald-500" : "bg-white text-black hover:bg-emerald-400 shadow-2xl"
+                )}
+              >
+                Access Dashboard
+              </Link>
             </motion.div>
           ))}
         </div>
@@ -266,26 +367,34 @@ const Features = () => {
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 const CTA = () => (
-  <section className="py-24 sm:py-32 px-6 bg-white dark:bg-black relative">
-    <div className="max-w-[1200px] mx-auto">
+  <section className="py-32 px-6 bg-black relative">
+    <div className="max-w-[1200px] mx-auto relative z-10">
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         whileInView={{ opacity: 1, scale: 1 }}
-        className="bg-emerald-500 rounded-[4rem] p-16 sm:p-24 text-center relative overflow-hidden shadow-2xl shadow-emerald-500/20 group"
+        className="bg-emerald-500 rounded-[3rem] sm:rounded-[4rem] p-16 sm:p-24 text-center relative overflow-hidden shadow-2xl shadow-emerald-500/20 group"
       >
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full -mr-64 -mt-64 blur-3xl group-hover:scale-110 transition-transform duration-1000" />
         <div className="relative z-10">
-          <span className="text-white text-xs font-bold uppercase tracking-[0.4em] mb-8 block italic">Ready to scale?</span>
-          <h2 className="text-4xl sm:text-8xl font-black text-white mb-10 tracking-tighter leading-none italic uppercase">
-            Start Your <br />
-            Success Story.
+          <span className="text-white text-[9px] font-black uppercase tracking-[0.5em] mb-8 block italic">Ready for Deployment?</span>
+          <h2 className="text-5xl sm:text-8xl font-black text-white mb-10 tracking-tighter leading-none italic uppercase">
+            Build your dream <br />
+            store today.
           </h2>
-          <Link
-            href="/signup"
-            className="inline-flex px-12 py-6 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all hover:scale-105 active:scale-95 shadow-2xl mt-12"
-          >
-            Access Dashboard
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-16">
+            <Link
+              href="/signup?mode=signup"
+              className="w-full sm:w-auto px-12 py-6 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all hover:scale-105 active:scale-95 shadow-2xl"
+            >
+              Get Started Now
+            </Link>
+            <Link
+              href="/signup?mode=login"
+              className="w-full sm:w-auto px-12 py-6 bg-white/20 text-white border border-white/30 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
+            >
+              Merchant Login
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -294,41 +403,41 @@ const CTA = () => (
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = () => (
-  <footer className="py-24 px-6 bg-slate-50 dark:bg-black border-t border-slate-100 dark:border-white/5">
+  <footer className="py-24 px-6 bg-black border-t border-white/5">
     <div className="max-w-[1400px] mx-auto">
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24 text-center md:text-left">
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
           <div className="col-span-1 md:col-span-2 space-y-8">
-             <div className="flex items-center justify-center md:justify-start gap-3">
-               <div className="w-8 h-8 bg-slate-900 dark:bg-white rounded-lg flex items-center justify-center">
+             <div className="flex items-center gap-3">
+               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                  <img src="/logo.png" alt="SL" className="w-5 h-5 object-contain" />
                </div>
-               <span className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">SwiftLink<span className="text-emerald-500">Pro</span></span>
+               <span className="text-xl font-black text-white uppercase italic tracking-tighter">SwiftLink<span className="text-emerald-500">Pro</span></span>
              </div>
-             <p className="text-slate-500 dark:text-slate-400 font-medium max-w-sm mx-auto md:mx-0 leading-loose uppercase text-[10px] tracking-widest">
-                The high-performance command center for modern WhatsApp commerce.
+             <p className="text-slate-500 font-medium max-w-sm leading-loose uppercase text-[10px] tracking-widest">
+                The easiest way for Nigerian brands to build professional WhatsApp storefronts and manage orders without the stress.
              </p>
           </div>
           <div>
-             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-900 dark:text-white mb-8">Node</h4>
+             <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-white mb-8">Node</h4>
              <ul className="space-y-5">
-                {["Templates", "Features", "Pricing"].map(item => (
-                   <li key={item}><a href={`#${item.toLowerCase()}`} className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">{item}</a></li>
+                {["Features", "Workflow", "Pricing"].map(item => (
+                   <li key={item}><a href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">{item}</a></li>
                 ))}
              </ul>
           </div>
           <div>
-             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-900 dark:text-white mb-8">Mesh</h4>
+             <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-white mb-8">Mesh</h4>
              <ul className="space-y-5">
-                <li><Link href="/terms" className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">Terms of Service</Link></li>
-                <li><a href="mailto:support@swiftlink.pro" className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">Support</a></li>
+                <li><Link href="/terms" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">Protocol Terms</Link></li>
+                <li><a href="mailto:ops@swiftlink.pro" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-500 transition-colors">Ops Support</a></li>
              </ul>
           </div>
        </div>
-       <div className="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-slate-200 dark:border-white/5 gap-6">
-          <p className="text-slate-400 dark:text-slate-700 text-[8px] font-black uppercase tracking-[0.4em]">© 2026 SwiftLink Workspace.</p>
+       <div className="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-white/5 gap-6">
+          <p className="text-slate-700 text-[8px] font-black uppercase tracking-[0.4em]">© 2026 SwiftLink Workspace Protocol.</p>
           <div className="flex gap-10">
-             {["Twitter", "Instagram", "WhatsApp"].map(social => (
-                <span key={social} className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-700 cursor-pointer hover:text-emerald-500 transition-all">{social}</span>
+             {["X.COM", "INSTAGRAM", "WHATSAPP"].map(social => (
+                <span key={social} className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-700 cursor-pointer hover:text-emerald-500 transition-all">{social}</span>
              ))}
           </div>
        </div>
@@ -338,11 +447,12 @@ const Footer = () => (
 
 export default function LandingPage() {
   return (
-    <main className="bg-white dark:bg-black min-h-screen text-slate-900 dark:text-white selection:bg-emerald-500/30 font-sans overflow-x-hidden">
+    <main className="bg-black min-h-screen text-white selection:bg-emerald-500/30 font-sans overflow-x-hidden">
       <Navbar />
       <Hero />
-      <Templates />
       <Features />
+      <Workflow />
+      <Pricing />
       <CTA />
       <Footer />
     </main>
