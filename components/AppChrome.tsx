@@ -119,10 +119,10 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
       <div
         id="hand-cursor"
-        className={`fixed ${handHidden ? "hidden" : ""} top-0 left-0 ${handClick ? "hand-click" : ""}`}
+        className={`fixed ${handHidden ? "hidden" : ""} top-0 left-0 ${handClick ? "hand-click" : ""} z-[1000] mix-blend-difference pointer-events-none transition-all duration-300`}
         style={handStyle}
       >
-        <i className="fas fa-hand-pointer text-3xl text-yellow-400" />
+        <i className="fas fa-hand-pointer text-3xl text-white" />
       </div>
 
       <TourOverlay />

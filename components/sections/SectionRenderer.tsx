@@ -6,6 +6,8 @@ import { CatalogSection } from "./CatalogSection";
 import { EditorContextMenu } from "../EditorContextMenu";
 import { AnimatePresence } from "framer-motion";
 import type { PageSection, ShopState, Product } from "@/lib/schema";
+import { cn } from "@/lib/utils";
+import { AboutTemplates } from "@/lib/store-templates";
 
 interface SectionRendererProps {
   sections: PageSection[];
@@ -42,7 +44,6 @@ export function SectionRenderer({
   const handleTouchStart = (section: PageSection) => {
     if (!isEditable) return;
     longPressTimer.current = setTimeout(() => {
-        // Find center of screen roughly for touch
         setContextMenu({ x: window.innerWidth / 2 - 100, y: window.innerHeight / 2 - 150, section });
     }, 600);
   };
@@ -93,26 +94,36 @@ export function SectionRenderer({
                 )}
                 
                 {(() => {
+                    const bgColor = state.bgColor || "#ffffff";
+                    const textColor = state.textColor || "#111827";
+                    
+                    const getContrastColor = (hex: string) => {
+                        if (!hex) return "#ffffff";
+                        const cleanHex = hex.replace('#', '');
+                        const r = parseInt(cleanHex.slice(0, 2), 16);
+                        const g = parseInt(cleanHex.slice(2, 4), 16);
+                        const b = parseInt(cleanHex.slice(4, 6), 16);
+                        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+                        return (yiq >= 128) ? "#000000" : "#ffffff";
+                    };
+                    const contrast = getContrastColor(bgColor);
+
                     switch (section.type) {
                         case "hero":
                             return <HeroSection section={section} state={state} />;
                         case "catalog":
                             return <CatalogSection section={section} state={state} cart={cart} updateCart={updateCart} onProductClick={onProductClick} activeCategory={activeCategory} />;
                         case "about":
-                            return (
-                              <section className="mb-10 rounded-[1.5rem] bg-white p-8 shadow-sm dark:bg-zinc-900" style={section.styles}>
-                                <h2 className="text-2xl font-black uppercase italic text-slate-900 dark:text-white">{section.title || "About Us"}</h2>
-                                <p className="mt-3 max-w-2xl text-sm font-bold leading-7 text-slate-500 dark:text-zinc-400">{section.content?.text || state.aboutUs}</p>
-                              </section>
-                            );
+                            const About = AboutTemplates[section.content?.templateId || state.aboutTemplateId || "about-1"] || AboutTemplates["about-1"];
+                            return <About state={state} section={section} />;
                         case "testimonials":
                             return (
-                              <section className="mb-10 space-y-4" style={section.styles}>
-                                <h2 className="px-2 text-2xl font-black uppercase italic text-slate-900 dark:text-white">{section.title || "Testimonials"}</h2>
+                              <section className="mb-10 space-y-4" style={{ ...section.styles, color: contrast }}>
+                                <h2 className="px-2 text-2xl font-black uppercase italic tracking-tight" style={{ color: contrast }}>{section.title || "Testimonials"}</h2>
                                 <div className="grid gap-4 md:grid-cols-2">
                                   {(section.content?.items || state.testimonials || []).map((item: any, index: number) => (
-                                    <blockquote key={item.id || index} className="rounded-[1.5rem] bg-white p-6 shadow-sm dark:bg-zinc-900">
-                                      <p className="text-sm font-bold leading-7 text-slate-600 dark:text-zinc-300">&ldquo;{item.quote}&rdquo;</p>
+                                    <blockquote key={item.id || index} className="rounded-[1.5rem] bg-white dark:bg-zinc-900 p-6 shadow-sm border border-black/[0.03] dark:border-white/5" style={{ color: textColor }}>
+                                      <p className="text-sm font-bold leading-7 opacity-80">&ldquo;{item.quote}&rdquo;</p>
                                       <footer className="mt-4 text-[10px] font-black uppercase tracking-widest text-emerald-500">{item.author || "Customer"}</footer>
                                     </blockquote>
                                   ))}
@@ -120,15 +131,6 @@ export function SectionRenderer({
                               </section>
                             );
                         default:
-                            if (isEditable && section.type === "custom_code") {
-                              return (
-                                <section className="mb-10 rounded-[1.5rem] border-2 border-dashed border-amber-200 bg-amber-50 p-8 text-center dark:border-amber-500/20 dark:bg-amber-500/10">
-                                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
-                                    Custom code sections are disabled
-                                  </p>
-                                </section>
-                              );
-                            }
                             return null;
                     }
                 })()}
@@ -140,5 +142,3 @@ export function SectionRenderer({
     </div>
   );
 }
-
-import { cn } from "@/lib/utils";
