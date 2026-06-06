@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ProSidebar } from "./ProSidebar";
-import { Menu, X, Bell, User, Search, Zap, Package, MessageSquare, TrendingUp } from "lucide-react";
+import { Menu, X, Bell, User, Search, Zap, Package, MessageSquare, TrendingUp, Sun, Moon } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +13,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const pathname = usePathname();
-  const { state, updateState } = useSwiftLink();
+  const { state, updateState, theme, toggleTheme } = useSwiftLink();
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -67,7 +67,15 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
                 <Search size={16} />
                 <input type="text" placeholder="Global search..." className="bg-transparent border-none outline-none text-xs font-bold px-3 w-40 text-slate-900 dark:text-white" />
              </div>
-             
+             {/* Theme Toggle */}
+             <button
+               onClick={toggleTheme}
+               className="w-10 h-10 rounded-full bg-slate-50 dark:bg-[#121214] text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center border border-slate-100 dark:border-white/[0.05] shadow-sm active:scale-95 transition-all"
+               aria-label="Toggle Theme"
+             >
+               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+             </button>
+
              <div className="relative">
                 <button 
                   onClick={() => setNotificationsOpen(!notificationsOpen)}

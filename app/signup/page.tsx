@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone, ChevronLeft
+  ArrowRight, CheckCircle2, Zap, Shield, Eye, EyeOff, AlertCircle, Loader2, Store, Sparkles, MessageSquare, Phone, ChevronLeft, Sun, Moon
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -12,6 +12,7 @@ import { getPublicStoreSlug, normalizeStoreUsername } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import dynamic from "next/dynamic";
+import { useSwiftLink } from "@/context/SwiftLinkContext";
 
 const ThreeScene = dynamic(() => import("@/components/landing/ThreeScene"), { ssr: false });
 
@@ -20,6 +21,7 @@ type Mode = "signup" | "login";
 export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { theme, toggleTheme } = useSwiftLink();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("signup");
   const [loading, setLoading] = useState<"google" | "email" | "reset" | null>(null);
@@ -157,52 +159,52 @@ export default function SignupPage() {
     }
   };
 
-  if (!mounted) return <div className="min-h-screen bg-[#020617]" />;
+  if (!mounted) return <div className="min-h-screen bg-slate-50 dark:bg-[#020617]" />;
 
   return (
-    <main className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto">
+    <main className="min-h-screen w-full bg-slate-50 dark:bg-[#020617] flex flex-col lg:flex-row relative font-sans selection:bg-emerald-500/30 overflow-y-auto transition-colors duration-300">
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
-        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.04)_0%,transparent_40%)] dark:bg-[radial-gradient(circle_at_15%_15%,rgba(16,185,129,0.08)_0%,transparent_40%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.04)_0%,transparent_40%)] dark:bg-[radial-gradient(circle_at_85%_85%,rgba(59,130,246,0.08)_0%,transparent_40%)]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] dark:opacity-[0.1] mix-blend-overlay" />
       </div>
 
       {/* Brand Side: Responsive, High-Fidelity */}
-      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-white/[0.03] bg-gradient-to-b from-[#020617] to-[#01040f] min-h-screen lg:h-screen lg:sticky lg:top-0">
+      <div className="hidden lg:flex flex-col justify-between w-full lg:w-[50%] p-10 xl:p-20 relative z-10 border-r border-slate-200/50 dark:border-white/[0.03] bg-gradient-to-b from-slate-100 to-slate-200 dark:from-[#020617] dark:to-[#01040f] min-h-screen lg:h-screen lg:sticky lg:top-0 transition-colors duration-300">
         <Link href="/" className="flex items-center gap-4 transition-transform hover:scale-105 w-fit shrink-0">
-           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
+           <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_20px_rgba(255,255,255,0.1)]">
              <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
            </div>
-           <span className="text-xl font-black text-white tracking-tighter uppercase italic">SwiftLink<span className="text-emerald-500 not-italic ml-1">PRO</span></span>
+           <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">SwiftLink<span className="text-emerald-500 not-italic ml-1">PRO</span></span>
         </Link>
 
         <div className="flex-1 flex flex-col justify-center">
            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
-             <h1 className="text-5xl xl:text-7xl 2xl:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-8 uppercase">
+             <h1 className="text-5xl xl:text-7xl 2xl:text-8xl font-black text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-8 uppercase">
                BUILD YOUR<br />DIGITAL HUB.<br /><span className="text-emerald-500 italic">DOMINATE.</span>
              </h1>
-             <p className="text-base xl:text-lg text-slate-400 font-medium leading-relaxed max-w-sm">
+             <p className="text-base xl:text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-sm">
                The professional workspace for Nigerian brands scaling on WhatsApp.
              </p>
            </motion.div>
            
            <div className="mt-12 flex items-center gap-10">
               <div className="flex flex-col">
-                 <p className="text-3xl font-black text-white italic tracking-tighter mb-0.5">60s</p>
-                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Setup</p>
+                 <p className="text-3xl font-black text-slate-900 dark:text-white italic tracking-tighter mb-0.5">60s</p>
+                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Setup</p>
               </div>
-              <div className="w-px h-8 bg-white/5" />
+              <div className="w-px h-8 bg-slate-900/10 dark:bg-white/5" />
               <div className="flex flex-col">
-                 <p className="text-3xl font-black text-white italic tracking-tighter mb-0.5">Zero</p>
-                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Fees</p>
+                 <p className="text-3xl font-black text-slate-900 dark:text-white italic tracking-tighter mb-0.5">Zero</p>
+                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Fees</p>
               </div>
            </div>
         </div>
         
         <div className="flex items-center justify-between opacity-30 shrink-0">
-           <p className="text-[8px] text-white font-black uppercase tracking-[0.5em]">Global Infrastructure</p>
-           <p className="text-[8px] text-white font-black uppercase tracking-[0.5em]">© 2026 Workspace</p>
+           <p className="text-[8px] text-slate-500 dark:text-white font-black uppercase tracking-[0.5em]">Global Infrastructure</p>
+           <p className="text-[8px] text-slate-500 dark:text-white font-black uppercase tracking-[0.5em]">© 2026 Workspace</p>
         </div>
 
         <div className="absolute inset-0 z-[-1] opacity-40 pointer-events-none scale-150">
@@ -211,7 +213,18 @@ export default function SignupPage() {
       </div>
 
       {/* Form Side: Centered, Pixel-Perfect */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-10 bg-white dark:bg-[#020617] min-h-screen transition-colors duration-300">
+        {/* Floating Theme Toggle in top right of form side */}
+        <div className="absolute top-6 right-6 z-20">
+          <button
+            onClick={toggleTheme}
+            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200/50 dark:border-white/5 shadow-sm active:scale-95 transition-all"
+            aria-label="Toggle Theme"
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+        </div>
+
         {/* Mobile Header Decor */}
         <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 lg:hidden" />
         
