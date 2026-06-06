@@ -97,7 +97,7 @@ export function BusinessView() {
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
 
-  const { state: globalState, updateState, saveFullState, addSystemNotification, addToast, user, stores, switchStore, createNewStore, transferStore } = useSwiftLink();
+  const { state: globalState, updateState, saveFullState, addSystemNotification, addToast, user, stores, switchStore, createNewStore, transferStore, addProduct, removeProduct } = useSwiftLink();
 
   const [localState, setLocalState] = useState<ShopState>(globalState);
   const [isDirty, setIsDirty] = useState(false);
@@ -170,23 +170,6 @@ export function BusinessView() {
     return publicUrl;
   };
 
-<<<<<<< HEAD
-  const handleCreateNew = async () => {
-    if (!user) return;
-    const userEmail = user.email || "";
-    const assignedPlan = PRIVILEGED_USERS[userEmail];
-    const isPremium = assignedPlan === "business" || assignedPlan === "pro" || globalState.plan === "business" || globalState.plan === "pro";
-    if (!isPremium && stores.length >= 1) {
-        addSystemNotification("Upgrade Required", "Free accounts are limited to 1 store. Upgrade to Pro for more.", "feedback");
-        return;
-    }
-    const name = await (window as any).customPrompt("New Brand", "Enter brand name:");
-    if (name) {
-        await createNewStore(name);
-        setShowStoreDropdown(false);
-    }
-  };
-
   const applyTheme = (theme: "lumina" | "void") => {
       if (theme === "lumina") {
           setLocalState(prev => ({
@@ -198,8 +181,8 @@ export function BusinessView() {
               buttonColor: "#C85A3F",
               heroTemplateId: "hero-lumina",
               catalogTemplateId: "catalog-lumina",
-              aboutTemplateId: "about-1",
-              footerTemplateId: "footer-1"
+              aboutTemplateId: "about-editorial",
+              footerTemplateId: "footer-editorial"
           }));
       } else {
           setLocalState(prev => ({
@@ -212,7 +195,7 @@ export function BusinessView() {
               heroTemplateId: "hero-void",
               catalogTemplateId: "catalog-void",
               aboutTemplateId: "about-brutalist",
-              footerTemplateId: "footer-1"
+              footerTemplateId: "footer-cinema"
           }));
       }
       setIsDirty(true);
@@ -229,110 +212,54 @@ export function BusinessView() {
       { id:"hero-glass",  name:"Glass Float",    desc:"Translucent cards",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
       { id:"hero-split",  name:"Split Minimal",    desc:"Contrast image/text split",       dark:false,  isPro:false, icon:<><rect x="0" y="0" width="30" height="40" fill="black"/><rect x="30" y="0" width="30" height="40" fill="#ddd"/></> },
       { id:"hero-vogue",  name:"Editorial V",    desc:"Clean high-fashion look",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#f9f9f9"/> },
-      { id:"hero-industrial",  name:"Mod Core",    desc:"Industrial textures",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#e2e8f0"/> },
-      { id:"hero-soft",  name:"Intent Silk",    desc:"Warm minimal",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#FFF9F5"/> },
-      { id:"hero-grid",  name:"Bento Grid",    desc:"Modular layout",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#10b981"/> },
-      { id:"hero-aurora",  name:"Aurora Flow",    desc:"Animated mesh gradients",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#1e1b4b"/> },
-      { id:"hero-outline",  name:"Pure Outline",    desc:"Outlined structure",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"hero-retro",  name:"Retro Pop",    desc:"Bold high-energy",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#FF4D00"/> },
-      { id:"hero-mono",  name:"Mono Focus",    desc:"Monochromatic dark",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#111"/> },
-      { id:"hero-art",  name:"Chaos Art",    desc:"Blurry gradients",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-tech",  name:"Equipment",    desc:"Tech grid interface",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#050505"/> },
-      { id:"hero-nature",  name:"Organic Root",    desc:"Earthy tones",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#E8E8E1"/> },
-      { id:"hero-slate",  name:"Slate Work",    desc:"Dark business layout",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
-      { id:"hero-infinite",  name:"Forward",    desc:"Mesh text focus",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-midnight",  name:"Midnight Luxe",    desc:"Deep navy glow",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#020617"/> },
-      { id:"hero-solaris",  name:"Solar Flare",    desc:"Solar amber",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#FFFbeb"/> },
-      { id:"hero-quartz",  name:"Quartz Minimal",    desc:"Minimal clean layout",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"hero-velocity",  name:"High Velocity",    desc:"Speed lines black",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
-    ],
-    catalog: [
-      { id:"catalog-1",  name:"Clean Grid",      desc:"Classic grid",          dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
-      { id:"catalog-lumina",  name:"Editorial Luxe",   desc:"Heavy shadows list",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#0A0A0A"/> },
-      { id:"catalog-void",  name:"Glitch Matrix",   desc:"Grayscale grid",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list",     dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"catalog-10", name:"Raw Brutalist",       desc:"Bold black borders",           dark:false, isPro:true,  icon:<rect x="0" y="0" width="60" height="40" fill="#fffbeb"/> },
-    ],
-    about: [
-      { id:"about-1",  name:"Story Card",    desc:"Typography card",         dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"about-brutalist",  name:"The Mission",  desc:"Heavy borders type",       dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
-    ],
-    footer: [
-      { id:"footer-1",  name:"Standard",   desc:"Branded footer",   dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
-=======
-  const applyTheme = (theme: "lumina" | "void") => {
-      if (theme === "lumina") {
-          setLocalState(prev => ({
-              ...prev,
-              accentColor: "#C85A3F",
-              bgColor: "#0A0A0A",
-              surfaceColor: "#111111",
-              textColor: "#EAEAEA",
-              buttonColor: "#C85A3F",
-              heroTemplateId: "hero-lumina",
-              catalogTemplateId: "catalog-lumina",
-              aboutTemplateId: "about-1",
-              footerTemplateId: "footer-1"
-          }));
-      } else {
-          setLocalState(prev => ({
-              ...prev,
-              accentColor: "#ffffff",
-              bgColor: "#000000",
-              surfaceColor: "#09090b",
-              textColor: "#ffffff",
-              buttonColor: "#ffffff",
-              heroTemplateId: "hero-void",
-              catalogTemplateId: "catalog-void",
-              aboutTemplateId: "about-brutalist",
-              footerTemplateId: "footer-1"
-          }));
-      }
-      setIsDirty(true);
-      addToast(`Applied ${theme.toUpperCase()} theme!`, "success");
-  };
-
-  const TEMPLATE_META: Record<string, { id: string; name: string; desc: string; dark: boolean; isPro: boolean; icon: React.ReactNode }[]> = {
-    hero: [
-      { id:"hero-1",  name:"OLED Minimal",    desc:"Dark glass with glowing orb animations",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#050505"/> },
-      { id:"hero-lumina",  name:"Lumina Luxe",    desc:"Editorial serif with heavy shadows",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#0A0A0A"/> },
-      { id:"hero-void",  name:"Void Story",    desc:"Monospaced glitch depth tunnel",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-tokyo",  name:"Tokyo Night",    desc:"Neon blue/pink gradients & grids",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-brutalist",  name:"Raw Brutalist",    desc:"Heavy black borders & massive type",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#F0F0F0"/> },
-      { id:"hero-glass",  name:"Glass Float",    desc:"Translucent cards on animated orbs",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
-      { id:"hero-split",  name:"Split Minimal",    desc:"High-contrast image/text split",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="30" height="40" fill="black"/><rect x="30" y="0" width="30" height="40" fill="#ddd"/> },
-      { id:"hero-vogue",  name:"Editorial V",    desc:"Clean high-fashion magazine look",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#f9f9f9"/> },
-      { id:"hero-industrial",  name:"Mod Core",    desc:"Industrial raw textures & type",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#e2e8f0"/> },
-      { id:"hero-soft",  name:"Intent Silk",    desc:"Warm minimal with airy typography",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#FFF9F5"/> },
-      { id:"hero-grid",  name:"Bento Grid",    desc:"Modular marketplace layout",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#10b981"/> },
-      { id:"hero-aurora",  name:"Aurora Flow",    desc:"Vibrant animated mesh gradients",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#1e1b4b"/> },
-      { id:"hero-outline",  name:"Pure Outline",    desc:"Ultra-minimal outlined structure",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"hero-retro",  name:"Retro Pop",    desc:"Bold high-energy orange/black",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#FF4D00"/> },
-      { id:"hero-mono",  name:"Mono Focus",    desc:"Product-first monochromatic dark",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#111"/> },
-      { id:"hero-art",  name:"Chaos Art",    desc:"Blurry gradients with artistic type",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-tech",  name:"Equipment",    desc:"Green tech grid interface style",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#050505"/> },
-      { id:"hero-nature",  name:"Organic Root",    desc:"Earthy tones and natural split",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#E8E8E1"/> },
-      { id:"hero-slate",  name:"Slate Work",    desc:"Professional dark business layout",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
-      { id:"hero-infinite",  name:"Forward",    desc:"Dynamic blue mesh text focus",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"hero-midnight",  name:"Midnight Luxe",    desc:"Deep navy with blue glow",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#020617"/> },
+      { id:"hero-9",  name:"Wave Mesh 3D",    desc:"Animated wireframe wave canvas",      dark:true,  isPro:true,  icon:<rect x="0" y="0" width="60" height="40" fill="#050811"/> },
+      { id:"hero-10", name:"Neon Rings 3D",   desc:"Cyber neon ring tunnel",           dark:true,  isPro:true,  icon:<rect x="0" y="0" width="60" height="40" fill="#0a000f"/> },
+      { id:"hero-midnight",  name:"Midnight Luxe",    desc:"Deep navy blue glow",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#020617"/> },
       { id:"hero-solaris",  name:"Solar Flare",    desc:"High-energy solar amber",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#FFFbeb"/> },
       { id:"hero-quartz",  name:"Quartz Minimal",    desc:"Framed minimal clean layout",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
-      { id:"hero-velocity",  name:"High Velocity",    desc:"Speed lines tech black",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
+      { id:"hero-velocity",  name:"High Velocity",    desc:"Speed lines black",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
+      { id:"hero-mono",  name:"Mono Focus",    desc:"Product-first dark",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#111"/> },
+      { id:"hero-art",  name:"Chaos Art",    desc:"Blurry artistic gradients",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
+      { id:"hero-tech",  name:"Equipment",    desc:"Tech grid interface",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#050505"/> },
+      { id:"hero-nature",  name:"Organic Root",    desc:"Earthy tones split",       dark:false,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#E8E8E1"/> },
+      { id:"hero-slate",  name:"Slate Work",    desc:"Professional dark layout",       dark:true,  isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
+      { id:"hero-infinite",  name:"Forward",    desc:"Dynamic mesh text focus",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
+      { id:"hero-bento",  name:"Bento Box",    desc:"Modular marketplace grid",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#111"/> },
+      { id:"hero-typo",  name:"Typo Chaos",    desc:"Oversized typography",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
+      { id:"hero-modernist",  name:"Modernist",    desc:"Bauhaus inspired clean",       dark:false,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#E5E5E5"/> },
+      { id:"hero-velvet",  name:"Velvet Dark",    desc:"Deep rose luxury",       dark:true,  isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#1a0b0b"/> },
     ],
     catalog: [
       { id:"catalog-1",  name:"Clean Grid",      desc:"Classic product grid",          dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
       { id:"catalog-lumina",  name:"Editorial Luxe",   desc:"Heavy shadows serif list",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#0A0A0A"/> },
       { id:"catalog-void",  name:"Glitch Matrix",   desc:"Mono grayscale grid",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list format",     dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
+      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list format",     dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#white"/> },
       { id:"catalog-10", name:"Raw Brutalist",       desc:"Bold black borders",           dark:false, isPro:true,  icon:<rect x="0" y="0" width="60" height="40" fill="#fffbeb"/> },
+      { id:"catalog-masonry", name:"Masonry",      desc:"Asymmetric masonry",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#f1f5f9"/> },
+      { id:"catalog-spec", name:"Spec Sheet",      desc:"Detailed table list",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
+      { id:"catalog-glass", name:"Floating Glass",      desc:"Glassmorphic cards",          dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#0f172a"/> },
+      { id:"catalog-scroll", name:"Focus Scroll",      desc:"Horizontal scroll focus",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#f8fafc"/> },
+      { id:"catalog-bauhaus", name:"Bauhaus Block",      desc:"Clean border grid",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#e5e5e5"/> },
+      { id:"catalog-vertical", name:"Cinema Vertical",      desc:"Full-width cinema list",          dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#111"/> },
+      { id:"catalog-aurora", name:"Aurora Glass",      desc:"Pulsing colorful glass",          dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#1e1b4b"/> },
     ],
     about: [
       { id:"about-1",  name:"Story Card",    desc:"Clean typography card",         dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
       { id:"about-brutalist",  name:"The Mission",  desc:"Heavy borders bold type",       dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
+      { id:"about-editorial",  name:"Editorial Split",  desc:"High-fashion split",       dark:false, isPro:true, icon:<rect x="0" y="0" width="30" height="40" fill="#111"/><rect x="30" y="0" width="30" height="40" fill="#white"/> },
+      { id:"about-quote",  name:"Center Quote",  desc:"Massive brand quote",       dark:false, isPro:false, icon:<rect x="10" y="15" width="40" height="10" fill="#eee"/> },
+      { id:"about-pillars",  name:"Grid Pillars",  desc:"3 column core values",       dark:false, isPro:true, icon:<rect x="5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="22.5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="40" y="10" width="15" height="20" fill="#f8f8f8"/> },
+      { id:"about-tech",  name:"Cyber Block",  desc:"Terminal manifesto",       dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/><rect x="5" y="5" width="50" height="1" fill="#10b981"/> },
+      { id:"about-industrial",  name:"Build Log",  desc:"Heavy border industrial",       dark:false, isPro:true, icon:<rect x="5" y="5" width="50" height="30" fill="none" stroke="black" strokeWidth="2"/> },
     ],
     footer: [
-      { id:"footer-1",  name:"Standard",   desc:"Classic branded footer",   dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
+      { id:"footer-1",  name:"Branded Card",   desc:"Accent branded footer",   dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
+      { id:"footer-cinema",  name:"Cinema Wide",   desc:"Massive typography wide",   dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
+      { id:"footer-brutalist",  name:"Brutalist Log",   desc:"Heavy black strip",   dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="10" fill="black"/> },
+      { id:"footer-glass",  name:"Glass Float",   desc:"Frosted floating bar",   dark:true, isPro:true, icon:<rect x="10" y="25" width="40" height="10" rx="5" fill="white" fillOpacity="0.1"/> },
+      { id:"footer-tech",  name:"Telemetry",   desc:"Tech data stream",   dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#050505"/> },
+      { id:"footer-editorial",  name:"Signature",   desc:"Serif editorial signoff",   dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
+      { id:"footer-bauhaus",  name:"Bauhaus Bold",   desc:"Heavy block bauhaus",   dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#e5e5e5"/> },
     ],
   };
 
@@ -344,11 +271,7 @@ export function BusinessView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {templates.map(t => (
           <div key={t.id} className="relative group">
-<<<<<<< HEAD
             <button onClick={() => { if (t.isPro && !isProUser) { addSystemNotification("Pro Template", "Upgrade to unlock this design.", "feedback"); return; } onChange(t.id); }} className={cn("relative w-full p-0 rounded-2xl border-2 transition-all overflow-hidden flex flex-col", current === t.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-slate-100 dark:border-white/5")}>
-=======
-            <button onClick={() => { if (t.isPro && !isProUser) { addSystemNotification("Pro Feature", "Upgrade to Pro to unlock.", "feedback"); return; } onChange(t.id); }} className={cn("relative w-full p-0 rounded-2xl border-2 transition-all overflow-hidden flex flex-col", current === t.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-slate-100 dark:border-white/5")}>
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
               <div className={cn("w-full aspect-[3/2] flex items-center justify-center relative overflow-hidden", t.dark ? "bg-zinc-950" : "bg-slate-50")}>
                 <svg viewBox="0 0 60 40" className="w-full h-full">{t.icon}</svg>
                 {t.isPro && !isProUser && <div className="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md">PRO</div>}
@@ -402,7 +325,33 @@ export function BusinessView() {
       );
   };
 
-<<<<<<< HEAD
+  const randomizePalette = () => {
+      const p = PRESET_PALETTES[Math.floor(Math.random() * PRESET_PALETTES.length)];
+      setLocalState(prev => ({
+          ...prev,
+          accentColor: p.accent,
+          bgColor: p.bg,
+          surfaceColor: p.surface,
+          textColor: p.text,
+          buttonColor: p.btn
+      }));
+      setIsDirty(true);
+      addToast(`Applied ${p.name} palette!`, "success");
+  };
+
+  const randomizeTemplate = (type: "hero" | "catalog" | "about" | "footer") => {
+      const templates = TEMPLATE_META[type];
+      const available = templates.filter(t => isProUser || !t.isPro);
+      const t = available[Math.floor(Math.random() * available.length)];
+      const fieldMap: Record<string, keyof ShopState> = { hero: "heroTemplateId", catalog: "catalogTemplateId", about: "aboutTemplateId", footer: "footerTemplateId" };
+      updateLocalState(fieldMap[type], t.id);
+      addToast(`Applied ${t.name} template!`, "success");
+  };
+
+  const handleTabChange = (tab: any) => {
+    setActiveTab(tab);
+  };
+
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [handleInput, setHandleInput] = useState(localState.storeUsername || "");
   const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
@@ -428,8 +377,56 @@ export function BusinessView() {
     return () => clearTimeout(timeoutId);
   }, [handleInput, localState.id]);
 
-=======
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
+  const StableColorPicker = ({ value, onChange, label }: { value: string, onChange: (val: string) => void, label: string }) => {
+      const [local, setLocal] = useState(value);
+      const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+      useEffect(() => {
+        setLocal(value);
+      }, [value]);
+
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const next = e.target.value;
+        setLocal(next);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          onChange(next);
+        }, 50);
+      };
+
+      return (
+          <div>
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">{label}</p>
+              <input 
+                  type="color" 
+                  value={local || "#ffffff"} 
+                  onChange={handleChange} 
+                  className="w-20 h-10 rounded-xl overflow-hidden cursor-pointer border border-slate-200 dark:border-zinc-700 hover:scale-105 transition-transform" 
+              />
+          </div>
+      );
+  };
+
+  const DiceButton = ({ onClick, title = "Randomize" }: { onClick: () => void, title?: string }) => {
+      const [isSpinning, setIsSpinning] = useState(false);
+      const handleDiceClick = () => {
+          setIsSpinning(true);
+          onClick();
+          setTimeout(() => setIsSpinning(false), 600);
+      };
+      return (
+          <button 
+              onClick={handleDiceClick}
+              title={title}
+              className="p-3 bg-slate-50 dark:bg-zinc-900 text-slate-400 hover:text-emerald-500 rounded-xl transition-all active:scale-90"
+          >
+              <motion.div animate={isSpinning ? { rotate: 360, scale: [1, 1.2, 1] } : {}} transition={{ duration: 0.5, ease: "easeInOut" }}>
+                  <Dices size={18} />
+              </motion.div>
+          </button>
+      );
+  };
+
   return (
     <div className="pb-32 bg-slate-50/50 dark:bg-black min-h-screen">
       <LivePreviewModal />
@@ -442,43 +439,31 @@ export function BusinessView() {
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] shadow-sm border dark:border-white/5">
             <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-xl shadow-emerald-500/20"><Store size={28} /></div>
-<<<<<<< HEAD
                 <div><h3 className="text-lg font-black uppercase dark:text-white italic">{localState.bizName}</h3><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Business Hub</p></div>
             </div>
             <div className="flex gap-2">
                 <button onClick={() => setShowStoreDropdown(!showStoreDropdown)} className="px-6 py-3 bg-slate-50 dark:bg-black text-slate-400 rounded-xl text-[10px] font-black uppercase hover:text-emerald-500 transition-all flex items-center gap-2">Switch <ChevronDown size={14} /></button>
                 <button onClick={() => window.open(`${window.location.origin}${getShopPath(localState)}`, "_blank")} className="p-4 bg-slate-50 dark:bg-black text-slate-400 rounded-xl hover:text-emerald-500"><ExternalLink size={20} /></button>
-=======
-                <div><h3 className="text-lg font-black uppercase dark:text-white italic">{localState.bizName}</h3><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Store Operator</p></div>
-            </div>
-            <div className="flex gap-2">
-                <button onClick={() => setShowStoreDropdown(!showStoreDropdown)} className="px-6 py-3 bg-slate-50 dark:bg-black text-slate-400 rounded-xl text-[10px] font-black uppercase hover:text-emerald-500 transition-all flex items-center gap-2">Switch <ChevronDown size={14} /></button>
-                <button onClick={() => window.open(getShopPath(localState), "_blank")} className="p-4 bg-slate-50 dark:bg-black text-slate-400 rounded-xl hover:text-emerald-500"><ExternalLink size={20} /></button>
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
             </div>
         </div>
 
         <div className="flex justify-center">
             <div className="flex bg-white dark:bg-zinc-900 p-1.5 rounded-2xl border dark:border-white/5 shadow-sm">
                 {["store", "appearance", "inbox"].map(tab => (
-                    <button key={tab} className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === tab ? "bg-slate-900 dark:bg-white text-white dark:text-black" : "text-slate-400")} onClick={() => setActiveTab(tab as any)}>{tab}</button>
+                    <button key={tab} className={cn("px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === tab ? "bg-slate-900 dark:bg-white text-white dark:text-black" : "text-slate-400")} onClick={() => handleTabChange(tab as any)}>{tab}</button>
                 ))}
             </div>
         </div>
 
+        <AnimatePresence mode="wait">
         {activeTab === "store" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <motion.div key="store" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                 <section className="bg-white dark:bg-black rounded-[3rem] p-10 shadow-sm border dark:border-white/5 space-y-10">
                     <div className="flex flex-col md:flex-row gap-10">
                         <label className="w-40 h-40 rounded-[3rem] bg-slate-50 dark:bg-zinc-900 border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden group transition-all" style={localState.bizImage ? { backgroundImage: `url(${localState.bizImage})`, backgroundSize: 'cover' } : undefined}>
-<<<<<<< HEAD
                             {!localState.bizImage && !isUploading && <Plus size={40} className="text-slate-200" />}
                             {isUploading && <RefreshCw size={40} className="text-emerald-500 animate-spin" />}
-                            <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => { if(e.target.files?.[0]) { const url = await uploadImageDirect(e.target.files[0], "branding"); if(url) updateLocalState("bizImage", url); } }} />
-=======
-                            {!localState.bizImage && <Plus size={40} className="text-slate-200" />}
                             <input type="file" className="hidden" onChange={async (e) => { if(e.target.files?.[0]) { const url = await uploadImageDirect(e.target.files[0], "branding"); if(url) updateLocalState("bizImage", url); } }} />
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
                         </label>
                         <div className="flex-1 space-y-6">
                             <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Brand Name</label><StableInput value={localState.bizName || ""} onChange={(v) => updateLocalState("bizName", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-5 font-black text-2xl uppercase italic outline-none border dark:border-white/5 focus:border-emerald-500" /></div>
@@ -486,7 +471,6 @@ export function BusinessView() {
                         </div>
                     </div>
                 </section>
-<<<<<<< HEAD
                 
                 {/* Product Manager */}
                 <section className="space-y-6">
@@ -512,33 +496,21 @@ export function BusinessView() {
                         ))}
                     </div>
                 </section>
-=======
-                {/* ... products section would go here ... */}
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
             </motion.div>
         )}
 
         {activeTab === "appearance" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-<<<<<<< HEAD
-                <Accordion id="themes" title="Brand Themes" subtitle="Full Identity Presets" icon={Sparkles}>
-=======
+            <motion.div key="design" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <Accordion id="themes" title="Elite Themes" subtitle="Full Brand Presets" icon={Sparkles}>
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <button onClick={() => applyTheme("lumina")} className="group relative overflow-hidden rounded-[2.5rem] border-2 border-slate-100 dark:border-white/5 p-10 text-left transition-all hover:border-[#C85A3F] bg-black">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#C85A3F]/20 blur-3xl group-hover:scale-150 transition-transform" />
                             <h4 className="text-2xl font-serif italic text-white mb-2">Lumina Luxe</h4>
-<<<<<<< HEAD
                             <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">Boutique Architectural Design.</p>
-=======
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Boutique Architectural Design.</p>
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
                         </button>
                         <button onClick={() => applyTheme("void")} className="group relative overflow-hidden rounded-[2.5rem] border-2 border-slate-100 dark:border-white/5 p-10 text-left transition-all hover:border-white bg-black">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl group-hover:scale-150 transition-transform" />
                             <h4 className="text-2xl font-mono text-white mb-2 uppercase tracking-tighter">Void Cinematic</h4>
-<<<<<<< HEAD
                             <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">Monospaced Glitch Depth.</p>
                         </button>
                     </div>
@@ -549,6 +521,12 @@ export function BusinessView() {
                 <Accordion id="catalog" title="Product Grid" subtitle="Immersive Gallery Views" icon={Layout}>
                     <TemplateSelector type="catalog" current={localState.catalogTemplateId || "catalog-1"} onChange={(v) => updateLocalState("catalogTemplateId", v)} />
                 </Accordion>
+                <Accordion id="about_tpl" title="About Section" subtitle="Brand Story Presets" icon={LayoutTemplate}>
+                    <TemplateSelector type="about" current={localState.aboutTemplateId || "about-1"} onChange={(v) => updateLocalState("aboutTemplateId", v)} />
+                </Accordion>
+                <Accordion id="footer_tpl" title="Footer Section" subtitle="Bottom Area Styles" icon={PanelBottom}>
+                    <TemplateSelector type="footer" current={localState.footerTemplateId || "footer-1"} onChange={(v) => updateLocalState("footerTemplateId", v)} />
+                </Accordion>
                 <Accordion id="visual" title="Design System" subtitle="Global Colors" icon={Palette}>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                         <StableColorPicker label="Accent" value={localState.accentColor || "#10b981"} onChange={(v) => updateLocalState("accentColor", v)} />
@@ -558,18 +536,6 @@ export function BusinessView() {
                         <div className="flex flex-col items-center justify-center"><DiceButton onClick={randomizePalette} /><span className="text-[8px] font-black uppercase text-slate-400 mt-2">Random</span></div>
                     </div>
                 </Accordion>
-=======
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Monospaced Glitch Depth.</p>
-                        </button>
-                    </div>
-                </Accordion>
-                <Accordion id="hero" title="Hero Designs" subtitle="24 High-Fidelity Layouts" icon={LayoutTemplate}>
-                    <TemplateSelector type="hero" current={localState.heroTemplateId || "hero-1"} onChange={(v) => updateLocalState("heroTemplateId", v)} />
-                </Accordion>
-                <Accordion id="catalog" title="Product Grid" subtitle="Immersive Shop Views" icon={Layout}>
-                    <TemplateSelector type="catalog" current={localState.catalogTemplateId || "catalog-1"} onChange={(v) => updateLocalState("catalogTemplateId", v)} />
-                </Accordion>
->>>>>>> bb59a8930a25d30bfaf5f4c42445014216d33e3f
             </motion.div>
         )}
       </main>
