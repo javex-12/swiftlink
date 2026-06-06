@@ -538,6 +538,20 @@ export function BusinessView() {
                 </Accordion>
             </motion.div>
         )}
+        
+        {activeTab === "inbox" && (
+            <motion.div key="inbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <section className="bg-white dark:bg-black rounded-[3rem] p-10 shadow-sm border dark:border-white/5">
+                    <h2 className="text-2xl font-black italic uppercase dark:text-white">Customer Reviews</h2>
+                    <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest">Manage public feedback and replies.</p>
+                    <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem] mt-10">
+                        <MessageSquare size={48} className="text-slate-200 mb-4" />
+                        <p className="text-[10px] font-black uppercase text-slate-400">No messages yet</p>
+                    </div>
+                </section>
+            </motion.div>
+        )}
+        </AnimatePresence>
       </main>
     </div>
   );

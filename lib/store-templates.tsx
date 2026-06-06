@@ -3,7 +3,7 @@
 import React from "react";
 import { 
   ArrowRight, Zap, Globe, Shield, Star, ShoppingBag, 
-  ChevronRight, ArrowUpRight, Instagram, Mail, Command, Eye,
+  ChevronRight, ArrowUpRight, Mail, Command, Eye,
   Layout, Sparkles, Truck, MessageSquare, Package, Clock, CheckCircle2,
   Camera, Smartphone, Box, TrendingUp, Grid, List, Layers, Plus, Minus
 } from "lucide-react";
@@ -1040,7 +1040,6 @@ export const FooterTemplates: Record<string, React.FC<any>> = {
                 </div>
                 <div className="space-y-8 text-center md:text-right flex flex-col items-center md:items-end">
                     <div className="flex gap-10 opacity-60">
-                        <Instagram size={24} style={{ color: contrast }} />
                         <Globe size={24} style={{ color: contrast }} />
                         <Mail size={24} style={{ color: contrast }} />
                     </div>
