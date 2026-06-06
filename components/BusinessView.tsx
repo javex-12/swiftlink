@@ -233,7 +233,7 @@ export function BusinessView() {
       { id:"catalog-1",  name:"Clean Grid",      desc:"Classic product grid",          dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#f8f8f8"/> },
       { id:"catalog-lumina",  name:"Editorial Luxe",   desc:"Heavy shadows serif list",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#0A0A0A"/> },
       { id:"catalog-void",  name:"Glitch Matrix",   desc:"Mono grayscale grid",     dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#000"/> },
-      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list format",     dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="#white"/> },
+      { id:"catalog-2",  name:"Magazine List",   desc:"Horizontal list format",     dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
       { id:"catalog-10", name:"Raw Brutalist",       desc:"Bold black borders",           dark:false, isPro:true,  icon:<rect x="0" y="0" width="60" height="40" fill="#fffbeb"/> },
       { id:"catalog-masonry", name:"Masonry",      desc:"Asymmetric masonry",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="#f1f5f9"/> },
       { id:"catalog-spec", name:"Spec Sheet",      desc:"Detailed table list",          dark:false, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
@@ -246,10 +246,10 @@ export function BusinessView() {
     about: [
       { id:"about-1",  name:"Story Card",    desc:"Clean typography card",         dark:false, isPro:false, icon:<rect x="0" y="0" width="60" height="40" fill="white"/> },
       { id:"about-brutalist",  name:"The Mission",  desc:"Heavy borders bold type",       dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/> },
-      { id:"about-editorial",  name:"Editorial Split",  desc:"High-fashion split",       dark:false, isPro:true, icon:<rect x="0" y="0" width="30" height="40" fill="#111"/><rect x="30" y="0" width="30" height="40" fill="#white"/> },
+      { id:"about-editorial",  name:"Editorial Split",  desc:"High-fashion split",       dark:false, isPro:true, icon:<><rect x="0" y="0" width="30" height="40" fill="#111"/><rect x="30" y="0" width="30" height="40" fill="white"/></> },
       { id:"about-quote",  name:"Center Quote",  desc:"Massive brand quote",       dark:false, isPro:false, icon:<rect x="10" y="15" width="40" height="10" fill="#eee"/> },
-      { id:"about-pillars",  name:"Grid Pillars",  desc:"3 column core values",       dark:false, isPro:true, icon:<rect x="5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="22.5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="40" y="10" width="15" height="20" fill="#f8f8f8"/> },
-      { id:"about-tech",  name:"Cyber Block",  desc:"Terminal manifesto",       dark:true, isPro:true, icon:<rect x="0" y="0" width="60" height="40" fill="black"/><rect x="5" y="5" width="50" height="1" fill="#10b981"/> },
+      { id:"about-pillars",  name:"Grid Pillars",  desc:"3 column core values",       dark:false, isPro:true, icon:<><rect x="5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="22.5" y="10" width="15" height="20" fill="#f8f8f8"/><rect x="40" y="10" width="15" height="20" fill="#f8f8f8"/></> },
+      { id:"about-tech",  name:"Cyber Block",  desc:"Terminal manifesto",       dark:true, isPro:true, icon:<><rect x="0" y="0" width="60" height="40" fill="black"/><rect x="5" y="5" width="50" height="1" fill="#10b981"/></> },
       { id:"about-industrial",  name:"Build Log",  desc:"Heavy border industrial",       dark:false, isPro:true, icon:<rect x="5" y="5" width="50" height="30" fill="none" stroke="black" strokeWidth="2"/> },
     ],
     footer: [
@@ -463,7 +463,7 @@ export function BusinessView() {
                         <label className="w-40 h-40 rounded-[3rem] bg-slate-50 dark:bg-zinc-900 border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden group transition-all" style={localState.bizImage ? { backgroundImage: `url(${localState.bizImage})`, backgroundSize: 'cover' } : undefined}>
                             {!localState.bizImage && !isUploading && <Plus size={40} className="text-slate-200" />}
                             {isUploading && <RefreshCw size={40} className="text-emerald-500 animate-spin" />}
-                            <input type="file" className="hidden" onChange={async (e) => { if(e.target.files?.[0]) { const url = await uploadImageDirect(e.target.files[0], "branding"); if(url) updateLocalState("bizImage", url); } }} />
+                            <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => { if(e.target.files?.[0]) { const url = await uploadImageDirect(e.target.files[0], "branding"); if(url) updateLocalState("bizImage", url); } }} />
                         </label>
                         <div className="flex-1 space-y-6">
                             <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Brand Name</label><StableInput value={localState.bizName || ""} onChange={(v) => updateLocalState("bizName", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-5 font-black text-2xl uppercase italic outline-none border dark:border-white/5 focus:border-emerald-500" /></div>
