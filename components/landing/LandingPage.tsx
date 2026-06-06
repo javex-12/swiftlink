@@ -62,10 +62,14 @@ const LightweightHeroVisual = () => (
   </div>
 );
 
+import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { Sun, Moon } from "lucide-react";
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useSwiftLink();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -77,34 +81,52 @@ const Navbar = () => {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-4 sm:px-6 py-4",
-        isScrolled ? "bg-white/90 backdrop-blur-md border-b border-slate-100 py-3 shadow-sm" : "bg-transparent"
+        isScrolled ? "bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-slate-100 dark:border-white/10 py-3 shadow-sm" : "bg-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
-          <span className="text-xl font-black tracking-tight text-slate-900 uppercase italic">
+          <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">
             SwiftLink
           </span>
         </div>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm font-bold text-slate-600 hover:text-emerald-500 transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm font-bold text-slate-600 hover:text-emerald-500 transition-colors">How it works</a>
-          <a href="#pricing" className="text-sm font-bold text-slate-600 hover:text-emerald-500 transition-colors">Pricing</a>
-          <Link
-            href="/signup"
-            className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-emerald-500 transition-all active:scale-95 shadow-lg shadow-slate-200"
-          >
-            Get Started
-          </Link>
+          <a href="#features" className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-500 transition-colors">Features</a>
+          <a href="#how-it-works" className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-500 transition-colors">How it works</a>
+          <a href="#pricing" className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-500 transition-colors">Pricing</a>
+          
+          <div className="flex items-center gap-4 border-l border-slate-200 dark:border-white/10 pl-8">
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-400"
+              title={theme === "light" ? "Dark Mode" : "Light Mode"}
+            >
+              {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+            <Link
+              href="/signup"
+              className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-lg"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
 
         {/* Mobile Toggle */}
-        <button className="md:hidden p-2 text-slate-900" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <button 
+            onClick={toggleTheme}
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-400"
+          >
+            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          <button className="p-2 text-slate-900 dark:text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -114,11 +136,11 @@ const Navbar = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 bg-white border-b border-slate-100 px-6 py-6 md:hidden flex flex-col gap-5 shadow-xl"
+            className="absolute top-full left-0 right-0 bg-white dark:bg-black border-b border-slate-100 dark:border-white/10 px-6 py-8 md:hidden flex flex-col gap-5 shadow-xl"
           >
-            <a href="#features" className="text-base font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
-            <a href="#how-it-works" className="text-base font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>How it works</a>
-            <a href="#pricing" className="text-base font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            <a href="#features" className="text-base font-bold text-slate-700 dark:text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+            <a href="#how-it-works" className="text-base font-bold text-slate-700 dark:text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>How it works</a>
+            <a href="#pricing" className="text-base font-bold text-slate-700 dark:text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
             <Link
               href="/signup"
               className="bg-emerald-500 text-white py-4 rounded-2xl text-center font-black text-base active:scale-95 transition-transform"

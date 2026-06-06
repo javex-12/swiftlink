@@ -164,7 +164,7 @@ export function SwiftLinkProvider({
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
@@ -176,10 +176,10 @@ export function SwiftLinkProvider({
       if (saved === "dark") document.documentElement.classList.add("dark");
       else document.documentElement.classList.remove("dark");
     } else {
-      // DEFAULT TO DARK
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("swiftlink_theme", "dark");
+      // DEFAULT TO LIGHT
+      setTheme("light");
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("swiftlink_theme", "light");
     }
   }, []);
 

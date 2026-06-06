@@ -61,7 +61,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     cartItemCount,
     cartOpen,
     toggleCartDrawer,
-    setFeedbackOpen
+    setFeedbackOpen,
+    theme
   } = useSwiftLink();
 
   const showOverlay = loadingOverlay && pathname !== "/";
@@ -74,7 +75,10 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <motion.div 
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
-            className="fixed inset-0 bg-[#020617] z-[150] flex flex-col items-center justify-center"
+            className={cn(
+              "fixed inset-0 z-[150] flex flex-col items-center justify-center transition-colors duration-500",
+              theme === "dark" ? "bg-[#020617]" : "bg-white"
+            )}
           >
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
@@ -98,8 +102,14 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
               transition={{ delay: 0.5 }}
               className="mt-12 text-center"
             >
-              <h2 className="text-white text-xl font-black tracking-[0.2em] uppercase italic">SwiftLink<span className="text-emerald-500">Pro</span></h2>
-              <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400 animate-pulse">
+              <h2 className={cn(
+                "text-xl font-black tracking-[0.2em] uppercase italic",
+                theme === "dark" ? "text-white" : "text-slate-900"
+              )}>SwiftLink<span className="text-emerald-500">Pro</span></h2>
+              <p className={cn(
+                "mt-2 text-[10px] font-bold uppercase tracking-[0.4em] animate-pulse",
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              )}>
                 Getting your workspace ready...
               </p>
             </motion.div>
