@@ -34,89 +34,89 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black flex flex-col lg:flex-row font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col lg:flex-row font-sans transition-colors duration-300">
       {/* Sidebar Navigation */}
       <ProSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen relative">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         
-        {/* Unified Top Header - Slick Minimalist */}
-        <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/60 backdrop-blur-xl border-b border-slate-100 dark:border-white/[0.03] px-6 md:px-10 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-6">
+        {/* Unified Top Header */}
+        <header className="sticky top-0 z-40 bg-white dark:bg-[#020617]/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.03] px-4 md:px-8 py-4 flex items-center justify-between shadow-sm shrink-0">
+          <div className="flex items-center gap-4">
              <button
                type="button"
                onClick={() => setMobileOpen(true)}
-               className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-all cursor-pointer"
+               className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 transition-colors shadow-lg"
              >
                <Menu className="h-5 w-5" />
              </button>
              <div className="flex flex-col">
-               <h1 className="text-xs md:text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest italic">
+               <h1 className="text-base md:text-lg font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight italic">
                   {getPageTitle()}
                </h1>
-               <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Live Status</span>
+               <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">System Live</span>
                </div>
              </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-6">
-             <div className="hidden md:flex items-center bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-full px-5 py-2 text-slate-400 focus-within:border-emerald-500/30 transition-all focus-within:bg-white dark:focus-within:bg-white/10">
-                <Search size={14} className="opacity-50" />
-                <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-[10px] font-bold px-3 w-32 text-slate-900 dark:text-white placeholder:text-slate-500" />
+          <div className="flex items-center gap-2 md:gap-4">
+             <div className="hidden md:flex items-center bg-slate-50 dark:bg-[#121214] border border-slate-100 dark:border-white/[0.05] rounded-full px-4 py-2 text-slate-400 focus-within:border-slate-300 dark:focus-within:border-emerald-500/30 transition-all focus-within:bg-white dark:focus-within:bg-[#121214] shadow-inner">
+                <Search size={16} />
+                <input type="text" placeholder="Global search..." className="bg-transparent border-none outline-none text-xs font-bold px-3 w-40 text-slate-900 dark:text-white" />
              </div>
              
              <div className="relative">
                 <button 
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="w-10 h-10 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all flex items-center justify-center relative cursor-pointer"
+                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-[#121214] text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center relative shadow-sm border border-slate-100 dark:border-white/[0.05]"
                 >
                    <Bell size={18} />
                    {(state.notifications || []).some(n => !n.read) && (
-                      <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                      <div className="absolute top-2 right-2.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white dark:border-[#09090b] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                    )}
                 </button>
 
                 <AnimatePresence>
                    {notificationsOpen && (
                       <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                        className="absolute top-14 right-0 w-80 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden"
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute top-12 right-0 w-80 bg-white dark:bg-[#121214] rounded-[2rem] shadow-2xl border border-slate-100 dark:border-white/[0.05] z-50 overflow-hidden"
                       >
-                         <div className="p-6 border-b border-slate-100 dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-black/20">
-                            <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Updates</h3>
-                            <button onClick={markAllRead} className="text-[8px] font-black text-emerald-500 uppercase hover:underline cursor-pointer">Mark all read</button>
+                         <div className="p-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-black">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Notifications</h3>
+                            <button onClick={markAllRead} className="text-[9px] font-black text-emerald-500 uppercase hover:underline">Mark all read</button>
                          </div>
-                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                         <div className="max-h-96 overflow-y-auto custom-scrollbar">
                             {(state.notifications || []).length === 0 ? (
-                               <div className="p-12 text-center">
-                                  <Bell className="mx-auto text-slate-200 dark:text-white/5 mb-4" size={32} />
-                                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">No updates yet</p>
+                               <div className="p-10 text-center">
+                                  <Bell className="mx-auto text-slate-100 dark:text-slate-800 mb-3" size={32} />
+                                  <p className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest">No alerts yet</p>
                                </div>
                             ) : (
                                state.notifications.map((n) => (
-                                  <div key={n.id} className={cn("p-5 border-b border-slate-50 dark:border-white/5 flex gap-4 transition-all cursor-pointer", !n.read ? "bg-emerald-500/[0.03]" : "hover:bg-slate-50 dark:hover:bg-white/[0.02]")}>
+                                  <div key={n.id} className={cn("p-4 border-b border-slate-50 dark:border-slate-800 flex gap-4 transition-colors", !n.read ? "bg-emerald-50/30 dark:bg-emerald-500/5" : "hover:bg-slate-50 dark:hover:bg-slate-800/50")}>
                                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", 
-                                        n.type === "order" ? "bg-blue-500/10 text-blue-500" : 
-                                        n.type === "message" ? "bg-emerald-500/10 text-emerald-500" : "bg-purple-500/10 text-purple-500"
+                                        n.type === "order" ? "bg-blue-50 dark:bg-blue-500/10 text-blue-500" : 
+                                        n.type === "message" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500" : "bg-purple-50 dark:bg-purple-500/10 text-purple-500"
                                      )}>
-                                        {n.type === "order" ? <Package size={16} /> : n.type === "message" ? <MessageSquare size={16} /> : <TrendingUp size={16} />}
+                                        {n.type === "order" ? <Package size={18} /> : n.type === "message" ? <MessageSquare size={18} /> : <TrendingUp size={18} />}
                                      </div>
                                      <div className="min-w-0">
-                                        <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic">{n.title}</p>
-                                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
+                                        <p className="text-xs font-black text-slate-900 dark:text-white truncate leading-tight uppercase italic">{n.title}</p>
+                                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{n.message}</p>
                                         <p className="text-[8px] font-bold text-slate-300 dark:text-slate-600 mt-2 uppercase tracking-widest">{n.timestamp}</p>
                                      </div>
                                   </div>
                                ))
                             )}
                          </div>
-                         <div className="p-5 text-center border-t border-slate-100 dark:border-white/10">
-                            <button className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">See All Activity</button>
+                         <div className="p-4 text-center border-t border-slate-50 dark:border-slate-800">
+                            <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 dark:hover:text-white">View All Activity</button>
                          </div>
                       </motion.div>
                    )}
@@ -125,7 +125,9 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
 
              <Link
                href="/account"
-               className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 overflow-hidden hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
+               className="w-10 h-10 rounded-full bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900 text-[10px] font-black shadow-lg overflow-hidden border-2 border-slate-100 dark:border-slate-800"
+               aria-label="Account"
+               title="Account"
              >
                {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <User size={16} />}
              </Link>
@@ -133,7 +135,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content Section */}
-        <main className="flex-1 flex flex-col p-6 md:p-10 animate-fade-in-up">
+        <main className="flex-1 flex flex-col p-4 md:p-8 animate-fade-in">
            {children}
         </main>
       </div>

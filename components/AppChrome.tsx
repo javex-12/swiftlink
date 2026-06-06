@@ -61,8 +61,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     cartItemCount,
     cartOpen,
     toggleCartDrawer,
-    setFeedbackOpen,
-    theme
+    setFeedbackOpen
   } = useSwiftLink();
 
   const showOverlay = loadingOverlay && pathname !== "/";
@@ -75,10 +74,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <motion.div 
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
-            className={cn(
-              "fixed inset-0 z-[150] flex flex-col items-center justify-center transition-colors duration-500",
-              theme === "dark" ? "bg-[#020617]" : "bg-white"
-            )}
+            className="fixed inset-0 bg-[#020617] z-[150] flex flex-col items-center justify-center"
           >
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
@@ -102,14 +98,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
               transition={{ delay: 0.5 }}
               className="mt-12 text-center"
             >
-              <h2 className={cn(
-                "text-xl font-black tracking-[0.2em] uppercase italic",
-                theme === "dark" ? "text-white" : "text-slate-900"
-              )}>SwiftLink<span className="text-emerald-500">Pro</span></h2>
-              <p className={cn(
-                "mt-2 text-[10px] font-bold uppercase tracking-[0.4em] animate-pulse",
-                theme === "dark" ? "text-slate-400" : "text-slate-500"
-              )}>
+              <h2 className="text-white text-xl font-black tracking-[0.2em] uppercase italic">SwiftLink<span className="text-emerald-500">Pro</span></h2>
+              <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.4em] text-slate-400 animate-pulse">
                 Getting your workspace ready...
               </p>
             </motion.div>
@@ -119,10 +109,10 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
       <div
         id="hand-cursor"
-        className={`fixed ${handHidden ? "hidden" : ""} top-0 left-0 ${handClick ? "hand-click" : ""} z-[1000] mix-blend-difference pointer-events-none transition-all duration-300`}
+        className={`fixed ${handHidden ? "hidden" : ""} top-0 left-0 ${handClick ? "hand-click" : ""}`}
         style={handStyle}
       >
-        <i className="fas fa-hand-pointer text-3xl text-white" />
+        <i className="fas fa-hand-pointer text-3xl text-yellow-400" />
       </div>
 
       <TourOverlay />
