@@ -587,88 +587,183 @@ const Footer = () => (
 
 const Preloader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
+  const [digitDisplay, setDigitDisplay] = useState("000");
 
   useEffect(() => {
+    const duration = 2400;
     const start = Date.now();
-    const duration = 2000; // 2 seconds loading animation
     const interval = setInterval(() => {
       const elapsed = Date.now() - start;
       const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
       setProgress(pct);
+      // Scramble digits effect
+      const scramble = Math.floor(Math.random() * 900 + 100).toString();
+      setDigitDisplay(pct < 100 ? scramble : "100");
       if (elapsed >= duration) {
         clearInterval(interval);
-        setTimeout(onComplete, 300);
+        setDigitDisplay("100");
+        setTimeout(onComplete, 500);
       }
-    }, 30);
+    }, 40);
     return () => clearInterval(interval);
   }, [onComplete]);
 
-  const loadingTexts = [
-    "INITIALIZING GRAPHICS ENGINE...",
-    "STABILIZING CORE MODULES...",
-    "OPTIMIZING 3D ENVIRONMENT...",
-    "LOADING PREMIUM WORKSPACE...",
-    "PRO HUB READY!"
-  ];
-
-  const currentTextIndex = Math.min(
-    loadingTexts.length - 1,
-    Math.floor((progress / 100) * loadingTexts.length)
-  );
+  // Particle orbs
+  const orbs = Array.from({ length: 6 }, (_, i) => ({
+    id: i,
+    x: 20 + i * 12,
+    delay: i * 0.18,
+    size: i % 2 === 0 ? 3 : 2,
+  }));
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.6, ease: "easeInOut" } }}
-      className="fixed inset-0 bg-[#020617] z-[200] flex flex-col items-center justify-center select-none"
+      exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } }}
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center select-none overflow-hidden"
+      style={{ background: "radial-gradient(ellipse at 60% 40%, #041a12 0%, #020617 60%, #000 100%)" }}
     >
-      {/* Radial ambient glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12),transparent_60%)]" />
-      
-      {/* Glowing Noise layer */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay pointer-events-none" />
+      {/* Deep grid lines */}
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
 
-      <div className="relative z-10 flex flex-col items-center max-w-sm w-full px-6">
-        {/* Glowing Logo */}
-        <motion.div
-          animate={{
-            scale: [0.95, 1.05, 0.95],
-            opacity: [0.8, 1, 0.8]
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="relative mb-12"
-        >
-          <div className="absolute inset-0 bg-emerald-500/20 rounded-3xl blur-2xl animate-pulse" />
-          <div className="w-24 h-24 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md shadow-2xl relative z-10">
-            <img src="/logo.png" alt="SwiftLink" className="w-14 h-14 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
-          </div>
-        </motion.div>
+      {/* Glowing focal point */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-emerald-500/[0.06] blur-[120px] pointer-events-none" />
 
-        {/* Title */}
-        <h2 className="text-white text-2xl font-black tracking-[0.25em] uppercase italic text-center mb-1">
-          SWIFTLINK<span className="text-emerald-400">PRO</span>
-        </h2>
-        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 text-center mb-10">
-          Command Center Workspace
-        </p>
-
-        {/* Custom Progress Bar */}
-        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-4 border border-white/[0.02]">
+      {/* Orbiting particles around logo */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[140px] w-0 h-0 pointer-events-none">
+        {orbs.map((orb) => (
           <motion.div
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
-            style={{ width: `${progress}%` }}
+            key={orb.id}
+            className="absolute rounded-full bg-emerald-400"
+            style={{ width: orb.size, height: orb.size }}
+            animate={{
+              x: [
+                Math.cos((orb.id / 6) * Math.PI * 2) * 64,
+                Math.cos(((orb.id + 3) / 6) * Math.PI * 2) * 64,
+                Math.cos(((orb.id + 6) / 6) * Math.PI * 2) * 64,
+              ],
+              y: [
+                Math.sin((orb.id / 6) * Math.PI * 2) * 64,
+                Math.sin(((orb.id + 3) / 6) * Math.PI * 2) * 64,
+                Math.sin(((orb.id + 6) / 6) * Math.PI * 2) * 64,
+              ],
+              opacity: [0.2, 0.9, 0.2],
+              scale: [0.6, 1.4, 0.6],
+            }}
+            transition={{
+              duration: 3.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: orb.delay,
+            }}
           />
+        ))}
+      </div>
+
+      {/* === Core UI === */}
+      <div className="relative z-10 flex flex-col items-center">
+
+        {/* Chain-link SVG mark */}
+        <div className="relative mb-8">
+          {/* Outer glow ring */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            className="absolute -inset-3 rounded-full border border-emerald-500/20 border-dashed"
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+            className="absolute -inset-6 rounded-full border border-emerald-500/10 border-dashed"
+          />
+
+          {/* Logo box */}
+          <motion.div
+            animate={{ boxShadow: ["0 0 0px rgba(16,185,129,0.2)", "0 0 40px rgba(16,185,129,0.5)", "0 0 0px rgba(16,185,129,0.2)"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/40 border border-emerald-500/30 backdrop-blur-xl flex items-center justify-center"
+          >
+            <img src="/logo.png" alt="SwiftLink" className="w-11 h-11" />
+          </motion.div>
         </div>
 
-        {/* Percentage Counter and Text */}
-        <div className="w-full flex justify-between items-center text-[10px] font-mono font-black tracking-wider text-slate-400">
-          <span className="text-emerald-400/80 animate-pulse">
-            {loadingTexts[currentTextIndex]}
-          </span>
-          <span className="tabular-nums text-white">
-            {progress}%
-          </span>
+        {/* Brand wordmark — letters reveal one by one */}
+        <div className="flex items-end gap-[2px] mb-1">
+          {"SWIFTLINK".split("").map((char, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="text-white font-black text-xl tracking-[0.18em] uppercase"
+            >
+              {char}
+            </motion.span>
+          ))}
+          <motion.span
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            className="text-emerald-400 font-black text-xl tracking-[0.18em] uppercase ml-1"
+          >
+            PRO
+          </motion.span>
         </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="text-[8px] font-black uppercase tracking-[0.55em] text-emerald-500/50 mb-14"
+        >
+          Commerce Infrastructure
+        </motion.p>
+
+        {/* === Scrambling counter === */}
+        <div className="relative mb-6 flex items-baseline gap-2">
+          <motion.span
+            key={digitDisplay}
+            initial={{ opacity: 0.4, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="font-mono font-black text-5xl text-white tabular-nums leading-none"
+          >
+            {progress}
+          </motion.span>
+          <span className="font-mono font-black text-2xl text-emerald-400 leading-none">%</span>
+        </div>
+
+        {/* === Segmented progress track === */}
+        <div className="w-[240px] flex gap-1.5 mb-3">
+          {Array.from({ length: 20 }).map((_, i) => {
+            const filled = (i / 20) * 100 <= progress;
+            return (
+              <motion.div
+                key={i}
+                className="flex-1 h-1 rounded-full"
+                animate={{
+                  backgroundColor: filled ? "rgb(16,185,129)" : "rgba(255,255,255,0.06)",
+                  boxShadow: filled ? "0 0 6px rgba(16,185,129,0.6)" : "none",
+                }}
+                transition={{ duration: 0.1 }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Status line */}
+        <motion.p
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+          className="text-[9px] font-mono font-bold uppercase tracking-[0.35em] text-emerald-400/70"
+        >
+          {progress < 30 ? "Initializing workspace..." : progress < 60 ? "Loading commerce engine..." : progress < 90 ? "Syncing your data..." : "Launching..."}
+        </motion.p>
       </div>
     </motion.div>
   );
