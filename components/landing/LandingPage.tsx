@@ -237,13 +237,13 @@ const Hero = () => {
           </div>
 
           {/* ── Right: Hero Visual ───────── */}
-          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center">
-            <div className="relative w-full max-w-[500px] aspect-square lg:aspect-auto lg:h-[700px]">
+          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center w-full">
+            <div className="relative w-full max-w-[550px] aspect-square flex items-center justify-center">
               {/* Background Glass Plate */}
-              <div className="absolute inset-0 bg-white/40 dark:bg-[#0f172a]/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[3rem] -rotate-2 transform hidden lg:block" />
+              <div className="absolute inset-0 bg-white/40 dark:bg-[#0f172a]/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[3rem] -rotate-2 transform" />
               
               <div className="relative h-full w-full flex items-center justify-center overflow-visible">
-                {isMobile || reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
+                {reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
 
                 {/* Modern Floating Badges */}
                 <motion.div
