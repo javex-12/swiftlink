@@ -587,183 +587,132 @@ const Footer = () => (
 
 const Preloader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
-  const [digitDisplay, setDigitDisplay] = useState("000");
 
   useEffect(() => {
-    const duration = 2400;
+    const duration = 2200;
     const start = Date.now();
     const interval = setInterval(() => {
       const elapsed = Date.now() - start;
       const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
       setProgress(pct);
-      // Scramble digits effect
-      const scramble = Math.floor(Math.random() * 900 + 100).toString();
-      setDigitDisplay(pct < 100 ? scramble : "100");
       if (elapsed >= duration) {
         clearInterval(interval);
-        setDigitDisplay("100");
-        setTimeout(onComplete, 500);
+        setTimeout(onComplete, 400);
       }
-    }, 40);
+    }, 30);
     return () => clearInterval(interval);
   }, [onComplete]);
-
-  // Particle orbs
-  const orbs = Array.from({ length: 6 }, (_, i) => ({
-    id: i,
-    x: 20 + i * 12,
-    delay: i * 0.18,
-    size: i % 2 === 0 ? 3 : 2,
-  }));
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } }}
+      exit={{ opacity: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }}
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center select-none overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 60% 40%, #041a12 0%, #020617 60%, #000 100%)" }}
+      style={{ background: "#010c07" }}
     >
-      {/* Deep grid lines */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+      {/* Subtle grid */}
+      <div className="absolute inset-0 opacity-[0.035]" style={{
+        backgroundImage: "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
+        backgroundSize: "48px 48px",
+      }} />
 
-      {/* Glowing focal point */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-emerald-500/[0.06] blur-[120px] pointer-events-none" />
+      {/* Single deep glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        style={{ width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)" }} />
 
-      {/* Orbiting particles around logo */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[140px] w-0 h-0 pointer-events-none">
-        {orbs.map((orb) => (
-          <motion.div
-            key={orb.id}
-            className="absolute rounded-full bg-emerald-400"
-            style={{ width: orb.size, height: orb.size }}
-            animate={{
-              x: [
-                Math.cos((orb.id / 6) * Math.PI * 2) * 64,
-                Math.cos(((orb.id + 3) / 6) * Math.PI * 2) * 64,
-                Math.cos(((orb.id + 6) / 6) * Math.PI * 2) * 64,
-              ],
-              y: [
-                Math.sin((orb.id / 6) * Math.PI * 2) * 64,
-                Math.sin(((orb.id + 3) / 6) * Math.PI * 2) * 64,
-                Math.sin(((orb.id + 6) / 6) * Math.PI * 2) * 64,
-              ],
-              opacity: [0.2, 0.9, 0.2],
-              scale: [0.6, 1.4, 0.6],
-            }}
-            transition={{
-              duration: 3.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: orb.delay,
-            }}
-          />
-        ))}
-      </div>
+      {/* Core content */}
+      <div className="relative z-10 flex flex-col items-center" style={{ width: 280 }}>
 
-      {/* === Core UI === */}
-      <div className="relative z-10 flex flex-col items-center">
-
-        {/* Chain-link SVG mark */}
-        <div className="relative mb-8">
-          {/* Outer glow ring */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            className="absolute -inset-3 rounded-full border border-emerald-500/20 border-dashed"
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-            className="absolute -inset-6 rounded-full border border-emerald-500/10 border-dashed"
-          />
-
+        {/* Compact logo + wordmark row */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center gap-3 mb-10"
+        >
           {/* Logo box */}
           <motion.div
-            animate={{ boxShadow: ["0 0 0px rgba(16,185,129,0.2)", "0 0 40px rgba(16,185,129,0.5)", "0 0 0px rgba(16,185,129,0.2)"] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/40 border border-emerald-500/30 backdrop-blur-xl flex items-center justify-center"
+            animate={{ boxShadow: ["0 0 0px rgba(16,185,129,0.15)", "0 0 20px rgba(16,185,129,0.4)", "0 0 0px rgba(16,185,129,0.15)"] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="flex items-center justify-center"
+            style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
           >
-            <img src="/logo.png" alt="SwiftLink" className="w-11 h-11" />
+            <img src="/logo.png" alt="SwiftLink" style={{ width: 22, height: 22 }} />
           </motion.div>
-        </div>
 
-        {/* Brand wordmark — letters reveal one by one */}
-        <div className="flex items-end gap-[2px] mb-1">
-          {"SWIFTLINK".split("").map((char, i) => (
+          {/* Name block */}
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1.5">
+              <div className="flex gap-[1px]">
+                {"SWIFTLINK".split("").map((char, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.04 * i + 0.1, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-white font-black"
+                    style={{ fontSize: 17, letterSpacing: "0.1em", lineHeight: 1 }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+              <motion.span
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.55, duration: 0.3 }}
+                className="font-black"
+                style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.1em", lineHeight: 1 }}
+              >
+                PRO
+              </motion.span>
+            </div>
             <motion.span
-              key={i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="text-white font-black text-xl tracking-[0.18em] uppercase"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.75 }}
+              style={{ fontSize: 7, color: "rgba(16,185,129,0.4)", letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 700, marginTop: 3 }}
             >
-              {char}
+              Commerce OS
             </motion.span>
-          ))}
-          <motion.span
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ delay: 0.6, duration: 0.4 }}
-            className="text-emerald-400 font-black text-xl tracking-[0.18em] uppercase ml-1"
-          >
-            PRO
-          </motion.span>
-        </div>
+          </div>
+        </motion.div>
 
-        <motion.p
+        {/* Progress section */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
-          className="text-[8px] font-black uppercase tracking-[0.55em] text-emerald-500/50 mb-14"
+          transition={{ delay: 0.4 }}
+          className="w-full flex flex-col gap-2.5"
         >
-          Commerce Infrastructure
-        </motion.p>
+          {/* Razor-thin progress track */}
+          <div className="w-full overflow-hidden" style={{ height: 1.5, borderRadius: 99, background: "rgba(255,255,255,0.05)" }}>
+            <div
+              className="h-full"
+              style={{
+                width: `${progress}%`,
+                borderRadius: 99,
+                background: "linear-gradient(90deg, #059669, #10b981, #34d399)",
+                boxShadow: "0 0 8px rgba(16,185,129,0.7)",
+                transition: "width 0.04s linear",
+              }}
+            />
+          </div>
 
-        {/* === Scrambling counter === */}
-        <div className="relative mb-6 flex items-baseline gap-2">
-          <motion.span
-            key={digitDisplay}
-            initial={{ opacity: 0.4, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="font-mono font-black text-5xl text-white tabular-nums leading-none"
-          >
-            {progress}
-          </motion.span>
-          <span className="font-mono font-black text-2xl text-emerald-400 leading-none">%</span>
-        </div>
-
-        {/* === Segmented progress track === */}
-        <div className="w-[240px] flex gap-1.5 mb-3">
-          {Array.from({ length: 20 }).map((_, i) => {
-            const filled = (i / 20) * 100 <= progress;
-            return (
-              <motion.div
-                key={i}
-                className="flex-1 h-1 rounded-full"
-                animate={{
-                  backgroundColor: filled ? "rgb(16,185,129)" : "rgba(255,255,255,0.06)",
-                  boxShadow: filled ? "0 0 6px rgba(16,185,129,0.6)" : "none",
-                }}
-                transition={{ duration: 0.1 }}
-              />
-            );
-          })}
-        </div>
-
-        {/* Status line */}
-        <motion.p
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-          className="text-[9px] font-mono font-bold uppercase tracking-[0.35em] text-emerald-400/70"
-        >
-          {progress < 30 ? "Initializing workspace..." : progress < 60 ? "Loading commerce engine..." : progress < 90 ? "Syncing your data..." : "Launching..."}
-        </motion.p>
+          {/* Status + counter row */}
+          <div className="flex items-center justify-between">
+            <motion.span
+              animate={{ opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 1.6, repeat: Infinity }}
+              style={{ fontSize: 8, color: "rgba(16,185,129,0.55)", letterSpacing: "0.3em", textTransform: "uppercase", fontWeight: 700, fontFamily: "monospace" }}
+            >
+              {progress < 35 ? "Initializing" : progress < 70 ? "Loading" : progress < 95 ? "Almost ready" : "Launching"}
+            </motion.span>
+            <span style={{ fontSize: 11, color: "#fff", fontFamily: "monospace", fontWeight: 900, letterSpacing: "0.05em" }}>
+              {String(progress).padStart(3, "0")}
+            </span>
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );
