@@ -19,14 +19,33 @@ import { CustomerStorefrontPreview } from "./CustomerStorefront";
 import { CountrySelector } from "./CountrySelector";
 
 const PRESET_PALETTES = [
-    { name: "Emerald (Default)", accent: "#10b981", bg: "#f2f2f7", surface: "#ffffff", text: "#111827", btn: "#10b981" },
-    { name: "Midnight Indigo", accent: "#6366f1", bg: "#020617", surface: "#0f172a", text: "#f8fafc", btn: "#6366f1" },
-    { name: "Luxury Gold", accent: "#d4af37", bg: "#0a0a0a", surface: "#161616", text: "#ffffff", btn: "#d4af37" },
-    { name: "Rose Garden", accent: "#e11d48", bg: "#fff1f2", surface: "#ffffff", text: "#881337", btn: "#e11d48" },
-    { name: "Slate & Amber", accent: "#f59e0b", bg: "#f8fafc", surface: "#ffffff", text: "#0f172a", btn: "#0f172a" },
-    { name: "Deep Forest", accent: "#059669", bg: "#f0fdf4", surface: "#ffffff", text: "#064e3b", btn: "#059669" },
-    { name: "Cyberpunk", accent: "#ff00ff", bg: "#050505", surface: "#111111", text: "#00ffff", btn: "#ff00ff" },
-    { name: "Minimalist", accent: "#000000", bg: "#ffffff", surface: "#fafafa", text: "#000000", btn: "#000000" },
+    // Darks
+    { name: "Emerald (Default)",  accent: "#10b981", bg: "#f2f2f7", surface: "#ffffff", text: "#111827", btn: "#10b981" },
+    { name: "Midnight Indigo",    accent: "#6366f1", bg: "#020617", surface: "#0f172a", text: "#f8fafc",  btn: "#6366f1" },
+    { name: "Luxury Gold",        accent: "#d4af37", bg: "#0a0a0a", surface: "#161616", text: "#ffffff",  btn: "#d4af37" },
+    { name: "Cyberpunk",          accent: "#ff00ff", bg: "#050505", surface: "#111111", text: "#00ffff",  btn: "#ff00ff" },
+    { name: "Onyx Silver",        accent: "#94a3b8", bg: "#09090b", surface: "#18181b", text: "#e2e8f0",  btn: "#64748b" },
+    { name: "Neon Coral",         accent: "#ff6b6b", bg: "#0d0d0d", surface: "#1a1a1a", text: "#fff5f5",  btn: "#ff6b6b" },
+    { name: "Deep Violet",        accent: "#a855f7", bg: "#030014", surface: "#0e0e1f", text: "#ede9fe",  btn: "#a855f7" },
+    { name: "Burnt Orange Dark",  accent: "#f97316", bg: "#0c0a00", surface: "#1c1400", text: "#fff7ed",  btn: "#f97316" },
+    { name: "Ice Blue",           accent: "#38bdf8", bg: "#020c1b", surface: "#0d1b2e", text: "#e0f2fe",  btn: "#0ea5e9" },
+    { name: "Matrix Green",       accent: "#00ff41", bg: "#000000", surface: "#0a0a0a", text: "#00ff41",  btn: "#00cc33" },
+    // Lights
+    { name: "Rose Garden",        accent: "#e11d48", bg: "#fff1f2", surface: "#ffffff", text: "#881337",  btn: "#e11d48" },
+    { name: "Slate & Amber",      accent: "#f59e0b", bg: "#f8fafc", surface: "#ffffff", text: "#0f172a",  btn: "#0f172a" },
+    { name: "Deep Forest",        accent: "#059669", bg: "#f0fdf4", surface: "#ffffff", text: "#064e3b",  btn: "#059669" },
+    { name: "Minimalist",         accent: "#000000", bg: "#ffffff", surface: "#fafafa", text: "#000000",  btn: "#000000" },
+    { name: "Blush Nude",         accent: "#d97706", bg: "#fdf6ee", surface: "#ffffff", text: "#78350f",  btn: "#b45309" },
+    { name: "Lavender Dream",     accent: "#7c3aed", bg: "#faf5ff", surface: "#ffffff", text: "#4c1d95",  btn: "#7c3aed" },
+    { name: "Sky Fresh",          accent: "#0284c7", bg: "#f0f9ff", surface: "#ffffff", text: "#0c4a6e",  btn: "#0284c7" },
+    { name: "Pastel Peach",       accent: "#f43f5e", bg: "#fff8f7", surface: "#ffffff", text: "#9f1239",  btn: "#f43f5e" },
+    { name: "Sage & Stone",       accent: "#65a30d", bg: "#f7fee7", surface: "#ffffff", text: "#365314",  btn: "#65a30d" },
+    { name: "Brutalist BW",       accent: "#facc15", bg: "#ffffff", surface: "#f5f5f5", text: "#000000",  btn: "#000000" },
+    // Editorial / Neutral
+    { name: "Warm Concrete",      accent: "#10b981", bg: "#f5f1ec", surface: "#ede8e0", text: "#2c2c2c",  btn: "#10b981" },
+    { name: "Cool Graphite",      accent: "#06b6d4", bg: "#f0f4f8", surface: "#ffffff", text: "#1e293b",  btn: "#06b6d4" },
+    { name: "Terracotta",         accent: "#dc2626", bg: "#fff7ed", surface: "#ffffff", text: "#7c2d12",  btn: "#dc2626" },
+    { name: "Electric Teal",      accent: "#2dd4bf", bg: "#f0fdfa", surface: "#ffffff", text: "#0f4c44",  btn: "#0d9488" },
 ];
 
 // ... rest of StableInput and StableTextarea ...

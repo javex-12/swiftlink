@@ -46,25 +46,81 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
         // SCENE GENERATORS (1 to 10)
         // ---------------------------------------------------------
         if (type === 1) {
-            // Type 1: High-Fidelity Torus Knot
-            const geo = new THREE.TorusKnotGeometry(2, 0.6, 200, 32);
-            const mat = new THREE.MeshPhysicalMaterial({ 
-                color, 
-                metalness: 0.9, 
-                roughness: 0.1, 
+            // Type 1: LIQUID CHROME ORBITAL RINGS
+            // Three large tori at different orbital planes, slowly rotating around each other
+            const ringMat = new THREE.MeshPhysicalMaterial({
+                color,
+                metalness: 1.0,
+                roughness: 0.05,
                 clearcoat: 1.0,
-                clearcoatRoughness: 0.1,
-                emissive: color.clone().multiplyScalar(0.2),
+                clearcoatRoughness: 0.0,
+                emissive: color.clone().multiplyScalar(0.15),
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.92,
             });
-            const mesh = new THREE.Mesh(geo, mat);
-            scene.add(mesh);
-            objects.push({ update: (t: number) => { 
-                mesh.rotation.x = t * 0.2; 
-                mesh.rotation.y = t * 0.3;
-                mesh.scale.setScalar(1 + Math.sin(t) * 0.05);
-            } });
+            const group = new THREE.Group();
+            const ringConfigs = [
+                { r: 2.2, tube: 0.08, rx: 0, ry: 0, rz: 0, sr: 0.18, sp: 0.10 },
+                { r: 2.2, tube: 0.08, rx: Math.PI/2, ry: 0.4, rz: 0, sr: -0.12, sp: 0.07 },
+                { r: 2.2, tube: 0.08, rx: Math.PI/3, ry: Math.PI/3, rz: 0.6, sr: 0.08, sp: -0.05 },
+            ];
+            ringConfigs.forEach(({ r, tube, rx, ry, rz, sr, sp }) => {
+                const geo = new THREE.TorusGeometry(r, tube, 64, 200);
+                const mesh = new THREE.Mesh(geo, ringMat);
+                mesh.rotation.set(rx, ry, rz);
+                group.add(mesh);
+                objects.push({
+                    update: (t: number) => {
+                        mesh.rotation.x += sr * 0.01;
+                        mesh.rotation.y += sp * 0.01;
+                    }
+                });
+            });
+            // Central glowing orb
+            const coreGeo = new THREE.IcosahedronGeometry(0.35, 5);
+            const coreMat = new THREE.MeshPhysicalMaterial({
+                color,
+                emissive: color.clone().multiplyScalar(0.8),
+                metalness: 0.0,
+                roughness: 0.0,
+                transparent: true,
+                opacity: 0.95,
+            });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            group.add(core);
+            // Surrounding particle disc
+            const particleGeo = new THREE.BufferGeometry();
+            const particleCount = 400;
+            const pPos = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 1.5 + Math.random() * 1.5;
+                pPos[i * 3] = Math.cos(angle) * radius;
+                pPos[i * 3 + 1] = (Math.random() - 0.5) * 0.6;
+                pPos[i * 3 + 2] = Math.sin(angle) * radius;
+            }
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+            const particleMat = new THREE.PointsMaterial({
+                color,
+                size: 0.03,
+                transparent: true,
+                opacity: 0.5,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+            const particles = new THREE.Points(particleGeo, particleMat);
+            group.add(particles);
+            objects.push({ update: (t: number) => {
+                group.rotation.y = t * 0.08;
+                particles.rotation.y = -t * 0.04;
+                core.scale.setScalar(1 + Math.sin(t * 2) * 0.06);
+            }});
+            scene.add(group);
+            // Extra point light from the core
+            const coreLight = new THREE.PointLight(color, 2.5, 8);
+            coreLight.position.set(0, 0, 0);
+            scene.add(coreLight);
+            camera.position.z = 6;
         } 
         else if (type === 2) {
             // Type 2: Cyber Grid Floor
@@ -109,40 +165,91 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
             }
         }
         else if (type === 4) {
-            // Type 4: Abstract Organic Fluid Sphere
-            const geometry = new THREE.IcosahedronGeometry(2, 12);
-            const material = new THREE.MeshStandardMaterial({ 
-                color, 
-                flatShading: false,
-                wireframe: false,
-                metalness: 0.8,
-                roughness: 0.2,
-                emissive: color.clone().multiplyScalar(0.1)
+            // Type 4: LIVING STAR — morphing blob with glowing particle aura
+            camera.position.z = 5.5;
+
+            // Inner morphing blob — high subdivision for smooth deformation
+            const geometry = new THREE.IcosahedronGeometry(1.6, 7);
+            const material = new THREE.MeshPhysicalMaterial({
+                color,
+                metalness: 0.3,
+                roughness: 0.05,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.0,
+                emissive: color.clone().multiplyScalar(0.35),
+                transparent: true,
+                opacity: 0.92,
             });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-            
-            const positionAttribute = geometry.getAttribute('position');
-            const originalPositions = new Float32Array(positionAttribute.array);
+            const blob = new THREE.Mesh(geometry, material);
+            scene.add(blob);
+
+            const posAttr = geometry.getAttribute('position');
+            const origPos = new Float32Array(posAttr.array);
+
+            // Outer wireframe shell — thin translucent skin
+            const shellGeo = new THREE.IcosahedronGeometry(1.85, 4);
+            const shellMat = new THREE.MeshBasicMaterial({
+                color,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.08,
+            });
+            const shell = new THREE.Mesh(shellGeo, shellMat);
+            scene.add(shell);
+
+            // Glow particle cloud — 800 additive-blend points around blob
+            const auraGeo = new THREE.BufferGeometry();
+            const auraCount = 800;
+            const auraPos = new Float32Array(auraCount * 3);
+            for (let i = 0; i < auraCount; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const r = 2.0 + Math.random() * 1.2;
+                auraPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+                auraPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                auraPos[i * 3 + 2] = r * Math.cos(phi);
+            }
+            auraGeo.setAttribute('position', new THREE.BufferAttribute(auraPos, 3));
+            const auraMat = new THREE.PointsMaterial({
+                color,
+                size: 0.025,
+                transparent: true,
+                opacity: 0.55,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+            const aura = new THREE.Points(auraGeo, auraMat);
+            scene.add(aura);
+
+            // Dynamic point light that pulses
+            const blobLight = new THREE.PointLight(color, 3.5, 10);
+            scene.add(blobLight);
 
             objects.push({
                 update: (t: number) => {
-                    mesh.rotation.y += 0.005;
+                    blob.rotation.y += 0.006;
+                    blob.rotation.x += 0.002;
+                    aura.rotation.y -= 0.003;
+                    aura.rotation.x += 0.001;
+                    shell.rotation.y += 0.003;
+                    shell.rotation.z -= 0.001;
+
+                    // Blob morphing — layered sine waves
                     const positions = geometry.attributes.position.array as Float32Array;
                     for (let i = 0; i < positions.length; i += 3) {
-                        const x = originalPositions[i];
-                        const y = originalPositions[i+1];
-                        const z = originalPositions[i+2];
-                        
-                        const noise = Math.sin(x * 1.5 + t) * Math.cos(y * 1.5 + t) * Math.sin(z * 1.5 + t);
-                        const factor = 1 + noise * 0.15;
-                        
-                        positions[i] = x * factor;
-                        positions[i+1] = y * factor;
-                        positions[i+2] = z * factor;
+                        const ox = origPos[i], oy = origPos[i+1], oz = origPos[i+2];
+                        const n1 = Math.sin(ox * 2.1 + t * 0.9) * Math.cos(oy * 1.8 + t * 0.7) * Math.sin(oz * 2.0 + t * 0.8);
+                        const n2 = Math.sin(ox * 3.5 + t * 1.3) * Math.cos(oz * 3.5 + t * 1.1) * 0.5;
+                        const factor = 1 + (n1 * 0.18 + n2 * 0.08);
+                        positions[i]     = ox * factor;
+                        positions[i + 1] = oy * factor;
+                        positions[i + 2] = oz * factor;
                     }
                     geometry.attributes.position.needsUpdate = true;
                     geometry.computeVertexNormals();
+
+                    // Pulsing light
+                    blobLight.intensity = 3.0 + Math.sin(t * 2.5) * 1.2;
                 }
             });
         }

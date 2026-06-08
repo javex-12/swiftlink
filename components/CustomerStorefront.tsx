@@ -45,90 +45,108 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     const btnText = state.heroButtonText || "Shop Now";
     const image = state.heroImage || state.bizImage;
 
-    // Hero-1: Cinematic dark with animated 3D Sphere & ambient glow
+    // ─── Hero-1: BRUTALIST BLACKOUT ─────────────────────────────────────────────
+    // Raw brutalist editorial — oversized italic type, bold accent bar, hard shadows
     if (!templateId || templateId === "hero-1") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
-                {/* Animated 3D background */}
-                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
-                    <ThreeDBackground type={4} accentColor={accent} />
-                </div>
-                
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(5,5,5,0.95) 30%, rgba(5,5,5,0.2) 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:450, maxWidth: 800 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,10vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, background:"#050505", minHeight:500, display:"flex", flexDirection:"column" }}>
+                {/* Thick accent bar at top */}
+                <div style={{ height:8, background:accent, width:"100%", flexShrink:0 }} />
+                <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3rem 2.5rem", position:"relative", zIndex:10 }}>
+                    {/* Over-engineered label row */}
+                    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
+                        <div style={{ width:32, height:2, background:accent }} />
+                        <span style={{ color:accent, fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase" }}>New Drop</span>
+                    </div>
+                    {/* Stacked oversized type */}
+                    <h1 style={{ fontSize:"clamp(3.5rem,14vw,8rem)", fontWeight:950, lineHeight:0.85, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 2rem 0", textTransform:"uppercase", fontStyle:"italic", maxWidth:800 }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:500, maxWidth:450, lineHeight:1.6, marginBottom:"2.5rem" }}>
+                    {/* Subtitle in mono */}
+                    <p style={{ fontFamily:"monospace", fontSize:"0.85rem", color:"rgba(255,255,255,0.45)", fontWeight:400, maxWidth:420, lineHeight:1.7, marginBottom:"2.5rem", letterSpacing:"0.05em" }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 42px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 transition-transform">
-                        {btnText} <ArrowRight size={18} />
+                    <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 36px", background:accent, color:"#000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", boxShadow:`4px 4px 0 ${accent}60` }} className="hover:scale-[1.02] active:scale-95 transition-transform">
+                            {btnText} →
+                        </button>
+                        <span style={{ color:"rgba(255,255,255,0.25)", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase" }}>Fast Delivery</span>
+                    </div>
+                </div>
+                {/* Big decorative number bottom-right */}
+                <div style={{ position:"absolute", bottom:-20, right:-10, fontSize:"clamp(8rem,25vw,16rem)", fontWeight:950, color:"rgba(255,255,255,0.03)", lineHeight:1, userSelect:"none", letterSpacing:"-0.05em", pointerEvents:"none" }}>01</div>
+            </div>
+        );
+    }
+
+    // ─── Hero-2: SPLIT EDITORIAL — Light/Dark Panel ──────────────────────────────
+    // Left: big number + copy. Right: accent-tinted image panel
+    if (templateId === "hero-2") {
+        return (
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:480, display:"flex" }}>
+                {/* Left panel */}
+                <div style={{ flex:"0 0 55%", background:"#ffffff", padding:"3.5rem 3rem", display:"flex", flexDirection:"column", justifyContent:"center", borderRight:`6px solid ${accent}` }}>
+                    <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:accent, marginBottom:20, display:"block" }}>Collection</span>
+                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1rem", color:"#666666", fontWeight:400, maxWidth:380, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 32px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", width:"fit-content", borderRadius:0 }} className="hover:bg-emerald-500 hover:text-white transition-colors">
+                        {btnText} →
+                    </button>
+                </div>
+                {/* Right panel: accent + image */}
+                <div style={{ flex:1, position:"relative", minHeight:360, overflow:"hidden", background:`${accent}15` }}>
+                    {image
+                        ? <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", mixBlendMode:"multiply", opacity:0.9 }} />
+                        : <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg, ${accent}30 0%, ${accent}60 100%)` }} />
+                    }
+                    {/* Accent overlay label */}
+                    <div style={{ position:"absolute", bottom:24, left:24, background:accent, padding:"8px 16px" }}>
+                        <span style={{ color:"#000", fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase" }}>Shop Now</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Hero-3: GLASSMORPHIC DARK ────────────────────────────────────────────────
+    // Full dark gradient bg + centered frosted glass card overlay
+    if (templateId === "hero-3") {
+        return (
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:520, background:`linear-gradient(135deg, #0a0a0a 0%, ${accent}22 50%, #0a0a0a 100%)`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {image && <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.12 }} />}
+                {/* Blurred orbs */}
+                <div style={{ position:"absolute", top:"20%", left:"10%", width:300, height:300, background:`${accent}40`, borderRadius:"50%", filter:"blur(80px)", pointerEvents:"none" }} />
+                <div style={{ position:"absolute", bottom:"20%", right:"10%", width:200, height:200, background:`${accent}25`, borderRadius:"50%", filter:"blur(60px)", pointerEvents:"none" }} />
+                {/* Glass card */}
+                <div style={{ position:"relative", zIndex:10, textAlign:"center", padding:"3rem 2.5rem", background:"rgba(255,255,255,0.05)", backdropFilter:"blur(20px)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, maxWidth:640, margin:"0 1rem" }}>
+                    <div style={{ display:"inline-block", padding:"4px 14px", border:`1px solid ${accent}`, borderRadius:999, marginBottom:20 }}>
+                        <span style={{ color:accent, fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase" }}>Premium Store</span>
+                    </div>
+                    <h1 style={{ fontSize:"clamp(2rem,8vw,4.5rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.6)", fontWeight:300, maxWidth:460, margin:"0 auto 2.5rem", lineHeight:1.7 }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 40px", background:accent, color:"#000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}99` }} className="hover:scale-105 active:scale-95 transition-transform">
+                        {btnText}
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Hero-2: Interactive 3D Floating Cinematic Shards with full-bleed editorial design
-    if (templateId === "hero-2") {
-        return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl min-h-[80vh] md:min-h-[500px]" style={{ background: "#0a0a0a" }}>
-                <ThreeDBackground type={3} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(45deg, rgba(0,0,0,0.8) 0%, transparent 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirecton:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:500 }}>
-                    <div style={{ maxWidth: 800 }}>
-                        <div style={{ width:40, height:4, background:accent, margin:"0 auto 2rem" }} />
-                        <h1 style={{ fontSize:"clamp(3rem,12vw,7rem)", fontWeight:950, lineHeight:0.85, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 2rem 0", textTransform:"uppercase" }}>
-                            {title}
-                        </h1>
-                        <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:600, margin:"0 auto 3rem", lineHeight:1.5 }}>
-                            {subtitle}
-                        </p>
-                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"20px 50px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:12, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:4, border:"none", cursor:"pointer" }} className="hover:bg-emerald-500 hover:text-white transition-colors">
-                            {btnText}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Hero-3: Luxury Aurora Floating Rings Split Canvas Layout
-    if (templateId === "hero-3") {
-        return (
-            <div className="relative w-full overflow-hidden mb-10 bg-white dark:bg-zinc-950 border border-black/[0.03] shadow-sm min-h-[80vh] md:min-h-[420px]">
-                <div className="flex flex-col md:flex-row items-stretch min-h-[420px]">
-                    <div className="flex-1 p-10 md:p-16 flex flex-col justify-center">
-                        <span style={{ color:accent, fontSize:10, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:12, display:"block" }}>New Collection</span>
-                        <h1 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-none mb-6 uppercase">
-                            {title}
-                        </h1>
-                        <p className="text-gray-500 dark:text-gray-400 text-lg mb-10 max-w-sm">
-                            {subtitle}
-                        </p>
-                        <button onClick={onShopClick} className="w-fit px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full font-black text-xs uppercase tracking-widest hover:translate-y-[-2px] active:translate-y-0 transition-all shadow-xl">
-                            {btnText}
-                        </button>
-                    </div>
-                    <div className="flex-1 relative bg-slate-50 dark:bg-zinc-900 min-h-[300px] md:min-h-full overflow-hidden">
-                        <ThreeDBackground type={6} accentColor={accent} />
-                        {image && <img src={image} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" />}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Hero-4: Glowing Torus Knot (3D Canvas - No Image Required)
+    // ─── Hero-4: TORUS KNOT 3D ────────────────────────────────────────────────────
+    // 3D live canvas — left aligned copy, right 3D torus knot
     if (templateId === "hero-4") {
         return (
             <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
                 <ThreeDBackground type={1} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 70% 50%, transparent 20%, #020205 80%)", zIndex: 5 }} />
-                
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
                     <h1 style={{ fontSize:"clamp(2.5rem,8vw,5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
@@ -137,21 +155,53 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                         {subtitle}
                     </p>
                     <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 transition-all">
-                        {btnText}
-                        <Zap size={14} fill="currentColor" />
+                        {btnText} ⚡
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Hero-5: Cyber Grid Floor (3D Canvas - No Image Required)
+    // ─── Hero-5: DIAGONAL SPLIT ────────────────────────────────────────────────────
+    // Two-tone diagonal background split, big text left side
     if (templateId === "hero-5") {
+        return (
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:480 }}>
+                {/* Diagonal split bg */}
+                <div style={{ position:"absolute", inset:0, background:"#ffffff" }} />
+                <div style={{ position:"absolute", top:0, right:0, width:"50%", height:"100%", background:accent, clipPath:"polygon(20% 0, 100% 0, 100% 100%, 0% 100%)" }} />
+                {/* Content */}
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"3.5rem 2.5rem", minHeight:480, maxWidth:600 }}>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:8, marginBottom:20 }}>
+                        <div style={{ width:3, height:20, background:"#000000" }} />
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:"#000000" }}>New Season</span>
+                    </div>
+                    <h1 style={{ fontSize:"clamp(3rem,10vw,6rem)", fontWeight:950, lineHeight:0.88, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                        {title}
+                    </h1>
+                    <p style={{ fontSize:"1rem", color:"#555555", fontWeight:400, maxWidth:400, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 36px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", width:"fit-content", borderRadius:0 }} className="hover:opacity-80 transition-opacity">
+                        {btnText}
+                    </button>
+                </div>
+                {/* Right side image */}
+                {image && (
+                    <div style={{ position:"absolute", top:0, right:"5%", width:"40%", height:"100%", overflow:"hidden", zIndex:5 }}>
+                        <img src={image} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", mixBlendMode:"multiply", opacity:0.7 }} />
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ─── Hero-6: CYBER GRID FLOOR 3D ─────────────────────────────────────────────
+    if (templateId === "hero-6") {
         return (
             <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
                 <ThreeDBackground type={2} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, background: "linear-gradient(to bottom, #050b0a 0%, rgba(5,11,10,0.4) 100%)", zIndex: 5 }} />
-                
                 <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
                     <h1 style={{ fontSize:"clamp(2.5rem,9vw,6rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
                         {title}
@@ -167,113 +217,119 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
         );
     }
 
-    // Hero-6: Cosmic Particles Universe (3D Canvas - No Image Required)
-    if (templateId === "hero-6") {
-        return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl" style={{ minHeight: 580, background: "#000000" }}>
-                <ThreeDBackground type={5} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2.5rem", minHeight:580 }}>
-                    <h1 style={{ fontSize:"clamp(3rem,10vw,6.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.02em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
-                        {title}
-                    </h1>
-                    <p style={{ fontSize:"1.25rem", color:"rgba(255,255,255,0.7)", fontWeight:300, maxWidth:650, lineHeight:1.6, marginBottom:"3.5rem" }}>
-                        {subtitle}
-                    </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"20px 52px", background:accent, color:"#ffffff", fontWeight:900, fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 0 50px ${accent}44` }} className="hover:shadow-[0_0_80px_rgba(16,185,129,0.4)] transition-all">
-                        {btnText}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Hero-7: Organic DNA Helix (3D Canvas - No Image Required)
+    // ─── Hero-7: MAGAZINE LIGHT ─────────────────────────────────────────────────
+    // Clean white editorial with product image and large caps
     if (templateId === "hero-7") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-xl border border-white/5" style={{ minHeight: 550, background: "#03020c" }}>
-                <ThreeDBackground type={8} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, #03020c 40%, transparent 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 4rem", minHeight:550, maxWidth: 750 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
-                        {title}
-                    </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:400, maxWidth:480, lineHeight:1.7, marginBottom:"2.5rem" }}>
-                        {subtitle}
-                    </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 44px", background:"#ffffff", color:"#03020c", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer" }} className="hover:bg-emerald-500 hover:text-white transition-colors">
-                        {btnText}
-                    </button>
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, background:"#ffffff", minHeight:480 }}>
+                {/* Top accent bar */}
+                <div style={{ height:3, background:`linear-gradient(90deg, ${accent}, transparent)` }} />
+                <div style={{ display:"flex", flexDirection:"column", minHeight:480 }}>
+                    {/* Header row */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid #f0f0f0" }}>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:"#999" }}>The Collection</span>
+                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:"#999" }}>2026 ↗</span>
+                    </div>
+                    {/* Main content */}
+                    <div style={{ flex:1, display:"flex", alignItems:"center", gap:0 }}>
+                        <div style={{ flex:"0 0 52%", padding:"3rem 2.5rem", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                            <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.88, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                                {title}
+                            </h1>
+                            <p style={{ fontSize:"1rem", color:"#777777", fontWeight:400, maxWidth:380, lineHeight:1.8, marginBottom:"2.5rem" }}>
+                                {subtitle}
+                            </p>
+                            <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 32px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", width:"fit-content" }} className="hover:bg-emerald-500 transition-colors">
+                                {btnText}
+                            </button>
+                        </div>
+                        <div style={{ flex:1, minHeight:380, position:"relative", overflow:"hidden", background:`${accent}10` }}>
+                            {image
+                                ? <img src={image} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", position:"absolute", inset:0 }} />
+                                : <div style={{ position:"absolute", inset:0, background:`linear-gradient(160deg, ${accent}20 0%, ${accent}50 100%)` }} />
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // Hero-8: Futuristic Starfield Warp (3D Canvas - No Image Required)
+    // ─── Hero-8: GRADIENT BOLD ───────────────────────────────────────────────────
+    // Full-bleed gradient background with centered stacked oversized type
     if (templateId === "hero-8") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 550, background: "#000000" }}>
-                <ThreeDBackground type={9} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(135deg, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0.5) 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3.5rem", minHeight:550, maxWidth: 700 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.95, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"oblique" }}>
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:520, background:`linear-gradient(160deg, #000000 0%, ${accent}40 60%, #000000 100%)`, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+                {image && <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.08 }} />}
+                <div style={{ position:"relative", zIndex:10, padding:"4rem 2rem", maxWidth:760 }}>
+                    <h1 style={{ fontSize:"clamp(3rem,12vw,7.5rem)", fontWeight:950, lineHeight:0.85, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 2rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.55)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                    <div style={{ width:60, height:3, background:accent, margin:"0 auto 2rem" }} />
+                    <p style={{ fontSize:"1.15rem", color:"rgba(255,255,255,0.65)", fontWeight:300, maxWidth:520, margin:"0 auto 3rem", lineHeight:1.7 }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 38px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 15px 30px -10px ${accent}88` }} className="hover:scale-105 active:scale-95 transition-transform">
-                        {btnText}
-                        <Zap size={14} fill="currentColor" />
-                    </button>
+                    <div style={{ display:"flex", justifyContent:"center", gap:16, flexWrap:"wrap" }}>
+                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"16px 44px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer" }} className="hover:bg-emerald-400 hover:text-white transition-colors">
+                            {btnText}
+                        </button>
+                        <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"16px 28px", background:"transparent", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:9999, border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer" }}>
+                            Learn More
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // Hero-9: Oceanic Wave Mesh (3D Canvas - No Image Required)
+    // ─── Hero-9: POSTER BRUTALIST ────────────────────────────────────────────────
+    // Hard offset shadows, thick borders, yellow/black newspaper poster energy
     if (templateId === "hero-9") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050811" }}>
-                <ThreeDBackground type={7} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to top, #050811 15%, rgba(5,8,17,0.4) 100%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:950, lineHeight:1.05, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
-                        {title}
-                    </h1>
-                    <p style={{ fontSize:"1.05rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:500, lineHeight:1.7, marginBottom:"3rem" }}>
-                        {subtitle}
-                    </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 36px", background:"#ffffff", color:"#050811", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 15px 30px -10px rgba(255,255,255,0.15)" }} className="hover:scale-105 active:scale-95 group transition-all">
-                        {btnText}
-                        <ArrowRight size={14} />
-                    </button>
+            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, background:"#fffbeb", minHeight:480, padding:"2.5rem" }}>
+                {/* Thick outer border */}
+                <div style={{ border:"4px solid #000000", minHeight:420, position:"relative", padding:"2.5rem", display:"flex", alignItems:"center", gap:"2rem", flexWrap:"wrap" }}>
+                    {/* Left: accent block */}
+                    <div style={{ background:accent, padding:"1.5rem", minWidth:120, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"6px 6px 0 #000000" }}>
+                        <span style={{ fontSize:10, fontWeight:900, letterSpacing:"0.2em", textTransform:"uppercase", color:"#000000", writingMode:"vertical-rl", transform:"rotate(180deg)" }}>Shop 2026</span>
+                    </div>
+                    {/* Right: copy */}
+                    <div style={{ flex:1 }}>
+                        <div style={{ background:"#000000", display:"inline-block", padding:"4px 12px", marginBottom:16 }}>
+                            <span style={{ color:"#ffffff", fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase" }}>New Collection</span>
+                        </div>
+                        <h1 style={{ fontSize:"clamp(2.5rem,9vw,5.5rem)", fontWeight:950, lineHeight:0.88, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                            {title}
+                        </h1>
+                        <p style={{ fontSize:"1rem", color:"#444444", fontWeight:400, maxWidth:440, lineHeight:1.7, marginBottom:"2rem" }}>
+                            {subtitle}
+                        </p>
+                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 36px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"3px solid #000000", cursor:"pointer", boxShadow:`4px 4px 0 ${accent}` }} className="hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
+                            {btnText}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // Hero-10: Neon Rings Tunnel (3D Canvas - No Image Required)
+    // ─── Hero-10: CINEMA DARK (3D Organic Sphere) ──────────────────────────────
     if (templateId === "hero-10") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5" style={{ minHeight: 560, background: "#0a000f" }}>
-                <ThreeDBackground type={10} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "radial-gradient(circle, transparent 20%, #0a000f 90%)", zIndex: 5 }} />
-                
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:560 }}>
-                    <h1 style={{ fontSize:"clamp(2.8rem,8.5vw,5.5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", textShadow:`0 0 40px ${accent}aa` }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
+                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
+                    <ThreeDBackground type={4} accentColor={accent} />
+                </div>
+                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(5,5,5,0.95) 30%, rgba(5,5,5,0.2) 100%)", zIndex: 5 }} />
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:450, maxWidth: 800 }}>
+                    <h1 style={{ fontSize:"clamp(2.5rem,10vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.65)", fontWeight:400, maxWidth:580, lineHeight:1.7, marginBottom:"3rem" }}>
+                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:500, maxWidth:450, lineHeight:1.6, marginBottom:"2.5rem" }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 group transition-all">
-                        {btnText}
-                        <Zap size={14} fill="currentColor" />
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 42px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 transition-transform">
+                        {btnText} <ArrowRight size={18} />
                     </button>
                 </div>
             </div>
