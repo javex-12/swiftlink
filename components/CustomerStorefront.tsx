@@ -83,29 +83,33 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Left: big number + copy. Right: accent-tinted image panel
     if (templateId === "hero-2") {
         return (
-            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:480, display:"flex" }}>
+            <div className="relative w-full overflow-hidden mb-10 min-h-[500px] flex flex-col md:flex-row border border-black/[0.08] dark:border-white/5 shadow-xl rounded-[2.5rem]" style={{ background: surfaceColor }}>
                 {/* Left panel */}
-                <div style={{ flex:"0 0 55%", background:"#ffffff", padding:"3.5rem 3rem", display:"flex", flexDirection:"column", justifyContent:"center", borderRight:`6px solid ${accent}` }}>
-                    <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:accent, marginBottom:20, display:"block" }}>Collection</span>
-                    <h1 style={{ fontSize:"clamp(2.5rem,7vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center relative z-10" style={{ borderLeft: `8px solid ${accent}` }}>
+                    <span className="text-[10px] font-black tracking-[0.4em] uppercase mb-4 block" style={{ color: accent }}>Collection</span>
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[0.95] text-black dark:text-white mb-6 uppercase">
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1rem", color:"#666666", fontWeight:400, maxWidth:380, lineHeight:1.7, marginBottom:"2.5rem" }}>
+                    <p className="text-sm md:text-base opacity-70 max-w-md mb-8 leading-relaxed">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 32px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", width:"fit-content", borderRadius:0 }} className="hover:bg-emerald-500 hover:text-white transition-colors">
-                        {btnText} →
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black text-xs tracking-widest uppercase rounded-xl hover:opacity-90 active:scale-95 transition-all w-fit shadow-md">
+                        {btnText} <ArrowRight size={14} />
                     </button>
                 </div>
                 {/* Right panel: accent + image */}
-                <div style={{ flex:1, position:"relative", minHeight:360, overflow:"hidden", background:`${accent}15` }}>
-                    {image
-                        ? <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", mixBlendMode:"multiply", opacity:0.9 }} />
-                        : <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg, ${accent}30 0%, ${accent}60 100%)` }} />
-                    }
-                    {/* Accent overlay label */}
-                    <div style={{ position:"absolute", bottom:24, left:24, background:accent, padding:"8px 16px" }}>
-                        <span style={{ color:"#000", fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase" }}>Shop Now</span>
+                <div className="flex-[5] relative min-h-[300px] md:min-h-full overflow-hidden shrink-0">
+                    <div className="absolute inset-0 z-0" style={{ background: `linear-gradient(135deg, ${accent}25 0%, ${accent}60 100%)` }} />
+                    {image ? (
+                        <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-90 transition-transform duration-700 hover:scale-105" />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-25">Featured Product Image</span>
+                        </div>
+                    )}
+                    {/* Floating Accent Badge */}
+                    <div className="absolute bottom-6 right-6 px-4 py-2 rounded-lg shadow-lg backdrop-blur-md" style={{ background: accent }}>
+                        <span className="text-black font-black text-[10px] tracking-widest uppercase">SHOP NOW</span>
                     </div>
                 </div>
             </div>
@@ -113,27 +117,29 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     }
 
     // ─── Hero-3: GLASSMORPHIC DARK ────────────────────────────────────────────────
-    // Full dark gradient bg + centered frosted glass card overlay
+    // Full dark gradient bg + centered frosted glass card overlay with dynamic colors
     if (templateId === "hero-3") {
         return (
-            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:520, background:`linear-gradient(135deg, #0a0a0a 0%, ${accent}22 50%, #0a0a0a 100%)`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                {image && <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.12 }} />}
+            <div className="relative w-full overflow-hidden mb-10 min-h-[600px] flex items-center justify-center rounded-[2.5rem] p-6 shadow-2xl border border-white/10" style={{ background: `radial-gradient(circle at center, #0f0f1b 0%, #030307 100%)` }}>
+                {image && <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-overlay" />}
                 {/* Blurred orbs */}
-                <div style={{ position:"absolute", top:"20%", left:"10%", width:300, height:300, background:`${accent}40`, borderRadius:"50%", filter:"blur(80px)", pointerEvents:"none" }} />
-                <div style={{ position:"absolute", bottom:"20%", right:"10%", width:200, height:200, background:`${accent}25`, borderRadius:"50%", filter:"blur(60px)", pointerEvents:"none" }} />
+                <div className="absolute top-[15%] left-[10%] w-72 h-72 rounded-full filter blur-[100px] pointer-events-none opacity-40 animate-pulse" style={{ background: accent }} />
+                <div className="absolute bottom-[15%] right-[10%] w-72 h-72 rounded-full filter blur-[100px] pointer-events-none opacity-30 animate-pulse" style={{ background: accent, animationDelay: "2s" }} />
+                
                 {/* Glass card */}
-                <div style={{ position:"relative", zIndex:10, textAlign:"center", padding:"3rem 2.5rem", background:"rgba(255,255,255,0.05)", backdropFilter:"blur(20px)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, maxWidth:640, margin:"0 1rem" }}>
-                    <div style={{ display:"inline-block", padding:"4px 14px", border:`1px solid ${accent}`, borderRadius:999, marginBottom:20 }}>
-                        <span style={{ color:accent, fontSize:9, fontWeight:900, letterSpacing:"0.3em", textTransform:"uppercase" }}>Premium Store</span>
+                <div className="relative z-10 text-center px-6 py-10 md:p-16 rounded-[2rem] border border-white/10 shadow-2xl max-w-2xl w-full" style={{ background: "rgba(255, 255, 255, 0.03)", backdropFilter: "blur(24px)" }}>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 border border-white/10 bg-white/5">
+                        <div className="w-1.5 h-1.5 rounded-full animate-ping" style={{ background: accent }} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">PREMIUM STORE</span>
                     </div>
-                    <h1 style={{ fontSize:"clamp(2rem,8vw,4.5rem)", fontWeight:900, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-white mb-6 uppercase">
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1rem", color:"rgba(255,255,255,0.6)", fontWeight:300, maxWidth:460, margin:"0 auto 2.5rem", lineHeight:1.7 }}>
+                    <p className="text-sm md:text-base text-white/60 font-light max-w-md mx-auto mb-10 leading-relaxed">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 40px", background:accent, color:"#000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}99` }} className="hover:scale-105 active:scale-95 transition-transform">
-                        {btnText}
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 text-black font-black text-xs tracking-widest uppercase rounded-full shadow-lg transition-all hover:scale-105 active:scale-95" style={{ background: accent, boxShadow: `0 20px 40px -10px ${accent}80` }}>
+                        {btnText} <ArrowRight size={14} />
                     </button>
                 </div>
             </div>
@@ -147,7 +153,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
             <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
                 <ThreeDBackground type={1} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 70% 50%, transparent 20%, #020205 80%)", zIndex: 5 }} />
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyValue:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
                     <h1 style={{ fontSize:"clamp(2.5rem,8vw,5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
@@ -199,18 +205,22 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // ─── Hero-6: CYBER GRID FLOOR 3D ─────────────────────────────────────────────
     if (templateId === "hero-6") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl" style={{ minHeight: 550, background: "#050b0a" }}>
+            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-6 text-center" style={{ minHeight: 600, background: "#050b0a" }}>
                 <ThreeDBackground type={2} accentColor={accent} />
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to bottom, #050b0a 0%, rgba(5,11,10,0.4) 100%)", zIndex: 5 }} />
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,9vw,6rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
+                <div className="absolute inset-0 z-[5]" style={{ background: "radial-gradient(circle at center, transparent 0%, #050b0a 90%)" }} />
+                <div className="relative z-10 max-w-3xl flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-white/10 rounded-full mb-8 bg-black/40 backdrop-blur-md">
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">SYSTEM ONLINE</span>
+                    </div>
+                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight uppercase leading-[0.95] mb-6 italic">
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.05rem", color:accent, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", marginBottom:"3.5rem" }}>
+                    <p className="text-xs md:text-sm font-black uppercase tracking-[0.4em] mb-10" style={{ color: accent }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"16px 40px", background:"transparent", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.3em", textTransform:"uppercase", borderRadius:0, border:`2px solid ${accent}`, cursor:"pointer" }} className="hover:bg-emerald-500/10 transition-colors">
-                        {btnText}
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl">
+                        {btnText} <Zap size={14} />
                     </button>
                 </div>
             </div>
@@ -218,38 +228,34 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     }
 
     // ─── Hero-7: MAGAZINE LIGHT ─────────────────────────────────────────────────
-    // Clean white editorial with product image and large caps
+    // Clean white/light editorial with product image and large caps
     if (templateId === "hero-7") {
         return (
-            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, background:"#ffffff", minHeight:480 }}>
-                {/* Top accent bar */}
-                <div style={{ height:3, background:`linear-gradient(90deg, ${accent}, transparent)` }} />
-                <div style={{ display:"flex", flexDirection:"column", minHeight:480 }}>
-                    {/* Header row */}
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.5rem 2.5rem", borderBottom:"1px solid #f0f0f0" }}>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:"#999" }}>The Collection</span>
-                        <span style={{ fontSize:9, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", color:"#999" }}>2026 ↗</span>
+            <div className="relative w-full overflow-hidden mb-10 border border-black/[0.06] dark:border-white/5 shadow-xl rounded-[2.5rem] flex flex-col md:flex-row" style={{ background: surfaceColor }}>
+                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center">
+                    <div className="flex items-center justify-between pb-8 mb-8 border-b border-black/[0.06] dark:border-white/10">
+                        <span className="text-[9px] font-black uppercase tracking-[0.3m] opacity-50">THE CATALOGUE</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.3m] opacity-50">EST. 2026 ↗</span>
                     </div>
-                    {/* Main content */}
-                    <div style={{ flex:1, display:"flex", alignItems:"center", gap:0 }}>
-                        <div style={{ flex:"0 0 52%", padding:"3rem 2.5rem", display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                            <h1 style={{ fontSize:"clamp(2.5rem,8vw,5.5rem)", fontWeight:950, lineHeight:0.88, letterSpacing:"-0.04em", color:"#000000", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
-                                {title}
-                            </h1>
-                            <p style={{ fontSize:"1rem", color:"#777777", fontWeight:400, maxWidth:380, lineHeight:1.8, marginBottom:"2.5rem" }}>
-                                {subtitle}
-                            </p>
-                            <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 32px", background:"#000000", color:"#ffffff", fontWeight:900, fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", width:"fit-content" }} className="hover:bg-emerald-500 transition-colors">
-                                {btnText}
-                            </button>
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-black dark:text-white mb-6 uppercase">
+                        {title}
+                    </h1>
+                    <p className="text-sm md:text-base opacity-75 mb-10 max-w-md leading-relaxed">
+                        {subtitle}
+                    </p>
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black text-xs tracking-widest uppercase rounded-xl hover:opacity-90 active:scale-95 transition-all w-fit shadow-md">
+                        {btnText} <ArrowRight size={14} />
+                    </button>
+                </div>
+                <div className="flex-[5] relative min-h-[300px] md:min-h-full overflow-hidden shrink-0">
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}15 0%, ${accent}40 100%)` }} />
+                    {image ? (
+                        <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105" />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-20">Preview Image</span>
                         </div>
-                        <div style={{ flex:1, minHeight:380, position:"relative", overflow:"hidden", background:`${accent}10` }}>
-                            {image
-                                ? <img src={image} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", position:"absolute", inset:0 }} />
-                                : <div style={{ position:"absolute", inset:0, background:`linear-gradient(160deg, ${accent}20 0%, ${accent}50 100%)` }} />
-                            }
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         );
@@ -259,21 +265,21 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // Full-bleed gradient background with centered stacked oversized type
     if (templateId === "hero-8") {
         return (
-            <div style={{ position:"relative", width:"100%", overflow:"hidden", marginBottom:40, minHeight:520, background:`linear-gradient(160deg, #000000 0%, ${accent}40 60%, #000000 100%)`, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-                {image && <img src={image} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.08 }} />}
-                <div style={{ position:"relative", zIndex:10, padding:"4rem 2rem", maxWidth:760 }}>
-                    <h1 style={{ fontSize:"clamp(3rem,12vw,7.5rem)", fontWeight:950, lineHeight:0.85, letterSpacing:"-0.04em", color:"#ffffff", margin:"0 0 2rem 0", textTransform:"uppercase" }}>
+            <div className="relative w-full overflow-hidden mb-10 min-h-[550px] flex items-center justify-center text-center p-6 rounded-[2.5rem] shadow-2xl border border-white/5" style={{ background: `linear-gradient(135deg, #000000 0%, ${accent}30 50%, #000000 100%)` }}>
+                {image && <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-luminosity" />}
+                <div className="relative z-10 max-w-3xl flex flex-col items-center">
+                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight leading-[0.95] mb-6 uppercase">
                         {title}
                     </h1>
-                    <div style={{ width:60, height:3, background:accent, margin:"0 auto 2rem" }} />
-                    <p style={{ fontSize:"1.15rem", color:"rgba(255,255,255,0.65)", fontWeight:300, maxWidth:520, margin:"0 auto 3rem", lineHeight:1.7 }}>
+                    <div className="w-16 h-1 rounded-full mb-8" style={{ background: accent }} />
+                    <p className="text-sm md:text-base text-white/60 font-medium max-w-xl mb-10 leading-relaxed">
                         {subtitle}
                     </p>
-                    <div style={{ display:"flex", justifyContent:"center", gap:16, flexWrap:"wrap" }}>
-                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"16px 44px", background:"#ffffff", color:"#000000", fontWeight:900, fontSize:11, letterSpacing:"0.15em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer" }} className="hover:bg-emerald-400 hover:text-white transition-colors">
-                            {btnText}
+                    <div className="flex gap-4 flex-wrap justify-center">
+                        <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+                            {btnText} <ArrowRight size={14} />
                         </button>
-                        <button style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"16px 28px", background:"transparent", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase", borderRadius:9999, border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer" }}>
+                        <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 border border-white/20 text-white font-bold text-xs tracking-widest uppercase rounded-xl transition-all hover:bg-white/5 active:scale-95">
                             Learn More
                         </button>
                     </div>
@@ -316,20 +322,24 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     // ─── Hero-10: CINEMA DARK (3D Organic Sphere) ──────────────────────────────
     if (templateId === "hero-10") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[80vh] md:min-h-[450px]">
-                <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
+            <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#050505] min-h-[600px] flex items-center rounded-[2.5rem] p-6 md:p-16">
+                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                     <ThreeDBackground type={4} accentColor={accent} />
                 </div>
-                <div style={{ position:"absolute", inset:0, background: "linear-gradient(to right, rgba(5,5,5,0.95) 30%, rgba(5,5,5,0.2) 100%)", zIndex: 5 }} />
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem 3rem", minHeight:450, maxWidth: 800 }}>
-                    <h1 style={{ fontSize:"clamp(2.5rem,10vw,5rem)", fontWeight:950, lineHeight:0.9, letterSpacing:"-0.05em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase", fontStyle:"italic" }}>
+                <div className="absolute inset-0 z-[5]" style={{ background: "linear-gradient(to right, rgba(5,5,5,0.95) 40%, rgba(5,5,5,0.1) 100%)" }} />
+                <div className="relative z-10 max-w-2xl flex flex-col items-start text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-6">
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">LIVE 3D</span>
+                    </div>
+                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight leading-[0.95] mb-6 uppercase italic">
                         {title}
                     </h1>
-                    <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.5)", fontWeight:500, maxWidth:450, lineHeight:1.6, marginBottom:"2.5rem" }}>
+                    <p className="text-sm md:text-base text-white/60 max-w-md mb-10 leading-relaxed font-light">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 42px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", borderRadius:16, border:"none", cursor:"pointer", width:"fit-content", boxShadow:`0 20px 40px -10px ${accent}66` }} className="hover:scale-105 active:scale-95 transition-transform">
-                        {btnText} <ArrowRight size={18} />
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 text-white font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl" style={{ background: accent, boxShadow: `0 20px 40px -10px ${accent}60` }}>
+                        {btnText} <ArrowRight size={16} />
                     </button>
                 </div>
             </div>
