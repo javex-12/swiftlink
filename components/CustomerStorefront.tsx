@@ -153,7 +153,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
             <div className="relative w-full overflow-hidden mb-10 shadow-2xl border border-white/5 bg-[#020205] min-h-[80vh] md:min-h-[550px]">
                 <ThreeDBackground type={1} accentColor={accent} />
                 <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 70% 50%, transparent 20%, #020205 80%)", zIndex: 5 }} />
-                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyValue:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
+                <div style={{ position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"4rem 2rem", minHeight:550 }}>
                     <h1 style={{ fontSize:"clamp(2.5rem,8vw,5rem)", fontWeight:950, lineHeight:1.0, letterSpacing:"-0.03em", color:"#ffffff", margin:"0 0 1.5rem 0", textTransform:"uppercase" }}>
                         {title}
                     </h1>
