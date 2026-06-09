@@ -25,7 +25,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
-import { cn } from "@/lib/utils";
+import { cn, isDarkColor } from "@/lib/utils";
 import { supabase } from "@/lib/supabase-client";
 import dynamic from "next/dynamic";
 
@@ -48,17 +48,6 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
 
     const currentSection = state.sections?.find(s => s.content?.templateId === templateId);
     const customBg = currentSection?.styles?.backgroundColor as string;
-
-    const isDarkColor = (colorHex: string | undefined): boolean => {
-        if (!colorHex || !colorHex.startsWith('#')) return false;
-        const hex = colorHex.replace('#', '');
-        if (hex.length !== 3 && hex.length !== 6) return false;
-        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
-        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
-        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
-        const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-        return yiq < 128;
-    };
 
     const isDark = currentSection?.content?.darkMode === true || 
                    isDarkColor(customBg) || 
@@ -87,7 +76,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                         {subtitle}
                     </p>
                     <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 36px", background:accent, color:"#000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", boxShadow:`4px 4px 0 ${accent}60` }} className="hover:scale-[1.02] active:scale-95 transition-transform">
+                        <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"14px 36px", background:accent, color: isDarkColor(accent) ? "#ffffff" : "#000000", fontWeight:900, fontSize:11, letterSpacing:"0.2em", textTransform:"uppercase", border:"none", cursor:"pointer", boxShadow:`4px 4px 0 ${accent}60` }} className="hover:scale-[1.02] active:scale-95 transition-transform">
                             {btnText} →
                         </button>
                         <span style={{ color:"rgba(255,255,255,0.25)", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase" }}>Fast Delivery</span>
@@ -192,7 +181,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                     <p className="text-sm md:text-base text-white/60 font-light max-w-md mx-auto mb-10 leading-relaxed">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 text-black font-black text-xs tracking-widest uppercase rounded-full shadow-lg transition-all hover:scale-105 active:scale-95" style={{ background: accent, boxShadow: `0 20px 40px -10px ${accent}80` }}>
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 font-black text-xs tracking-widest uppercase rounded-full shadow-lg transition-all hover:scale-105 active:scale-95" style={{ background: accent, color: isDarkColor(accent) ? "#ffffff" : "#000000", boxShadow: `0 20px 40px -10px ${accent}80` }}>
                         {btnText} <ArrowRight size={14} />
                     </button>
                 </div>
@@ -214,7 +203,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                     <p style={{ fontSize:"1.125rem", color:"rgba(255,255,255,0.6)", fontWeight:400, maxWidth:550, lineHeight:1.7, marginBottom:"3rem" }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color:"#ffffff", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 transition-all">
+                    <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color: isDarkColor(accent) ? "#ffffff" : "#000000", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 transition-all">
                         {btnText} ⚡
                     </button>
                 </div>
@@ -471,7 +460,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                     <p className="text-sm md:text-base text-white/60 max-w-md mb-10 leading-relaxed font-light">
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 text-white font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl" style={{ background: accent, boxShadow: `0 20px 40px -10px ${accent}60` }}>
+                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl" style={{ background: accent, color: isDarkColor(accent) ? "#ffffff" : "#000000", boxShadow: `0 20px 40px -10px ${accent}60` }}>
                         {btnText} <ArrowRight size={16} />
                     </button>
                 </div>
@@ -848,10 +837,11 @@ export function CustomerStorefront({
             "--bg-color": bgColor, 
             "--text-color": textColor,
             "--surface-color": surfaceColor,
-            "--btn-color": buttonColor
+            "--btn-color": buttonColor,
+            "--btn-text-color": isDarkColor(buttonColor) ? "#ffffff" : "#000000"
          } as React.CSSProperties}>
       <style>{`
-         .bg-emerald-500 { background-color: var(--btn-color) !important; }
+         .bg-emerald-500 { background-color: var(--btn-color) !important; color: var(--btn-text-color) !important; }
          .text-emerald-500 { color: var(--theme-color) !important; }
          .text-emerald-600 { color: color-mix(in srgb, var(--theme-color) 80%, black) !important; }
          .border-emerald-500 { border-color: var(--theme-color) !important; }

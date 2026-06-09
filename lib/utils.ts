@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function isDarkColor(colorHex: string | undefined): boolean {
+  if (!colorHex || !colorHex.startsWith('#')) return false;
+  const hex = colorHex.replace('#', '');
+  if (hex.length !== 3 && hex.length !== 6) return false;
+  const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+  const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+  const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq < 128;
+}
+
 const RESERVED_FIRST_SEGMENTS = new Set([
   "dispatch",
   "business",

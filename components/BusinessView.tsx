@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ShopState, PageSection, Product, StoreReview } from "@/lib/schema";
 import { supabase } from "@/lib/supabase-client";
-import { cn } from "@/lib/utils";
-import { getShopPath } from "@/lib/utils";
+import { cn, getShopPath, isDarkColor } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
   Plus, Trash2, RefreshCw, Sparkles, Palette, 
@@ -597,17 +596,88 @@ export function BusinessView() {
 
 
   const randomizePalette = () => {
-      const p = PRESET_PALETTES[Math.floor(Math.random() * PRESET_PALETTES.length)];
+      const pickPreset = Math.random() < 0.35;
+      
+      if (pickPreset) {
+          const p = PRESET_PALETTES[Math.floor(Math.random() * PRESET_PALETTES.length)];
+          setLocalState(prev => ({
+              ...prev,
+              accentColor: p.accent,
+              bgColor: p.bg,
+              surfaceColor: p.surface,
+              textColor: p.text,
+              buttonColor: p.btn
+          }));
+          setIsDirty(true);
+          addToast(`Applied curated ${p.name} palette!`, "success");
+          return;
+      }
+
+      // Smart generative palette using HSL to guarantee beautiful contrast
+      const isDark = Math.random() > 0.5;
+      const baseHue = Math.floor(Math.random() * 360);
+      
+      // Determine accent hue based on color harmonies
+      const harmonyType = ["analogous", "complementary", "triadic"][Math.floor(Math.random() * 3)];
+      let accentHue = baseHue;
+      if (harmonyType === "analogous") {
+          accentHue = (baseHue + 30 + Math.floor(Math.random() * 30)) % 360;
+      } else if (harmonyType === "complementary") {
+          accentHue = (baseHue + 180) % 360;
+      } else { // triadic
+          accentHue = (baseHue + (Math.random() > 0.5 ? 120 : 240)) % 360;
+      }
+
+      // Helper to convert HSL to Hex
+      const hslToHex = (h: number, s: number, l: number): string => {
+          l /= 100;
+          const a = (s * Math.min(l, 1 - l)) / 100;
+          const f = (n: number) => {
+              const k = (n + h / 30) % 12;
+              const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+              return Math.round(255 * color).toString(16).padStart(2, '0');
+          };
+          return `#${f(0)}${f(8)}${f(4)}`;
+      };
+
+      let accent = "";
+      let bg = "";
+      let surface = "";
+      let text = "";
+      let btn = "";
+      let name = "";
+
+      if (isDark) {
+          accent = hslToHex(accentHue, 80 + Math.random() * 20, 50 + Math.random() * 12);
+          bg = hslToHex(baseHue, 15 + Math.random() * 20, 5 + Math.random() * 4); // L: 5% - 9%
+          surface = hslToHex(baseHue, 12 + Math.random() * 15, 12 + Math.random() * 5); // L: 12% - 17%
+          text = hslToHex(baseHue, 10 + Math.random() * 20, 93 + Math.random() * 5); // L: 93% - 98%
+          btn = accent;
+          name = `Deep Space Synth #${baseHue}`;
+      } else {
+          accent = hslToHex(accentHue, 75 + Math.random() * 25, 42 + Math.random() * 10);
+          bg = hslToHex(baseHue, 10 + Math.random() * 15, 96 + Math.random() * 3); // L: 96% - 99%
+          surface = "#ffffff";
+          text = hslToHex(baseHue, 25 + Math.random() * 20, 10 + Math.random() * 6); // L: 10% - 16%
+          btn = accent;
+          name = `Lumina Fresh #${baseHue}`;
+      }
+
+      // Prevent button background clashing with general text background
+      if (btn.toLowerCase() === text.toLowerCase()) {
+          btn = accent;
+      }
+
       setLocalState(prev => ({
           ...prev,
-          accentColor: p.accent,
-          bgColor: p.bg,
-          surfaceColor: p.surface,
-          textColor: p.text,
-          buttonColor: p.btn
+          accentColor: accent,
+          bgColor: bg,
+          surfaceColor: surface,
+          textColor: text,
+          buttonColor: btn
       }));
       setIsDirty(true);
-      addToast(`Applied ${p.name} palette!`, "success");
+      addToast(`Generated smart "${name}" palette!`, "success");
   };
 
   const randomizeTemplate = (type: "hero" | "catalog" | "about" | "footer") => {
