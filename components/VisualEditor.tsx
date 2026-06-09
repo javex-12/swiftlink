@@ -501,6 +501,17 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
                   <span className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Subtitle / Text</span>
                   <textarea value={selected.subtitle || selected.content?.text || ""} onChange={(e) => patchSection(selected.id, selected.type === "about" ? { content: { ...selected.content, text: e.target.value } } : { subtitle: e.target.value })} className="min-h-[80px] w-full rounded-xl bg-slate-50 dark:bg-black p-3 text-xs font-bold outline-none dark:text-white border-2 border-transparent focus:border-emerald-500/30 transition-all" />
                 </label>
+                {selected.type === "hero" && (
+                  <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-50 dark:bg-black/40 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={!!selected.content?.darkMode} 
+                      onChange={(e) => patchSection(selected.id, { content: { ...selected.content, darkMode: e.target.checked } })} 
+                      className="rounded border-slate-300 dark:border-zinc-700 text-emerald-500 focus:ring-emerald-500 accent-emerald-500 h-4 w-4"
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Force Dark Mode</span>
+                  </label>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <label>
                     <span className="mb-1.5 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400"><Palette size={9} /> BG</span>
@@ -593,6 +604,17 @@ export function VisualEditor({ onClose }: { onClose: () => void }) {
                   <textarea value={selected.subtitle || selected.content?.text || ""} onChange={(e) => patchSection(selected.id, selected.type === "about" ? { content: { ...selected.content, text: e.target.value } } : { subtitle: e.target.value })}
                     className="w-full rounded-xl bg-slate-50 dark:bg-black p-3 text-xs font-bold outline-none dark:text-white min-h-[80px]" />
                 </div>
+                {selected.type === "hero" && (
+                  <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-50 dark:bg-black/40 rounded-xl">
+                    <input 
+                      type="checkbox" 
+                      checked={!!selected.content?.darkMode} 
+                      onChange={(e) => patchSection(selected.id, { content: { ...selected.content, darkMode: e.target.checked } })} 
+                      className="rounded border-slate-300 dark:border-zinc-700 text-emerald-500 focus:ring-emerald-500 accent-emerald-500 h-4 w-4"
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Force Dark Mode</span>
+                  </label>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-[9px] font-black uppercase text-slate-400 mb-1">BG Color</p>

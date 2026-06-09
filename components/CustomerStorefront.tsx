@@ -46,6 +46,25 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
     const btnText = state.heroButtonText || "Shop Now";
     const image = state.heroImage || state.bizImage;
 
+    const currentSection = state.sections?.find(s => s.content?.templateId === templateId);
+    const customBg = currentSection?.styles?.backgroundColor as string;
+
+    const isDarkColor = (colorHex: string | undefined): boolean => {
+        if (!colorHex || !colorHex.startsWith('#')) return false;
+        const hex = colorHex.replace('#', '');
+        if (hex.length !== 3 && hex.length !== 6) return false;
+        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+        const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+        return yiq < 128;
+    };
+
+    const isDark = currentSection?.content?.darkMode === true || 
+                   isDarkColor(customBg) || 
+                   (state.storefrontTheme?.background === "dark") ||
+                   isDarkColor(state.bgColor);
+
     // ─── Hero-1: BRUTALIST BLACKOUT ─────────────────────────────────────────────
     // Raw brutalist editorial — oversized italic type, bold accent bar, hard shadows
     if (!templateId || templateId === "hero-1") {
@@ -80,37 +99,71 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
         );
     }
 
-    // ─── Hero-2: SPLIT EDITORIAL — Light/Dark Panel ──────────────────────────────
-    // Left: big number + copy. Right: accent-tinted image panel
+    // ─── Hero-2: SPLIT EDITORIAL — Floating Glassmorphism & Abstract Overlays ──────────────────────────────
     if (templateId === "hero-2") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 min-h-[500px] flex flex-col md:flex-row border border-black/[0.08] dark:border-white/5 shadow-xl rounded-[2.5rem]" style={{ background: surfaceColor }}>
-                {/* Left panel */}
-                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center relative z-10" style={{ borderLeft: `8px solid ${accent}` }}>
-                    <span className="text-[10px] font-black tracking-[0.4em] uppercase mb-4 block" style={{ color: accent }}>Collection</span>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[0.95] text-black dark:text-white mb-6 uppercase">
+            <div className="relative w-full overflow-hidden mb-10 min-h-[520px] flex flex-col md:flex-row border shadow-2xl rounded-[2.5rem] transition-colors duration-500 animate-[fadeIn_0.6s_ease-out]" 
+                 style={{ 
+                     background: isDark ? (customBg || "#0a0a0c") : (customBg || "#fafafa"),
+                     borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"
+                 }}>
+                {/* Abstract backlights */}
+                <div className="absolute top-[10%] left-[5%] w-80 h-80 rounded-full filter blur-[120px] pointer-events-none opacity-30 animate-pulse" style={{ background: accent }} />
+                
+                {/* Left content panel */}
+                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-6 border w-fit" 
+                         style={{ 
+                             borderColor: isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)",
+                             background: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)"
+                         }}>
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: isDark ? "#ffffff" : "#000000" }}>EXQUISITE COLLECTION</span>
+                    </div>
+                    
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[0.95] mb-6 uppercase" style={{ color: isDark ? "#ffffff" : "#0a0a0c" }}>
                         {title}
                     </h1>
-                    <p className="text-sm md:text-base opacity-70 max-w-md mb-8 leading-relaxed">
+                    <p className="text-sm md:text-base mb-10 leading-relaxed max-w-md" style={{ color: isDark ? "rgba(255,255,255,0.7)" : "rgba(10,10,12,0.7)" }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black text-xs tracking-widest uppercase rounded-xl hover:opacity-90 active:scale-95 transition-all w-fit shadow-md">
+                    
+                    <button onClick={onShopClick} 
+                            className="inline-flex items-center gap-3 px-8 py-4 font-black text-xs tracking-widest uppercase rounded-xl transition-all duration-300 hover:translate-y-[-2px] hover:shadow-xl w-fit"
+                            style={{ 
+                                background: accent,
+                                color: isDarkColor(accent) ? "#ffffff" : "#000000",
+                                boxShadow: `0 10px 25px -5px ${accent}60`
+                             }}>
                         {btnText} <ArrowRight size={14} />
                     </button>
                 </div>
-                {/* Right panel: accent + image */}
-                <div className="flex-[5] relative min-h-[300px] md:min-h-full overflow-hidden shrink-0">
-                    <div className="absolute inset-0 z-0" style={{ background: `linear-gradient(135deg, ${accent}25 0%, ${accent}60 100%)` }} />
-                    {image ? (
-                        <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-90 transition-transform duration-700 hover:scale-105" />
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-25">Featured Product Image</span>
+                
+                {/* Right image panel with multi-offset design frames */}
+                <div className="flex-[5] p-6 md:p-12 relative flex items-center justify-center shrink-0 min-h-[350px] md:min-h-full">
+                    <div className="relative w-full max-w-[360px] aspect-square rounded-[2rem] p-3 border transition-all duration-700 hover:scale-[1.02] group"
+                         style={{
+                             borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+                             background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)"
+                         }}>
+                        {/* Offset layer decoration */}
+                        <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-[2.2rem] border pointer-events-none opacity-30 -z-10 transition-transform group-hover:translate-x-4 group-hover:translate-y-4"
+                             style={{ borderColor: accent }} />
+                             
+                        <div className="w-full h-full rounded-[1.7rem] overflow-hidden bg-slate-900/5 dark:bg-white/5 relative">
+                            {image ? (
+                                <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-center p-6 bg-slate-100 dark:bg-zinc-800">
+                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-25" style={{ color: isDark ? "#ffffff" : "#000000" }}>NO IMAGE CHOSEN</span>
+                                </div>
+                            )}
+                            {/* Inner Glass tag overlay */}
+                            <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl backdrop-blur-md border border-white/10 bg-black/40 flex justify-between items-center">
+                                <span className="text-white font-bold text-[9px] tracking-widest uppercase">LIMITED RELEASE</span>
+                                <span className="text-white font-black text-[9px] tracking-widest" style={{ color: accent }}>2026</span>
+                            </div>
                         </div>
-                    )}
-                    {/* Floating Accent Badge */}
-                    <div className="absolute bottom-6 right-6 px-4 py-2 rounded-lg shadow-lg backdrop-blur-md" style={{ background: accent }}>
-                        <span className="text-black font-black text-[10px] tracking-widest uppercase">SHOP NOW</span>
                     </div>
                 </div>
             </div>
@@ -203,58 +256,119 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
         );
     }
 
-    // ─── Hero-6: CYBER GRID FLOOR 3D ─────────────────────────────────────────────
+    // ─── Hero-6: CYBER SCANLINE TERMINAL ─────────────────────────────────────────────
     if (templateId === "hero-6") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 border border-white/5 shadow-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-6 text-center" style={{ minHeight: 600, background: "#050b0a" }}>
+            <div className="relative w-full overflow-hidden mb-10 border shadow-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-8 md:p-16 text-center animate-[fadeIn_0.6s_ease-out]" 
+                 style={{ 
+                     minHeight: 600, 
+                     background: customBg || "#030706",
+                     borderColor: `${accent}30`
+                 }}>
                 <ThreeDBackground type={2} accentColor={accent} />
-                <div className="absolute inset-0 z-[5]" style={{ background: "radial-gradient(circle at center, transparent 0%, #050b0a 90%)" }} />
+                
+                {/* Sweep scanline line */}
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-[bounce_8s_infinite] opacity-40 z-10" 
+                     style={{ backgroundImage: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+                
+                {/* Holographic sweeps and circles */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] md:w-[480px] h-[350px] md:h-[480px] rounded-full border border-dashed animate-[spin_60s_linear_infinite] pointer-events-none opacity-20" style={{ borderColor: accent }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] md:w-[380px] h-[280px] md:h-[380px] rounded-full border border-double animate-[spin_30s_linear_infinite] pointer-events-none opacity-15" style={{ borderColor: accent, animationDirection: "reverse" }} />
+                
+                {/* Scanline pattern overlay */}
+                <div className="absolute inset-0 z-[2] pointer-events-none opacity-[0.06]" 
+                     style={{ 
+                         backgroundImage: "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06))",
+                         backgroundSize: "100% 4px, 6px 100%"
+                     }} />
+                
+                {/* Content */}
                 <div className="relative z-10 max-w-3xl flex flex-col items-center">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-white/10 rounded-full mb-8 bg-black/40 backdrop-blur-md">
-                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">SYSTEM ONLINE</span>
+                    <div className="inline-flex items-center gap-2.5 px-4 py-1.5 border border-white/10 rounded-full mb-8 bg-black/60 backdrop-blur-md">
+                        <div className="w-1.5 h-1.5 rounded-full animate-ping" style={{ background: accent }} />
+                        <span className="text-[9px] font-mono tracking-[0.4em] text-white">SECURE NODE // SESSION OK</span>
                     </div>
-                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight uppercase leading-[0.95] mb-6 italic">
+                    
+                    <h1 className="text-4xl md:text-7xl font-mono tracking-tighter uppercase font-black text-white leading-none mb-6">
                         {title}
                     </h1>
-                    <p className="text-xs md:text-sm font-black uppercase tracking-[0.4em] mb-10" style={{ color: accent }}>
+                    
+                    <p className="text-xs md:text-sm font-mono tracking-[0.3em] uppercase max-w-xl mb-12" style={{ color: accent }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl">
+                    
+                    <button onClick={onShopClick} 
+                            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black text-xs tracking-widest uppercase rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]">
                         {btnText} <Zap size={14} />
                     </button>
+                    
+                    {/* Tech details hud strip */}
+                    <div className="mt-12 flex flex-wrap gap-4 md:gap-8 border-t pt-6 font-mono text-[9px] uppercase opacity-45 justify-center tracking-widest text-white" 
+                         style={{ borderColor: `${accent}20` }}>
+                        <div>SYS_STATUS: ACTIVE</div>
+                        <div>LATENCY: &lt;10MS</div>
+                        <div>COMPAT: WEB3_READY</div>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // ─── Hero-7: MAGAZINE LIGHT ─────────────────────────────────────────────────
-    // Clean white/light editorial with product image and large caps
+    // ─── Hero-7: BAUHAUS MAGAZINE EDITORIAL ─────────────────────────────────────────────────
     if (templateId === "hero-7") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 border border-black/[0.06] dark:border-white/5 shadow-xl rounded-[2.5rem] flex flex-col md:flex-row" style={{ background: surfaceColor }}>
-                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center">
-                    <div className="flex items-center justify-between pb-8 mb-8 border-b border-black/[0.06] dark:border-white/10">
-                        <span className="text-[9px] font-black uppercase tracking-[0.3m] opacity-50">THE CATALOGUE</span>
-                        <span className="text-[9px] font-black uppercase tracking-[0.3m] opacity-50">EST. 2026 ↗</span>
+            <div className="relative w-full overflow-hidden mb-10 border shadow-xl rounded-[2.5rem] flex flex-col md:flex-row transition-colors duration-500 animate-[fadeIn_0.6s_ease-out]" 
+                 style={{ 
+                     background: isDark ? (customBg || "#121214") : (customBg || "#f5f5f5"),
+                     borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+                 }}>
+                {/* Vertical Decorative Tape along Left Edge */}
+                <div className="hidden lg:flex absolute left-0 top-0 bottom-0 w-12 border-r items-center justify-center shrink-0"
+                     style={{ borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)" }}>
+                    <span className="writing-vertical font-bold text-[8px] tracking-[0.5em] uppercase opacity-35 select-none"
+                          style={{ color: isDark ? "#ffffff" : "#000000", transform: "rotate(180deg)" }}>
+                        EDITION 2026 // COMMERCE
+                    </span>
+                </div>
+                
+                {/* Main panel */}
+                <div className="flex-[6] p-8 md:p-16 flex flex-col justify-center relative lg:pl-20">
+                    <div className="flex items-center justify-between pb-6 mb-8 border-b"
+                         style={{ borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)" }}>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40" style={{ color: isDark ? "#ffffff" : "#000000" }}>THE CATALOGUE</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40" style={{ color: isDark ? "#ffffff" : "#000000" }}>EST. 2026 ↗</span>
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-black dark:text-white mb-6 uppercase">
+                    
+                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-none mb-6 uppercase" style={{ color: isDark ? "#ffffff" : "#111111" }}>
                         {title}
                     </h1>
-                    <p className="text-sm md:text-base opacity-75 mb-10 max-w-md leading-relaxed">
+                    
+                    <p className="text-sm md:text-base opacity-75 mb-10 max-w-md leading-relaxed" style={{ color: isDark ? "#e0e0e0" : "#444444" }}>
                         {subtitle}
                     </p>
-                    <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black text-xs tracking-widest uppercase rounded-xl hover:opacity-90 active:scale-95 transition-all w-fit shadow-md">
+                    
+                    <button onClick={onShopClick} 
+                            className="inline-flex items-center gap-3 px-8 py-4 font-black text-xs tracking-widest uppercase rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 w-fit shadow-md"
+                            style={{ 
+                                background: isDark ? "#ffffff" : "#111111",
+                                color: isDark ? "#000000" : "#ffffff"
+                            }}>
                         {btnText} <ArrowRight size={14} />
                     </button>
                 </div>
-                <div className="flex-[5] relative min-h-[300px] md:min-h-full overflow-hidden shrink-0">
-                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}15 0%, ${accent}40 100%)` }} />
+                
+                {/* Right panel Image Grid */}
+                <div className="flex-[5] relative min-h-[350px] md:min-h-full overflow-hidden shrink-0 border-t md:border-t-0 md:border-l"
+                     style={{ borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)" }}>
+                    <div className="absolute inset-0" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }} />
                     {image ? (
-                        <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105" />
+                        <div className="absolute inset-4 md:inset-8 rounded-[1.5rem] overflow-hidden bg-zinc-900 border"
+                             style={{ borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
+                            <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-1000 hover:scale-105" />
+                        </div>
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-20">Preview Image</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-25" style={{ color: isDark ? "#ffffff" : "#000000" }}>NO IMAGE SELECTED</span>
                         </div>
                     )}
                 </div>
@@ -262,26 +376,44 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
         );
     }
 
-    // ─── Hero-8: GRADIENT BOLD ───────────────────────────────────────────────────
-    // Full-bleed gradient background with centered stacked oversized type
+    // ─── Hero-8: LIQUID AURORA WAVE ───────────────────────────────────────────────────
     if (templateId === "hero-8") {
         return (
-            <div className="relative w-full overflow-hidden mb-10 min-h-[550px] flex items-center justify-center text-center p-6 rounded-[2.5rem] shadow-2xl border border-white/5" style={{ background: `linear-gradient(135deg, #000000 0%, ${accent}30 50%, #000000 100%)` }}>
-                {image && <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-luminosity" />}
-                <div className="relative z-10 max-w-3xl flex flex-col items-center">
-                    <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight leading-[0.95] mb-6 uppercase">
+            <div className="relative w-full overflow-hidden mb-10 min-h-[580px] flex items-center justify-center text-center p-6 rounded-[2.5rem] shadow-2xl border transition-all duration-700 animate-[fadeIn_0.6s_ease-out]" 
+                 style={{ 
+                     background: customBg || `linear-gradient(-45deg, #09090e, #0c0b16, ${accent}25, #080512)`,
+                     borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"
+                 }}>
+                {/* Breathing glowing orb layer */}
+                <div className="absolute top-[20%] left-[20%] w-[300px] h-[300px] rounded-full filter blur-[120px] pointer-events-none opacity-40 animate-pulse" style={{ background: accent }} />
+                
+                {/* Centered glass panel card */}
+                <div className="relative z-10 max-w-3xl flex flex-col items-center px-6 py-12 md:p-16 rounded-[2.5rem] border backdrop-blur-xl"
+                     style={{
+                         background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+                         borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"
+                     }}>
+                    <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight leading-[0.95] mb-6 uppercase" 
+                        style={{ color: isDark ? "#ffffff" : "#0a0a0c" }}>
                         {title}
                     </h1>
-                    <div className="w-16 h-1 rounded-full mb-8" style={{ background: accent }} />
-                    <p className="text-sm md:text-base text-white/60 font-medium max-w-xl mb-10 leading-relaxed">
+                    
+                    <div className="w-16 h-1 rounded-full mb-8 animate-pulse" style={{ background: accent }} />
+                    
+                    <p className="text-sm md:text-base font-medium max-w-xl mb-10 leading-relaxed" 
+                        style={{ color: isDark ? "rgba(255,255,255,0.6)" : "rgba(10,10,12,0.6)" }}>
                         {subtitle}
                     </p>
+                    
                     <div className="flex gap-4 flex-wrap justify-center">
-                        <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black font-black text-xs tracking-widest uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+                        <button onClick={onShopClick} 
+                                className="inline-flex items-center gap-3 px-10 py-5 font-black text-xs tracking-widest uppercase rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl hover:-translate-y-0.5"
+                                style={{ 
+                                    background: accent,
+                                    color: isDarkColor(accent) ? "#ffffff" : "#000000",
+                                    boxShadow: `0 20px 40px -10px ${accent}60`
+                                }}>
                             {btnText} <ArrowRight size={14} />
-                        </button>
-                        <button onClick={onShopClick} className="inline-flex items-center gap-3 px-8 py-4 border border-white/20 text-white font-bold text-xs tracking-widest uppercase rounded-xl transition-all hover:bg-white/5 active:scale-95">
-                            Learn More
                         </button>
                     </div>
                 </div>
