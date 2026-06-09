@@ -40,6 +40,7 @@ const ThreeDBackground = dynamic(
 
 const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, templateId: string, onShopClick?: () => void }) => {
     const accent = state.accentColor || "#10b981";
+    const surfaceColor = state.surfaceColor || "#ffffff";
     const title = state.heroTitle || state.bizName || "Welcome to our store";
     const subtitle = state.heroSubtitle || state.tagline || "Quality products, delivered.";
     const btnText = state.heroButtonText || "Shop Now";
