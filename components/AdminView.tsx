@@ -35,7 +35,9 @@ import {
   ExternalLink,
   MessageCircle,
   Eye,
-  MousePointerClick
+  MousePointerClick,
+  UserPlus,
+  Trash2
 } from "lucide-react";
 
 // Types matching Supabase schemas
@@ -95,8 +97,7 @@ interface DispatchDB {
 }
 
 export function AdminView() {
-  const { user, addToast } = useSwiftLink();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, addToast, isAdmin } = useSwiftLink();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Database states
@@ -109,7 +110,73 @@ export function AdminView() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Tab navigation
-  const [activeTab, setActiveTab] = useState<"overview" | "timeline" | "merchants" | "stores" | "feedback">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "timeline" | "merchants" | "stores" | "feedback" | "admins">("overview");
+
+  // Admin management state
+  const [adminsList, setAdminsList] = useState<{id: string; email: string; created_at: string}[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [removingAdminId, setRemovingAdminId] = useState<string | null>(null);
+
+  const fetchAdmins = async () => {
+    try {
+      const { data } = await supabase.from("system_admins").select("*").order("created_at", { ascending: true });
+      if (data) setAdminsList(data);
+    } catch (e) {
+      console.warn("Could not fetch admins list", e);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) return;
+    setAddingAdmin(true);
+    try {
+      // Look up user by email in auth.users via RPC (requires searching profiles)
+      // We find the user in social_profiles or stores by matching owner email from auth.users
+      const email = newAdminEmail.trim().toLowerCase();
+
+      // Check if already an admin
+      const existing = adminsList.find(a => a.email.toLowerCase() === email);
+      if (existing) {
+        addToast("This user is already an administrator.", "info");
+        setAddingAdmin(false);
+        return;
+      }
+
+      // Use a Supabase RPC to promote user by email
+      const { error } = await supabase.rpc("promote_admin_by_email", { target_email: email });
+
+      if (error) {
+        addToast(`Failed: ${error.message}`, "error");
+      } else {
+        addToast(`${email} has been granted admin access.`, "success");
+        setNewAdminEmail("");
+        await fetchAdmins();
+      }
+    } catch (e: any) {
+      addToast(e.message || "Failed to add admin.", "error");
+    } finally {
+      setAddingAdmin(false);
+    }
+  };
+
+  const handleRemoveAdmin = async (adminId: string, adminEmail: string) => {
+    if (adminEmail === user?.email) {
+      addToast("You cannot remove yourself from admin access.", "error");
+      return;
+    }
+    setRemovingAdminId(adminId);
+    try {
+      const { error } = await supabase.from("system_admins").delete().eq("id", adminId);
+      if (error) throw error;
+      setAdminsList(prev => prev.filter(a => a.id !== adminId));
+      addToast(`${adminEmail} has been removed from admin access.`, "success");
+    } catch (e: any) {
+      addToast(e.message || "Failed to remove admin.", "error");
+    } finally {
+      setRemovingAdminId(null);
+    }
+  };
 
   // Filter/Search states
   const [globalSearch, setGlobalSearch] = useState("");
@@ -123,46 +190,10 @@ export function AdminView() {
   const [replyMessage, setReplyMessage] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
 
-  // Auth checker
+  // Once isAdmin is resolved from the context (not undefined), stop showing loading spinner
   useEffect(() => {
-    const checkAdmin = () => {
-      const email = user?.email?.toLowerCase() || "";
-      const isLocalOverride = typeof window !== "undefined" && localStorage.getItem("swiftlink_admin") === "true";
-      const hasQueryParam = typeof window !== "undefined" && window.location.search.includes("admin=true");
-
-      if (hasQueryParam || isLocalOverride || email.includes("admin") || email === "admin@swiftlink.pro") {
-        setIsAdmin(true);
-        if (hasQueryParam && typeof window !== "undefined") {
-          localStorage.setItem("swiftlink_admin", "true");
-        }
-      } else {
-        setIsAdmin(false);
-      }
-      setCheckingAuth(false);
-    };
-
-    checkAdmin();
-  }, [user]);
-
-  // Developer bypass action
-  const handleBypass = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("swiftlink_admin", "true");
-      setIsAdmin(true);
-      addToast("Developer Bypass Active: Administrator privileges granted.", "success");
-      // Clean query parameter and reload to set state properly
-      window.location.replace("/pro/admin");
-    }
-  };
-
-  const handleRevokeBypass = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("swiftlink_admin");
-      setIsAdmin(false);
-      addToast("Administrator session cleared.", "info");
-      window.location.replace("/pro");
-    }
-  };
+    setCheckingAuth(false);
+  }, [isAdmin]);
 
   // Simulated Mock data fallbacks for wowed first-impressions
   const mockData = useMemo(() => {
@@ -470,7 +501,7 @@ export function AdminView() {
     );
   }
 
-  // ACCESS DENIED SCREEN WITH BYPASS TETHER
+  // ACCESS DENIED SCREEN
   if (!isAdmin) {
     return (
       <div className="flex-1 flex items-center justify-center p-6 min-h-[75vh] bg-slate-50 dark:bg-[#020617] transition-colors">
@@ -493,24 +524,18 @@ export function AdminView() {
           <div className="bg-slate-50 dark:bg-zinc-950 p-6 rounded-2xl border border-slate-100 dark:border-white/5 mb-8 text-left">
             <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Security Rules:</p>
             <ul className="text-[10px] font-bold text-slate-400 space-y-2 list-disc list-inside">
-              <li>User email must contain <code className="text-emerald-500">admin</code></li>
-              <li>Or match environment variable administrator targets</li>
-              <li>Or activate the local client sandbox developer override</li>
+              <li>User must be signed in with an authorized administrator account</li>
+              <li>Only the official admin account <code className="text-emerald-500">admin@swiftlink.pro</code> is authorized</li>
+              <li>All database read/write requests are strictly validated at the database layer (RLS)</li>
             </ul>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={handleBypass}
-              className="flex-1 py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Shield size={14} /> Developer Bypass
-            </button>
+          <div className="flex gap-4 justify-center">
             <a 
               href="/pro"
               className="flex-1 py-4 px-6 rounded-2xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
-              Go to Store
+              Go to Storefront Dashboard
             </a>
           </div>
         </motion.div>
@@ -542,13 +567,6 @@ export function AdminView() {
           >
             <RefreshCw size={15} className={cn("transition-transform duration-700", refreshing && "animate-spin")} />
             <span className="text-[10px] font-black uppercase tracking-widest">Refresh</span>
-          </button>
-          
-          <button 
-            onClick={handleRevokeBypass}
-            className="py-3 px-5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-950/45 text-rose-500 hover:bg-rose-100 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-          >
-            Revoke Admin
           </button>
         </div>
       </div>
@@ -632,11 +650,12 @@ export function AdminView() {
           { id: "timeline", label: "Telemetry Log", icon: Activity },
           { id: "merchants", label: "Merchants", icon: Users },
           { id: "stores", label: "Storefronts", icon: Store },
-          { id: "feedback", label: "User Feedback", icon: MessageSquare }
+          { id: "feedback", label: "User Feedback", icon: MessageSquare },
+          { id: "admins", label: "Manage Admins", icon: Shield }
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id as any); setGlobalSearch(""); }}
+            onClick={() => { setActiveTab(tab.id as any); setGlobalSearch(""); if (tab.id === "admins") fetchAdmins(); }}
             className={cn(
               "py-4 px-6 border-b-2 font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2",
               activeTab === tab.id
@@ -1447,6 +1466,100 @@ export function AdminView() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ═══ MANAGE ADMINS TAB ═══════════════════════════════════════════════════ */}
+      {activeTab === "admins" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Add new admin */}
+          <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <UserPlus size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Add New Administrator</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">The user must already have a SwiftLink account registered.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                value={newAdminEmail}
+                onChange={e => setNewAdminEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAddAdmin()}
+                placeholder="colleague@email.com"
+                className="flex-1 px-5 py-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-white/10 text-sm font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+              />
+              <button
+                onClick={handleAddAdmin}
+                disabled={addingAdmin || !newAdminEmail.trim()}
+                className="px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+              >
+                {addingAdmin ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <UserPlus size={14} />
+                )}
+                {addingAdmin ? "Adding..." : "Grant Admin Access"}
+              </button>
+            </div>
+          </div>
+
+          {/* Current admins list */}
+          <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-100 dark:border-white/5">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Current Administrators</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{adminsList.length} admin{adminsList.length !== 1 ? "s" : ""} registered</p>
+            </div>
+
+            {adminsList.length === 0 ? (
+              <div className="p-12 text-center">
+                <Shield size={32} className="mx-auto text-slate-300 dark:text-zinc-700 mb-3" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">No admins loaded. Click &quot;Manage Admins&quot; tab to refresh.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-white/5">
+                {adminsList.map((admin) => (
+                  <div key={admin.id} className="flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-900 flex items-center justify-center text-slate-500">
+                        <Shield size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">{admin.email}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          Added {new Date(admin.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                          {admin.email === user?.email && <span className="ml-2 text-emerald-500">(You)</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {admin.email !== user?.email && (
+                      <button
+                        onClick={() => handleRemoveAdmin(admin.id, admin.email)}
+                        disabled={removingAdminId === admin.id}
+                        title="Remove admin access"
+                        className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {removingAdminId === admin.id ? (
+                          <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

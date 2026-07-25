@@ -145,8 +145,7 @@ export default function SignupPage() {
       if (!isSupabaseConfigured()) {
         // Demo mode — no Supabase credentials configured
         localStorage.setItem("swiftlink_demo_login", "true");
-        localStorage.setItem("swiftlink_admin", "true");
-        router.push("/pro/admin");
+        router.push("/pro");
         return;
       }
       if (!credentialResponse.credential) throw new Error("No ID token from Google");
@@ -163,10 +162,6 @@ export default function SignupPage() {
       if (!isSupabaseConfigured()) {
         // Store a demo session flag so the app context recognises a logged-in user
         localStorage.setItem("swiftlink_demo_login", "true");
-        // If the entered email looks admin-like, also activate the admin panel bypass
-        if (form.email.toLowerCase().includes("admin")) {
-          localStorage.setItem("swiftlink_admin", "true");
-        }
         router.push("/pro");
         return;
       }
@@ -380,12 +375,11 @@ export default function SignupPage() {
                       type="button"
                       onClick={() => {
                         localStorage.setItem("swiftlink_demo_login", "true");
-                        localStorage.setItem("swiftlink_admin", "true");
-                        router.push("/pro/admin");
+                        router.push("/pro");
                       }}
                       className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
                     >
-                      Enter Demo Mode (Admin Access)
+                      Enter Demo Mode
                     </button>
                   </div>
                 )}

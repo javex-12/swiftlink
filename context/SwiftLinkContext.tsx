@@ -40,6 +40,7 @@ type SwiftLinkContextValue = {
   transferStore: (targetEmail: string) => Promise<boolean>;
   cart: CartMap;
   user: User | null;
+  isAdmin: boolean;
   isSupabaseActive: boolean;
   isOwner: boolean;
   currentTrackId: string | null;
@@ -173,6 +174,29 @@ export function SwiftLinkProvider({
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const checkAdminStatus = useCallback(async (userId: string, email?: string) => {
+    if (!isSupabaseConfigured()) {
+      setIsAdmin(email === "admin@swiftlink.pro");
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('system_admins')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      if (data && !error) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (e) {
+      console.warn("Failed to query system_admins table:", e);
+      setIsAdmin(false);
+    }
+  }, []);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("swiftlink_theme") as "light" | "dark" : null;
@@ -515,8 +539,10 @@ export function SwiftLinkProvider({
         setIsSupabaseActive(false);
         if (isDemo) {
           setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+          setIsAdmin(true);
         } else {
           setUser(null);
+          setIsAdmin(false);
         }
         setAuthReady(true);
         return;
@@ -527,16 +553,21 @@ export function SwiftLinkProvider({
         if (session?.user) {
           setUser(session.user);
           setIsSupabaseActive(true);
+          void checkAdminStatus(session.user.id, session.user.email);
         } else if (isDemo) {
           setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+          setIsAdmin(true);
         } else {
           setUser(null);
+          setIsAdmin(false);
         }
       } catch (e) {
         if (isDemo) {
           setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+          setIsAdmin(true);
         } else {
           setUser(null);
+          setIsAdmin(false);
         }
       }
       setAuthReady(true);
@@ -549,6 +580,7 @@ export function SwiftLinkProvider({
 
         if (u) {
             setIsSupabaseActive(true);
+            void checkAdminStatus(u.id, u.email);
             const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
 
             void fetchStores(u.id).then((storesList) => {
@@ -573,6 +605,7 @@ export function SwiftLinkProvider({
         } else {
             // If no user, reset state to default to avoid showing old local data
             setState(defaultShopState());
+            setIsAdmin(false);
             if (typeof window !== "undefined") {
               localStorage.removeItem("swiftlink_state");
             }
@@ -1357,6 +1390,7 @@ export function SwiftLinkProvider({
     transferStore,
     cart,
     user,
+    isAdmin,
     isSupabaseActive,
     isOwner,
     currentTrackId,

@@ -1,7 +1,39 @@
--- ================================================================
--- ADMINISTRATIVE RLS POLICIES FOR SWIFTLINK PRO
--- Run this in your Supabase SQL Editor to enable admin privileges
--- ================================================================
+-- Create the system_admins table
+CREATE TABLE IF NOT EXISTS public.system_admins (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text UNIQUE NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.system_admins ENABLE ROW LEVEL SECURITY;
+
+-- Allow authenticated users to view system_admins (so clients can query if they are admin)
+DROP POLICY IF EXISTS "Authenticated users can view system_admins" ON public.system_admins;
+CREATE POLICY "Authenticated users can view system_admins"
+  ON public.system_admins FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- Create trigger function to automatically promote admin@swiftlink.pro to system_admins on registration
+CREATE OR REPLACE FUNCTION public.auto_register_system_admins()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NEW.email = 'admin@swiftlink.pro' THEN
+    INSERT INTO public.system_admins (id, email)
+    VALUES (NEW.id, NEW.email)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_auto_register_system_admins ON auth.users;
+CREATE TRIGGER tr_auto_register_system_admins
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.auto_register_system_admins();
 
 -- Create a helper function to identify if a user is an admin
 CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
@@ -9,23 +41,19 @@ RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
-DECLARE
-    user_email text;
 BEGIN
-    -- Look up the email of the user from auth.users
-    SELECT email INTO user_email FROM auth.users WHERE id = user_id;
-    
-    -- Admins are users whose email includes 'admin' or matches specific admin emails
-    IF user_email IS NOT NULL AND (
-        user_email = 'admin@swiftlink.pro' 
-        OR LOWER(user_email) LIKE '%admin%'
-    ) THEN
-        RETURN true;
-    END IF;
-    
-    RETURN false;
+    RETURN EXISTS (
+        SELECT 1 FROM public.system_admins WHERE id = user_id
+    );
 END;
 $$;
+
+-- Allow admins to manage (insert/delete) other admins
+DROP POLICY IF EXISTS "Admins can manage system_admins" ON public.system_admins;
+CREATE POLICY "Admins can manage system_admins"
+  ON public.system_admins FOR ALL
+  USING (public.is_admin(auth.uid()))
+  WITH CHECK (public.is_admin(auth.uid()));
 
 -- 1. STORES TABLE ADMINISTRATIVE POLICIES
 -- Allow admin users to SELECT all stores (already public, but good for completeness)
@@ -67,3 +95,47 @@ ON public.social_profiles
 FOR ALL
 USING (public.is_admin(auth.uid()))
 WITH CHECK (public.is_admin(auth.uid()));
+
+-- ================================================================
+-- RPC: PROMOTE ADMIN BY EMAIL
+-- Used by the Manage Admins panel in the dashboard.
+-- Takes an email address, looks up the user UUID from auth.users,
+-- and inserts them into system_admins. No UUID required from the client.
+-- Only callable by existing admins (RLS on system_admins enforces this).
+-- ================================================================
+
+CREATE OR REPLACE FUNCTION public.promote_admin_by_email(target_email text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  target_uid uuid;
+  clean_email text;
+BEGIN
+  -- Only allow existing admins to call this
+  IF NOT public.is_admin(auth.uid()) THEN
+    RAISE EXCEPTION 'Unauthorized: Only administrators can promote other users.';
+  END IF;
+
+  clean_email := LOWER(TRIM(target_email));
+
+  -- Look up the target user's UUID from auth.users
+  SELECT id INTO target_uid
+  FROM auth.users
+  WHERE LOWER(email) = clean_email
+  LIMIT 1;
+
+  IF target_uid IS NULL THEN
+    RAISE EXCEPTION 'User with email % not found. They must register on SwiftLink first.', clean_email;
+  END IF;
+
+  -- Insert into system_admins (skip if already admin)
+  INSERT INTO public.system_admins (id, email)
+  VALUES (target_uid, clean_email)
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN true;
+END;
+$$;

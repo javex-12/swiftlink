@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
   const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, user } = useSwiftLink();
+  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, user, isAdmin } = useSwiftLink();
   const [isHovered, setIsHovered] = useState(false);
 
   const navItems = [
@@ -19,16 +19,6 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
     { href: "/pro/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/account", label: "Account", icon: Settings },
   ];
-
-  // Helper check for admin privileges
-  const isAdmin = user?.email?.toLowerCase().includes("admin") || 
-                  user?.email === "admin@swiftlink.pro" || 
-                  (typeof window !== "undefined" && (localStorage.getItem("swiftlink_admin") === "true" || window.location.search.includes("admin=true")));
-
-  // Persist admin override if requested via query param
-  if (isAdmin && typeof window !== "undefined" && window.location.search.includes("admin=true")) {
-    localStorage.setItem("swiftlink_admin", "true");
-  }
 
   const sidebarItems = [
     ...navItems,
