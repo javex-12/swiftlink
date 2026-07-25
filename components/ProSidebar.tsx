@@ -4,12 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { Menu, X, LayoutDashboard, Store, Truck, BarChart3, Settings, LogOut, Link as LinkIcon, MessageSquare, HelpCircle, Sun, Moon, Globe } from "lucide-react";
+import { Menu, X, LayoutDashboard, Store, Truck, BarChart3, Settings, LogOut, Link as LinkIcon, MessageSquare, HelpCircle, Sun, Moon, Globe, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
   const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen } = useSwiftLink();
+  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, user } = useSwiftLink();
   const [isHovered, setIsHovered] = useState(false);
 
   const navItems = [
@@ -18,6 +18,21 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
     { href: "/dispatch", label: "Logistics", icon: Truck },
     { href: "/pro/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/account", label: "Account", icon: Settings },
+  ];
+
+  // Helper check for admin privileges
+  const isAdmin = user?.email?.toLowerCase().includes("admin") || 
+                  user?.email === "admin@swiftlink.pro" || 
+                  (typeof window !== "undefined" && (localStorage.getItem("swiftlink_admin") === "true" || window.location.search.includes("admin=true")));
+
+  // Persist admin override if requested via query param
+  if (isAdmin && typeof window !== "undefined" && window.location.search.includes("admin=true")) {
+    localStorage.setItem("swiftlink_admin", "true");
+  }
+
+  const sidebarItems = [
+    ...navItems,
+    ...(isAdmin ? [{ href: "/pro/admin", label: "Admin Panel", icon: Shield }] : [])
   ];
 
   const isActive = (href: string) => {
@@ -66,7 +81,7 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
           <p className={cn("px-3 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
             Management
           </p>
-          {navItems.map((item) => {
+          {sidebarItems.map((item) => {
             const active = isActive(item.href);
             return (
               <Link

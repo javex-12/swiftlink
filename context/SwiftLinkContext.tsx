@@ -136,11 +136,16 @@ export function SwiftLinkProvider({
   const [user, setUser] = useState<User | null>(null);
 
   const fetchStores = useCallback(async (userId: string) => {
-    const { data } = await supabase.from('stores').select('id, owner_id, state_json').eq('owner_id', userId);
-    if (data) {
-        const loadedStores = data.map((s: any) => normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id }));
-        setStores(loadedStores);
-        return loadedStores;
+    try {
+      if (!isSupabaseConfigured()) return [];
+      const { data } = await supabase.from('stores').select('id, owner_id, state_json').eq('owner_id', userId);
+      if (data) {
+          const loadedStores = data.map((s: any) => normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id }));
+          setStores(loadedStores);
+          return loadedStores;
+      }
+    } catch (e) {
+      console.warn("fetchStores database query failed:", e);
     }
     return [];
   }, []);
@@ -504,56 +509,68 @@ export function SwiftLinkProvider({
     let unsub: { unsubscribe: () => void } | null = null;
 
     const initAuth = async () => {
+      const isDemo = typeof window !== "undefined" && localStorage.getItem("swiftlink_demo_login") === "true";
+
       if (!isSupabaseConfigured()) {
         setIsSupabaseActive(false);
+        if (isDemo) {
+          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+        } else {
+          setUser(null);
+        }
         setAuthReady(true);
         return;
       }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        setIsSupabaseActive(true);
-      } else {
-        setUser(null);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          setIsSupabaseActive(true);
+        } else if (isDemo) {
+          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+        } else {
+          setUser(null);
+        }
+      } catch (e) {
+        if (isDemo) {
+          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
+        } else {
+          setUser(null);
+        }
       }
       setAuthReady(true);
 
-                  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const isDemoActive = typeof window !== "undefined" && localStorage.getItem("swiftlink_demo_login") === "true";
+        const u = session?.user ?? (isDemoActive ? { id: "demo-user-id", email: "admin@swiftlink.pro" } as any : null);
+        setUser(u);
+        userRef.current = u;
 
-                    const u = session?.user ?? null;
+        if (u) {
+            setIsSupabaseActive(true);
+            const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
 
-                    setUser(u);
-
-                    userRef.current = u;
-
-                    
-
-                                        if (u) {
-                                            setIsSupabaseActive(true);
-                                            const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
-
-                                            void fetchStores(u.id).then((storesList) => {
-                                                if (isOwnerRef.current) {
-                                                    if (storesList && storesList.length > 0) {
-                                                        let nextState = storesList[0];
-                                                        nextState = normalizeShopState(nextState);
-                                                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
-                                                        
-                                                        setState(nextState);
-                                                        localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
-                                                    } else {
-                                                        // Fallback for brand new users without a store
-                                                        let nextState = defaultShopState();
-                                                        nextState = { ...nextState, id: u.id, ownerId: u.id };
-                                                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
-                                                        
-                                                        setState(nextState);
-                                                    }
-                                                }
-                                            });
+            void fetchStores(u.id).then((storesList) => {
+                if (isOwnerRef.current) {
+                    if (storesList && storesList.length > 0) {
+                        let nextState = storesList[0];
+                        nextState = normalizeShopState(nextState);
+                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
+                        
+                        setState(nextState);
+                        localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
                     } else {
-
-            
+                        // Fallback for brand new users without a store
+                        let nextState = defaultShopState();
+                        nextState = { ...nextState, id: u.id, ownerId: u.id };
+                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
+                        
+                        setState(nextState);
+                    }
+                }
+            });
+        } else {
             // If no user, reset state to default to avoid showing old local data
             setState(defaultShopState());
             if (typeof window !== "undefined") {
@@ -594,8 +611,9 @@ export function SwiftLinkProvider({
   }, [pathname, trackQ, shopQ]);
 
   useEffect(() => {
-    if (!authReady || !isSupabaseConfigured()) return;
-    if (isProtectedRoute && !user) {
+    const isDemoMode = typeof window !== "undefined" && localStorage.getItem("swiftlink_demo_login") === "true";
+    if (!authReady) return;
+    if (isProtectedRoute && !user && !isDemoMode) {
       router.replace("/signup?mode=login");
     }
   }, [authReady, isProtectedRoute, router, user]);

@@ -8,7 +8,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase-client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
@@ -92,9 +92,15 @@ export default function SignupPage() {
     setMounted(true);
     const m = searchParams.get("mode") as Mode;
     if (m === "login" || m === "signup") setMode(m);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push("/pro");
-    });
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) router.push("/pro");
+      }).catch(() => { /* Supabase not reachable */ });
+    } else {
+      // If demo session is already active, skip straight to the app
+      const isDemo = localStorage.getItem("swiftlink_demo_login") === "true";
+      if (isDemo) router.push("/pro");
+    }
   }, [searchParams, router]);
 
   const saveUserStore = useCallback(async (
@@ -136,6 +142,13 @@ export default function SignupPage() {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading("google"); setError(null);
     try {
+      if (!isSupabaseConfigured()) {
+        // Demo mode — no Supabase credentials configured
+        localStorage.setItem("swiftlink_demo_login", "true");
+        localStorage.setItem("swiftlink_admin", "true");
+        router.push("/pro/admin");
+        return;
+      }
       if (!credentialResponse.credential) throw new Error("No ID token from Google");
       const { data, error } = await supabase.auth.signInWithIdToken({ provider: "google", token: credentialResponse.credential });
       if (error) throw error;
@@ -146,6 +159,18 @@ export default function SignupPage() {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading("email"); setError(null);
     try {
+      // ── No Supabase credentials → Developer / Demo Bypass ────────────────────
+      if (!isSupabaseConfigured()) {
+        // Store a demo session flag so the app context recognises a logged-in user
+        localStorage.setItem("swiftlink_demo_login", "true");
+        // If the entered email looks admin-like, also activate the admin panel bypass
+        if (form.email.toLowerCase().includes("admin")) {
+          localStorage.setItem("swiftlink_admin", "true");
+        }
+        router.push("/pro");
+        return;
+      }
+      // ── Real Supabase auth flow ───────────────────────────────────────────────
       if (mode === "login") {
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
         if (authError) throw authError;
@@ -339,6 +364,32 @@ export default function SignupPage() {
                 transition={{ duration: 0.3 }}
                 className="space-y-5"
               >
+                {/* Demo / No-Config Banner */}
+                {!isSupabaseConfigured() && (
+                  <div className="flex flex-col gap-3 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl">
+                    <div className="flex items-start gap-3">
+                      <span className="text-amber-500 mt-0.5 text-base leading-none">⚠</span>
+                      <div>
+                        <p className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Supabase Not Configured</p>
+                        <p className="text-[10px] font-medium text-amber-600 dark:text-amber-500 mt-1 leading-relaxed">
+                          No <code className="bg-amber-100 dark:bg-amber-500/20 px-1 rounded">.env.local</code> credentials found. Use <strong>Demo Mode</strong> to test the app locally without a database.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.setItem("swiftlink_demo_login", "true");
+                        localStorage.setItem("swiftlink_admin", "true");
+                        router.push("/pro/admin");
+                      }}
+                      className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+                    >
+                      Enter Demo Mode (Admin Access)
+                    </button>
+                  </div>
+                )}
+
                 {/* Google OAuth */}
                 <div className="w-full flex justify-center">
                   <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
