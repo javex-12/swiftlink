@@ -30,6 +30,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
     if (pathname === "/business") return "Store Editor";
     if (pathname === "/dispatch") return "Logistics Console";
     if (pathname === "/pro/analytics") return "Business Insights";
+    if (pathname === "/pro/admin") return "Admin Command Center";
     return "Pro Hub";
   };
 
