@@ -380,11 +380,25 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     });
   };
 
-  const AvatarIcon = ({ src, className = "w-full h-full" }: { src?: string, className?: string }) => {
-     if (src?.startsWith("http")) return <img src={src} className={cn("rounded-full object-cover", className)} alt="Ava" />;
-     const found = PROF_AVATARS.find(a => a.id === src) || PROF_AVATARS[0];
-     const Icon = found.icon;
-     return <div className={cn("rounded-full flex items-center justify-center text-white p-2", found.color, className)}><Icon size="100%" /></div>;
+  const AvatarIcon = ({ src, className = "w-full h-full", isVerified }: { src?: string, className?: string, isVerified?: boolean }) => {
+     return (
+       <div className="relative w-full h-full">
+         {src?.startsWith("http") ? (
+           <img src={src} className={cn("rounded-full object-cover w-full h-full", className)} alt="Ava" />
+         ) : (
+           (() => {
+             const found = PROF_AVATARS.find(a => a.id === src) || PROF_AVATARS[0];
+             const Icon = found.icon;
+             return <div className={cn("rounded-full flex items-center justify-center text-white p-2 w-full h-full", found.color, className)}><Icon size="100%" /></div>;
+           })()
+         )}
+         {isVerified && (
+           <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-0.5 shadow-md flex items-center justify-center border border-slate-100 dark:border-zinc-800">
+             <Verified size={10} className="text-blue-500 fill-blue-500" />
+           </div>
+         )}
+       </div>
+     );
   };
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -431,7 +445,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         </div>
         <div className="flex items-center gap-3">
            <button onClick={() => setTab("activity")} className="relative p-1"><Bell size={22} className="text-slate-500" />{notifications.length > 0 && <div className="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full" />}</button>
-           <button onClick={() => setTab("profile")} className="w-10 h-10 rounded-2xl border-2 border-slate-100 dark:border-zinc-800 overflow-hidden active:scale-90 transition-transform"><AvatarIcon src={myProfile?.avatar_url} /></button>
+           <button onClick={() => setTab("profile")} className="w-10 h-10 rounded-2xl border-2 border-slate-100 dark:border-zinc-800 overflow-hidden active:scale-90 transition-transform"><AvatarIcon src={myProfile?.avatar_url} isVerified={myProfile?.is_verified} /></button>
         </div>
       </header>
 
@@ -459,7 +473,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
               <div className="divide-y divide-slate-50 dark:divide-zinc-900">
                 {reviews.map((r, i) => (
                   <article key={r.id} className="p-5 md:p-10 flex gap-5 hover:bg-slate-50/30 dark:hover:bg-zinc-900/20 transition-colors group cursor-pointer" onClick={() => { setActiveThread(r); fetchComments(r.id); }}>
-                    <div className="shrink-0 w-14 h-14"><AvatarIcon src={r.author_avatar} /></div>
+                    <div className="shrink-0 w-14 h-14"><AvatarIcon src={r.author_avatar} isVerified={r.author_is_verified} /></div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2"><span className="font-black text-[16px] dark:text-white">{r.author_name}</span>{r.author_is_verified && <Verified size={14} className="text-blue-500 fill-blue-500" />}</div>
@@ -496,7 +510,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
           {tab === "post" && (
             <motion.div key="post" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="p-6 md:p-12 max-w-2xl mx-auto w-full relative">
                <div className="flex gap-6">
-                  <div className="w-16 h-16 shrink-0 shadow-xl"><AvatarIcon src={myProfile?.avatar_url} /></div>
+                  <div className="w-16 h-16 shrink-0 shadow-xl"><AvatarIcon src={myProfile?.avatar_url} isVerified={myProfile?.is_verified} /></div>
                   <div className="flex-1 space-y-8">
                     <p className="text-xl font-black dark:text-white tracking-tight">{myProfile?.display_name || "Guest"}</p>
                     <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="What's the latest?" className="w-full bg-transparent border-none outline-none text-2xl md:text-3xl font-medium dark:text-zinc-300 placeholder:text-slate-200 dark:placeholder:text-zinc-800 resize-none min-h-[300px]" autoFocus />
@@ -539,7 +553,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                    <input type="file" ref={avatarInputRef} onChange={(e) => handleAvatarUpload(e, false)} hidden accept="image/*" />
                    <div className="flex flex-col items-center text-center space-y-6">
                       <div className="w-32 h-32 rounded-[3rem] mx-auto shadow-2xl relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-                        <div className="w-full h-full rounded-[3rem] overflow-hidden"><AvatarIcon src={myProfile.avatar_url} /></div>
+                        <div className="w-full h-full rounded-[3rem] overflow-hidden"><AvatarIcon src={myProfile.avatar_url} isVerified={myProfile.is_verified} /></div>
                         <div className="absolute inset-0 rounded-[3rem] bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           {uploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Camera size={24} className="text-white" />}
                           <span className="text-[9px] text-white font-black uppercase mt-2">Change</span>
@@ -563,13 +577,13 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         {activeThread && (
           <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[100] bg-white dark:bg-black flex flex-col">
              <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center gap-4"><button onClick={() => setActiveThread(null)}><ChevronLeft size={24} className="dark:text-white" /></button><h2 className="text-lg font-black dark:text-white italic uppercase">Thread</h2></header>
-             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar"><div className="flex gap-4"><div className="w-12 h-12 shrink-0"><AvatarIcon src={activeThread.author_avatar} /></div><div className="flex-1 min-w-0"><p className="font-black dark:text-white tracking-tight">{activeThread.author_name}</p><p className="text-slate-600 dark:text-zinc-300 mt-2 text-lg leading-relaxed">{parseMessage(activeThread.message)}</p></div></div><div className="border-t border-slate-100 dark:border-zinc-900 pt-8 space-y-6"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Replies</p>{loadingComments ? <Loader2 className="animate-spin text-slate-300 mx-auto" size={24} /> : comments.map((c, i) => (<div key={i} className="flex gap-4"><div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-xl shrink-0"><MessageSquare size={18} /></div><div className="bg-slate-50 dark:bg-zinc-900/50 rounded-2xl rounded-tl-none p-4 flex-1"><p className="text-xs font-black dark:text-white mb-1">{c.author_name}</p><p className="text-sm dark:text-zinc-300 leading-snug">{c.message}</p></div></div>))}</div></div>
+             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar"><div className="flex gap-4"><div className="w-12 h-12 shrink-0"><AvatarIcon src={activeThread.author_avatar} isVerified={activeThread.author_is_verified} /></div><div className="flex-1 min-w-0"><p className="font-black dark:text-white tracking-tight">{activeThread.author_name}</p><p className="text-slate-600 dark:text-zinc-300 mt-2 text-lg leading-relaxed">{parseMessage(activeThread.message)}</p></div></div><div className="border-t border-slate-100 dark:border-zinc-900 pt-8 space-y-6"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Replies</p>{loadingComments ? <Loader2 className="animate-spin text-slate-300 mx-auto" size={24} /> : comments.map((c, i) => (<div key={i} className="flex gap-4"><div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-xl shrink-0"><MessageSquare size={18} /></div><div className="bg-slate-50 dark:bg-zinc-900/50 rounded-2xl rounded-tl-none p-4 flex-1"><p className="text-xs font-black dark:text-white mb-1">{c.author_name}</p><p className="text-sm dark:text-zinc-300 leading-snug">{c.message}</p></div></div>))}</div></div>
              <div className="p-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-slate-100 dark:border-zinc-900 pb-10"><div className="max-w-2xl mx-auto flex gap-3"><textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Say something..." className="flex-1 bg-slate-50 dark:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none resize-none dark:text-white" rows={1} /><button onClick={handlePostComment} className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg"><Send size={20} /></button></div></div>
           </motion.div>
         )}
         {activeChat && (
           <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[150] bg-white dark:bg-black flex flex-col">
-             <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center gap-4"><button onClick={() => setActiveChat(null)}><ChevronLeft size={24} className="dark:text-white" /></button><div className="w-10 h-10 rounded-full overflow-hidden border"><AvatarIcon src={activeChat.avatar_url} /></div><div><p className="font-black dark:text-white leading-tight">{activeChat.display_name}</p><p className="text-[10px] font-bold text-emerald-500">Active Now</p></div></header>
+             <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center gap-4"><button onClick={() => setActiveChat(null)}><ChevronLeft size={24} className="dark:text-white" /></button><div className="w-10 h-10 rounded-full overflow-hidden border"><AvatarIcon src={activeChat.avatar_url} isVerified={activeChat.is_verified} /></div><div><p className="font-black dark:text-white leading-tight">{activeChat.display_name}</p><p className="text-[10px] font-bold text-emerald-500">Active Now</p></div></header>
              <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">{directMessages.map((m, i) => (<div key={i} className={cn("flex", m.sender_id === user?.id ? "justify-end" : "justify-start")}><div className={cn("max-w-[75%] p-4 rounded-3xl", m.sender_id === user?.id ? "bg-slate-900 text-white rounded-tr-none" : "bg-slate-100 dark:bg-zinc-900 dark:text-white rounded-tl-none")}><p className="text-sm font-medium">{m.content}</p></div></div>))}</div>
              <div className="p-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-slate-100 dark:border-zinc-800 pb-10"><div className="max-w-2xl mx-auto flex gap-3"><textarea value={chatText} onChange={e => setChatText(e.target.value)} placeholder="Say something..." className="flex-1 bg-slate-50 dark:bg-zinc-900 rounded-2xl px-5 py-4 text-sm outline-none resize-none dark:text-white" rows={1} /><button onClick={handleSendMessage} className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg"><Send size={20} /></button></div></div>
           </motion.div>
