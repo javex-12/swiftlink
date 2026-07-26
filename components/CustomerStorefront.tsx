@@ -20,7 +20,8 @@ import {
   Smartphone,
   Truck,
   Shield,
-  Package
+  Package,
+  Verified
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
@@ -697,10 +698,24 @@ export function CustomerStorefront({
   useEffect(() => {
       if (screen === "community" && effectiveState?.id) {
           setReviewsLoading(true);
-          supabase.from("store_reviews").select("*").eq("store_id", effectiveState.id).neq("type", "post").order("created_at", { ascending: false })
+          supabase.from("store_reviews")
+            .select("*, social_profiles:author_id (display_name, username, avatar_url, is_verified)")
+            .eq("store_id", effectiveState.id)
+            .neq("type", "post")
+            .order("created_at", { ascending: false })
             .then(async ({ data: reviewsData }) => {
                 if (reviewsData) {
-                    const filteredReviews = reviewsData.filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId);
+                    const filteredReviews = reviewsData
+                      .filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId)
+                      .map((r: any) => {
+                          const prof = r.social_profiles;
+                          return {
+                              ...r,
+                              author_name: prof?.display_name || r.author_name || "Guest Buyer",
+                              author_avatar: prof?.avatar_url || "User",
+                              author_is_verified: prof?.is_verified || false
+                          };
+                      });
                     setReviews(filteredReviews);
                     const reviewIds = filteredReviews.map(r => r.id);
                     if (reviewIds.length > 0) {
@@ -751,19 +766,34 @@ export function CustomerStorefront({
   };
 
   const submitReview = async () => {
-      if (!newReview.name || !newReview.message || !effectiveState?.id) return;
-      if (isStoreOwner) return; // Prevent store owner from reviewing their own store
+      if (!newReview.message || !effectiveState?.id) return;
+      if (isStoreOwner) return;
+
+      let resolvedName = newReview.name?.trim();
+      if (user) {
+          const { data } = await supabase.from("social_profiles").select("display_name").eq("id", user.id).maybeSingle();
+          resolvedName = data?.display_name || user.email?.split('@')[0] || "Authenticated Buyer";
+      } else if (!resolvedName) {
+          resolvedName = "Guest Buyer";
+      }
       
       const { data, error } = await supabase.from("store_reviews").insert({
           store_id: effectiveState.id,
-          author_name: newReview.name,
+          author_name: resolvedName,
           author_id: user?.id || null,
           message: newReview.message,
           rating: newReview.rating
       }).select().single();
 
       if (!error && data) {
-          setReviews(prev => [data, ...prev]);
+          // Normalize locally
+          const updatedLocalReview = {
+              ...data,
+              author_name: resolvedName,
+              author_avatar: "User",
+              author_is_verified: false
+          };
+          setReviews(prev => [updatedLocalReview, ...prev]);
           setShowReviewForm(false);
           setNewReview({ name: "", message: "", rating: 5 });
       }
@@ -1059,63 +1089,98 @@ export function CustomerStorefront({
                                 </div>
                                 <div className="p-6">
                                     {showReviewForm && !isStoreOwner && (
-                                        <div className="bg-slate-50 p-6 rounded-2xl border border-black/5 mb-6 space-y-4">
-                                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">Leave Your Review</h3>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Your Name" 
-                                                value={newReview.name} 
-                                                onChange={e => setNewReview({ ...newReview, name: e.target.value })} 
-                                                className="w-full p-3.5 rounded-xl border border-black/5 outline-none text-xs font-semibold"
-                                            />
+                                        <div className="bg-slate-50 dark:bg-zinc-900 p-6 rounded-2xl border border-black/5 dark:border-white/5 mb-6 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">Leave Your Review</h3>
+                                            
+                                            {/* Name field is only visible for guests. Authenticated users are auto-linked to their profile name */}
+                                            {!user ? (
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Your Name (Optional)" 
+                                                    value={newReview.name} 
+                                                    onChange={e => setNewReview({ ...newReview, name: e.target.value })} 
+                                                    className="w-full p-3.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white outline-none text-xs font-semibold"
+                                                />
+                                            ) : (
+                                                <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+                                                    Posting publicly as <span className="text-gray-900 dark:text-white font-black">{user.email?.split('@')[0]}</span>
+                                                </p>
+                                            )}
+
                                             <textarea 
-                                                placeholder="Review message..." 
+                                                placeholder="Write your review message here..." 
                                                 value={newReview.message} 
                                                 onChange={e => setNewReview({ ...newReview, message: e.target.value })} 
-                                                className="w-full p-3.5 rounded-xl border border-black/5 outline-none text-xs font-semibold min-h-[80px]"
+                                                className="w-full p-3.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white outline-none text-xs font-semibold min-h-[80px] placeholder-gray-400"
                                             />
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-black uppercase text-gray-400">Rating</span>
-                                                <div className="flex gap-1">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <button 
-                                                            key={star} 
-                                                            onClick={() => setNewReview({ ...newReview, rating: star })}
-                                                            className="text-amber-400"
-                                                        >
-                                                            <Star size={16} className={star <= newReview.rating ? "fill-amber-400" : ""} />
-                                                        </button>
-                                                    ))}
+                                            
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black uppercase text-gray-400 dark:text-zinc-500">Rating</span>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button 
+                                                                key={star} 
+                                                                onClick={() => setNewReview({ ...newReview, rating: star })}
+                                                                className="text-amber-400"
+                                                            >
+                                                                <Star size={16} className={star <= newReview.rating ? "fill-amber-400" : ""} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
+                                                <button 
+                                                    onClick={submitReview}
+                                                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                                                >
+                                                    Submit Review
+                                                </button>
                                             </div>
-                                            <button 
-                                                onClick={submitReview}
-                                                className="w-full py-3.5 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition-colors"
-                                            >
-                                                Submit Review
-                                            </button>
                                         </div>
                                     )}
 
                                     {reviews.length === 0 ? <p className="text-center text-gray-400 py-20 font-black uppercase tracking-widest">No reviews yet</p> : (
                                         <div className="space-y-6">
                                             {reviews.map(r => (
-                                                <div key={r.id} className="bg-white p-6 rounded-2xl shadow-sm border border-black/5 space-y-4">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="font-black text-sm text-gray-900">{r.author_name}</span>
+                                                <div key={r.id} className="bg-white dark:bg-zinc-950 p-6 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex items-center gap-3">
+                                                            {/* User avatar indicator */}
+                                                            <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 flex items-center justify-center text-gray-500 relative shrink-0">
+                                                                {r.author_avatar && r.author_avatar.startsWith("http") ? (
+                                                                    <img src={r.author_avatar} className="w-full h-full rounded-full object-cover" alt="" />
+                                                                ) : (
+                                                                    <span className="text-xs font-black uppercase text-gray-400">{r.author_name?.substring(0, 2)}</span>
+                                                                )}
+                                                                {r.author_is_verified && (
+                                                                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-0.5 shadow-md border border-slate-100 dark:border-zinc-800">
+                                                                        <Verified size={9} className="text-blue-500 fill-blue-500" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-black text-sm text-gray-900 dark:text-white leading-none block">{r.author_name}</span>
+                                                                </div>
+                                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 block">{new Date(r.created_at).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
                                                         <div className="flex gap-1">{Array.from({length:5}).map((_,i) => <Star key={i} size={12} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"}/>)}</div>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 font-medium">{r.message}</p>
+                                                    
+                                                    <p className="text-sm text-gray-600 dark:text-zinc-300 font-medium leading-relaxed">{r.message}</p>
                                                     
                                                     {/* Comments Thread */}
-                                                    <div className="pl-4 border-l-2 border-slate-100 space-y-2 mt-4">
-                                                        {(comments[r.id] || []).map(c => (
-                                                            <div key={c.id} className="bg-slate-50/50 p-3 rounded-xl">
-                                                                <p className="text-[10px] font-black text-gray-900">{c.author_name}</p>
-                                                                <p className="text-xs text-gray-500 font-medium mt-0.5">{c.message}</p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    {(comments[r.id] || []).length > 0 && (
+                                                        <div className="pl-4 border-l-2 border-slate-100 dark:border-zinc-800 space-y-2 mt-4">
+                                                            {(comments[r.id] || []).map(c => (
+                                                                <div key={c.id} className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl">
+                                                                    <p className="text-[10px] font-black text-gray-900 dark:text-white">{c.author_name}</p>
+                                                                    <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium mt-0.5">{c.message}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
 
                                                     {/* Add Comment Box */}
                                                     <div className="flex gap-2 items-center mt-4">
@@ -1125,11 +1190,11 @@ export function CustomerStorefront({
                                                             value={newCommentMessage[r.id] || ""} 
                                                             onChange={e => setNewCommentMessage({ ...newCommentMessage, [r.id]: e.target.value })} 
                                                             onKeyDown={e => e.key === "Enter" && submitComment(r.id)}
-                                                            className="flex-1 px-4 py-2 border border-black/5 rounded-xl text-xs font-semibold outline-none focus:border-emerald-500"
+                                                            className="flex-1 px-4 py-2 border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-black rounded-xl text-xs font-semibold text-gray-950 dark:text-white outline-none focus:border-emerald-500"
                                                         />
                                                         <button 
                                                             onClick={() => submitComment(r.id)}
-                                                            className="px-4 py-2 bg-gray-950 text-white rounded-xl text-[9px] font-black uppercase tracking-wider"
+                                                            className="px-4 py-2 bg-gray-950 dark:bg-white text-white dark:text-black rounded-xl text-[9px] font-black uppercase tracking-wider"
                                                         >
                                                             Reply
                                                         </button>
