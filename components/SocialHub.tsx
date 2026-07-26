@@ -191,26 +191,43 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     const from = append ? reviews.length : 0;
     const to = from + limit - 1;
 
-    // Fetch ALL posts globally — no store_id filter for the social feed
-    const { data } = await supabase
+    // Step 1: fetch posts plainly (no embedded join)
+    const { data, error } = await supabase
       .from("store_reviews")
-      .select(`*, social_profiles:user_id (display_name, username, avatar_url, is_verified)`)
+      .select("*")
       .eq("type", "post")
       .order("created_at", { ascending: false })
       .range(from, to);
 
-    if (data) {
-        const normalized = (data as any[]).map(r => ({ 
-            ...r, 
-            likes: r.likes || 0, 
-            dislikes: r.dislikes || 0,
-            author_name: (r.social_profiles as any)?.display_name || r.author_name || "User",
-            author_avatar: (r.social_profiles as any)?.avatar_url || "User",
-            author_is_verified: (r.social_profiles as any)?.is_verified || false
-        }));
-        setReviews(prev => append ? [...prev, ...normalized] : normalized);
-        setHasMore(data.length === limit);
+    if (error) { console.error("[SocialHub feed error]", error); setLoading(false); return; }
+
+    const raw = data || [];
+
+    // Step 2: enrich with social profiles
+    const userIds = [...new Set(raw.map((r: any) => r.user_id || r.author_id).filter(Boolean))];
+    let profileMap: Record<string, any> = {};
+    if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("social_profiles")
+          .select("id, display_name, username, avatar_url, is_verified")
+          .in("id", userIds);
+        if (profiles) profiles.forEach((p: any) => { profileMap[p.id] = p; });
     }
+
+    const normalized = raw.map((r: any) => {
+        const prof = profileMap[r.user_id || r.author_id];
+        return {
+            ...r,
+            likes: r.likes || 0,
+            dislikes: r.dislikes || 0,
+            author_name: prof?.display_name || r.author_name || "User",
+            author_avatar: prof?.avatar_url || "User",
+            author_is_verified: prof?.is_verified || false
+        };
+    });
+
+    setReviews(prev => append ? [...prev, ...normalized] : normalized);
+    setHasMore(raw.length === limit);
     setLoading(false);
   };
 
@@ -223,8 +240,32 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
 
   const fetchNotifications = async () => {
     if (!user) return;
-    const { data } = await supabase.from("social_notifications").select(`*, actor:actor_id (display_name, avatar_url)`).eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
-    if (data) setNotifications(data);
+    // Step 1: fetch notifications plainly
+    const { data } = await supabase
+      .from("social_notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (!data) return;
+
+    // Step 2: enrich with actor profiles
+    const actorIds = [...new Set(data.map((n: any) => n.actor_id).filter(Boolean))];
+    let actorMap: Record<string, any> = {};
+    if (actorIds.length > 0) {
+        const { data: actors } = await supabase
+          .from("social_profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", actorIds);
+        if (actors) actors.forEach((a: any) => { actorMap[a.id] = a; });
+    }
+
+    const enriched = data.map((n: any) => ({
+        ...n,
+        actor: actorMap[n.actor_id] || null
+    }));
+    setNotifications(enriched);
   };
 
   const fetchComments = async (postId: string) => {
