@@ -112,12 +112,7 @@ export default function SignupPage() {
       const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
       const slug = getPublicStoreSlug({ storeUsername, bizName });
-      const PRIVILEGED: Record<string, "pro" | "business"> = {
-        "michaeldosunmu22@gmail.com": "business",
-        "dosunmumichael26@gmail.com": "pro",
-      };
-      const emailToCheck = email || form.email;
-      const initialPlan = (emailToCheck && PRIVILEGED[emailToCheck]) || searchParams.get("plan") || "free";
+      const initialPlan = searchParams.get("plan") || "free";
       const nextState = {
         id: uid, plan: initialPlan, bizName, storeUsername,
         phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
@@ -131,7 +126,7 @@ export default function SignupPage() {
       };
       await supabase.from("stores").upsert({
         id: uid, biz_name: bizName, store_username: storeUsername,
-        phone: nextState.phone, state_json: nextState, updated_at: new Date().toISOString(),
+        phone: nextState.phone, plan: initialPlan, account_status: 'active', state_json: nextState, updated_at: new Date().toISOString(),
       });
       localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
     } catch (err) {

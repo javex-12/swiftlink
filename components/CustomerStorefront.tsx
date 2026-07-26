@@ -725,8 +725,34 @@ export function CustomerStorefront({
       }
   }, [screen, effectiveState?.id]);
 
+  const [newCommentMessage, setNewCommentMessage] = useState<Record<string, string>>({});
+
+  const submitComment = async (reviewId: string) => {
+      const msg = newCommentMessage[reviewId]?.trim();
+      if (!msg || !effectiveState?.id) return;
+
+      const commenterName = isStoreOwner ? (effectiveState.bizName || "Store Owner") : (user?.email?.split('@')[0] || "Buyer");
+
+      const { data, error } = await supabase.from("store_review_comments").insert({
+          review_id: reviewId,
+          author_name: commenterName,
+          author_id: user?.id || null,
+          message: msg,
+          store_id: effectiveState.id
+      }).select().single();
+
+      if (!error && data) {
+          setComments(prev => ({
+              ...prev,
+              [reviewId]: [...(prev[reviewId] || []), data]
+          }));
+          setNewCommentMessage(prev => ({ ...prev, [reviewId]: "" }));
+      }
+  };
+
   const submitReview = async () => {
       if (!newReview.name || !newReview.message || !effectiveState?.id) return;
+      if (isStoreOwner) return; // Prevent store owner from reviewing their own store
       
       const { data, error } = await supabase.from("store_reviews").insert({
           store_id: effectiveState.id,
@@ -1016,16 +1042,99 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen bg-white" style={{ backgroundColor: bgColor }}>
-                                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header p-6 flex items-center gap-4">
-                                    <button onClick={() => changeScreen("home")} className="text-gray-900"><ChevronLeft size={24} /></button>
-                                    <h2 className="text-xl font-black text-gray-900">Reviews</h2>
+                            <div className="w-full flex flex-col min-h-screen bg-white pb-24" style={{ backgroundColor: bgColor }}>
+                                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header p-6 flex justify-between items-center gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => changeScreen("home")} className="text-gray-900"><ChevronLeft size={24} /></button>
+                                        <h2 className="text-xl font-black text-gray-900">Reviews</h2>
+                                    </div>
+                                    {!isStoreOwner && (
+                                        <button 
+                                            onClick={() => setShowReviewForm(!showReviewForm)}
+                                            className="px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
+                                        >
+                                            {showReviewForm ? "Cancel" : "Write Review"}
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="p-6">
+                                    {showReviewForm && !isStoreOwner && (
+                                        <div className="bg-slate-50 p-6 rounded-2xl border border-black/5 mb-6 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-900">Leave Your Review</h3>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Your Name" 
+                                                value={newReview.name} 
+                                                onChange={e => setNewReview({ ...newReview, name: e.target.value })} 
+                                                className="w-full p-3.5 rounded-xl border border-black/5 outline-none text-xs font-semibold"
+                                            />
+                                            <textarea 
+                                                placeholder="Review message..." 
+                                                value={newReview.message} 
+                                                onChange={e => setNewReview({ ...newReview, message: e.target.value })} 
+                                                className="w-full p-3.5 rounded-xl border border-black/5 outline-none text-xs font-semibold min-h-[80px]"
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black uppercase text-gray-400">Rating</span>
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <button 
+                                                            key={star} 
+                                                            onClick={() => setNewReview({ ...newReview, rating: star })}
+                                                            className="text-amber-400"
+                                                        >
+                                                            <Star size={16} className={star <= newReview.rating ? "fill-amber-400" : ""} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={submitReview}
+                                                className="w-full py-3.5 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition-colors"
+                                            >
+                                                Submit Review
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {reviews.length === 0 ? <p className="text-center text-gray-400 py-20 font-black uppercase tracking-widest">No reviews yet</p> : (
                                         <div className="space-y-6">
                                             {reviews.map(r => (
-                                                <div key={r.id} className="bg-white p-6 rounded-2xl shadow-sm border border-black/5"><div className="flex justify-between mb-4"><span className="font-black text-sm text-gray-900">{r.author_name}</span><div className="flex gap-1">{Array.from({length:5}).map((_,i) => <Star key={i} size={12} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"}/>)}</div></div><p className="text-sm text-gray-600 font-medium">{r.message}</p></div>
+                                                <div key={r.id} className="bg-white p-6 rounded-2xl shadow-sm border border-black/5 space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-black text-sm text-gray-900">{r.author_name}</span>
+                                                        <div className="flex gap-1">{Array.from({length:5}).map((_,i) => <Star key={i} size={12} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"}/>)}</div>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 font-medium">{r.message}</p>
+                                                    
+                                                    {/* Comments Thread */}
+                                                    <div className="pl-4 border-l-2 border-slate-100 space-y-2 mt-4">
+                                                        {(comments[r.id] || []).map(c => (
+                                                            <div key={c.id} className="bg-slate-50/50 p-3 rounded-xl">
+                                                                <p className="text-[10px] font-black text-gray-900">{c.author_name}</p>
+                                                                <p className="text-xs text-gray-500 font-medium mt-0.5">{c.message}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Add Comment Box */}
+                                                    <div className="flex gap-2 items-center mt-4">
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Post comment..." 
+                                                            value={newCommentMessage[r.id] || ""} 
+                                                            onChange={e => setNewCommentMessage({ ...newCommentMessage, [r.id]: e.target.value })} 
+                                                            onKeyDown={e => e.key === "Enter" && submitComment(r.id)}
+                                                            className="flex-1 px-4 py-2 border border-black/5 rounded-xl text-xs font-semibold outline-none focus:border-emerald-500"
+                                                        />
+                                                        <button 
+                                                            onClick={() => submitComment(r.id)}
+                                                            className="px-4 py-2 bg-gray-950 text-white rounded-xl text-[9px] font-black uppercase tracking-wider"
+                                                        >
+                                                            Reply
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             ))}
                                         </div>
                                     )}

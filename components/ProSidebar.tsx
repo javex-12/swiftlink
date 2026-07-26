@@ -9,14 +9,16 @@ import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
   const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, user, isAdmin } = useSwiftLink();
+  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, user, isAdmin, addToast } = useSwiftLink();
   const [isHovered, setIsHovered] = useState(false);
+
+  const isPremium = state.plan === "pro" || state.plan === "business";
 
   const navItems = [
     { href: "/pro", label: "Dashboard", icon: LayoutDashboard },
     { href: "/business", label: "Store Editor", icon: Store },
     { href: "/dispatch", label: "Logistics", icon: Truck },
-    { href: "/pro/analytics", label: "Analytics", icon: BarChart3 },
+    { href: isPremium ? "/pro/analytics" : "#", label: isPremium ? "Analytics" : "Analytics 🔒", icon: BarChart3, locked: !isPremium },
     { href: "/account", label: "Account", icon: Settings },
   ];
 
@@ -77,7 +79,14 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
+                onClick={(e) => {
+                  if ((item as any).locked) {
+                    e.preventDefault();
+                    addToast("Analytics is a premium Pro feature. Upgrade your store plan to unlock.", "info");
+                    return;
+                  }
+                  setMobileOpen(false);
+                }}
                 className={cn(
                   "flex items-center gap-4 rounded-xl px-3.5 py-3 transition-all group relative",
                   active

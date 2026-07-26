@@ -104,10 +104,6 @@ function StableTextarea({ value, onChange, className, placeholder, rows }: {
   );
 }
 
-const PRIVILEGED_USERS: Record<string, string> = {
-    "michaeldosunmu22@gmail.com": "business", 
-    "dosunmumichael26@gmail.com": "pro",
-};
 
 export function BusinessView() {
   const [activeTab, setActiveTab] = useState<"store" | "appearance" | "inbox">("store");
@@ -221,10 +217,7 @@ export function BusinessView() {
   const handleCreateNew = async () => {
     if (!user) return;
     
-    // Check privileged status directly using the top-level constant
-    const userEmail = user.email || "";
-    const assignedPlan = PRIVILEGED_USERS[userEmail];
-    const isPremium = assignedPlan === "business" || assignedPlan === "pro" || globalState.plan === "business" || globalState.plan === "pro";
+    const isPremium = globalState.plan === "business" || globalState.plan === "pro";
 
     if (!isPremium && stores.length >= 1) {
         addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");

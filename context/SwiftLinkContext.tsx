@@ -114,11 +114,6 @@ type SwiftLinkContextValue = {
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
-// EMAILS THAT GET PREMIUM PLANS AUTOMATICALLY
-const PRIVILEGED_USERS: Record<string, "pro" | "business"> = {
-  "michaeldosunmu22@gmail.com": "business", 
-  "dosunmumichael26@gmail.com": "pro",
-};
 
 const PROTECTED_PATHS = ["/pro", "/business", "/dispatch", "/account", "/cart"];
 
@@ -139,17 +134,29 @@ export function SwiftLinkProvider({
   const fetchStores = useCallback(async (userId: string) => {
     try {
       if (!isSupabaseConfigured()) return [];
-      const { data } = await supabase.from('stores').select('id, owner_id, state_json').eq('owner_id', userId);
+      // Select plan and account_status columns alongside state_json
+      const { data } = await supabase.from('stores').select('id, owner_id, plan, account_status, state_json').eq('owner_id', userId);
       if (data) {
-          const loadedStores = data.map((s: any) => normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id }));
+          const loadedStores = data.map((s: any) => {
+            // DB plan column is authoritative; mirror it into state_json
+            const planFromDB = s.plan || (s.state_json as any)?.plan || 'free';
+            return normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id, plan: planFromDB });
+          });
           setStores(loadedStores);
+
+          // Check if the primary store is banned
+          const primaryStore = data[0];
+          if (primaryStore?.account_status === 'banned') {
+            router.replace('/banned');
+          }
+
           return loadedStores;
       }
     } catch (e) {
       console.warn("fetchStores database query failed:", e);
     }
     return [];
-  }, []);
+  }, [router]);
 
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
@@ -176,9 +183,10 @@ export function SwiftLinkProvider({
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const checkAdminStatus = useCallback(async (userId: string, email?: string) => {
+  const checkAdminStatus = useCallback(async (userId: string) => {
     if (!isSupabaseConfigured()) {
-      setIsAdmin(email === "admin@swiftlink.pro");
+      // Demo mode: admins are NEVER granted automatically
+      setIsAdmin(false);
       return;
     }
     try {
@@ -187,39 +195,52 @@ export function SwiftLinkProvider({
         .select('id')
         .eq('id', userId)
         .maybeSingle();
-      if (data && !error) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
+      setIsAdmin(!!(data && !error));
     } catch (e) {
       console.warn("Failed to query system_admins table:", e);
       setIsAdmin(false);
     }
   }, []);
 
+  // Load theme: DB (social_profiles) takes priority, then localStorage
+  const applyTheme = useCallback((t: "light" | "dark") => {
+    setTheme(t);
+    localStorage.setItem("swiftlink_theme", t);
+    if (t === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+  }, []);
+
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("swiftlink_theme") as "light" | "dark" : null;
-    if (saved) {
-      setTheme(saved);
-      if (saved === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("swiftlink_theme", "light");
-    }
-  }, []);
+    applyTheme(saved || "light");
+  }, [applyTheme]);
+
+  const loadThemeFromDB = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data } = await supabase
+        .from('social_profiles')
+        .select('preferences')
+        .eq('user_id', userId)
+        .maybeSingle();
+      const dbTheme = (data?.preferences as any)?.theme as "light" | "dark" | undefined;
+      if (dbTheme === 'light' || dbTheme === 'dark') applyTheme(dbTheme);
+    } catch (e) { /* silent — fallback to localStorage */ }
+  }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
-      localStorage.setItem("swiftlink_theme", next);
-      if (next === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
+      applyTheme(next);
+      // Persist to DB (per-user, so syncs across devices)
+      if (isSupabaseConfigured() && userRef.current?.id) {
+        void supabase.from('social_profiles')
+          .update({ preferences: { theme: next } })
+          .eq('user_id', userRef.current.id);
+      }
       return next;
     });
-  }, []);
+  }, [applyTheme]);
 
   const addToast = useCallback((message: string, type: ToastType = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -233,9 +254,7 @@ export function SwiftLinkProvider({
   const createNewStore = useCallback(async (name: string) => {
     if (!user) return;
     const newId = crypto.randomUUID();
-    const assignedPlan = user.email ? PRIVILEGED_USERS[user.email] || "business" : "business";
-    
-    // Generate initial handle
+    // Plan is always 'free' by default; admin can promote via dashboard
     const baseHandle = name.toLowerCase().replace(/[^a-z0-9]/g, "");
     const cleanHandle = baseHandle || `store-${Math.random().toString(36).substring(2, 7)}`;
     
@@ -243,7 +262,7 @@ export function SwiftLinkProvider({
         id: newId, 
         ownerId: user.id, 
         bizName: name, 
-        plan: assignedPlan,
+        plan: "free",
         storeUsername: cleanHandle 
     });
     
@@ -252,6 +271,8 @@ export function SwiftLinkProvider({
         owner_id: user.id,
         biz_name: name,
         store_username: cleanHandle,
+        plan: 'free',
+        account_status: 'active',
         state_json: newState
     });
 
@@ -261,13 +282,10 @@ export function SwiftLinkProvider({
         return;
     }
 
-    // Optimistically add to local list and switch to it
     setStores(prev => [...prev, newState]);
     setState(newState);
     localStorage.setItem("swiftlink_state", JSON.stringify(newState));
     addToast(`"${name}" store created!`, "success");
-
-    // Re-fetch from DB to stay in sync
     void fetchStores(user.id);
   }, [user, addToast, fetchStores]);
 
@@ -538,8 +556,9 @@ export function SwiftLinkProvider({
       if (!isSupabaseConfigured()) {
         setIsSupabaseActive(false);
         if (isDemo) {
-          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
-          setIsAdmin(true);
+          // Demo mode: generic placeholder, never an admin
+          setUser({ id: "demo-user-id", email: "demo@swiftlink.local" } as any);
+          setIsAdmin(false);
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -553,18 +572,19 @@ export function SwiftLinkProvider({
         if (session?.user) {
           setUser(session.user);
           setIsSupabaseActive(true);
-          void checkAdminStatus(session.user.id, session.user.email);
+          void checkAdminStatus(session.user.id);
+          void loadThemeFromDB(session.user.id);
         } else if (isDemo) {
-          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
-          setIsAdmin(true);
+          setUser({ id: "demo-user-id", email: "demo@swiftlink.local" } as any);
+          setIsAdmin(false);
         } else {
           setUser(null);
           setIsAdmin(false);
         }
       } catch (e) {
         if (isDemo) {
-          setUser({ id: "demo-user-id", email: "admin@swiftlink.pro" } as any);
-          setIsAdmin(true);
+          setUser({ id: "demo-user-id", email: "demo@swiftlink.local" } as any);
+          setIsAdmin(false);
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -574,36 +594,29 @@ export function SwiftLinkProvider({
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         const isDemoActive = typeof window !== "undefined" && localStorage.getItem("swiftlink_demo_login") === "true";
-        const u = session?.user ?? (isDemoActive ? { id: "demo-user-id", email: "admin@swiftlink.pro" } as any : null);
+        const u = session?.user ?? (isDemoActive ? { id: "demo-user-id", email: "demo@swiftlink.local" } as any : null);
         setUser(u);
         userRef.current = u;
 
         if (u) {
             setIsSupabaseActive(true);
-            void checkAdminStatus(u.id, u.email);
-            const assignedPlan = u.email ? PRIVILEGED_USERS[u.email] : null;
+            void checkAdminStatus(u.id);
+            void loadThemeFromDB(u.id);
 
             void fetchStores(u.id).then((storesList) => {
                 if (isOwnerRef.current) {
                     if (storesList && storesList.length > 0) {
-                        let nextState = storesList[0];
-                        nextState = normalizeShopState(nextState);
-                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
-                        
+                        // Plan comes from DB via fetchStores — no hardcoded override
+                        const nextState = normalizeShopState(storesList[0]);
                         setState(nextState);
                         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
                     } else {
-                        // Fallback for brand new users without a store
-                        let nextState = defaultShopState();
-                        nextState = { ...nextState, id: u.id, ownerId: u.id };
-                        if (assignedPlan) nextState = { ...nextState, plan: assignedPlan };
-                        
+                        const nextState = normalizeShopState({ id: u.id, ownerId: u.id, plan: 'free' });
                         setState(nextState);
                     }
                 }
             });
         } else {
-            // If no user, reset state to default to avoid showing old local data
             setState(defaultShopState());
             setIsAdmin(false);
             if (typeof window !== "undefined") {

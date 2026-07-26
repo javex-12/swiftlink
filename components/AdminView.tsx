@@ -178,6 +178,37 @@ export function AdminView() {
     }
   };
 
+  // User tier and account ban actions
+  const [updatingStoreId, setUpdatingStoreId] = useState<string | null>(null);
+
+  const handleSetUserPlan = async (storeId: string, newPlan: "free" | "pro" | "business") => {
+    setUpdatingStoreId(storeId);
+    try {
+      const { error } = await supabase.rpc("set_user_plan", { store_id_param: storeId, new_plan: newPlan });
+      if (error) throw error;
+      setStores(prev => prev.map(s => s.id === storeId ? { ...s, plan: newPlan, state_json: { ...s.state_json, plan: newPlan } } : s));
+      addToast(`User plan updated to ${newPlan.toUpperCase()} successfully.`, "success");
+    } catch (e: any) {
+      addToast(e.message || "Failed to update user plan.", "error");
+    } finally {
+      setUpdatingStoreId(null);
+    }
+  };
+
+  const handleSetAccountStatus = async (storeId: string, newStatus: "active" | "banned") => {
+    setUpdatingStoreId(storeId);
+    try {
+      const { error } = await supabase.rpc("set_account_status", { store_id_param: storeId, new_status: newStatus });
+      if (error) throw error;
+      setStores(prev => prev.map(s => s.id === storeId ? { ...s, account_status: newStatus } : s));
+      addToast(`Store account status changed to ${newStatus.toUpperCase()}.`, "success");
+    } catch (e: any) {
+      addToast(e.message || "Failed to update account status.", "error");
+    } finally {
+      setUpdatingStoreId(null);
+    }
+  };
+
   // Filter/Search states
   const [globalSearch, setGlobalSearch] = useState("");
   const [feedbackFilter, setFeedbackFilter] = useState("all");
@@ -1098,7 +1129,35 @@ export function AdminView() {
                               )}
                             </td>
                             <td className="py-5 px-6 text-[10px] font-bold text-slate-500 font-mono">{s.phone}</td>
-                            <td className="py-5 px-6 text-right flex justify-end gap-2">
+                            <td className="py-5 px-6 text-right flex justify-end items-center gap-3">
+                              {/* Plan selector */}
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  disabled={updatingStoreId === s.id}
+                                  value={(s as any).plan || (s.state_json as any)?.plan || "free"}
+                                  onChange={(e) => handleSetUserPlan(s.id, e.target.value as any)}
+                                  className="bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500/50"
+                                >
+                                  <option value="free">Free</option>
+                                  <option value="pro">Pro</option>
+                                  <option value="business">Business</option>
+                                </select>
+                              </div>
+
+                              {/* Ban/Unban toggle */}
+                              <button
+                                disabled={updatingStoreId === s.id}
+                                onClick={() => handleSetAccountStatus(s.id, (s as any).account_status === "banned" ? "active" : "banned")}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
+                                  (s as any).account_status === "banned"
+                                    ? "bg-rose-50 dark:bg-rose-500/10 text-rose-500 border-rose-100 dark:border-rose-500/20"
+                                    : "bg-slate-50 dark:bg-zinc-950 text-slate-400 border-slate-100 dark:border-white/5 hover:border-slate-355"
+                                )}
+                              >
+                                {(s as any).account_status === "banned" ? "Banned" : "Ban"}
+                              </button>
+
                               <a 
                                 href={`/?shop=${s.id}`} 
                                 target="_blank"
