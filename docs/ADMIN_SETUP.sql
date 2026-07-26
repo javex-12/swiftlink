@@ -13,18 +13,14 @@ CREATE POLICY "Authenticated users can view system_admins"
   ON public.system_admins FOR SELECT
   USING (auth.role() = 'authenticated');
 
--- Create trigger function to automatically promote admin@swiftlink.pro to system_admins on registration
+-- Auto-register trigger stub (no email is hardcoded — admins are promoted manually via the Admin Panel)
 CREATE OR REPLACE FUNCTION public.auto_register_system_admins()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF NEW.email = 'admin@swiftlink.pro' THEN
-    INSERT INTO public.system_admins (id, email)
-    VALUES (NEW.id, NEW.email)
-    ON CONFLICT (id) DO NOTHING;
-  END IF;
+  -- No auto-promotion. Use the Admin Panel → Manage Admins tab to add admins by email.
   RETURN NEW;
 END;
 $$;
