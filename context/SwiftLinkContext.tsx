@@ -195,7 +195,12 @@ export function SwiftLinkProvider({
         .select('id')
         .eq('id', userId)
         .maybeSingle();
-      setIsAdmin(!!(data && !error));
+      const isAdminUser = !!(data && !error);
+      setIsAdmin(isAdminUser);
+      // Admins always get Business tier — upgrade state immediately
+      if (isAdminUser) {
+        setState(prev => ({ ...prev, plan: 'business' }));
+      }
     } catch (e) {
       console.warn("Failed to query system_admins table:", e);
       setIsAdmin(false);

@@ -132,6 +132,14 @@ BEGIN
   VALUES (target_uid, clean_email)
   ON CONFLICT (id) DO NOTHING;
 
+  -- Admins get Business tier automatically on all their stores
+  UPDATE public.stores
+  SET
+    plan = 'business',
+    state_json = jsonb_set(COALESCE(state_json, '{}'::jsonb), '{plan}', '"business"'),
+    updated_at = now()
+  WHERE owner_id = target_uid;
+
   RETURN true;
 END;
 $$;
@@ -148,6 +156,14 @@ ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL 
 UPDATE public.stores
 SET plan = COALESCE((state_json->>'plan')::text, 'free')
 WHERE plan = 'free' AND state_json->>'plan' IS NOT NULL;
+
+-- Admins always get Business tier — upgrade any existing admin stores now
+UPDATE public.stores
+SET
+  plan = 'business',
+  state_json = jsonb_set(COALESCE(state_json, '{}'::jsonb), '{plan}', '"business"'),
+  updated_at = now()
+WHERE owner_id IN (SELECT id FROM public.system_admins);
 
 -- ================================================================
 -- RPC: SET USER PLAN
