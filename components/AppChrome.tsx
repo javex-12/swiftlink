@@ -119,9 +119,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
       <TourOverlay />
 
-      {isOwner && (
-        <FeedbackModal />
-      )}
+      <FeedbackModal />
 
       {children}
 

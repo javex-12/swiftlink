@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function LauncherView() {
-  const { copyShopLink, state, setFeedbackOpen } = useSwiftLink();
+  const { copyShopLink, state, setFeedbackOpen, setSocialHubOpen } = useSwiftLink();
 
   // Real Data Calculations
   const activeSKUs = state.products.length;
@@ -25,7 +25,7 @@ export function LauncherView() {
     { title: "Storefront", href: "/business", icon: Store, count: activeSKUs, label: "Live Products", color: "text-emerald-500", bg: "bg-emerald-500/5" },
     { title: "Logistics", href: "/dispatch", icon: Truck, count: inTransit, label: "Active Orders", color: "text-blue-500", bg: "bg-blue-500/5" },
     { title: "Analytics", href: "/pro/analytics", icon: BarChart3, count: `${conversionRate}%`, label: "Conversion Rate", color: "text-indigo-500", bg: "bg-indigo-500/5" },
-    { title: "Social Hub", onClick: () => setFeedbackOpen(true), icon: Users, count: "LIVE", label: "Connect & Post", color: "text-purple-500", bg: "bg-purple-500/5" },
+    { title: "Social Hub", onClick: () => setSocialHubOpen(true), icon: Users, count: "SOON", label: "Connect & Post", color: "text-purple-500", bg: "bg-purple-500/5" },
   ];
 
   return (
