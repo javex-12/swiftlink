@@ -697,7 +697,6 @@ export function CustomerStorefront({
       setScreen(s);
       if (s === "home") {
           setActiveTab("home");
-          // Re-apply scroll position
           requestAnimationFrame(() => {
               if (homeScrollContainerRef.current) {
                   homeScrollContainerRef.current.scrollTop = scrollPositionRef.current;
@@ -727,54 +726,78 @@ export function CustomerStorefront({
 
   // ─── FETCH REVIEWS ───
   useEffect(() => {
-      if (screen === "community" && effectiveState?.id) {
-          setReviewsLoading(true);
-          supabase.from("store_reviews")
-            .select("*, social_profiles:author_id (display_name, username, avatar_url, is_verified)")
-            .eq("store_id", effectiveState.id)
-            .order("created_at", { ascending: false })
-            .then(async ({ data: reviewsData, error: reviewsError }) => {
-                if (reviewsError) {
-                    console.error("[Reviews fetch error]", reviewsError);
-                    setReviewsLoading(false);
-                    return;
-                }
-                if (reviewsData) {
-                    const filteredReviews = reviewsData
-                      // Only hide the store owner's own reviews from the list
-                      .filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId)
-                      .map((r: any) => {
-                          const prof = r.social_profiles;
-                          return {
-                              ...r,
-                              author_name: prof?.display_name || r.author_name || "Guest Buyer",
-                              author_avatar: prof?.avatar_url || null,
-                              author_is_verified: prof?.is_verified || false
-                          };
-                      });
-                    setReviews(filteredReviews);
-                    const reviewIds = filteredReviews.map(r => r.id);
-                    if (reviewIds.length > 0) {
-                        const { data: commentsData } = await supabase
-                          .from("store_review_comments")
-                          .select("*")
-                          .in("review_id", reviewIds)
-                          .order("created_at", { ascending: true });
-                          
-                        if (commentsData) {
-                            const grouped: Record<string, any[]> = {};
-                            commentsData.forEach(c => {
-                                if (!grouped[c.review_id]) grouped[c.review_id] = [];
-                                grouped[c.review_id].push(c);
-                            });
-                            setComments(grouped);
-                        }
-                    }
-                }
+      if (screen !== "community" || !effectiveState?.id) return;
+
+      setReviewsLoading(true);
+
+      // Step 1: fetch reviews plainly (no embedded join — avoids FK dependency issues)
+      supabase.from("store_reviews")
+        .select("*")
+        .eq("store_id", effectiveState.id)
+        .order("created_at", { ascending: false })
+        .then(async ({ data: reviewsData, error: reviewsError }) => {
+            if (reviewsError) {
+                console.error("[Reviews fetch error]", reviewsError);
                 setReviewsLoading(false);
+                return;
+            }
+
+            const raw = (reviewsData || [])
+              .filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId);
+
+            if (raw.length === 0) {
+                setReviews([]);
+                setReviewsLoading(false);
+                return;
+            }
+
+            // Step 2: enrich with social profiles (optional — won't break if table missing)
+            const authorIds = [...new Set(raw.map((r: any) => r.author_id).filter(Boolean))];
+            let profileMap: Record<string, any> = {};
+
+            if (authorIds.length > 0) {
+                const { data: profiles } = await supabase
+                  .from("social_profiles")
+                  .select("id, display_name, avatar_url, is_verified")
+                  .in("id", authorIds);
+                if (profiles) {
+                    profiles.forEach((p: any) => { profileMap[p.id] = p; });
+                }
+            }
+
+            const enriched = raw.map((r: any) => {
+                const prof = profileMap[r.author_id];
+                return {
+                    ...r,
+                    author_name: prof?.display_name || r.author_name || "Guest",
+                    author_avatar: prof?.avatar_url || null,
+                    author_is_verified: prof?.is_verified || false,
+                };
             });
-      }
+
+            setReviews(enriched);
+
+            // Step 3: fetch comments for these reviews
+            const reviewIds = enriched.map((r: any) => r.id);
+            const { data: commentsData } = await supabase
+              .from("store_review_comments")
+              .select("*")
+              .in("review_id", reviewIds)
+              .order("created_at", { ascending: true });
+
+            if (commentsData) {
+                const grouped: Record<string, any[]> = {};
+                commentsData.forEach(c => {
+                    if (!grouped[c.review_id]) grouped[c.review_id] = [];
+                    grouped[c.review_id].push(c);
+                });
+                setComments(grouped);
+            }
+
+            setReviewsLoading(false);
+        });
   }, [screen, effectiveState?.id]);
+
 
   const [newCommentMessage, setNewCommentMessage] = useState<Record<string, string>>({});
 
