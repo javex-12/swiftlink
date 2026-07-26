@@ -68,6 +68,39 @@ ON public.store_events
 FOR SELECT
 USING (public.is_admin(auth.uid()));
 
+-- ================================================================
+-- USER FEEDBACK TABLE (CREATE IF NOT EXISTS)
+-- Stores merchant feedback, bug reports, and feature requests.
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.user_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  store_id UUID REFERENCES public.stores(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK (type IN ('bug', 'feature', 'general')),
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS on user_feedback
+ALTER TABLE public.user_feedback ENABLE ROW LEVEL SECURITY;
+
+-- Merchants can insert their own feedback
+DROP POLICY IF EXISTS "Users can insert own feedback" ON public.user_feedback;
+CREATE POLICY "Users can insert own feedback"
+ON public.user_feedback
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- Merchants can view their own feedback
+DROP POLICY IF EXISTS "Users can view own feedback" ON public.user_feedback;
+CREATE POLICY "Users can view own feedback"
+ON public.user_feedback
+FOR SELECT
+USING (auth.uid() = user_id);
+
 -- 3. USER FEEDBACK ADMINISTRATIVE POLICIES
 -- Allow admin users to select and update feedbacks (e.g. change status or add replies)
 DROP POLICY IF EXISTS "Admins can manage all feedback" ON public.user_feedback;

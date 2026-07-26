@@ -106,6 +106,8 @@ type SwiftLinkContextValue = {
   addSystemNotification: (title: string, message: string, type?: "order" | "message" | "trend" | "feedback") => void;
   feedbackOpen: boolean;
   setFeedbackOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  socialHubOpen: boolean;
+  setSocialHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   submitFeedback: (type: string, message: string) => Promise<void>;
   logEvent: (type: string, metadata?: any) => Promise<void>;
   editorMode: "basic" | "advanced";
@@ -180,6 +182,7 @@ export function SwiftLinkProvider({
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [socialHubOpen, setSocialHubOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -1463,6 +1466,8 @@ export function SwiftLinkProvider({
     addSystemNotification,
     feedbackOpen,
     setFeedbackOpen,
+    socialHubOpen,
+    setSocialHubOpen,
     submitFeedback,
     logEvent,
     editorMode,

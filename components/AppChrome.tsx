@@ -4,11 +4,11 @@ import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { TourOverlay } from "@/components/TourOverlay";
 import { CartDrawer } from "@/components/CartDrawer";
 import { FeedbackModal } from "@/components/FeedbackModal";
-import { Bug } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { X, Check, AlertTriangle } from "lucide-react";
+import { X, Check, AlertTriangle, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
+
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const [modal, setModal] = useState<{ 
@@ -61,7 +61,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     cartItemCount,
     cartOpen,
     toggleCartDrawer,
-    setFeedbackOpen
+    setFeedbackOpen,
+    socialHubOpen,
+    setSocialHubOpen
   } = useSwiftLink();
 
   const showOverlay = loadingOverlay && pathname !== "/";
@@ -174,6 +176,53 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       {showCustomerCart && (
         <CartDrawer open={cartOpen} onToggle={toggleCartDrawer} />
       )}
+
+      {/* SOCIAL HUB COMING SOON MODAL */}
+      <AnimatePresence>
+        {socialHubOpen && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-[#020617]/80 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative bg-gradient-to-br from-slate-900 to-[#0b1329] p-10 rounded-[2.5rem] w-full max-w-md text-center border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] overflow-hidden"
+            >
+              {/* Decorative backgrounds */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+
+              <button 
+                onClick={() => setSocialHubOpen(false)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="w-20 h-20 bg-gradient-to-tr from-emerald-500 to-indigo-500 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-500/10 animate-bounce">
+                <Globe size={36} />
+              </div>
+
+              <h2 className="text-3xl font-black text-white italic uppercase tracking-tight">Social Hub</h2>
+              <div className="inline-block mt-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-widest rounded-full">
+                🚧 Building in Public
+              </div>
+
+              <p className="mt-6 text-xs text-slate-400 dark:text-zinc-400 font-medium leading-relaxed max-w-sm mx-auto">
+                Connect with merchants, share timelines, customize profiles, and build premium merchant communities directly on SwiftLink. Launching in the next major build!
+              </p>
+
+              <div className="mt-10 pt-8 border-t border-white/5">
+                <button
+                  onClick={() => setSocialHubOpen(false)}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-emerald-500/10 active:scale-95 transition-all"
+                >
+                  Get Notify on Launch
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

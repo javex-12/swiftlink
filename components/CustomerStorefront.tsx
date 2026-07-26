@@ -21,7 +21,11 @@ import {
   Truck,
   Shield,
   Package,
-  Verified
+  Verified,
+  User,
+  Sparkles,
+  Ghost,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
@@ -611,8 +615,35 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
 };
 
 // ==========================================
-// MAIN STOREFRONT
-// ==========================================
+const PROF_AVATARS = [
+    { id: "User", icon: User, color: "bg-blue-500" },
+    { id: "Zap", icon: Zap, color: "bg-amber-500" },
+    { id: "Sparkles", icon: Sparkles, color: "bg-emerald-500" },
+    { id: "Globe", icon: Globe, color: "bg-indigo-500" },
+    { id: "Ghost", icon: Ghost, color: "bg-slate-800" },
+    { id: "ShieldCheck", icon: ShieldCheck, color: "bg-rose-500" },
+];
+
+const AvatarIcon = ({ src, className = "w-full h-full", isVerified }: { src?: string, className?: string, isVerified?: boolean }) => {
+     return (
+       <div className="relative w-full h-full flex items-center justify-center">
+         {src?.startsWith("http") ? (
+           <img src={src} className={cn("rounded-full object-cover w-full h-full", className)} alt="Ava" />
+         ) : (
+           (() => {
+             const found = PROF_AVATARS.find(a => a.id === src) || PROF_AVATARS[0];
+             const Icon = found.icon;
+             return <div className={cn("rounded-full flex items-center justify-center text-white p-2 w-full h-full", found.color, className)}><Icon size="80%" /></div>;
+           })()
+         )}
+         {isVerified && (
+           <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-0.5 shadow-md flex items-center justify-center border border-slate-100 dark:border-zinc-800">
+             <Verified size={10} className="text-blue-500 fill-blue-500" />
+           </div>
+         )}
+       </div>
+     );
+};
 
 export function CustomerStorefront({
   shopId,
@@ -650,7 +681,7 @@ export function CustomerStorefront({
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReview, setNewReview] = useState({ name: "", message: "", rating: 5 });
+  const [newReview, setNewReview] = useState({ message: "", rating: 5 });
   const [comments, setComments] = useState<Record<string, any[]>>({});
   
   const scrollPositionRef = useRef<number>(0);
@@ -769,12 +800,22 @@ export function CustomerStorefront({
       if (!newReview.message || !effectiveState?.id) return;
       if (isStoreOwner) return;
 
-      let resolvedName = newReview.name?.trim();
+      let resolvedName = "Guest Buyer";
+      let resolvedAvatar: string | null = null;
+      let resolvedVerified = false;
+
       if (user) {
-          const { data } = await supabase.from("social_profiles").select("display_name").eq("id", user.id).maybeSingle();
-          resolvedName = data?.display_name || user.email?.split('@')[0] || "Authenticated Buyer";
-      } else if (!resolvedName) {
-          resolvedName = "Guest Buyer";
+          const { data: prof } = await supabase
+            .from("social_profiles")
+            .select("display_name, avatar_url, is_verified")
+            .eq("id", user.id)
+            .maybeSingle();
+          resolvedName = prof?.display_name || user.email?.split('@')[0] || "Buyer";
+          resolvedAvatar = prof?.avatar_url || null;
+          resolvedVerified = prof?.is_verified || false;
+      } else {
+          // Guest: generate a short anonymous ID
+          resolvedName = "Guest #" + Math.random().toString(36).substring(2, 6).toUpperCase();
       }
       
       const { data, error } = await supabase.from("store_reviews").insert({
@@ -786,16 +827,16 @@ export function CustomerStorefront({
       }).select().single();
 
       if (!error && data) {
-          // Normalize locally
+          // Normalize locally with full resolved data (survives without re-fetch)
           const updatedLocalReview = {
               ...data,
               author_name: resolvedName,
-              author_avatar: "User",
-              author_is_verified: false
+              author_avatar: resolvedAvatar || "User",
+              author_is_verified: resolvedVerified
           };
           setReviews(prev => [updatedLocalReview, ...prev]);
           setShowReviewForm(false);
-          setNewReview({ name: "", message: "", rating: 5 });
+          setNewReview({ message: "", rating: 5 });
       }
   };
 
@@ -1089,51 +1130,51 @@ export function CustomerStorefront({
                                 </div>
                                 <div className="p-6">
                                     {showReviewForm && !isStoreOwner && (
-                                        <div className="bg-slate-50 dark:bg-zinc-900 p-6 rounded-2xl border border-black/5 dark:border-white/5 mb-6 space-y-4">
-                                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">Leave Your Review</h3>
+                                        <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 mb-6 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-wider text-white">Leave Your Review</h3>
                                             
-                                            {/* Name field is only visible for guests. Authenticated users are auto-linked to their profile name */}
-                                            {!user ? (
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Your Name (Optional)" 
-                                                    value={newReview.name} 
-                                                    onChange={e => setNewReview({ ...newReview, name: e.target.value })} 
-                                                    className="w-full p-3.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white outline-none text-xs font-semibold"
-                                                />
-                                            ) : (
-                                                <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
-                                                    Posting publicly as <span className="text-gray-900 dark:text-white font-black">{user.email?.split('@')[0]}</span>
+                                            {/* Identity pill — no name field needed, auto-resolved on submit */}
+                                            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
+                                                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                    <User size={12} className="text-emerald-400" />
+                                                </div>
+                                                <p className="text-[10px] text-zinc-400 font-bold">
+                                                    {user ? (
+                                                        <><span className="text-white">Posting as your account</span> — name auto-resolved</>
+                                                    ) : (
+                                                        <span className="text-zinc-500">Anonymous guest — a random ID will be assigned</span>
+                                                    )}
                                                 </p>
-                                            )}
+                                            </div>
 
                                             <textarea 
-                                                placeholder="Write your review message here..." 
+                                                placeholder="Share your honest experience with this store..." 
                                                 value={newReview.message} 
                                                 onChange={e => setNewReview({ ...newReview, message: e.target.value })} 
-                                                className="w-full p-3.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-black text-gray-900 dark:text-white outline-none text-xs font-semibold min-h-[80px] placeholder-gray-400"
+                                                className="w-full p-3.5 rounded-xl border border-white/10 bg-white/5 text-white outline-none text-xs font-semibold min-h-[100px] placeholder-zinc-600 focus:border-emerald-500/50 transition-colors resize-none"
                                             />
                                             
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black uppercase text-gray-400 dark:text-zinc-500">Rating</span>
+                                                    <span className="text-[10px] font-black uppercase text-zinc-500">Rating</span>
                                                     <div className="flex gap-1">
                                                         {[1, 2, 3, 4, 5].map((star) => (
                                                             <button 
                                                                 key={star} 
                                                                 onClick={() => setNewReview({ ...newReview, rating: star })}
-                                                                className="text-amber-400"
+                                                                className="text-amber-400 hover:scale-125 transition-transform"
                                                             >
-                                                                <Star size={16} className={star <= newReview.rating ? "fill-amber-400" : ""} />
+                                                                <Star size={18} className={star <= newReview.rating ? "fill-amber-400" : "opacity-30"} />
                                                             </button>
                                                         ))}
                                                     </div>
                                                 </div>
                                                 <button 
                                                     onClick={submitReview}
-                                                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                                                    disabled={!newReview.message.trim()}
+                                                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95"
                                                 >
-                                                    Submit Review
+                                                    Post Review
                                                 </button>
                                             </div>
                                         </div>
@@ -1145,27 +1186,30 @@ export function CustomerStorefront({
                                                 <div key={r.id} className="bg-white dark:bg-zinc-950 p-6 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4">
                                                     <div className="flex justify-between items-start">
                                                         <div className="flex items-center gap-3">
-                                                            {/* User avatar indicator */}
-                                                            <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 flex items-center justify-center text-gray-500 relative shrink-0">
+                                                            {/* Reviewer avatar with verification badge */}
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 flex items-center justify-center text-gray-500 relative shrink-0 overflow-visible">
                                                                 {r.author_avatar && r.author_avatar.startsWith("http") ? (
                                                                     <img src={r.author_avatar} className="w-full h-full rounded-full object-cover" alt="" />
                                                                 ) : (
-                                                                    <span className="text-xs font-black uppercase text-gray-400">{r.author_name?.substring(0, 2)}</span>
+                                                                    <span className="w-full h-full flex items-center justify-center text-sm font-black uppercase text-gray-400 bg-slate-100 dark:bg-zinc-800 rounded-full">{(r.author_name || "G").substring(0, 2)}</span>
                                                                 )}
                                                                 {r.author_is_verified && (
-                                                                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-0.5 shadow-md border border-slate-100 dark:border-zinc-800">
-                                                                        <Verified size={9} className="text-blue-500 fill-blue-500" />
+                                                                    <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 shadow-md border-2 border-white dark:border-zinc-950 flex items-center justify-center" style={{width:16,height:16}}>
+                                                                        <Verified size={9} className="text-white fill-white" />
                                                                     </div>
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="font-black text-sm text-gray-900 dark:text-white leading-none block">{r.author_name}</span>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="font-black text-sm text-gray-900 dark:text-white leading-none">{r.author_name}</span>
+                                                                    {r.author_is_verified && (
+                                                                        <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[7px] font-black uppercase tracking-widest rounded-full border border-blue-500/20">Verified</span>
+                                                                    )}
                                                                 </div>
                                                                 <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 block">{new Date(r.created_at).toLocaleDateString()}</span>
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-1">{Array.from({length:5}).map((_,i) => <Star key={i} size={12} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"}/>)}</div>
+                                                        <div className="flex gap-0.5">{Array.from({length:5}).map((_,i) => <Star key={i} size={13} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 dark:text-zinc-700"}/>)}</div>
                                                     </div>
                                                     
                                                     <p className="text-sm text-gray-600 dark:text-zinc-300 font-medium leading-relaxed">{r.message}</p>

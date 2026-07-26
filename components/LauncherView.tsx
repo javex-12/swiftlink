@@ -177,14 +177,14 @@ export function LauncherView() {
                </button>
             </div>
 
-            {/* Support Terminal */}
-            <div className="bg-emerald-500 p-10 rounded-[2.5rem] shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
-               <h4 className="text-white text-xl font-black italic uppercase tracking-tight mb-4 relative z-10">Customer Support</h4>
-               <p className="text-white/80 text-xs font-medium leading-relaxed mb-8 relative z-10">Our support channel is active. Reach out for custom setups.</p>
-               <a href="https://wa.me/2348085741430" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-emerald-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all relative z-10">
-                  <MessageSquare size={14} /> Open Ticket
-               </a>
+            {/* Feedback Card */}
+            <div className="bg-slate-900 dark:bg-white/[0.03] p-10 rounded-[2.5rem] border border-slate-800 dark:border-white/5 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+               <h4 className="text-white text-xl font-black italic uppercase tracking-tight mb-4 relative z-10">Have a Thought?</h4>
+               <p className="text-slate-400 text-xs font-medium leading-relaxed mb-8 relative z-10">Report bugs, request features, or share feedback — it goes straight to the team.</p>
+               <button onClick={() => setFeedbackOpen(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-400 active:scale-95 transition-all relative z-10 shadow-xl shadow-emerald-500/20">
+                  <MessageSquare size={14} /> Send Feedback
+               </button>
             </div>
          </div>
       </div>
