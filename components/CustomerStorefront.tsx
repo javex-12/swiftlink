@@ -732,18 +732,23 @@ export function CustomerStorefront({
           supabase.from("store_reviews")
             .select("*, social_profiles:author_id (display_name, username, avatar_url, is_verified)")
             .eq("store_id", effectiveState.id)
-            .neq("type", "post")
             .order("created_at", { ascending: false })
-            .then(async ({ data: reviewsData }) => {
+            .then(async ({ data: reviewsData, error: reviewsError }) => {
+                if (reviewsError) {
+                    console.error("[Reviews fetch error]", reviewsError);
+                    setReviewsLoading(false);
+                    return;
+                }
                 if (reviewsData) {
                     const filteredReviews = reviewsData
+                      // Only hide the store owner's own reviews from the list
                       .filter(r => !effectiveState.ownerId || r.author_id !== effectiveState.ownerId)
                       .map((r: any) => {
                           const prof = r.social_profiles;
                           return {
                               ...r,
                               author_name: prof?.display_name || r.author_name || "Guest Buyer",
-                              author_avatar: prof?.avatar_url || "User",
+                              author_avatar: prof?.avatar_url || null,
                               author_is_verified: prof?.is_verified || false
                           };
                       });
