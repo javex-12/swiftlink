@@ -2,26 +2,36 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowRight, Store, Zap, Shield, MessageSquare, Layout, Clock, CheckCircle2, Menu, X, ChevronRight, Globe, Sparkles, Smartphone, Box, Truck, Sun, Moon
+import {
+  ArrowRight, Shield, MessageSquare, Menu, X, Globe, Sparkles,
+  Truck, Sun, Moon, TrendingUp, Package, Users, Star, CheckCircle2,
+  UserPlus, Layers, Send, ShoppingBag, ArrowUpRight, Play, Check
 } from "lucide-react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import { AnimatedText } from "./AnimatedText";
-import { LivePreview } from "./LivePreview";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 
-const ThreeScene = dynamic(() => import("./ThreeScene"), {
-  ssr: false,
-  loading: () => <div className="w-full h-full min-h-[400px]" />,
-});
-
-// ─── Fade-Up helper ───────────────────────────────────────────────────────────
-const FadeUp = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => (
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const FadeUp = ({
+  children, delay = 0, className = "",
+}: { children: React.ReactNode; delay?: number; className?: string }) => (
   <motion.div
-    initial={{ opacity: 0, y: 24 }}
+    initial={{ opacity: 0, y: 28 }}
     animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
+const InView = ({
+  children, delay = 0, className = "", once = true,
+}: { children: React.ReactNode; delay?: number; className?: string; once?: boolean }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once }}
     transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay }}
     className={className}
   >
@@ -29,39 +39,456 @@ const FadeUp = ({ children, delay = 0, className = "" }: { children: React.React
   </motion.div>
 );
 
-function usePrefersReducedMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (!mq) return;
-    const onChange = () => setReduce(Boolean(mq.matches));
-    onChange();
-    mq.addEventListener?.("change", onChange);
-    return () => mq.removeEventListener?.("change", onChange);
-  }, []);
-  return reduce;
+// ─── Marquee ──────────────────────────────────────────────────────────────────
+const MARQUEE_ITEMS = [
+  "WhatsApp Commerce", "Instant Checkout", "Live Tracking", "Zero Fees",
+  "Smart Catalog", "Multi-Store", "Payment Gateway", "Real-Time Analytics",
+];
+
+function Marquee({ reverse = false }: { reverse?: boolean }) {
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
+  return (
+    <div className="relative flex overflow-hidden select-none">
+      <motion.div
+        animate={{ x: reverse ? ["0%", "50%"] : ["0%", "-50%"] }}
+        transition={{ duration: 28, ease: "linear", repeat: Infinity }}
+        className="flex shrink-0 gap-6 pr-6"
+      >
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="flex shrink-0 items-center gap-3 rounded-full border border-slate-200/60 dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.03] px-5 py-2.5 backdrop-blur-sm"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+              {item}
+            </span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
 }
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+// ─── Interactive Phone Workflow Demo ──────────────────────────────────────────
+function PhoneWorkflowDemo() {
+  const [activeStep, setActiveStep] = useState<number>(0);
+  const [currencySymbol, setCurrencySymbol] = useState<string>("$");
+
   useEffect(() => {
-    const mq = window.matchMedia?.("(max-width: 767px)");
-    if (!mq) return;
-    const onChange = () => setIsMobile(Boolean(mq.matches));
-    onChange();
-    mq.addEventListener?.("change", onChange);
-    return () => mq.removeEventListener?.("change", onChange);
+    // Auto detect user location / currency
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeZone.includes("Lagos") || timeZone.includes("Africa")) {
+        setCurrencySymbol("₦");
+      } else {
+        setCurrencySymbol("$");
+      }
+    } catch {
+      setCurrencySymbol("$");
+    }
+
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 4);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
-  return isMobile;
+
+  const flowSteps = [
+    {
+      id: 0,
+      title: "1. Quick Account Creation",
+      desc: "Sign up in 30s and launch swiftlink.store/yourbrand.",
+      badge: "Step 01",
+    },
+    {
+      id: 1,
+      title: "2. Manage Products & Catalog",
+      desc: "Add products, variants, and stock in one clean dashboard.",
+      badge: "Step 02",
+    },
+    {
+      id: 2,
+      title: "3. Direct WhatsApp Checkout",
+      desc: "Customers order and send ready-to-pay chats straight to you.",
+      badge: "Step 03",
+    },
+    {
+      id: 3,
+      title: "4. Dispatch & Live GPS Tracking",
+      desc: "Send tracking links so buyers trace deliveries in real-time.",
+      badge: "Step 04",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-12 lg:gap-12 items-start">
+      {/* Phone Mockup — shown first on mobile */}
+      <div className="lg:col-span-5 flex justify-center order-first">
+        <div className="relative w-[260px] sm:w-[280px] h-[520px] sm:h-[560px] rounded-[2.8rem] border-[10px] border-slate-900 dark:border-slate-950 bg-white dark:bg-[#060e0a] p-4 shadow-[0_32px_90px_rgba(0,0,0,0.25)] flex flex-col justify-between overflow-hidden">
+          {/* Phone Notch */}
+          <div className="mx-auto h-3.5 w-20 rounded-full bg-slate-900 dark:bg-slate-950 mb-3" />
+
+          {/* Screen Content Container */}
+          <div className="flex-1 overflow-hidden relative flex flex-col justify-between">
+            <AnimatePresence mode="wait">
+              {activeStep === 0 && (
+                <motion.div
+                  key="step0"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-4 pt-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <img src="/logo.png" alt="SwiftLink" className="h-6 w-6 object-contain" />
+                    <span className="text-xs font-black text-slate-900 dark:text-white">Create Account</span>
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-2.5 bg-slate-50 dark:bg-white/5">
+                      <p className="text-[8px] font-black uppercase text-slate-400">Store Name</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">Luxe Boutique</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 dark:border-white/10 p-2.5 bg-slate-50 dark:bg-white/5">
+                      <p className="text-[8px] font-black uppercase text-slate-400">WhatsApp Number</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">+1 (555) 019-2834</p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-500 p-3 text-center text-white font-black text-xs shadow-lg shadow-emerald-500/20">
+                      Launch My Storefront
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
+                    <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">swiftlink.store/luxeboutique ✓</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-3 pt-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">Smart Catalog</span>
+                    <span className="text-[9px] font-bold text-emerald-500">+ Add Product</span>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { name: "Silk Evening Dress", price: `${currencySymbol}${currencySymbol === "$" ? "85.00" : "45,000"}` },
+                      { name: "Minimalist Watch", price: `${currencySymbol}${currencySymbol === "$" ? "120.00" : "65,000"}` },
+                      { name: "Leather Tote Bag", price: `${currencySymbol}${currencySymbol === "$" ? "95.00" : "50,000"}` },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 p-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <Package size={14} className="text-emerald-500" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-900 dark:text-white">{item.name}</p>
+                            <p className="text-[8px] font-extrabold text-emerald-500">{item.price}</p>
+                          </div>
+                        </div>
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-3 pt-2"
+                >
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                    <MessageSquare size={16} />
+                    <span className="text-xs font-black">WhatsApp Order</span>
+                  </div>
+                  <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 p-3 text-slate-800 dark:text-slate-200">
+                    <p className="text-[9px] font-mono leading-relaxed">
+                      👋 Hi Luxe Boutique! I want to order:<br />
+                      • Silk Evening Dress (Qty: 1)<br />
+                      • Total: {currencySymbol === "$" ? "$85.00" : "₦45,000"}<br />
+                      Deliver to: 14 Ocean View Ave.
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[#25D366] p-2.5 text-center text-white font-black text-xs flex items-center justify-center gap-2 shadow-md">
+                    <Send size={12} /> Send Order on WhatsApp
+                  </div>
+                </motion.div>
+              )}
+
+              {activeStep === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-3 pt-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">Live Tracking</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500">In Transit</span>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-3 bg-slate-50 dark:bg-white/5 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Truck size={16} className="text-emerald-500" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-900 dark:text-white">Driver assigned</p>
+                        <p className="text-[8px] text-slate-400">Estimated delivery: 12 mins</p>
+                      </div>
+                    </div>
+                    <div className="h-16 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                      <span className="text-[9px] font-bold text-emerald-500">📍 Interactive GPS Map View</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-center">
+            <span className="text-[8px] font-bold text-slate-400 tracking-wider uppercase">Powered by SwiftLink</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Step Selectors — below phone on mobile */}
+      <div className="lg:col-span-7 space-y-3">
+        {flowSteps.map((step, idx) => (
+          <div
+            key={step.id}
+            onClick={() => setActiveStep(idx)}
+            className={cn(
+              "cursor-pointer rounded-2xl p-5 transition-all duration-300 border relative overflow-hidden",
+              activeStep === idx
+                ? "bg-white dark:bg-[#07130e] border-emerald-500/40 shadow-lg shadow-emerald-500/5 dark:shadow-none"
+                : "bg-slate-50/70 dark:bg-white/[0.02] border-slate-200/50 dark:border-white/5 opacity-70 hover:opacity-100"
+            )}
+          >
+            {activeStep === idx && (
+              <motion.div
+                layoutId="stepIndicator"
+                className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r-full"
+              />
+            )}
+            <div className="flex items-center gap-4">
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0",
+                activeStep === idx ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-slate-200/50 dark:bg-white/5 text-slate-400"
+              )}>
+                {step.badge}
+              </span>
+              <div className="min-w-0">
+                <h4 className="text-base font-black text-slate-900 dark:text-white truncate">{step.title}</h4>
+                <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-2">{step.desc}</p>
+              </div>
+              {activeStep === idx && (
+                <span className="ml-auto flex h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-const LightweightHeroVisual = () => (
-  <div className="w-full h-full min-h-[340px] sm:min-h-[480px] relative flex items-center justify-center">
-    <div className="absolute inset-0 rounded-[3rem] bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.35),transparent_55%),radial-gradient(circle_at_70%_60%,rgba(15,23,42,0.20),transparent_55%)]" />
-    <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-b from-white/0 via-white/0 to-white" />
-    <div className="relative w-[220px] h-[220px] rounded-full bg-emerald-400/20 blur-2xl" />
-  </div>
-);
+// ─── Cybernetic Holographic Hero Interface ──────────────────────────────────────
+function CyberHeroVisual() {
+  const [activeTab, setActiveTab] = useState<"store" | "live" | "checkout">("store");
+  const [currencySymbol, setCurrencySymbol] = useState<string>("$");
+
+  useEffect(() => {
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeZone.includes("Lagos") || timeZone.includes("Africa")) {
+        setCurrencySymbol("₦");
+      } else {
+        setCurrencySymbol("$");
+      }
+    } catch {
+      setCurrencySymbol("$");
+    }
+
+    const timer = setInterval(() => {
+      setActiveTab((prev) => (prev === "store" ? "live" : prev === "live" ? "checkout" : "store"));
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative w-full max-w-[500px]">
+      {/* Dynamic Background Glow */}
+      <div className="pointer-events-none absolute -inset-10 overflow-visible">
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], rotate: [0, 90, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-12 left-0 h-72 w-72 rounded-full bg-emerald-500/20 blur-[90px]"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], rotate: [0, -90, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute -bottom-10 right-0 h-72 w-72 rounded-full bg-teal-400/20 blur-[90px]"
+        />
+      </div>
+
+      {/* Main Glass HUD Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 overflow-hidden rounded-[2.8rem] border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#07130e]/90 p-6 backdrop-blur-2xl shadow-[0_32px_90px_rgba(0,0,0,0.12)] dark:shadow-[0_32px_90px_rgba(0,0,0,0.65)]"
+      >
+        {/* Top Header Controls */}
+        <div className="mb-6 flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-red-400/80" />
+            <span className="h-3 w-3 rounded-full bg-amber-400/80" />
+            <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
+            <span className="ml-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+              swiftlink.store/luxe
+            </span>
+          </div>
+
+          <div className="flex rounded-full bg-slate-100 dark:bg-white/5 p-1 border border-slate-200/50 dark:border-white/5">
+            {(["store", "live", "checkout"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-wider transition-all",
+                  activeTab === tab
+                    ? "bg-emerald-500 text-white shadow-md"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Dynamic Display Area */}
+        <div className="relative min-h-[260px] flex flex-col justify-between">
+          <AnimatePresence mode="wait">
+            {activeTab === "store" && (
+              <motion.div
+                key="store"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 15 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Live Catalog</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Active Store</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { title: "Luxe Outfit", price: `${currencySymbol}${currencySymbol === "$" ? "45.00" : "35,000"}` },
+                    { title: "Classic Watch", price: `${currencySymbol}${currencySymbol === "$" ? "68.00" : "48,000"}` },
+                  ].map((item, idx) => (
+                    <div key={idx} className="group relative rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.03] p-3 transition-all hover:border-emerald-500/30">
+                      <div className="mb-2 h-20 w-full rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 flex items-center justify-center">
+                        <Package size={24} className="text-emerald-500 opacity-60" />
+                      </div>
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white truncate">{item.title}</p>
+                      <p className="text-[10px] font-extrabold text-emerald-500">{item.price}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "live" && (
+              <motion.div
+                key="live"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 15 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Real-Time Dispatch</span>
+                  <span className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> GPS Active
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                      <Truck size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white">Order #SL-8849</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Rider assigned & en-route</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                    <motion.div
+                      animate={{ x: ["-100%", "0%"] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="h-full w-full bg-emerald-500 rounded-full"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "checkout" && (
+              <motion.div
+                key="checkout"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 15 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Direct WhatsApp Sync</span>
+                  <span className="text-[9px] font-bold text-slate-400">1-Click Order</span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.03] p-4 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                    <MessageSquare size={24} />
+                  </div>
+                  <p className="text-xs font-black text-slate-900 dark:text-white">Instant WhatsApp Invoice</p>
+                  <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Orders automatically structured into ready-to-pay WhatsApp chats.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Bottom Floating Stats Strip */}
+          <div className="mt-5 flex items-center justify-between rounded-xl bg-slate-900 text-white dark:bg-white/5 dark:border dark:border-white/5 p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} className="text-emerald-400" />
+              <span className="text-[11px] font-black">Sales Activity Live</span>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">0% Commission</span>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = () => {
@@ -79,12 +506,14 @@ const Navbar = () => {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-4 sm:px-6 py-4",
-        isScrolled ? "bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md border-b border-slate-100 dark:border-white/[0.05] py-3 shadow-sm" : "bg-transparent"
+        isScrolled
+          ? "bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md border-b border-slate-100 dark:border-white/[0.05] py-3 shadow-sm"
+          : "bg-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="SwiftLink" className="w-8 h-8 object-contain" />
           <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">
             SwiftLink
           </span>
@@ -92,22 +521,25 @@ const Navbar = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">How it works</a>
-          <a href="#pricing" className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">Pricing</a>
-          
-          {/* Theme Toggle */}
+          {["#features", "#how-it-works", "#pricing"].map((href, i) => (
+            <a
+              key={href}
+              href={href}
+              className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors"
+            >
+              {["Features", "How it works", "Pricing"][i]}
+            </a>
+          ))}
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 border border-slate-200/50 dark:border-white/5"
+            className="w-9 h-9 rounded-full bg-slate-50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 border border-slate-200/50 dark:border-white/5"
             aria-label="Toggle Theme"
           >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
           </button>
-
           <Link
             href="/signup"
-            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-bold hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-lg shadow-slate-200 dark:shadow-none"
+            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-full text-sm font-black hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-lg"
           >
             Get Started
           </Link>
@@ -115,18 +547,15 @@ const Navbar = () => {
 
         {/* Mobile Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          {/* Mobile Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200/50 dark:border-white/5"
+            className="w-9 h-9 rounded-full bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200/50 dark:border-white/5"
             aria-label="Toggle Theme"
           >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
           </button>
-
-          {/* Mobile Toggle */}
           <button className="p-2 text-slate-900 dark:text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
@@ -140,9 +569,11 @@ const Navbar = () => {
             exit={{ opacity: 0, y: -10 }}
             className="absolute top-full left-0 right-0 bg-white dark:bg-[#020617] border-b border-slate-100 dark:border-white/10 px-6 py-6 md:hidden flex flex-col gap-5 shadow-xl"
           >
-            <a href="#features" className="text-base font-bold text-slate-700 dark:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
-            <a href="#how-it-works" className="text-base font-bold text-slate-700 dark:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>How it works</a>
-            <a href="#pricing" className="text-base font-bold text-slate-700 dark:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            {[["#features", "Features"], ["#how-it-works", "How it works"], ["#pricing", "Pricing"]].map(([href, label]) => (
+              <a key={href} href={href} className="text-base font-bold text-slate-700 dark:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>
+                {label}
+              </a>
+            ))}
             <Link
               href="/signup"
               className="bg-emerald-500 text-white py-4 rounded-2xl text-center font-black text-base active:scale-95 transition-transform"
@@ -159,179 +590,149 @@ const Navbar = () => {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = () => {
-  const scrollToDemo = () => {
-    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-  };
-  const isMobile = useIsMobile();
-  const reduceMotion = usePrefersReducedMotion();
-
   return (
-    <section className="relative min-h-screen pt-32 sm:pt-40 pb-16 px-4 sm:px-6 overflow-hidden flex items-center bg-[#fafafa] dark:bg-[#020617] transition-colors duration-300">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
-        <div className="absolute top-[10%] left-[5%] w-[40%] aspect-square bg-emerald-100/40 dark:bg-emerald-500/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[10%] right-[5%] w-[35%] aspect-square bg-blue-100/30 dark:bg-blue-500/5 rounded-full blur-[100px]" />
-      </div>
+    <section className="relative min-h-screen pt-28 sm:pt-36 pb-0 overflow-hidden bg-[#f8fafb] dark:bg-[#020617] transition-colors duration-300">
+      {/* Grid background */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.04]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(15,23,42,1) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,1) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
 
-      <div className="max-w-7xl mx-auto w-full relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* ── Left: Copy ─────────────────────────────── */}
-          <div className="text-center lg:text-left order-2 lg:order-1">
-            <FadeUp delay={0}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm rounded-full mb-8">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Next-Gen E-Commerce</span>
-              </div>
-            </FadeUp>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
-            <FadeUp delay={0.1}>
-              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white leading-[0.95] tracking-tight mb-8">
-                Sell on <span className="text-emerald-500">WhatsApp</span> <br className="hidden sm:block" />
-                <span className="italic font-serif opacity-90">like a Pro.</span>
+          {/* ── Left: Copy ───────────────────────── */}
+          <div className="text-center lg:text-left">
+            <FadeUp delay={0.08}>
+              <h1 className="text-[3rem] sm:text-[4.5rem] lg:text-[5.5rem] font-black text-slate-900 dark:text-white leading-[0.95] tracking-[-0.02em] mb-6">
+                Sell on <span className="text-emerald-500">WhatsApp</span><br />
+                like a <span className="italic text-emerald-500">pro.</span>
               </h1>
             </FadeUp>
 
             <FadeUp delay={0.2}>
-              <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
-                The high-performance storefront for Nigerian entrepreneurs. 
-                Fast, professional, and built for your phone.
+              <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 max-w-md mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
+                The high-performance storefront command center for modern vendors worldwide. Professional. Fast. Zero transaction fees.
               </p>
             </FadeUp>
 
-            <FadeUp delay={0.3}>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-4">
+            <FadeUp delay={0.28}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3">
                 <Link
                   href="/signup"
-                  className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-5 rounded-2xl text-base font-black hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-2xl shadow-slate-200 dark:shadow-none"
+                  className="group inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-4 rounded-full text-sm font-black hover:bg-emerald-500 dark:hover:bg-emerald-400 transition-all active:scale-95 shadow-xl shadow-slate-200/50 dark:shadow-none"
                 >
-                  Start Selling Now <ArrowRight size={18} />
+                  Start Selling Now
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </Link>
-                <button
-                  onClick={scrollToDemo}
-                  className="flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-slate-700 dark:text-slate-300 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 font-black hover:bg-slate-50 dark:hover:bg-white/10 transition-all active:scale-95 shadow-sm"
+                <a
+                  href="#how-it-works"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-slate-700 dark:text-slate-300 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-black hover:bg-slate-50 dark:hover:bg-white/10 transition-all active:scale-95"
                 >
-                  Watch Demo <Sparkles size={18} className="text-emerald-500" />
-                </button>
+                  See How It Works
+                </a>
               </div>
             </FadeUp>
-            
-            <FadeUp delay={0.4} className="mt-12 opacity-50 flex items-center justify-center lg:justify-start gap-8">
-               <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">60s</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Setup Time</span>
-               </div>
-               <div className="w-px h-8 bg-slate-200 dark:bg-white/10" />
-               <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">0%</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Transaction Fee</span>
-               </div>
-               <div className="w-px h-8 bg-slate-200 dark:bg-white/10" />
-               <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">Live</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Tracking</span>
-               </div>
+
+            {/* Stats row */}
+            <FadeUp delay={0.38} className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-6 sm:gap-8">
+              {[["60s", "Setup Time"], ["0%", "Transaction Fee"], ["Live", "Tracking"]].map(([v, l], i) => (
+                <React.Fragment key={l}>
+                  {i > 0 && <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-white/10" />}
+                  <div>
+                    <p className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">{v}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{l}</p>
+                  </div>
+                </React.Fragment>
+              ))}
             </FadeUp>
           </div>
 
-          {/* ── Right: Hero Visual ───────── */}
-          <FadeUp delay={0.1} className="relative order-1 lg:order-2 flex justify-center w-full">
-            <div className="relative w-full max-w-[550px] aspect-square flex items-center justify-center">
-              {/* Background Glass Plate */}
-              <div className="absolute inset-0 bg-white/40 dark:bg-[#0f172a]/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[3rem] -rotate-2 transform" />
-              
-              <div className="relative h-full w-full flex items-center justify-center overflow-visible">
-                {reduceMotion ? <LightweightHeroVisual /> : <ThreeScene />}
+          {/* ── Right: Cyber Hero Visual — hidden on mobile ── */}
+          <div className="hidden lg:flex justify-center lg:justify-end">
+            <CyberHeroVisual />
+          </div>
+        </div>
 
-                {/* Modern Floating Badges */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  className="absolute top-[15%] right-[2%] bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.05] p-4 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex items-center gap-3 z-30"
-                >
-                  <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
-                    <CheckCircle2 size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase leading-none">Order Received</p>
-                    <p className="text-[12px] font-black text-emerald-500 mt-1">₦72,500.00</p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ delay: 1, duration: 0.5 }}
-                  className="absolute bottom-[20%] left-[2%] bg-slate-900 dark:bg-[#0f172a] dark:border dark:border-white/10 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 z-30"
-                >
-                  <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
-                    <Truck size={20} className="text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none">Tracking</p>
-                    <p className="text-[11px] font-black mt-1">Driver En-Route</p>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </FadeUp>
+        {/* Marquee strip */}
+        <div className="mt-20 -mx-4 sm:-mx-6 overflow-hidden">
+          <div className="mb-3 opacity-40">
+            <Marquee />
+          </div>
+          <div className="opacity-25">
+            <Marquee reverse />
+          </div>
         </div>
       </div>
     </section>
   );
 };
 
-// ─── Features (Bento Style) ───────────────────────────────────────────────────
+// ─── Features (Bento Style - Cleaned up) ───────────────────────────────────────
 const Features = () => {
   const features = [
-    { icon: Layout, title: "Visual Designer", description: "Design with 10+ cinematic templates. Full control over typography, colors, and layout aesthetics.", className: "md:col-span-2 md:row-span-2 bg-slate-900 dark:bg-[#1e293b] text-white border border-slate-900 dark:border-white/10" },
-    { icon: Sparkles, title: "Smart Add", description: "Upload once, sync everywhere. Automatically generates high-res product galleries and thumbnails.", className: "bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.05]" },
-    { icon: Truck, title: "Logistics Hub", description: "Real-time dispatch tracking. Customers watch their package move on a live map.", className: "bg-emerald-50 dark:bg-emerald-950/10 border border-slate-100 dark:border-white/[0.05]" },
-    { icon: Shield, title: "Multi-Brand", description: "Manage multiple stores from a single professional workspace. Perfect for scaling vendors.", className: "bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.05]" },
-    { icon: MessageSquare, title: "Social Hub", description: "Integrated community wall for verified customer reviews and real-time social proof.", className: "md:col-span-2 bg-white dark:bg-[#0f172a] border-2 border-slate-100 dark:border-white/[0.05]" },
+    {
+      icon: Sparkles,
+      title: "Smart Catalog",
+      description: "Upload once, sync everywhere. Auto-generates galleries and thumbnails.",
+      className: "bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.06]",
+    },
+    {
+      icon: Truck,
+      title: "Logistics Hub",
+      description: "Real-time dispatch tracking. Customers watch their package move live.",
+      className: "bg-emerald-50 dark:bg-emerald-950/20 border border-slate-100 dark:border-white/[0.06]",
+    },
+    {
+      icon: Shield,
+      title: "Multi-Brand Workspace",
+      description: "Manage multiple stores seamlessly from one central command center.",
+      className: "bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.06]",
+    },
   ];
 
   return (
     <section id="features" className="py-24 sm:py-32 px-4 sm:px-6 bg-white dark:bg-[#090d16] transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sm:mb-24">
-          <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
-            The Infrastructure
-          </motion.span>
-          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1]">
-            High-Performance tools,<br />built for the elite.
-          </h2>
+          <InView>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
+              The Infrastructure
+            </span>
+            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08]">
+              High-performance tools,<br />built for the elite.
+            </h2>
+          </InView>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((f, i) => (
-            <motion.div
+            <InView
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              delay={i * 0.08}
               className={cn(
-                "p-8 md:p-10 rounded-[2.5rem] border border-slate-100 dark:border-white/[0.05] flex flex-col justify-between transition-all hover:shadow-2xl group min-h-[320px]",
+                "rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between transition-all hover:shadow-2xl hover:-translate-y-1 group min-h-[280px] cursor-default",
                 f.className
               )}
             >
               <div>
-                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-8 transition-transform group-hover:scale-110", f.className?.includes("bg-slate-900") || f.className?.includes("bg-[#1e293b]") ? "bg-white/10 text-white" : "bg-slate-900 dark:bg-white text-white dark:text-slate-900")}>
-                    <f.icon size={28} />
-                 </div>
-                 <h3 className={cn("text-2xl font-black uppercase tracking-tight italic mb-3", f.className?.includes("bg-slate-900") || f.className?.includes("bg-[#1e293b]") ? "text-white" : "text-slate-900 dark:text-white")}>{f.title}</h3>
-                 <p className={cn("text-base font-medium leading-relaxed opacity-70", f.className?.includes("bg-slate-900") || f.className?.includes("bg-[#1e293b]") ? "text-slate-300" : "text-slate-500 dark:text-slate-400")}>
-                    {f.description}
-                 </p>
+                <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center mb-7 transition-transform group-hover:scale-110">
+                  <f.icon size={22} />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-tight italic mb-3 text-slate-900 dark:text-white">
+                  {f.title}
+                </h3>
+                <p className="text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                  {f.description}
+                </p>
               </div>
-              <div className="mt-12 flex justify-end">
-                 <ArrowRight className="opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+              <div className="mt-8 flex justify-end">
+                <ArrowRight className="opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-slate-900 dark:text-white" />
               </div>
-            </motion.div>
+            </InView>
           ))}
         </div>
       </div>
@@ -339,63 +740,23 @@ const Features = () => {
   );
 };
 
-
-// ─── How It Works ─────────────────────────────────────────────────────────────
+// ─── How It Works (Clean & Real User Flow with Animated Interactive Demo) ──
 const HowItWorks = () => {
-  const steps = [
-    { number: "01", title: "Deploy your Hub", description: "Create your workspace and choose from 10+ cinematic templates. Your professional URL is live in 60s." },
-    { number: "02", title: "Smart Cataloging", description: "Use Smart Add to bulk-upload product imagery. Organise items into high-fidelity, searchable categories." },
-    { number: "03", title: "Scale & Track", description: "Receive orders on WhatsApp. Manage fulfillment through our logistics hub with real-time map tracking." },
-  ];
-
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-[#fafafa] dark:bg-[#020617] transition-colors duration-300">
+    <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-[#f8fafb] dark:bg-[#020617] transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-32 items-center">
-          {/* Phone mockup with better styling */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex justify-center relative order-2 lg:order-1"
-          >
-            <div className="relative group">
-              <div className="absolute -inset-10 bg-emerald-100/50 dark:bg-emerald-500/10 rounded-full blur-[100px] -z-10 group-hover:bg-emerald-200/50 transition-colors" />
-              <div className="scale-90 sm:scale-100 transition-transform duration-700 group-hover:scale-[1.02]">
-                 <LivePreview />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Steps */}
-          <div className="order-1 lg:order-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-6 block">The Workflow</span>
-            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1] mb-12 italic uppercase">
-              Pure Frictionless<br />Commerce.
+        <div className="text-center mb-16 sm:mb-20">
+          <InView>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">The Workflow</span>
+            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08]">
+              How SwiftLink Works.<br />Simple &amp; Seamless.
             </h2>
-            <div className="space-y-12">
-              {steps.map((step, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, duration: 0.6 }}
-                  className="flex gap-8 group"
-                >
-                  <div className="flex-shrink-0">
-                    <span className="text-5xl font-black text-slate-200 dark:text-slate-800 group-hover:text-emerald-500 transition-colors duration-500 leading-none tabular-nums tracking-tighter">{step.number}</span>
-                  </div>
-                  <div className="pt-1">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">{step.title}</h3>
-                    <p className="text-base text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{step.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+          </InView>
         </div>
+
+        <InView>
+          <PhoneWorkflowDemo />
+        </InView>
       </div>
     </section>
   );
@@ -403,33 +764,75 @@ const HowItWorks = () => {
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const Pricing = () => {
+  const [currencySymbol, setCurrencySymbol] = useState<string>("$");
+
+  useEffect(() => {
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeZone.includes("Lagos") || timeZone.includes("Africa")) {
+        setCurrencySymbol("₦");
+      } else {
+        setCurrencySymbol("$");
+      }
+    } catch {
+      setCurrencySymbol("$");
+    }
+  }, []);
+
   const plans = [
     {
       name: "Starter",
       price: "Free",
-      description: "Perfect for testing the waters.",
-      features: ["5 Live Products", "Basic Tracking", "SwiftLink Branding", "WhatsApp Checkout"],
+      description: "Dip your toes in. No card required.",
+      features: [
+        { label: "5 Live Products", soon: false },
+        { label: "WhatsApp Checkout", soon: false },
+        { label: "Basic Order Tracking", soon: false },
+        { label: "SwiftLink Branding", soon: false },
+        { label: "Community Support", soon: false },
+      ],
       cta: "Start Free",
-      variant: "white"
+      featured: false,
+      variant: "light" as const,
     },
     {
       name: "Pro",
-      price: "₦5,000",
+      price: currencySymbol === "$" ? "$10" : "₦5,000",
       period: "/mo",
-      description: "Our most popular choice for growing stores.",
-      features: ["Unlimited Products", "Custom Branding", "Live Map Tracking", "Detailed Analytics", "Priority Support"],
+      description: "Everything you need to run a serious store.",
+      features: [
+        { label: "Unlimited Products", soon: false },
+        { label: "Custom Branding", soon: false },
+        { label: "Paystack / Flutterwave Integration", soon: false },
+        { label: "Live Map Tracking", soon: false },
+        { label: "Detailed Analytics", soon: false },
+        { label: "Discount & Promo Codes", soon: false },
+        { label: "Export Orders (CSV)", soon: false },
+        { label: "Priority Support", soon: false },
+      ],
       cta: "Upgrade to Pro",
       featured: true,
-      variant: "black"
+      variant: "dark" as const,
     },
     {
       name: "Business",
-      price: "₦15,000",
+      price: currencySymbol === "$" ? "$29" : "₦15,000",
       period: "/mo",
-      description: "Enterprise features for established brands.",
-      features: ["Multi-Store Management", "Team Collaboration", "Payment Gateway Integration", "Custom Domain API", "API Access"],
+      description: "Enterprise power for established brands & teams.",
+      features: [
+        { label: "Everything in Pro", soon: false },
+        { label: "Multi-Store Management", soon: false },
+        { label: "Team Collaboration & Roles", soon: false },
+        { label: "Multiple Payment Gateways", soon: false },
+        { label: "Custom Domain", soon: false },
+        { label: "White-Label Experience", soon: false },
+        { label: "API Access & Webhooks", soon: true },
+        { label: "Audit Logs & Backups", soon: true },
+        { label: "Dedicated Account Manager", soon: false },
+      ],
       cta: "Contact Sales",
-      variant: "white"
+      featured: false,
+      variant: "light" as const,
     },
   ];
 
@@ -437,63 +840,83 @@ const Pricing = () => {
     <section id="pricing" className="py-24 sm:py-32 px-4 sm:px-6 bg-white dark:bg-[#090d16] transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 sm:mb-24">
-          <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">
-            Pricing
-          </motion.span>
-          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.1]">
-            Simple plans for<br />ambitious brands.
-          </h2>
+          <InView>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-4 block">Pricing</span>
+            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08]">
+              Simple plans for<br />ambitious brands.
+            </h2>
+            <p className="mt-5 text-slate-500 dark:text-slate-400 text-base font-medium max-w-lg mx-auto">
+              Start free. Upgrade when you&apos;re ready. Downgrade anytime.
+            </p>
+          </InView>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        {/* Cards: single column mobile → 3 cols on lg */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-center">
           {plans.map((p, i) => (
-            <motion.div
+            <InView
               key={p.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              delay={i * 0.1}
               className={cn(
-                "rounded-[3rem] p-10 flex flex-col justify-between transition-all duration-500 border relative overflow-hidden",
-                p.variant === "black" ? "bg-slate-900 dark:bg-[#0f172a] text-white border-slate-900 dark:border-white/10 shadow-2xl scale-[1.05] z-10" : "bg-[#f8fafc] dark:bg-[#0f172a]/40 text-slate-900 dark:text-white border-slate-100 dark:border-white/[0.05]"
+                "rounded-[2.5rem] p-8 flex flex-col justify-between transition-all duration-500 border relative overflow-hidden",
+                p.variant === "dark"
+                  ? "bg-slate-900 dark:bg-[#0f172a] text-white border-slate-900 dark:border-white/10 shadow-2xl lg:scale-[1.04] z-10 min-h-[560px]"
+                  : "bg-[#f8fafb] dark:bg-[#0f172a]/40 text-slate-900 dark:text-white border-slate-100 dark:border-white/[0.06] min-h-[480px]"
               )}
             >
               {p.featured && (
-                <div className="absolute top-6 right-8">
-                   <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Most Popular</span>
+                <div className="absolute top-6 right-7">
+                  <span className="bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    Most Popular
+                  </span>
                 </div>
               )}
-              
               <div>
-                <p className={cn("text-[10px] font-black uppercase tracking-[0.3em] mb-4", p.variant === "black" ? "text-emerald-400" : "text-slate-400 dark:text-slate-500")}>{p.name}</p>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className={cn("text-4xl sm:text-5xl font-black tracking-tighter", p.variant === "black" ? "text-white" : "text-slate-900 dark:text-white")}>{p.price}</span>
-                  {p.period && <span className={cn("text-sm font-bold opacity-60", p.variant === "black" ? "text-slate-400" : "text-slate-500 dark:text-slate-400")}>{p.period}</span>}
+                <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] mb-4", p.variant === "dark" ? "text-emerald-400" : "text-slate-400 dark:text-slate-500")}>
+                  {p.name}
+                </p>
+                <div className="flex items-baseline gap-1 mb-3">
+                  <span className="text-4xl sm:text-5xl font-black tracking-tighter">{p.price}</span>
+                  {p.period && <span className="text-sm font-bold opacity-50">{p.period}</span>}
                 </div>
-                <p className={cn("text-sm font-medium leading-relaxed mb-10", p.variant === "black" ? "text-slate-400" : "text-slate-500 dark:text-slate-400")}>{p.description}</p>
-                
-                <div className="space-y-4 mb-12">
-                   {p.features.map(f => (
-                     <div key={f} className="flex items-center gap-3">
-                        <CheckCircle2 size={16} className={p.variant === "black" ? "text-emerald-400" : "text-emerald-500"} />
-                        <span className="text-sm font-bold opacity-80">{f}</span>
-                     </div>
-                   ))}
+                <p className={cn("text-sm font-medium leading-relaxed mb-8", p.variant === "dark" ? "text-slate-400" : "text-slate-500 dark:text-slate-400")}>
+                  {p.description}
+                </p>
+                <div className="space-y-3 mb-10">
+                  {p.features.map(f => (
+                    <div key={f.label} className="flex items-center gap-3">
+                      <CheckCircle2 size={14} className={cn("shrink-0", p.variant === "dark" ? "text-emerald-400" : "text-emerald-500")} />
+                      <span className="text-sm font-bold opacity-80">{f.label}</span>
+                      {f.soon && (
+                        <span className="ml-auto shrink-0 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-500 border border-amber-400/30">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-
               <Link
                 href={`/signup?mode=signup&plan=${p.name.toLowerCase()}`}
                 className={cn(
-                  "w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-center active:scale-95",
-                  p.variant === "black" ? "bg-white dark:bg-white text-slate-900 dark:text-slate-900 hover:bg-emerald-400" : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-emerald-500 dark:hover:bg-emerald-400 shadow-lg"
+                  "w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-center active:scale-95 hover:brightness-105",
+                  p.variant === "dark"
+                    ? "bg-white text-slate-900 hover:bg-emerald-400"
+                    : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-emerald-500 dark:hover:bg-emerald-400 shadow-lg"
                 )}
               >
                 {p.cta}
               </Link>
-            </motion.div>
+            </InView>
           ))}
         </div>
+
+        {/* Bottom note */}
+        <InView className="mt-14 text-center">
+          <p className="text-xs font-medium text-slate-400">
+            All plans include zero transaction fees. <span className="text-emerald-500 font-black">You keep 100% of your revenue.</span>
+          </p>
+        </InView>
       </div>
     </section>
   );
@@ -502,222 +925,111 @@ const Pricing = () => {
 // ─── CTA ──────────────────────────────────────────────────────────────────────
 const CTASection = () => (
   <section className="py-24 sm:py-32 px-4 sm:px-6 bg-white dark:bg-[#020617] overflow-hidden relative transition-colors duration-300">
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-full">
-       <div className="absolute top-[20%] left-[-10%] w-[40%] aspect-square bg-emerald-100/50 dark:bg-emerald-500/5 rounded-full blur-[100px]" />
-       <div className="absolute bottom-[20%] right-[-10%] w-[40%] aspect-square bg-blue-50/50 dark:bg-blue-500/5 rounded-full blur-[100px]" />
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute top-[20%] left-[-10%] w-[40%] aspect-square bg-emerald-100/50 dark:bg-emerald-500/5 rounded-full blur-[100px]" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[40%] aspect-square bg-blue-50/50 dark:bg-blue-500/5 rounded-full blur-[100px]" />
     </div>
 
     <div className="max-w-5xl mx-auto relative z-10">
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="bg-slate-900 dark:bg-[#0f172a] rounded-[3.5rem] p-10 sm:p-20 text-center relative overflow-hidden shadow-2xl dark:border dark:border-white/10"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1),transparent_70%)] pointer-events-none" />
-        <div className="relative z-10">
-          <span className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6 block">Ready to Scale?</span>
-          <h2 className="text-4xl sm:text-7xl font-black text-white mb-8 tracking-tighter leading-[1.0] italic uppercase">
-            Deploy your<br />storefront today.
-          </h2>
-          <p className="text-slate-400 text-base sm:text-xl max-w-xl mx-auto mb-12 font-medium leading-relaxed">
-            Join the elite circle of Nigerian vendors using SwiftLink Pro to dominate their niche.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/signup?mode=signup&plan=pro"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl text-lg font-black hover:bg-emerald-400 transition-all hover:scale-105 active:scale-95 shadow-2xl"
-            >
-              Get Started <ArrowRight size={20} />
-            </Link>
-            <Link
-              href="/signup?mode=login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-transparent text-white border border-white/20 px-10 py-5 rounded-2xl text-lg font-black hover:bg-white/5 transition-all active:scale-95"
-            >
-              Merchant Login
-            </Link>
+      <InView>
+        <div className="bg-slate-900 dark:bg-[#0f172a] rounded-[3.5rem] p-10 sm:p-20 text-center relative overflow-hidden shadow-2xl dark:border dark:border-white/10">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1),transparent_70%)]" />
+          <div className="relative z-10">
+            <span className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6 block">
+              Ready to Scale?
+            </span>
+            <h2 className="text-4xl sm:text-7xl font-black text-white mb-8 tracking-tighter leading-[1.0] italic uppercase">
+              Deploy your<br />storefront today.
+            </h2>
+            <p className="text-slate-400 text-base sm:text-xl max-w-xl mx-auto mb-12 font-medium leading-relaxed">
+              Join the global network of vendors using SwiftLink Pro to power their WhatsApp sales.
+            </p>
+            <div className="flex justify-center">
+              <Link
+                href="/signup?mode=signup&plan=pro"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl text-base font-black hover:bg-emerald-400 transition-all hover:scale-105 active:scale-95 shadow-2xl"
+              >
+                Get Started <ArrowRight size={18} />
+              </Link>
+            </div>
           </div>
         </div>
-      </motion.div>
+      </InView>
     </div>
   </section>
 );
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = () => (
-  <footer className="py-20 px-4 sm:px-6 bg-[#fafafa] dark:bg-[#090d16] border-t border-slate-100 dark:border-white/[0.05] transition-colors duration-300">
+  <footer className="py-16 px-4 sm:px-6 bg-[#f8fafb] dark:bg-[#090d16] border-t border-slate-100 dark:border-white/[0.05] transition-colors duration-300">
     <div className="max-w-7xl mx-auto">
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
-          <div className="col-span-1 md:col-span-2">
-             <div className="flex items-center gap-2 mb-6">
-               <img src="/logo.png" alt="SwiftLink" className="w-8 h-8" />
-               <span className="text-xl font-black text-slate-900 dark:text-white uppercase italic">SwiftLink</span>
-             </div>
-             <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xs leading-relaxed">
-                The high-performance command center for modern WhatsApp commerce.
-             </p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div className="col-span-1 md:col-span-2">
+          <div className="flex items-center gap-2.5 mb-5">
+            <img src="/logo.png" alt="SwiftLink" className="w-8 h-8 object-contain" />
+            <span className="text-xl font-black text-slate-900 dark:text-white uppercase italic">SwiftLink</span>
           </div>
-          <div>
-             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white mb-6">Product</h4>
-             <ul className="space-y-4">
-                <li><a href="#features" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Capabilities</a></li>
-                <li><a href="#how-it-works" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Workflow</a></li>
-                <li><a href="#pricing" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Pricing</a></li>
-             </ul>
-          </div>
-          <div>
-             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white mb-6">Company</h4>
-             <ul className="space-y-4">
-                <li><Link href="/terms" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Terms of Service</Link></li>
-                <li><a href="mailto:support@swiftlink.pro" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Support</a></li>
-             </ul>
-          </div>
-       </div>
-       <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-200/60 dark:border-white/[0.05] gap-4">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 SwiftLink Workspace.</p>
-          <div className="flex gap-6">
-             {["Twitter", "Instagram", "WhatsApp"].map(social => (
-                <span key={social} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">{social}</span>
-             ))}
-          </div>
-       </div>
+          <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xs leading-relaxed text-sm">
+            The high-performance command center for modern WhatsApp commerce worldwide.
+          </p>
+        </div>
+        <div>
+          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white mb-5">Product</h4>
+          <ul className="space-y-3.5">
+            {[["#features", "Capabilities"], ["#how-it-works", "Workflow"], ["#pricing", "Pricing"]].map(([href, label]) => (
+              <li key={href}>
+                <a href={href} className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">{label}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white mb-5">Legal &amp; Trust</h4>
+          <ul className="space-y-3.5">
+            <li><Link href="/terms" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Terms of Service</Link></li>
+            <li><Link href="/privacy" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Privacy &amp; Cookie Policy</Link></li>
+            <li><a href="mailto:support@swiftlink.pro" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors">Support</a></li>
+          </ul>
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-200/60 dark:border-white/[0.05] gap-4">
+        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 SwiftLink Workspace.</p>
+        <div className="flex gap-6">
+          {["Twitter", "Instagram", "WhatsApp"].map(s => (
+            <span key={s} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors">{s}</span>
+          ))}
+        </div>
+      </div>
     </div>
   </footer>
 );
 
+// ─── Simple Pulsing Logo Preloader ──────────────────────────────────────────────
 const Preloader = ({ onComplete }: { onComplete: () => void }) => {
-  const [progress, setProgress] = useState(0);
-
   useEffect(() => {
-    const duration = 2200;
-    const start = Date.now();
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
-      setProgress(pct);
-      if (elapsed >= duration) {
-        clearInterval(interval);
-        setTimeout(onComplete, 400);
-      }
-    }, 30);
-    return () => clearInterval(interval);
+    const timer = setTimeout(onComplete, 1200);
+    return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }}
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center select-none overflow-hidden"
-      style={{ background: "#010c07" }}
+      exit={{ opacity: 0, transition: { duration: 0.4 } }}
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#020617]"
     >
-      {/* Subtle grid */}
-      <div className="absolute inset-0 opacity-[0.035]" style={{
-        backgroundImage: "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-      }} />
-
-      {/* Single deep glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-        style={{ width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)" }} />
-
-      {/* Core content */}
-      <div className="relative z-10 flex flex-col items-center" style={{ width: 280 }}>
-
-        {/* Compact logo + wordmark row */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="flex items-center gap-3 mb-10"
-        >
-          {/* Logo box */}
-          <motion.div
-            animate={{ boxShadow: ["0 0 0px rgba(16,185,129,0.15)", "0 0 20px rgba(16,185,129,0.4)", "0 0 0px rgba(16,185,129,0.15)"] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            className="flex items-center justify-center"
-            style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
-          >
-            <img src="/logo.png" alt="SwiftLink" style={{ width: 22, height: 22 }} />
-          </motion.div>
-
-          {/* Name block */}
-          <div className="flex flex-col">
-            <div className="flex items-baseline gap-1.5">
-              <div className="flex gap-[1px]">
-                {"SWIFTLINK".split("").map((char, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.04 * i + 0.1, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-white font-black"
-                    style={{ fontSize: 17, letterSpacing: "0.1em", lineHeight: 1 }}
-                  >
-                    {char}
-                  </motion.span>
-                ))}
-              </div>
-              <motion.span
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.55, duration: 0.3 }}
-                className="font-black"
-                style={{ fontSize: 11, color: "#10b981", letterSpacing: "0.1em", lineHeight: 1 }}
-              >
-                PRO
-              </motion.span>
-            </div>
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.75 }}
-              style={{ fontSize: 7, color: "rgba(16,185,129,0.4)", letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 700, marginTop: 3 }}
-            >
-              Commerce OS
-            </motion.span>
-          </div>
-        </motion.div>
-
-        {/* Progress section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="w-full flex flex-col gap-2.5"
-        >
-          {/* Razor-thin progress track */}
-          <div className="w-full overflow-hidden" style={{ height: 1.5, borderRadius: 99, background: "rgba(255,255,255,0.05)" }}>
-            <div
-              className="h-full"
-              style={{
-                width: `${progress}%`,
-                borderRadius: 99,
-                background: "linear-gradient(90deg, #059669, #10b981, #34d399)",
-                boxShadow: "0 0 8px rgba(16,185,129,0.7)",
-                transition: "width 0.04s linear",
-              }}
-            />
-          </div>
-
-          {/* Status + counter row */}
-          <div className="flex items-center justify-between">
-            <motion.span
-              animate={{ opacity: [0.4, 0.8, 0.4] }}
-              transition={{ duration: 1.6, repeat: Infinity }}
-              style={{ fontSize: 8, color: "rgba(16,185,129,0.55)", letterSpacing: "0.3em", textTransform: "uppercase", fontWeight: 700, fontFamily: "monospace" }}
-            >
-              {progress < 35 ? "Initializing" : progress < 70 ? "Loading" : progress < 95 ? "Almost ready" : "Launching"}
-            </motion.span>
-            <span style={{ fontSize: 11, color: "#fff", fontFamily: "monospace", fontWeight: 900, letterSpacing: "0.05em" }}>
-              {String(progress).padStart(3, "0")}
-            </span>
-          </div>
-        </motion.div>
-      </div>
+      <motion.div
+        animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        className="relative flex items-center justify-center"
+      >
+        <div className="absolute inset-0 rounded-full bg-emerald-500/30 blur-2xl" />
+        <img src="/logo.png" alt="SwiftLink" className="relative z-10 h-16 w-16 object-contain" />
+      </motion.div>
     </motion.div>
   );
 };
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [loading, setLoading] = useState(true);
 
@@ -738,4 +1050,3 @@ export default function LandingPage() {
     </>
   );
 }
-

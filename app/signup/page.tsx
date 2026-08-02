@@ -3,33 +3,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Eye, EyeOff, AlertCircle, Loader2, MessageSquare,
-  ChevronLeft, Sun, Moon, Package, TrendingUp, Users, Star
+  ChevronLeft, Sun, Moon, Bookmark, Heart, Package, TrendingUp, Users
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug } from "@/lib/utils";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 
 type Mode = "signup" | "login";
-
-// ─── Floating metric cards for the brand panel ───────────────────────────────
-const metrics = [
-  { icon: Package, label: "Orders today", value: "₦284,500", color: "emerald", delay: 0 },
-  { icon: TrendingUp, label: "Conversion rate", value: "18.4%", color: "blue", delay: 0.15 },
-  { icon: Users, label: "Active buyers", value: "1,240", color: "violet", delay: 0.3 },
-  { icon: Star, label: "Store rating", value: "4.9 / 5", color: "amber", delay: 0.45 },
-];
-
-const colorMap: Record<string, string> = {
-  emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  blue:    "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  violet:  "bg-violet-500/10 text-violet-400 border-violet-500/20",
-  amber:   "bg-amber-500/10 text-amber-400 border-amber-500/20",
-};
 
 // ─── Input with floating label ────────────────────────────────────────────────
 function FloatInput({
@@ -47,8 +32,8 @@ function FloatInput({
         htmlFor={id}
         className={`absolute left-4 transition-all duration-200 pointer-events-none font-bold z-10 ${
           active
-            ? "top-2 text-[9px] tracking-[0.18em] uppercase text-emerald-500"
-            : "top-1/2 -translate-y-1/2 text-sm text-slate-400 dark:text-slate-500"
+            ? "top-2 text-[8px] tracking-[0.16em] uppercase text-emerald-500"
+            : "top-1/2 -translate-y-1/2 text-[11px] text-slate-400"
         }`}
       >
         {label}
@@ -62,11 +47,9 @@ function FloatInput({
         onBlur={() => setFocused(false)}
         required={required}
         placeholder={active ? placeholder : ""}
-        className={`w-full pt-6 pb-3 px-4 rounded-2xl outline-none text-sm font-semibold transition-all duration-200
-          bg-slate-50 dark:bg-white/[0.04]
-          border ${focused ? "border-emerald-500/60 shadow-[0_0_0_3px_rgba(16,185,129,0.08)]" : "border-slate-200 dark:border-white/[0.08]"}
-          text-slate-900 dark:text-white
-          placeholder:text-slate-300 dark:placeholder:text-slate-700`}
+        className={`w-full pt-5 pb-2.5 px-4 rounded-full outline-none text-[11px] font-semibold transition-all duration-200
+          bg-white dark:bg-white/[0.04] border ${focused ? "border-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.1)]" : "border-slate-200 dark:border-white/[0.09]"}
+          text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600`}
       />
       {suffix && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">{suffix}</div>
@@ -75,12 +58,87 @@ function FloatInput({
   );
 }
 
-export default function SignupPage() {
+// ─── Google SVG logo ─────────────────────────────────────────────────────────
+function GoogleLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.64 9.2045C17.64 8.5663 17.5827 7.9527 17.4764 7.3636H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.2045Z" fill="#4285F4"/>
+      <path d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65591 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+      <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.5931 3.68182 9C3.68182 8.4069 3.78409 7.83 3.96409 7.29V4.9582H0.957275C0.347727 6.1731 0 7.5477 0 9C0 10.4523 0.347727 11.8269 0.957275 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+      <path d="M9 3.5795C10.3214 3.5795 11.5077 4.0336 12.4405 4.9254L15.0218 2.3441C13.4632 0.8918 11.4259 0 9 0C5.48182 0 2.43818 2.0168 0.957275 4.9582L3.96409 7.29C4.67182 5.1627 6.65591 3.5795 9 3.5795Z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+// ─── Custom Black Google Button (requires GoogleOAuthProvider in tree) ────────
+function GoogleButtonInner({
+  onSuccess,
+  onError,
+  label,
+  loading,
+}: {
+  onSuccess: (response: any) => void;
+  onError: () => void;
+  label: string;
+  loading: boolean;
+}) {
+  const login = useGoogleLogin({ onSuccess, onError, flow: "implicit" });
+  return (
+    <button
+      type="button"
+      onClick={() => login()}
+      disabled={loading}
+      className="flex w-full items-center justify-center gap-3 rounded-full border border-slate-900 bg-slate-950 px-5 py-3.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 dark:border-white/[0.12] dark:bg-[#111] dark:hover:bg-white/[0.07]"
+    >
+      {loading ? <Loader2 size={16} className="animate-spin" /> : <><GoogleLogo /><span>{label}</span></>}
+    </button>
+  );
+}
+
+// ─── Smart wrapper — falls back to demo mode when no client ID configured ─────
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
+function GoogleButton({
+  onSuccess,
+  onError,
+  onDemoFallback,
+  label,
+  loading,
+}: {
+  onSuccess: (response: any) => void;
+  onError: () => void;
+  onDemoFallback: () => void;
+  label: string;
+  loading: boolean;
+}) {
+  if (!GOOGLE_CLIENT_ID) {
+    // No client ID — render a demo-mode button with identical styling
+    return (
+      <button
+        type="button"
+        onClick={onDemoFallback}
+        disabled={loading}
+        className="flex w-full items-center justify-center gap-3 rounded-full border border-slate-900 bg-slate-950 px-5 py-3.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 dark:border-white/[0.12] dark:bg-[#111] dark:hover:bg-white/[0.07]"
+      >
+        {loading ? <Loader2 size={16} className="animate-spin" /> : <><GoogleLogo /><span>{label}</span></>}
+      </button>
+    );
+  }
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <GoogleButtonInner onSuccess={onSuccess} onError={onError} label={label} loading={loading} />
+    </GoogleOAuthProvider>
+  );
+}
+
+// ─── Inner page content (needs GoogleOAuthProvider context) ──────────────────
+function SignupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, toggleTheme } = useSwiftLink();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("signup");
+  const [showForm, setShowForm] = useState(false); // mobile: show form panel
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,12 +150,16 @@ export default function SignupPage() {
     setMounted(true);
     const m = searchParams.get("mode") as Mode;
     if (m === "login" || m === "signup") setMode(m);
+
+    // On desktop, always show form. On mobile, show landing first.
+    const isDesktop = window.innerWidth >= 1024;
+    setShowForm(isDesktop);
+
     if (isSupabaseConfigured()) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) router.push("/pro");
       }).catch(() => { /* Supabase not reachable */ });
     } else {
-      // If demo session is already active, skip straight to the app
       const isDemo = localStorage.getItem("swiftlink_demo_login") === "true";
       if (isDemo) router.push("/pro");
     }
@@ -134,17 +196,19 @@ export default function SignupPage() {
     }
   }, [form.email, searchParams]);
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (tokenResponse: any) => {
     setLoading("google"); setError(null);
     try {
       if (!isSupabaseConfigured()) {
-        // Demo mode — no Supabase credentials configured
         localStorage.setItem("swiftlink_demo_login", "true");
         router.push("/pro");
         return;
       }
-      if (!credentialResponse.credential) throw new Error("No ID token from Google");
-      const { data, error } = await supabase.auth.signInWithIdToken({ provider: "google", token: credentialResponse.credential });
+      // Use access token for Supabase OAuth
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: tokenResponse.access_token || tokenResponse.credential,
+      });
       if (error) throw error;
       if (data.user) { await saveUserStore(data.user.id, data.user.email); router.push("/pro"); }
     } catch (e: any) { setError(e.message || "Google Sign-In failed."); setLoading(null); }
@@ -153,14 +217,11 @@ export default function SignupPage() {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading("email"); setError(null);
     try {
-      // ── No Supabase credentials → Developer / Demo Bypass ────────────────────
       if (!isSupabaseConfigured()) {
-        // Store a demo session flag so the app context recognises a logged-in user
         localStorage.setItem("swiftlink_demo_login", "true");
         router.push("/pro");
         return;
       }
-      // ── Real Supabase auth flow ───────────────────────────────────────────────
       if (mode === "login") {
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
         if (authError) throw authError;
@@ -180,363 +241,399 @@ export default function SignupPage() {
     } catch (e: any) { setError(e.message); setLoading(null); }
   };
 
-  if (!mounted) return <div className="min-h-screen bg-white dark:bg-[#020617]" />;
+  if (!mounted) return <div className="fixed inset-0 bg-[#07110d]" />;
 
   return (
-    <main className="min-h-screen w-full bg-white dark:bg-[#020617] flex flex-col lg:flex-row relative font-sans overflow-hidden transition-colors duration-300">
+    // True full-screen: fixed inset-0 so nothing bleeds through
+    <div className="fixed inset-0 flex overflow-hidden font-sans">
 
-      {/* ═══ LEFT PANEL — Brand / Social Proof ══════════════════════════════ */}
-      <div className="hidden lg:flex flex-col w-[46%] xl:w-[42%] min-h-screen sticky top-0 relative overflow-hidden">
-        {/* Deep dark background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#01120a] via-[#020e06] to-[#010c07]" />
-        {/* Grid */}
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage: "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        {/* Glow orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-emerald-500/[0.07] blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-emerald-400/[0.04] blur-[80px] pointer-events-none" />
+      {/* ── LEFT PANEL — Brand / Illustration (desktop only) ─────────────────── */}
+      <div className="relative hidden w-[46%] flex-col overflow-hidden bg-[#07110d] p-10 text-white lg:flex xl:p-14">
+        {/* Background gradients */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(16,185,129,0.22),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(6,95,70,0.18),transparent_50%)]" />
+        {/* Decorative rings */}
+        <div className="pointer-events-none absolute left-1/2 top-[30%] h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05]" />
+        <div className="pointer-events-none absolute left-1/2 top-[30%] h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
+        {/* Logo */}
+        <div className="relative z-10 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg">
+            <img src="/logo.png" alt="SwiftLink" className="h-5 w-5 object-contain" />
+          </span>
+          <span className="text-[13px] font-black tracking-tight">SwiftLink</span>
+        </div>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group w-fit">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-              <img src="/logo.png" alt="SwiftLink" className="w-5 h-5" />
-            </div>
-            <span className="text-base font-black text-white uppercase tracking-widest">
-              Swift<span className="text-emerald-400">Link</span>
-            </span>
-          </Link>
+        <p className="relative z-10 mt-8 text-[9px] font-semibold text-white/40">
+          WhatsApp commerce made simple — online payment solutions for your brand.
+        </p>
 
-          {/* Headline */}
-          <div className="flex-1 flex flex-col justify-center">
+        {/* Phone mockup illustration */}
+        <div className="relative z-10 flex flex-1 items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+            className="relative flex flex-col items-center"
+          >
+            <h1 className="mb-6 text-center text-[2.6rem] font-black leading-[0.88] tracking-[-0.02em] xl:text-5xl">
+              Manage<br />your store
+            </h1>
+
+            {/* Phone frame */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 40, rotate: -8 }}
+              animate={{ opacity: 1, y: 0, rotate: -4 }}
+              transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+              className="w-[200px] rounded-[2rem] border-[10px] border-[#050505] bg-[#f8fafc] p-4 shadow-[0_32px_70px_rgba(0,0,0,0.55)]"
             >
-              <div className="inline-flex items-center gap-2 mb-8 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-[0.35em] text-emerald-400">Live on 10,000+ stores</span>
-              </div>
-
-              <h1 className="text-4xl xl:text-6xl 2xl:text-7xl font-black text-white leading-[0.95] tracking-tighter mb-6">
-                Your store.<br />
-                <span className="text-emerald-400 italic">Fully loaded.</span>
-              </h1>
-              <p className="text-slate-400 font-medium leading-relaxed max-w-[340px] text-sm xl:text-base">
-                The professional workspace for Nigerian brands scaling on WhatsApp. Set up in 60 seconds. Zero transaction fees.
-              </p>
-            </motion.div>
-
-            {/* Live metric cards */}
-            <div className="mt-12 grid grid-cols-2 gap-3">
-              {metrics.map((m, i) => (
-                <motion.div
-                  key={m.label}
-                  initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: 0.4 + m.delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-4 backdrop-blur-sm hover:bg-white/[0.06] transition-colors"
-                >
-                  <div className={`w-8 h-8 rounded-xl border flex items-center justify-center mb-3 ${colorMap[m.color]}`}>
-                    <m.icon size={15} />
+              <div className="mx-auto mb-3.5 h-2.5 w-12 rounded-full bg-black" />
+              <div className="rounded-2xl bg-emerald-50 p-3.5 text-slate-950">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-600">Today</p>
+                    <p className="text-base font-black">₦97,200</p>
                   </div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{m.label}</p>
-                  <p className="text-base font-black text-white">{m.value}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <TrendingUp size={13} />
+                  </span>
+                </div>
+                <div className="mt-3 grid h-20 grid-cols-7 items-end gap-1">
+                  {[34, 50, 42, 70, 58, 92, 76].map((height, index) => (
+                    <span
+                      key={index}
+                      className="rounded-t-full bg-gradient-to-t from-emerald-700 to-emerald-300"
+                      style={{ height }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-slate-950 p-2.5 text-white">
+                  <Package size={12} className="mb-4 text-emerald-400" />
+                  <p className="text-[7px] font-black uppercase text-white/45">Orders</p>
+                  <p className="text-xs font-black">128</p>
+                </div>
+                <div className="rounded-xl bg-slate-900 p-2.5 text-white">
+                  <Users size={12} className="mb-4 text-emerald-400" />
+                  <p className="text-[7px] font-black uppercase text-white/45">Buyers</p>
+                  <p className="text-xs font-black">1.2k</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
 
-          {/* Bottom footer */}
-          <div className="flex items-center justify-between opacity-30 mt-8">
-            <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">© 2026 SwiftLink</p>
-            <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">Commerce Infrastructure</p>
-          </div>
+        {/* Bottom tagline */}
+        <div className="relative z-10">
+          <h2 className="max-w-[340px] text-3xl font-black leading-none tracking-[-0.02em] xl:text-4xl">
+            SwiftLink App &amp; Workspace
+          </h2>
+          <p className="mt-3 text-[10px] font-semibold text-white/35">
+            Built for Nigerian brands that move fast.
+          </p>
         </div>
       </div>
 
-      {/* ═══ RIGHT PANEL — Auth Form ════════════════════════════════════════ */}
-      <div className="flex-1 flex items-center justify-center p-5 sm:p-10 lg:p-14 relative min-h-screen bg-slate-50 dark:bg-[#020617] transition-colors duration-300">
+      {/* ── RIGHT PANEL — Auth Form ───────────────────────────────────────────── */}
+      <div className="relative flex flex-1 flex-col overflow-y-auto bg-white transition-colors duration-300 dark:bg-[#07110d]">
 
-        {/* Subtle background for light mode */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.04),transparent_50%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.06),transparent_50%)] pointer-events-none" />
+        {/* Mobile: Brand landing screen (shows before form) */}
+        <AnimatePresence>
+          {!showForm && (
+            <motion.div
+              key="mobile-intro"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-[#07110d] p-7 text-white lg:hidden"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(16,185,129,0.2),transparent_55%)]" />
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="absolute top-5 right-5 z-20 w-9 h-9 rounded-full bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-slate-400 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-all shadow-sm"
-          aria-label="Toggle Theme"
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+                    <img src="/logo.png" alt="SwiftLink" className="h-5 w-5 object-contain" />
+                  </span>
+                  <span className="text-sm font-black">SwiftLink</span>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/75"
+                >
+                  {theme === "light" ? <Moon size={13} /> : <Sun size={13} />}
+                </button>
+              </div>
+
+              <div className="relative z-10 flex flex-1 flex-col items-center justify-center text-center">
+                <h1 className="text-4xl font-black leading-[0.9] tracking-[-0.02em]">
+                  Manage<br />your store
+                </h1>
+                <p className="mt-4 text-[10px] font-medium text-white/45">
+                  WhatsApp commerce made simple.
+                </p>
+
+                {/* Progress bar */}
+                <div className="mt-10 w-full max-w-[220px]">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <motion.div
+                      initial={{ x: "-100%" }}
+                      animate={{ x: "0%" }}
+                      transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+                      onAnimationComplete={() => setShowForm(true)}
+                      className="h-full rounded-full bg-emerald-400"
+                    />
+                  </div>
+                  <p className="mt-3 text-[9px] font-black uppercase tracking-[0.28em] text-white/40">
+                    Preparing your workspace
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <h2 className="text-2xl font-black leading-none tracking-tight">SwiftLink App &amp; Workspace</h2>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Form Content */}
+        <motion.div
+          initial={false}
+          animate={showForm ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="flex min-h-full flex-col p-7 sm:p-10 lg:p-12"
         >
-          {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
-        </button>
+          {/* Form header */}
+          <div className="flex items-center justify-between gap-4">
+            {/* Back btn — mobile only */}
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex items-center gap-1.5 text-slate-400 transition-colors hover:text-emerald-500 lg:hidden"
+            >
+              <ChevronLeft size={14} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+            </button>
 
-        {/* Mobile top bar */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 lg:hidden" />
+            {/* Desktop logo */}
+            <Link href="/" className="hidden items-center gap-2 lg:flex">
+              <img src="/logo.png" alt="SwiftLink" className="h-5 w-5 object-contain" />
+              <span className="text-sm font-black text-slate-950 dark:text-white">SwiftLink</span>
+            </Link>
 
-        <div className="relative z-10 w-full max-w-[400px]">
-          {/* Mobile back */}
-          <Link href="/" className="lg:hidden inline-flex items-center gap-1.5 text-slate-400 hover:text-emerald-500 mb-8 transition-colors group">
-            <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
-          </Link>
-
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <img src="/logo.png" alt="SwiftLink" className="w-6 h-6" />
-            <span className="text-base font-black text-slate-900 dark:text-white uppercase tracking-widest">
-              Swift<span className="text-emerald-500">Link</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); }}
+                className="text-[10px] font-bold text-slate-500 transition-colors hover:text-emerald-500 dark:text-slate-400"
+              >
+                {mode === "login" ? "Sign Up" : "Sign In"}
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition-all hover:bg-slate-50 dark:border-white/[0.1] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                aria-label="Toggle Theme"
+              >
+                {theme === "light" ? <Moon size={13} /> : <Sun size={13} />}
+              </button>
+            </div>
           </div>
 
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-8"
-          >
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight mb-2">
-              {mode === "signup" ? (
-                <>Create your <span className="text-emerald-500 italic">workspace.</span></>
-              ) : (
-                <>Welcome <span className="text-emerald-500 italic">back.</span></>
-              )}
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-              {mode === "signup" ? "Your professional storefront is 60 seconds away." : "Open your dashboard and keep selling."}
-            </p>
-          </motion.div>
-
-          {/* Tab switcher */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex bg-slate-100 dark:bg-white/[0.04] p-1 rounded-2xl border border-slate-200 dark:border-white/[0.06] mb-7"
-          >
-            {(["signup", "login"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); setError(null); }}
-                className={`relative flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.28em] transition-all duration-200 ${
-                  mode === m
-                    ? "text-slate-900 dark:text-white"
-                    : "text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400"
-                }`}
-              >
-                {mode === m && (
-                  <motion.div
-                    layoutId="tab-bg"
-                    className="absolute inset-0 bg-white dark:bg-[#020617] rounded-xl shadow-sm border border-slate-200/60 dark:border-white/[0.06]"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                  />
-                )}
-                <span className="relative">{m === "signup" ? "Register" : "Sign in"}</span>
-              </button>
-            ))}
-          </motion.div>
-
-          <AnimatePresence mode="wait">
-            {step === "form" ? (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-5"
-              >
-                {/* Demo / No-Config Banner */}
-                {!isSupabaseConfigured() && (
-                  <div className="flex flex-col gap-3 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl">
-                    <div className="flex items-start gap-3">
-                      <span className="text-amber-500 mt-0.5 text-base leading-none">⚠</span>
-                      <div>
-                        <p className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Supabase Not Configured</p>
-                        <p className="text-[10px] font-medium text-amber-600 dark:text-amber-500 mt-1 leading-relaxed">
-                          No <code className="bg-amber-100 dark:bg-amber-500/20 px-1 rounded">.env.local</code> credentials found. Use <strong>Demo Mode</strong> to test the app locally without a database.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        localStorage.setItem("swiftlink_demo_login", "true");
-                        router.push("/pro");
-                      }}
-                      className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
-                    >
-                      Enter Demo Mode
-                    </button>
+          {/* Centered form area */}
+          <div className="mx-auto flex w-full max-w-[390px] flex-1 flex-col justify-center py-8">
+            <AnimatePresence mode="wait">
+              {step === "form" ? (
+                <motion.div
+                  key={`${mode}-form`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <h2 className="text-3xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white sm:text-4xl">
+                      {mode === "login" ? "Sign In" : "Create Account"}
+                    </h2>
+                    <p className="mt-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+                      {mode === "login" ? "Enter your details to open your workspace." : "Start selling from your WhatsApp storefront."}
+                    </p>
                   </div>
-                )}
 
-                {/* Google OAuth */}
-                <div className="w-full flex justify-center">
-                  <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => { setError("Google Sign-In was cancelled."); setLoading(null); }}
-                      shape="pill"
-                      theme={theme === "dark" ? "filled_black" : "outline"}
-                      size="large"
-                      width="400px"
-                      text={mode === "signup" ? "signup_with" : "signin_with"}
-                    />
-                  </GoogleOAuthProvider>
-                </div>
-
-                {/* Divider */}
-                <div className="relative flex items-center gap-4">
-                  <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.05]" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-300 dark:text-slate-700">or email</span>
-                  <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.05]" />
-                </div>
-
-                {/* Error */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex gap-3 p-3.5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl">
-                        <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
-                        <p className="text-xs font-semibold text-red-600 dark:text-red-400 leading-relaxed">{error}</p>
+                  {!isSupabaseConfigured() && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
+                      <div className="flex items-start gap-3">
+                        <span className="text-amber-500 font-bold">!</span>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Supabase Not Configured</p>
+                          <p className="mt-1 text-[10px] font-medium leading-relaxed text-amber-700/80 dark:text-amber-300/80">
+                            No <code className="rounded bg-amber-100 px-1 dark:bg-amber-500/20">.env.local</code> credentials found. Use demo mode to test locally.
+                          </p>
+                        </div>
                       </div>
-                    </motion.div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.setItem("swiftlink_demo_login", "true");
+                          router.push("/pro");
+                        }}
+                        className="mt-3 w-full rounded-full bg-amber-500 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-amber-600"
+                      >
+                        Enter Demo Mode
+                      </button>
+                    </div>
                   )}
-                </AnimatePresence>
 
-                {/* Form */}
-                <form onSubmit={handleEmailAuth} className="space-y-3">
                   <AnimatePresence>
-                    {mode === "signup" && (
+                    {error && (
                       <motion.div
-                        key="signup-fields"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        className="space-y-3 overflow-hidden"
+                        className="overflow-hidden"
                       >
-                        <FloatInput
-                          id="bizName" label="Store name" value={form.bizName}
-                          onChange={(v) => setForm({ ...form, bizName: v })}
-                          required placeholder="Elite Luxe"
-                        />
-                        {/* Phone row */}
-                        <div className="flex gap-2">
-                          <div className="shrink-0">
-                            <CountrySelector value={countryCode} onChange={setCountryCode} />
-                          </div>
-                          <FloatInput
-                            id="phone" label="WhatsApp number" type="tel" value={form.phone}
-                            onChange={(v) => setForm({ ...form, phone: v })}
-                            required placeholder="808 000 0000"
-                          />
+                        <div className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5 dark:border-red-500/20 dark:bg-red-500/10">
+                          <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
+                          <p className="text-xs font-semibold leading-relaxed text-red-600 dark:text-red-300">{error}</p>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  <FloatInput
-                    id="email" label="Work email" type="email" value={form.email}
-                    onChange={(v) => setForm({ ...form, email: v })}
-                    required placeholder="you@example.com"
-                  />
+                  <form onSubmit={handleEmailAuth} className="space-y-3">
+                    <AnimatePresence>
+                      {mode === "signup" && (
+                        <motion.div
+                          key="signup-fields"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                          className="space-y-3 overflow-visible"
+                        >
+                          <FloatInput
+                            id="bizName" label="Store name" value={form.bizName}
+                            onChange={(v) => setForm({ ...form, bizName: v })}
+                            required placeholder="Elite Luxe"
+                          />
+                          <div className="flex gap-2">
+                            <CountrySelector value={countryCode} onChange={setCountryCode} />
+                            <FloatInput
+                              id="phone" label="WhatsApp number" type="tel" value={form.phone}
+                              onChange={(v) => setForm({ ...form, phone: v })}
+                              required placeholder="808 000 0000"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  <FloatInput
-                    id="password" label="Password" type={showPassword ? "text" : "password"}
-                    value={form.password} onChange={(v) => setForm({ ...form, password: v })}
-                    required placeholder="Min. 8 characters"
-                    suffix={
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-slate-400 hover:text-emerald-500 transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    }
-                  />
+                    <FloatInput
+                      id="email" label="Email or Username" type="email" value={form.email}
+                      onChange={(v) => setForm({ ...form, email: v })}
+                      required placeholder="you@example.com"
+                    />
 
-                  {mode === "login" && (
-                    <div className="text-right">
-                      <button type="button" className="text-[11px] font-bold text-slate-400 hover:text-emerald-500 transition-colors">
-                        Forgot password?
-                      </button>
-                    </div>
-                  )}
+                    <FloatInput
+                      id="password" label="Password" type={showPassword ? "text" : "password"}
+                      value={form.password} onChange={(v) => setForm({ ...form, password: v })}
+                      required placeholder="Min. 8 characters"
+                      suffix={
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-slate-300 transition-colors hover:text-emerald-500"
+                        >
+                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      }
+                    />
 
-                  <motion.button
-                    type="submit"
-                    disabled={loading !== null}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full mt-2 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-2.5 transition-all duration-300 disabled:opacity-60 group relative overflow-hidden
-                      bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-emerald-500 dark:hover:bg-emerald-400 shadow-xl shadow-slate-900/10 dark:shadow-none"
-                  >
-                    {/* Shimmer */}
-                    <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12" />
-                    {loading === "email" ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      <>
-                        <span>{mode === "signup" ? "Launch Workspace" : "Enter Dashboard"}</span>
-                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </>
+                    {mode === "login" && (
+                      <div className="text-left">
+                        <Link href="/reset-password" className="text-[10px] font-bold text-emerald-500 transition-colors hover:text-emerald-600">
+                          Forgot password?
+                        </Link>
+                      </div>
                     )}
-                  </motion.button>
-                </form>
 
-                {/* Terms micro-copy */}
-                {mode === "signup" && (
-                  <p className="text-center text-[10px] font-medium text-slate-400 dark:text-slate-600 leading-relaxed">
-                    By continuing, you agree to our{" "}
-                    <Link href="/terms" className="text-emerald-500 hover:underline font-bold">Terms of Service</Link>
-                  </p>
-                )}
-              </motion.div>
-            ) : (
-              /* ── Verify email state ── */
-              <motion.div
-                key="verify"
-                initial={{ opacity: 0, scale: 0.96, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center py-8"
-              >
-                <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-                  <MessageSquare size={30} className="text-emerald-500" />
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-3">
-                  Check your inbox.
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-10 max-w-[280px] mx-auto">
-                  We sent a secure verification link to{" "}
-                  <span className="text-slate-900 dark:text-white font-bold">{form.email}</span>
-                </p>
-                <button
-                  onClick={() => { setStep("form"); setMode("login"); }}
-                  className="w-full py-4 rounded-2xl border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all"
+                    <motion.button
+                      type="submit"
+                      disabled={loading !== null}
+                      whileTap={{ scale: 0.98 }}
+                      className="group relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 py-3.5 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_18px_30px_rgba(16,185,129,0.24)] transition-all duration-300 hover:brightness-105 disabled:opacity-60"
+                    >
+                      {loading === "email" ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <>
+                          <span>{mode === "signup" ? "Create Account" : "Sign In"}</span>
+                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                        </>
+                      )}
+                    </motion.button>
+                  </form>
+
+                  <div className="relative flex items-center gap-4">
+                    <div className="h-px flex-1 bg-slate-100 dark:bg-white/[0.08]" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-300 dark:text-slate-600">or</span>
+                    <div className="h-px flex-1 bg-slate-100 dark:bg-white/[0.08]" />
+                  </div>
+
+                  {/* Custom Black Google Button */}
+                  <GoogleButton
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => { setError("Google Sign-In was cancelled."); setLoading(null); }}
+                    onDemoFallback={() => {
+                      localStorage.setItem("swiftlink_demo_login", "true");
+                      router.push("/pro");
+                    }}
+                    label={mode === "signup" ? "Sign up with Google" : "Sign in with Google"}
+                    loading={loading === "google"}
+                  />
+
+                  {mode === "signup" && (
+                    <p className="text-center text-[10px] font-medium leading-relaxed text-slate-400 dark:text-slate-600">
+                      By continuing, you agree to our{" "}
+                      <Link href="/terms" className="font-bold text-emerald-500 hover:underline">Terms of Service</Link>
+                    </p>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="verify"
+                  initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  className="py-8 text-center"
                 >
-                  Back to Sign in
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-200 bg-emerald-50">
+                    <MessageSquare size={30} className="text-emerald-500" />
+                  </div>
+                  <h3 className="mb-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                    Check your inbox.
+                  </h3>
+                  <p className="mx-auto mb-10 max-w-[280px] text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                    We sent a secure verification link to{" "}
+                    <span className="font-bold text-slate-950 dark:text-white">{form.email}</span>
+                  </p>
+                  <button
+                    onClick={() => { setStep("form"); setMode("login"); }}
+                    className="w-full rounded-full border border-slate-200 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-slate-700 transition-all hover:bg-slate-50 dark:border-white/[0.09] dark:text-white dark:hover:bg-white/[0.05]"
+                  >
+                    Back to Sign in
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </div>
-    </main>
+    </div>
   );
+}
+
+// ─── Page export ─────────────────────────────────────────────────────────────
+export default function SignupPage() {
+  return <SignupInner />;
 }

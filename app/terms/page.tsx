@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, ShieldCheck, FileText, Lock } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -32,9 +32,6 @@ export default function TermsPage() {
            </div>
 
            <header className="mb-16">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest mb-6">
-                 <ShieldCheck size={10} /> Verified Legal Policy
-              </span>
               <h1 className="text-4xl md:text-6xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">Terms of <br/><span className="text-emerald-500">Service</span></h1>
               <p className="mt-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Effective April 11, 2026</p>
            </header>
@@ -92,11 +89,7 @@ export default function TermsPage() {
            </div>
            
            <footer className="mt-20 pt-10 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-3">
-                 <Lock className="text-emerald-500" size={16} />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Secure Protocol v4.2</span>
-              </div>
-              <p className="text-[10px] font-bold text-slate-300">© 2026 SwiftLink Technologies Ltd.</p>
+              <p className="text-[10px] font-bold text-slate-300">© 2026 SwiftLink Workspace.</p>
            </footer>
         </div>
       </div>

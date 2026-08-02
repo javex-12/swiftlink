@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase } from "@/lib/supabase-client";
 import { 
-  User, Zap, Bell, Globe, Settings, Smartphone,
-  CheckCircle2, AlertCircle, Clock, Camera
+  User, Zap, Globe, Smartphone,
+  CheckCircle2, AlertCircle, Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,37 +30,7 @@ export default function AccountPage() {
     setUploadingAvatar(false);
   };
 
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [loadingNotifs, setLoadingNotifs] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const fetchNotifs = async () => {
-        const { data } = await supabase
-            .from('store_notifications')
-            .select('*')
-            .eq('store_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
-            
-        if (data) setNotifications(data);
-        setLoadingNotifs(false);
-    };
-
-    fetchNotifs();
-  }, [user?.id]);
-
-  const markAsRead = async (id: string) => {
-    const { error } = await supabase
-        .from('store_notifications')
-        .update({ read: true })
-        .eq('id', id);
-        
-    if (!error) {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    }
-  };
 
   const authLabel = useMemo(() => {
     if (!isSupabaseActive) return "Offline mode (Supabase not configured)";
@@ -78,20 +48,26 @@ export default function AccountPage() {
     <main className="min-h-screen bg-slate-50 dark:bg-black px-4 md:px-6 py-10 transition-colors duration-300">
       <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-                <div className="flex items-center gap-3">
-                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">Settings</h1>
-                    {state.plan === "pro" && (
-                        <span className="px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded uppercase tracking-widest shadow-lg shadow-emerald-500/20">Pro</span>
-                    )}
-                </div>
-                <p className="text-slate-400 dark:text-zinc-500 font-bold text-sm mt-1 uppercase tracking-widest">Manage your global preferences.</p>
-            </div>
-            <Link href="/pro" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                <Settings size={14} /> Dashboard
-            </Link>
+        {/* Top Back Navigation & Header Section */}
+        <div>
+          <Link
+            href="/pro"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-200/60 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-800 dark:text-white rounded-full text-xs font-black uppercase tracking-widest transition-all mb-6 active:scale-95"
+          >
+            ← Back to Dashboard
+          </Link>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                  <div className="flex items-center gap-3">
+                      <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">Settings</h1>
+                      {state.plan === "pro" && (
+                          <span className="px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded uppercase tracking-widest shadow-lg shadow-emerald-500/20">Pro</span>
+                      )}
+                  </div>
+                  <p className="text-slate-400 dark:text-zinc-500 font-bold text-sm mt-1 uppercase tracking-widest">Manage your global merchant preferences.</p>
+              </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -200,58 +176,7 @@ export default function AccountPage() {
                     </div>
                 </div>
 
-                {/* Notification Hub */}
-                <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
-                    <div className="p-8 pb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-black flex items-center justify-center text-slate-400">
-                                <Bell size={18} />
-                            </div>
-                            <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 dark:text-white">Notification Hub</h3>
-                        </div>
-                        {notifications.some(n => !n.read) && (
-                            <span className="px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black rounded uppercase">New Alerts</span>
-                        )}
-                    </div>
 
-                    <div className="divide-y divide-slate-50 dark:divide-white/5 max-h-[400px] overflow-y-auto no-scrollbar">
-                        {loadingNotifs ? (
-                            <div className="p-10 text-center flex flex-col items-center gap-4">
-                                <Clock size={24} className="text-slate-200 animate-spin" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing updates...</p>
-                            </div>
-                        ) : notifications.length > 0 ? (
-                            notifications.map(notif => (
-                                <div key={notif.id} className={cn("p-6 flex items-start gap-4 transition-colors", !notif.read && "bg-slate-50/50 dark:bg-white/5")}>
-                                    <div className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                        notif.type === 'order' ? "bg-emerald-100 text-emerald-600" : 
-                                        notif.type === 'feedback' ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-600"
-                                    )}>
-                                        <Bell size={16} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">{notif.title}</h4>
-                                        <p className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                                        <p className="text-[9px] font-bold text-slate-300 dark:text-zinc-700 uppercase mt-2 tracking-widest">{new Date(notif.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                    {!notif.read && (
-                                        <button 
-                                            onClick={() => markAsRead(notif.id)}
-                                            className="px-3 py-1 bg-slate-900 dark:bg-white text-white dark:text-black text-[8px] font-black rounded-lg uppercase"
-                                        >
-                                            Dismiss
-                                        </button>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <div className="p-20 text-center">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-zinc-800 italic">No new notifications</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
                 {/* Danger Zone */}
                 <div className="bg-red-50 dark:bg-red-950/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/20 p-8 md:p-10">

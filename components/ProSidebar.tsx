@@ -4,27 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { Menu, X, LayoutDashboard, Store, Truck, BarChart3, Settings, LogOut, Link as LinkIcon, MessageSquare, HelpCircle, Sun, Moon, Globe, Shield } from "lucide-react";
+import { LayoutGrid, Edit3, Truck, LineChart, Sliders, LogOut, HelpCircle, ShieldCheck, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
   const pathname = usePathname();
-  const { copyShopLink, copyTrackingPortalLink, handleSignOut, state, startTour, theme, toggleTheme, setFeedbackOpen, setSocialHubOpen, user, isAdmin, addToast } = useSwiftLink();
+  const { handleSignOut, state, startTour, isAdmin, addToast } = useSwiftLink();
   const [isHovered, setIsHovered] = useState(false);
 
   const isPremium = state.plan === "pro" || state.plan === "business";
 
-  const navItems = [
-    { href: "/pro", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/business", label: "Store Editor", icon: Store },
-    { href: "/dispatch", label: "Logistics", icon: Truck },
-    { href: isPremium ? "/pro/analytics" : "#", label: isPremium ? "Analytics" : "Analytics 🔒", icon: BarChart3, locked: !isPremium },
-    { href: "/account", label: "Account", icon: Settings },
-  ];
-
   const sidebarItems = [
-    ...navItems,
-    ...(isAdmin ? [{ href: "/pro/admin", label: "Admin Panel", icon: Shield }] : [])
+    { href: "/pro", label: "Dashboard", icon: LayoutGrid },
+    { href: "/business", label: "Store Editor", icon: Edit3 },
+    { href: "/dispatch", label: "Logistics", icon: Truck },
+    { href: isPremium ? "/pro/analytics" : "#", label: "Analytics", icon: LineChart, locked: !isPremium },
+    { href: "/account", label: "Account", icon: Sliders },
+    ...(isAdmin ? [{ href: "/pro/admin", label: "Admin Panel", icon: ShieldCheck }] : [])
   ];
 
   const isActive = (href: string) => {
@@ -38,41 +34,43 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
       {mobileOpen && (
         <button
           type="button"
-          className="lg:hidden fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-[2px]"
+          className="lg:hidden fixed inset-0 z-40 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm"
           aria-label="Close menu"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
+      {/* Floating Desktop & Mobile Sidebar Pod */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "flex flex-col border-slate-200 dark:border-white/[0.05] bg-white dark:bg-[#020617] transition-all duration-300 ease-in-out max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:top-0 max-lg:z-50 max-lg:w-72 max-lg:shadow-2xl lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:border-r overflow-hidden",
-          mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
-          isHovered ? "lg:w-64" : "lg:w-20"
+          "flex flex-col bg-white/95 dark:bg-[#07130e] border border-slate-200/80 dark:border-emerald-500/10 text-slate-900 dark:text-white transition-all duration-300 ease-in-out overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-40 backdrop-blur-xl",
+          // Mobile drawer style
+          "max-lg:fixed max-lg:bottom-4 max-lg:left-4 max-lg:top-4 max-lg:w-64 max-lg:rounded-[2rem]",
+          mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-[120%]",
+          // Desktop floating column style
+          "lg:sticky lg:top-4 lg:my-4 lg:ml-4 lg:h-[calc(100vh-2rem)] lg:rounded-[2rem] lg:shrink-0 lg:translate-x-0",
+          isHovered ? "lg:w-60" : "lg:w-20"
         )}
       >
-        <div className="p-5 border-b border-slate-100 dark:border-white/[0.05] flex items-center gap-3 h-20 shrink-0 bg-slate-50/50 dark:bg-[#020617]">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-slate-900 shadow-lg overflow-hidden shrink-0 transition-transform group-hover:scale-105">
-             {state.bizImage ? <img src={state.bizImage} className="w-full h-full object-cover" alt="" /> : <img src="/logo.png" className="w-6 h-6 object-contain" alt="SL" />}
-          </div>
-          <div className={cn("min-w-0 transition-all duration-300", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-2")}>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white leading-tight block truncate uppercase italic">
-                {state.bizName || "SwiftLink Pro"}
+        {/* Logo / Brand Header */}
+        <div className="p-4 flex items-center justify-between shrink-0 h-20 border-b border-slate-100 dark:border-white/5">
+          <Link href="/pro" className="flex items-center gap-3">
+            <img src="/logo.png" className="w-8 h-8 object-contain shrink-0" alt="SwiftLink" />
+            <div className={cn("min-w-0 transition-all duration-300", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-2")}>
+              <span className="text-xs font-black tracking-tight text-slate-900 dark:text-white block truncate uppercase italic">
+                {state.bizName || "My Store"}
+              </span>
+              <span className="text-[8px] font-mono uppercase tracking-widest text-emerald-600 dark:text-[#00c885]">
+                {state.plan ? `${state.plan.toUpperCase()} PLAN` : "PRO PLAN"}
               </span>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-500">
-              Control Panel
-            </span>
-          </div>
+          </Link>
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <p className={cn("px-3 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
-            Management
-          </p>
+        {/* Navigation Items */}
+        <nav className="flex-1 py-6 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar px-3">
           {sidebarItems.map((item) => {
             const active = isActive(item.href);
             return (
@@ -82,96 +80,65 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
                 onClick={(e) => {
                   if ((item as any).locked) {
                     e.preventDefault();
-                    addToast("Analytics is a premium Pro feature. Upgrade your store plan to unlock.", "info");
+                    addToast("Analytics is a premium Pro feature.", "info");
                     return;
                   }
                   setMobileOpen(false);
                 }}
                 className={cn(
-                  "flex items-center gap-4 rounded-xl px-3.5 py-3 transition-all group relative",
+                  "flex items-center gap-4 rounded-2xl px-3.5 py-3.5 transition-all relative group font-bold",
                   active
-                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg"
-                    : "text-slate-500 hover:bg-slate-50 dark:hover:bg-zinc-900/50 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-emerald-50 dark:bg-white/10 text-emerald-600 dark:text-[#00c885] font-black"
+                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 shrink-0 transition-colors", active ? "text-emerald-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white")} strokeWidth={active ? 2.5 : 2} />
-                <span className={cn("text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-4")}>
+                {/* Active Green Pill Bar */}
+                {active && (
+                  <div className="absolute left-0 top-2 bottom-2 w-1.5 bg-emerald-500 dark:bg-[#00c885] rounded-r-full shadow-[0_0_12px_rgba(16,185,129,0.5)]" />
+                )}
+                
+                <item.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", active ? "text-emerald-600 dark:text-[#00c885]" : "text-slate-400 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white")} />
+                
+                <span className={cn("text-xs whitespace-nowrap transition-all duration-300 flex items-center gap-1.5", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-4")}>
                   {item.label}
+                  {(item as any).locked && <Lock size={10} className="text-amber-400 shrink-0" />}
                 </span>
+
                 {!isHovered && !active && (
-                   <div className="absolute left-full ml-4 px-2 py-1 bg-slate-900 text-white text-[10px] font-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity uppercase tracking-widest z-50">
-                      {item.label}
-                   </div>
+                  <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 dark:bg-[#07130e] text-white border border-slate-700 dark:border-emerald-500/20 text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity uppercase tracking-widest z-50 whitespace-nowrap shadow-xl">
+                    {item.label}
+                  </div>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-100 dark:border-white/[0.05] space-y-1.5 overflow-hidden">
-          <p className={cn("px-3 pb-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 whitespace-nowrap transition-opacity", isHovered ? "opacity-100" : "lg:opacity-0")}>
-            System
-          </p>
-          <button
-            onClick={copyShopLink}
-            data-tour-copy-shop
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
-          >
-            <LinkIcon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-emerald-500" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>Copy Store Link</span>
-          </button>
-          
-          <button
-            onClick={() => setSocialHubOpen(true)}
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
-          >
-            <Globe className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-indigo-500" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-bold", isHovered ? "opacity-100" : "lg:opacity-0")}>Social Hub</span>
-          </button>
-
-          <button
-            onClick={() => setFeedbackOpen(true)}
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
-          >
-            <MessageSquare className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-amber-500" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-bold", isHovered ? "opacity-100" : "lg:opacity-0")}>Send Feedback</span>
-          </button>
-
+        {/* Bottom Actions */}
+        <div className="p-3 border-t border-slate-100 dark:border-white/5 space-y-1">
           <button
             onClick={() => { setMobileOpen(false); startTour(); }}
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-black text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
+            className="flex w-full items-center gap-4 rounded-2xl px-3.5 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
-            <div className="w-5 h-5 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-               <HelpCircle className="w-3 h-3 text-white" />
-            </div>
-            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-black uppercase tracking-widest text-[10px]", isHovered ? "opacity-100" : "lg:opacity-0")}>Support Guide</span>
-          </button>
-
-          <button
-            onClick={toggleTheme}
-            className="flex w-full items-center gap-4 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
-          >
-            {theme === "light" ? <Moon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-500" /> : <Sun className="w-4 h-4 shrink-0 text-yellow-400" />}
-            <span className={cn("whitespace-nowrap transition-opacity duration-300 font-bold", isHovered ? "opacity-100" : "lg:opacity-0")}>
-               {theme === "light" ? "Dark Mode" : "Light Mode"}
+            <HelpCircle className="w-5 h-5 shrink-0 text-slate-400 dark:text-slate-500" />
+            <span className={cn("text-xs font-bold whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
+              Help &amp; Guide
             </span>
           </button>
-        </div>
 
-        <div className="p-3 border-t border-slate-100 dark:border-white/[0.05] h-20 shrink-0 flex items-center overflow-hidden">
           <button
             onClick={handleSignOut}
-            className={cn(
-              "flex w-full items-center gap-4 rounded-xl px-3.5 py-3 text-xs font-black uppercase tracking-widest transition-all active:scale-95 overflow-hidden",
-              isHovered ? "bg-red-50 dark:bg-red-950/10 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20" : "text-slate-400 hover:text-red-600"
-            )}
+            className="flex w-full items-center gap-4 rounded-2xl px-3.5 py-3 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
           >
-
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>Exit Session</span>
+            <LogOut className="w-5 h-5 shrink-0 text-red-500 dark:text-red-400" />
+            <span className={cn("text-xs font-bold whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
+              Log Out
+            </span>
           </button>
         </div>
       </aside>
     </>
   );
 }
+
+

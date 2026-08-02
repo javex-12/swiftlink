@@ -67,7 +67,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   } = useSwiftLink();
 
   const showOverlay = loadingOverlay && pathname !== "/";
-  const showCustomerCart = !isOwner && !loadingOverlay && !tourOpen;
+  const showCustomerCart = !isLandingRoute && !isOwner && !loadingOverlay && !tourOpen;
 
   return (
     <>

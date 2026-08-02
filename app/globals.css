@@ -23,6 +23,14 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif;
 }
 
+.font-serif-luxury {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+.font-brand-header {
+  font-family: 'Cinzel', serif;
+}
+
 .dark body {
   background-color: var(--bg-dark);
   color: #f8fafc;

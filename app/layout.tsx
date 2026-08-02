@@ -9,7 +9,7 @@ const site = "https://swiftlinkpro.vercel.app";
 const siteName = "SwiftLink Pro";
 const title = "SwiftLink Pro | The High-Fidelity WhatsApp Commerce Workspace";
 const description =
-  "The elite command center for Nigerian brands. Build cinematic WhatsApp storefronts, manage multiple brands, track real-time dispatch, and dominate your niche with SwiftLink Pro.";
+  "The global command center for modern vendors. Build high-fidelity WhatsApp storefronts, manage products seamlessly, receive direct WhatsApp orders, and track dispatches globally with SwiftLink Pro.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
@@ -20,16 +20,16 @@ export const metadata: Metadata = {
   },
   description,
   keywords: [
-    "WhatsApp e-commerce Nigeria",
-    "Visual Store Designer",
-    "Cinematic Storefront Templates",
+    "WhatsApp e-commerce",
+    "Global WhatsApp Storefront",
+    "WhatsApp Catalog Builder",
     "Multi-store management software",
-    "Real-time dispatch tracking Nigeria",
+    "Real-time dispatch tracking",
     "WhatsApp catalog builder pro",
     "SwiftLink Pro Workspace",
     "Premium WhatsApp storefront",
     "No-code ecommerce for vendors",
-    "Nigerian business automation",
+    "Global business automation",
   ],
   authors: [{ name: "SwiftLink Pro" }],
   creator: "SwiftLink Pro",
@@ -86,7 +86,7 @@ const softwareJsonLd = {
   offers: {
     "@type": "Offer",
     price: "0",
-    priceCurrency: "NGN",
+    priceCurrency: "USD",
   },
   featureList: [
     "WhatsApp storefront builder",
@@ -112,7 +112,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Cinzel:wght@600;700;800;900&display=swap"
           rel="stylesheet"
         />
         <link

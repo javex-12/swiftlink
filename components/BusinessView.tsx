@@ -11,7 +11,7 @@ import {
   ExternalLink, Layout, Smartphone, Globe, ChevronDown, Store, FileText, X,
   MessageSquare, Mail, MapPin, User, Video, AtSign, Hash, Link2,
   Image as ImageIcon, LayoutTemplate, PanelBottom, Save, AlertTriangle, Star,
-  Dices
+  Dices, Lock
 } from "lucide-react";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { CustomerStorefrontPreview } from "./CustomerStorefront";
@@ -693,7 +693,7 @@ export function BusinessView() {
       <div
         style={{
           position: "fixed",
-          bottom: "2rem",
+          bottom: "5rem",
           left: "50%",
           transform: `translateX(-50%) translateY(${isDirty ? "0" : "80px"})`,
           opacity: isDirty ? 1 : 0,
@@ -724,62 +724,70 @@ export function BusinessView() {
         </button>
       </div>
 
-      <main className="max-w-7xl mx-auto space-y-10 px-4 md:px-6 pt-8">
-        
-        {/* MULTI-STORE SWITCHER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 md:p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-sm">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
-                    <Store size={24} />
+      <main className="max-w-7xl mx-auto space-y-8 sm:space-y-10 px-3 sm:px-6 pt-4 sm:pt-8 w-full min-w-0 overflow-x-hidden">
+        {/* MULTI-STORE SWITCHER (Figma Editor Page Match - Mobile Responsive) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0e251b] p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] border border-emerald-500/20 shadow-xl text-white w-full">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Store size={20} className="sm:w-6 sm:h-6" />
                 </div>
-                <div>
-                    <h3 className="text-sm font-black uppercase tracking-widest dark:text-white">{localState.bizName || 'SwiftLink Store'}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Current Outlet</p>
+                <div className="min-w-0">
+                    <h3 className="font-brand-header text-lg sm:text-xl font-bold tracking-wider uppercase text-white truncate">{localState.bizName || 'MY STORE'}</h3>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-amber-400 uppercase tracking-widest">Current Store</p>
                 </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <div className="relative">
-                    <button onClick={() => setShowStoreDropdown(!showStoreDropdown)} className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-black text-slate-400 rounded-xl text-[9px] font-black uppercase hover:text-slate-900 dark:hover:text-white transition-all">
-                        Switch Store <ChevronDown className={cn("transition-transform", showStoreDropdown && "rotate-180")} size={12} />
+                    <button onClick={() => setShowStoreDropdown(!showStoreDropdown)} className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-[#07130e] text-[#00c885] border border-emerald-500/20 rounded-full text-xs font-bold uppercase hover:bg-white/10 transition-all shadow-md">
+                        Switch Store <ChevronDown className={cn("transition-transform", showStoreDropdown && "rotate-180")} size={14} />
                     </button>
                     <AnimatePresence>
                         {showStoreDropdown && (
-                            <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute top-full left-0 md:left-auto md:right-0 mt-4 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-white/5 z-50 p-3 w-[280px]">
+                            <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute top-full left-0 sm:left-auto sm:right-0 mt-3 bg-[#0e251b] rounded-[2rem] shadow-2xl border border-emerald-500/20 z-50 p-3 w-[260px] sm:w-[280px]">
                                 <div className="max-h-[300px] overflow-y-auto no-scrollbar space-y-1">
                                     {stores.map(store => (
-                                        <button key={store.id} onClick={() => { switchStore(store.id!); setShowStoreDropdown(false); }} className={cn("w-full flex items-center justify-between p-4 rounded-2xl transition-all", localState.id === store.id ? "bg-emerald-50 dark:bg-emerald-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5")}>
-                                            <div className="flex items-center gap-4 text-left min-w-0">
-                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-black flex items-center justify-center text-slate-400 shrink-0 overflow-hidden">
+                                        <button key={store.id} onClick={() => { switchStore(store.id!); setShowStoreDropdown(false); }} className={cn("w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl transition-all", localState.id === store.id ? "bg-[#00c885]/20 text-[#00c885]" : "hover:bg-white/5 text-slate-300")}>
+                                            <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-slate-400 shrink-0 overflow-hidden">
                                                     {store.bizImage ? <img src={store.bizImage} className="w-full h-full object-cover" /> : <Store size={14} />}
                                                 </div>
-                                                <div className="min-w-0"><p className="text-[11px] font-black uppercase tracking-tight dark:text-white truncate">{store.bizName}</p></div>
+                                                <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-tight truncate">{store.bizName}</p></div>
                                             </div>
                                         </button>
                                     ))}
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-slate-50 dark:border-white/5">
-                                    <button onClick={handleCreateNew} className="w-full flex items-center justify-center gap-3 p-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">
-                                        <Plus size={16} /> Create New Brand {!isProUser && stores.length >= 1 && <span className="ml-1">🔒</span>}
+                                <div className="mt-2 pt-2 border-t border-white/5">
+                                    <button onClick={handleCreateNew} className="w-full flex items-center justify-center gap-2 p-3.5 bg-[#00c885] text-[#07110d] rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#00b377] transition-all">
+                                        <Plus size={14} /> Create New Brand {!isProUser && stores.length >= 1 && <Lock size={11} className="ml-1 shrink-0" />}
                                     </button>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
-                <button onClick={() => window.open(`${window.location.origin}${getShopPath(localState)}`, "_blank")} className="p-3 bg-slate-50 dark:bg-black text-slate-400 rounded-xl hover:text-emerald-500 transition-all"><ExternalLink size={18} /></button>
+                <button onClick={() => window.open(`${window.location.origin}${getShopPath(localState)}`, "_blank")} className="p-3 sm:p-3.5 bg-[#07130e] border border-emerald-500/20 text-[#00c885] rounded-full hover:bg-white/10 transition-all shadow-md shrink-0" title="Live Preview"><ExternalLink size={16} className="sm:w-4 sm:h-4" /></button>
             </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="text-center lg:text-left">
-                <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Workspace</h1>
-                <p className="text-slate-400 dark:text-zinc-500 font-bold text-xs mt-1 uppercase tracking-[0.2em]">Manage products, branding, and orders.</p>
+        {/* WORKSPACE TITLE & TAB SWITCHER (Mobile Responsive) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 sm:pt-4 w-full">
+            <div className="text-left">
+                <h1 className="font-serif-luxury italic text-4xl sm:text-6xl font-black text-white tracking-wide">WORKSPACE</h1>
             </div>
-            <div className="flex justify-center">
-                <div className="flex bg-white dark:bg-zinc-900/50 p-1.5 rounded-2xl shadow-sm border border-slate-100 dark:border-white/5">
-                    <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "store" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("store")}>Products</button>
-                    <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "appearance" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("appearance")}>Design</button>
-                    <button className={cn("px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", activeTab === "inbox" ? "bg-slate-900 dark:bg-white text-white dark:text-black shadow-lg" : "text-slate-400")} onClick={() => handleTabChange("inbox")}>Inbox</button>
+            <div className="w-full sm:w-auto overflow-x-auto custom-scrollbar pb-1">
+                <div className="flex bg-[#0e251b] p-1.5 sm:p-2 rounded-full border border-emerald-500/20 shadow-xl min-w-max">
+                    <button className={cn("px-5 sm:px-8 py-2.5 sm:py-3 text-xs font-black uppercase tracking-widest rounded-full transition-all relative", activeTab === "store" ? "text-[#00c885]" : "text-slate-400 hover:text-white")} onClick={() => handleTabChange("store")}>
+                      PRODUCTS
+                      {activeTab === "store" && <span className="absolute bottom-1 left-5 sm:left-8 right-5 sm:right-8 h-1 bg-[#00c885] rounded-full" />}
+                    </button>
+                    <button className={cn("px-5 sm:px-8 py-2.5 sm:py-3 text-xs font-black uppercase tracking-widest rounded-full transition-all relative", activeTab === "appearance" ? "text-[#00c885]" : "text-slate-400 hover:text-white")} onClick={() => handleTabChange("appearance")}>
+                      DESIGN
+                      {activeTab === "appearance" && <span className="absolute bottom-1 left-5 sm:left-8 right-5 sm:right-8 h-1 bg-[#00c885] rounded-full" />}
+                    </button>
+                    <button className={cn("px-5 sm:px-8 py-2.5 sm:py-3 text-xs font-black uppercase tracking-widest rounded-full transition-all relative", activeTab === "inbox" ? "text-[#00c885]" : "text-slate-400 hover:text-white")} onClick={() => handleTabChange("inbox")}>
+                      INBOX
+                      {activeTab === "inbox" && <span className="absolute bottom-1 left-5 sm:left-8 right-5 sm:right-8 h-1 bg-[#00c885] rounded-full" />}
+                    </button>
                 </div>
             </div>
         </div>
