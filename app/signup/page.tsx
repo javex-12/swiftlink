@@ -10,7 +10,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug } from "@/lib/utils";
-import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 
@@ -70,23 +69,19 @@ function GoogleLogo() {
   );
 }
 
-// ─── Custom Black Google Button (requires GoogleOAuthProvider in tree) ────────
+// ─── Google Sign-In Button (uses Supabase OAuth redirect — no raw tokens) ─────
 function GoogleButtonInner({
-  onSuccess,
-  onError,
-  label,
-  loading,
+  onSuccess, onError, label, loading,
 }: {
   onSuccess: (response: any) => void;
   onError: () => void;
   label: string;
   loading: boolean;
 }) {
-  const login = useGoogleLogin({ onSuccess, onError, flow: "implicit" });
   return (
     <button
       type="button"
-      onClick={() => login()}
+      onClick={() => onSuccess({})}
       disabled={loading}
       className="flex w-full items-center justify-center gap-3 rounded-full border border-slate-900 bg-slate-950 px-5 py-3.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 dark:border-white/[0.12] dark:bg-[#111] dark:hover:bg-white/[0.07]"
     >
@@ -125,9 +120,7 @@ function GoogleButton({
     );
   }
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <GoogleButtonInner onSuccess={onSuccess} onError={onError} label={label} loading={loading} />
-    </GoogleOAuthProvider>
+    <GoogleButtonInner onSuccess={onSuccess} onError={onError} label={label} loading={loading} />
   );
 }
 
@@ -196,7 +189,7 @@ function SignupInner() {
     }
   }, [form.email, searchParams]);
 
-  const handleGoogleSuccess = async (tokenResponse: any) => {
+  const handleGoogleSuccess = async (_tokenResponse: any) => {
     setLoading("google"); setError(null);
     try {
       if (!isSupabaseConfigured()) {
@@ -204,13 +197,17 @@ function SignupInner() {
         router.push("/pro");
         return;
       }
-      // Use access token for Supabase OAuth
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      // Use Supabase's native OAuth redirect — the correct, token-safe approach.
+      // This avoids passing raw access_tokens to signInWithIdToken (which requires a proper JWT id_token).
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        token: tokenResponse.access_token || tokenResponse.credential,
+        options: {
+          redirectTo: `${window.location.origin}/pro`,
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
       });
       if (error) throw error;
-      if (data.user) { await saveUserStore(data.user.id, data.user.email); router.push("/pro"); }
+      // Supabase will redirect the browser — no need to do anything else here.
     } catch (e: any) { setError(e.message || "Google Sign-In failed."); setLoading(null); }
   };
 
