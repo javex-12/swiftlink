@@ -102,7 +102,8 @@ function GoogleButton({
   }
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="relative w-full">
+      <div className="relative w-full overflow-hidden rounded-full">
+        {/* Visual custom button */}
         <button
           type="button"
           disabled={loading}
@@ -110,11 +111,12 @@ function GoogleButton({
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <><GoogleLogo /><span>{label}</span></>}
         </button>
-        <div className="absolute inset-0 opacity-0 overflow-hidden rounded-full">
+        {/* Interactive GoogleLogin iframe overlay */}
+        <div className="absolute inset-0 z-10 opacity-[0.001] cursor-pointer pointer-events-auto flex items-center justify-center scale-150">
           <GoogleLogin
             onSuccess={(res) => { if (res.credential) onSuccess(res.credential); }}
             onError={onError}
-            width="100%"
+            width="400"
             shape="pill"
             text={mode === "signup" ? "signup_with" : "signin_with"}
           />
