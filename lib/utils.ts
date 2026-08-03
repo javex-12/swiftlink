@@ -133,3 +133,20 @@ export function getSmartFirstName(ownerName?: string, email?: string, bizName?: 
   }
   return "Merchant";
 }
+
+/**
+ * Hash a plain-text delivery PIN using SHA-256 (Web Crypto API).
+ * The result is a 64-char hex string. This is ONE-WAY — the plain PIN
+ * can never be recovered from it, even by SwiftLink or Supabase admins.
+ *
+ * Usage:
+ *   Store hash in DB.        Verify: hash(input) === stored_hash
+ *   Never store plain PIN.
+ */
+export async function hashPin(pin: string): Promise<string> {
+  const encoded = new TextEncoder().encode(pin.trim());
+  const hashBuf = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(hashBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}

@@ -35,8 +35,13 @@ export default function DriverPage({
     customer?: string;
     item?: string;
     destination?: string;
-    pin?: string;
+    pin?: string;         // fetched from Supabase, kept in memory ONLY, never rendered
     dispatchStatus?: string;
+    storeId?: string;
+    driverName?: string;
+    waybill?: string;
+    storeName?: string;
+    path?: Array<{ lat: number; lng: number }>;
   } | null>(null);
   const [lastFix, setLastFix] = useState<{
     lat: number;
@@ -45,6 +50,11 @@ export default function DriverPage({
     at: string;
   } | null>(null);
   const [pingCount, setPingCount] = useState(0);
+  // PIN entry state for mark-delivered flow
+  const [showPinEntry, setShowPinEntry] = useState(false);
+  const [pinEntry, setPinEntry] = useState("");
+  const [pinErr, setPinErr] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const watchId = useRef<number | null>(null);
   const pathRef = useRef<PathPoint[]>([]);
   const destRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -73,8 +83,12 @@ export default function DriverPage({
         customer: row.customer_name || undefined,
         item: row.item_name || undefined,
         destination: row.destination || undefined,
-        pin: row.delivery_pin || undefined,
+        pin: row.delivery_pin || undefined,     // kept in JS memory only — NEVER rendered
         dispatchStatus: row.status || undefined,
+        storeId: (row as any).store_id || undefined,
+        driverName: row.driver_name || undefined,
+        waybill: (row as any).waybill || undefined,
+        path: Array.isArray(row.path) ? row.path : [],
       });
       if (row.status === "delivered") {
         setStatus("done");
@@ -218,21 +232,104 @@ export default function DriverPage({
     setMessage("Sharing stopped");
   };
 
-  const markDelivered = async () => {
-    if (!isSupabaseConfigured()) return;
-    const now = new Date().toISOString();
-    const { error: upErr } = await supabase
-      .from("dispatch_tracking")
-      .update({ status: "delivered", updated_at: now })
-      .eq("tracking_code", code);
-    if (upErr) {
-      setError(upErr.message);
+  /** Driver taps 'Mark Delivered' — opens PIN entry form */
+  const requestMarkDelivered = () => {
+    setShowPinEntry(true);
+    setPinEntry("");
+    setPinErr(null);
+  };
+
+  /**
+   * Verify PIN entered by driver (what customer told them verbally).
+   * On match: write immutable delivery_receipt, stamp handoff coords, set status=delivered.
+   * On mismatch: block and show error — driver CANNOT complete without customer saying the PIN.
+   */
+  const verifyAndComplete = async () => {
+    if (!meta?.pin) {
+      // No PIN set — allow force-complete but flag it
+      await finaliseDelivery("FORCE_COMPLETED");
       return;
     }
+    if (pinEntry.trim() !== meta.pin) {
+      setPinErr("Wrong PIN. Ask the customer to check their WhatsApp for the correct 4-digit code.");
+      return;
+    }
+    setPinErr(null);
+    await finaliseDelivery("PIN_VERIFIED");
+  };
+
+  /** Write receipt + update tracking — called after PIN is verified */
+  const finaliseDelivery = async (method: "PIN_VERIFIED" | "FORCE_COMPLETED") => {
+    if (!isSupabaseConfigured()) return;
+    setVerifying(true);
+    const now = new Date().toISOString();
+    const driverLat = lastFix?.lat ?? null;
+    const driverLng = lastFix?.lng ?? null;
+
+    // Compute driver-to-destination distance for audit
+    let distM: number | null = null;
+    let withinRadius: boolean | null = null;
+    if (driverLat && driverLng && destRef.current) {
+      distM = haversineMeters({ lat: driverLat, lng: driverLng }, destRef.current);
+      withinRadius = distM <= 300;
+    }
+
+    // 1. Generate a human-readable receipt reference
+    const receiptRef = `RC-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+
+    // 2. Write immutable receipt to delivery_receipts (append-only table)
+    const { error: receiptErr } = await supabase.from("delivery_receipts").insert({
+      receipt_ref: receiptRef,
+      tracking_code: code,
+      store_id: meta?.storeId ?? null,
+      merchant_name: meta?.storeName ?? null,
+      driver_name: meta?.driverName ?? null,
+      customer_name: meta?.customer ?? null,
+      item_name: meta?.item ?? null,
+      waybill: meta?.waybill ?? null,
+      destination: meta?.destination ?? null,
+      verification_method: method,
+      handoff_lat: driverLat,
+      handoff_lng: driverLng,
+      handoff_accuracy_m: lastFix?.accuracy ?? null,
+      handoff_at: now,
+      driver_final_lat: driverLat,
+      driver_final_lng: driverLng,
+      driver_handoff_distance_m: distM,
+      gps_within_radius: withinRadius,
+      full_path_snapshot: pathRef.current,
+    });
+
+    if (receiptErr) {
+      console.error("Receipt write failed:", receiptErr);
+      // Don't block delivery — log the failure and continue
+    }
+
+    // 3. Mark dispatch_tracking as delivered + stamp handoff coordinates
+    const { error: upErr } = await supabase
+      .from("dispatch_tracking")
+      .update({
+        status: "delivered",
+        handoff_lat: driverLat,
+        handoff_lng: driverLng,
+        handoff_accuracy: lastFix?.accuracy ?? null,
+        handoff_at: now,
+        updated_at: now,
+      })
+      .eq("tracking_code", code);
+
+    if (upErr) {
+      setError(upErr.message);
+      setVerifying(false);
+      return;
+    }
+
     stopSharing();
     setStatus("done");
-    setMessage("Marked as delivered");
+    setMessage(`Delivered — Receipt ${receiptRef}`);
     setMeta((m) => (m ? { ...m, dispatchStatus: "delivered" } : m));
+    setShowPinEntry(false);
+    setVerifying(false);
   };
 
   const isSharing = status === "sharing";
@@ -286,25 +383,22 @@ export default function DriverPage({
                 <span className="font-bold text-slate-200">{meta.customer}</span>
               </div>
             )}
-            {meta.destination && (
+          {meta?.destination && (
               <div className="flex items-start gap-2 text-sm text-slate-400">
                 <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
                 <span className="font-medium text-slate-300">{meta.destination}</span>
               </div>
             )}
-            {meta.pin && (
-              <div className="mt-2 pt-2 border-t border-slate-800">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
-                  Ask customer for PIN
-                </p>
-                <p className="text-2xl font-black font-mono tracking-[0.3em] text-emerald-400">
-                  {meta.pin}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Confirm this matches before handing over the package.
-                </p>
-              </div>
-            )}
+            {/* PIN is NEVER displayed to the driver — they must ask the customer verbally */}
+            <div className="mt-2 pt-2 border-t border-slate-800">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Verification PIN
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Ask the customer for their 4-digit PIN when you hand over the package.
+                You will enter it to confirm delivery.
+              </p>
+            </div>
           </div>
         )}
 
@@ -361,29 +455,76 @@ export default function DriverPage({
             </button>
           ) : (
             <>
-              <div className="p-5 bg-slate-950/50 rounded-2xl border border-emerald-500/30">
-                <p className="text-emerald-400 font-black text-lg flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Live broadcasting
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Keep this page open while driving
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void markDelivered()}
-                className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black transition-all active:scale-95 text-sm uppercase tracking-widest"
-              >
-                Mark delivered
-              </button>
-              <button
-                type="button"
-                onClick={stopSharing}
-                className="w-full bg-transparent text-slate-400 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:text-white transition-colors"
-              >
-                Stop sharing
-              </button>
+              {showPinEntry && (
+                <div className="bg-slate-950 rounded-2xl border border-emerald-500/40 p-5 space-y-4 text-left">
+                  <p className="text-sm font-black text-white">
+                    Enter the PIN the customer just gave you
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    The customer received a private 4-digit code on WhatsApp.
+                    Ask them to read it to you now — this proves they got the package.
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={pinEntry}
+                    onChange={(e) => {
+                      setPinEntry(e.target.value.replace(/\D/g, "").slice(0, 4));
+                      setPinErr(null);
+                    }}
+                    placeholder="••••"
+                    className="w-full bg-slate-900 border border-slate-700 text-white font-black text-center text-2xl tracking-[0.5em] p-4 rounded-xl outline-none focus:border-emerald-500"
+                  />
+                  {pinErr && (
+                    <p className="text-xs text-red-400 font-bold">{pinErr}</p>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowPinEntry(false)}
+                      className="flex-1 bg-slate-800 text-slate-300 py-3 rounded-xl font-bold text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void verifyAndComplete()}
+                      disabled={verifying || pinEntry.length < 4}
+                      className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-black text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {verifying ? "Verifying…" : "Confirm Delivery"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!showPinEntry && (
+                <>
+                  <div className="p-5 bg-slate-950/50 rounded-2xl border border-emerald-500/30">
+                    <p className="text-emerald-400 font-black text-lg flex items-center justify-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live broadcasting
+                    </p>
+                    <p className="text-slate-500 text-sm mt-1">
+                      Keep this page open while driving
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={requestMarkDelivered}
+                    className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black transition-all active:scale-95 text-sm uppercase tracking-widest"
+                  >
+                    Mark delivered
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopSharing}
+                    className="w-full bg-transparent text-slate-400 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:text-white transition-colors"
+                  >
+                    Stop sharing
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>

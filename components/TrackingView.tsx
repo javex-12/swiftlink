@@ -188,17 +188,25 @@ function LiveMap({
   const pathLatLngs = path.map((p) => [p.lat, p.lng] as [number, number]);
 
   return (
-    <div className="w-full h-72 sm:h-80 rounded-3xl overflow-hidden mb-4 shadow-inner border border-slate-100 relative z-0">
+    <div className="w-full h-96 sm:h-[26rem] rounded-3xl overflow-hidden mb-4 shadow-inner border border-slate-100 relative z-0">
       <MapContainer
         center={center}
-        zoom={14}
+        zoom={15}
         scrollWheelZoom
         style={{ height: "100%", width: "100%" }}
-        zoomControl={false}
+        zoomControl
       >
+        {/* ESRI World Imagery — real satellite photos, free & no API key */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          maxZoom={19}
+        />
+        {/* OSM street labels overlay on top of satellite — transparent so aerial still shows */}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          opacity={0.45}
         />
         <RecenterMap position={driver} follow={follow} />
         <FitBoundsOnce driver={driver} dest={dest} />
@@ -208,8 +216,8 @@ function LiveMap({
             positions={pathLatLngs}
             pathOptions={{
               color: "#10b981",
-              weight: 4,
-              opacity: 0.75,
+              weight: 5,
+              opacity: 0.85,
               lineCap: "round",
               lineJoin: "round",
             }}
@@ -229,8 +237,8 @@ function LiveMap({
             pathOptions={{
               color: "#10b981",
               fillColor: "#10b981",
-              fillOpacity: 0.08,
-              weight: 1,
+              fillOpacity: 0.1,
+              weight: 1.5,
             }}
           />
         )}

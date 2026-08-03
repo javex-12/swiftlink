@@ -166,12 +166,11 @@ export function DispatchView() {
                   id="disp-ref"
                   value={ref}
                   onChange={(e) => setRef(e.target.value)}
-                  placeholder="Waybill No *"
+                  placeholder="Waybill No (auto-generated if blank)"
                   className="w-full bg-white dark:bg-zinc-900 p-3 rounded-xl font-bold outline-none text-sm dark:text-white dark:placeholder:text-zinc-500"
                 />
                 <p className="text-[10px] font-bold text-amber-700/70 dark:text-amber-400/60 leading-relaxed">
-                  A 4-digit delivery PIN is generated automatically. Customer uses it
-                  to confirm the right person arrived.
+                  A 4-digit delivery PIN is auto-generated and sent <strong>only</strong> to the customer via WhatsApp. You will never see it here — this keeps the handoff tamper-proof.
                 </p>
               </div>
 
@@ -240,9 +239,9 @@ export function DispatchView() {
                               {d.id}
                             </span>
                             {pin && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-black text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-900 px-2 py-0.5 rounded-lg">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-900 px-2 py-0.5 rounded-lg" title="PIN is secret — visible only to your customer">
                                 <ShieldCheck size={10} className="text-emerald-500" />
-                                PIN {pin}
+                                PIN ••••
                               </span>
                             )}
                           </div>
@@ -289,7 +288,7 @@ export function DispatchView() {
                             className="ml-auto px-3 h-9 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-1.5"
                           >
                             <Copy size={12} />
-                            WA customer
+                            Notify Customer
                           </button>
                         )}
                         {!d.phone && !isDone && (

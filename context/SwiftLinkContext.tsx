@@ -1074,9 +1074,12 @@ export function SwiftLinkProvider({
       ref: string;
       destination?: string;
     }) => {
-      const { sender, name, phone, item, driver, ref, destination } = form;
-      if (!name || !driver || !ref) {
-        addToast("Please fill customer, driver, and waybill.", "error");
+      const { sender, name, phone, item, driver, destination } = form;
+      // Auto-generate waybill ref if merchant didn't supply one
+      const ref = (form.ref || "").trim() ||
+        `SWL-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+      if (!name || !driver) {
+        addToast("Please fill customer name and driver / logistics name.", "error");
         return;
       }
 
@@ -1133,14 +1136,17 @@ export function SwiftLinkProvider({
       const trackUrl = customerTrackUrl(deliveryId);
       const driverUrl = driverTrackUrl(deliveryId);
 
+      // Customer WhatsApp message — PIN is ONLY here, never shown on merchant UI
       const msg =
-        `📦 *SwiftLink Dispatch*\n` +
+        `📦 *SwiftLink Delivery Notification*\n` +
+        `Hi ${name}, your item is on the way!\n\n` +
         `Item: ${item || "Package"}\n` +
         `Driver: ${driver}\n` +
-        `Ref: ${ref}\n` +
-        (dest ? `To: ${dest}\n` : "") +
-        `Delivery PIN: *${pin}*\n\n` +
-        `Live track: ${trackUrl}`;
+        (dest ? `Delivering to: ${dest}\n` : "") +
+        `Ref: ${ref}\n\n` +
+        `🔐 *Delivery Verification PIN: ${pin}*\n` +
+        `Keep this PIN private. Give it to the driver ONLY when your package arrives.\n\n` +
+        `📍 Track live: ${trackUrl}`;
 
       setState((prev) => {
         let next = { ...prev };
@@ -1152,14 +1158,15 @@ export function SwiftLinkProvider({
 
       setTrackingDisplay(newDel);
       setCurrentTrackId(deliveryId);
-      addToast(`Dispatch ${deliveryId} created · PIN ${pin}`, "success");
+      // PIN deliberately NOT shown to merchant — it was sent to customer only
+      addToast(`Dispatch ${deliveryId} created. Send tracking to customer.`, "success");
 
       void (async () => {
         const choice = await (window as any).customConfirm(
-          "Dispatch created",
-          `PIN ${pin} — send tracking to Customer or copy Driver GPS link?`,
-          "Customer (WA)",
-          "Driver Link",
+          "Dispatch created!",
+          `Send the live tracking link to your customer (includes their secret PIN), or copy the driver's GPS beacon link?`,
+          "Send to Customer (WA)",
+          "Copy Driver Link",
         );
 
         if (choice === true) {
@@ -1207,19 +1214,41 @@ export function SwiftLinkProvider({
   const confirmDelivery = useCallback(async () => {
     const ok = await (window as any).customConfirm(
       "Confirm receipt?",
-      "This will mark the delivery as delivered. Only confirm when you have the package.",
+      "This will mark the delivery as received. Only confirm when the package is in your hands.",
     );
     if (!ok) return;
     const tid = currentTrackId;
     if (!tid) return;
 
     const now = new Date().toISOString();
+    const receiptRef = `RC-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+
+    // Find the delivery record we have in local state for context
+    const localDel = state.deliveries.find((d) => d.id === tid);
 
     if (isSupabaseConfigured()) {
+      // 1. Write immutable receipt (customer-side confirmation)
+      void supabase.from("delivery_receipts").insert({
+        receipt_ref: receiptRef,
+        tracking_code: tid,
+        store_id: user?.id ?? null,
+        driver_name: localDel?.driver ?? null,
+        customer_name: localDel?.customer ?? null,
+        customer_phone: localDel?.phone ?? null,
+        item_name: localDel?.item ?? null,
+        waybill: localDel?.ref ?? null,
+        destination: localDel?.destination ?? null,
+        verification_method: localDel?.deliveryPin ? "PIN_VERIFIED" : "CUSTOMER_CONFIRMED",
+        handoff_at: now,
+        full_path_snapshot: localDel?.path ?? [],
+      });
+
+      // 2. Update dispatch_tracking with delivery status + handoff timestamp
       const { error } = await supabase
         .from("dispatch_tracking")
         .update({
           status: "delivered",
+          handoff_at: now,
           updated_at: now,
         })
         .eq("tracking_code", tid);
@@ -1252,8 +1281,8 @@ export function SwiftLinkProvider({
           }
         : prev,
     );
-    addToast("Delivery confirmed. Thank you!", "success");
-  }, [currentTrackId, addToast, persistState]);
+    addToast(`Delivery confirmed. Receipt: ${receiptRef}`, "success");
+  }, [currentTrackId, state.deliveries, addToast, persistState, user?.id]);
 
   const addProduct = useCallback(() => {
     setState((prev) => {
