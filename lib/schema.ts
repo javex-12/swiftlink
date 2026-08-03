@@ -94,6 +94,7 @@ export type ShopState = {
   id: string | null;
   plan?: "free" | "pro" | "business"; 
   ownerId?: string;
+  ownerName?: string;
   bizName: string;
   bizImage: string;
   storeUsername?: string; 

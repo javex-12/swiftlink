@@ -139,7 +139,7 @@ function SignupInner() {
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState("+234");
   const [step, setStep] = useState<"form" | "verify">("form");
-  const [form, setForm] = useState({ bizName: "", storeUsername: "", phone: "", email: "", password: "" });
+  const [form, setForm] = useState({ ownerName: "", bizName: "", storeUsername: "", phone: "", email: "", password: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -162,16 +162,17 @@ function SignupInner() {
 
   const saveUserStore = useCallback(async (
     uid: string, email: string | undefined,
-    extra?: { bizName?: string; phone?: string; storeUsername?: string },
+    extra?: { ownerName?: string; bizName?: string; phone?: string; storeUsername?: string },
   ) => {
     try {
       const { data: storeData } = await supabase.from("stores").select("*").eq("id", uid).single();
       const bizName = extra?.bizName || (storeData?.state_json as any)?.bizName || "";
+      const ownerName = extra?.ownerName || (storeData?.state_json as any)?.ownerName || "";
       const storeUsername = extra?.storeUsername || (storeData?.state_json as any)?.storeUsername || "";
       const slug = getPublicStoreSlug({ storeUsername, bizName });
       const initialPlan = searchParams.get("plan") || "free";
       const nextState = {
-        id: uid, plan: initialPlan, bizName, storeUsername,
+        id: uid, plan: initialPlan, ownerName, bizName, storeUsername,
         phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
         products: (storeData?.state_json as any)?.products || [],
         deliveries: (storeData?.state_json as any)?.deliveries || [],
@@ -229,7 +230,7 @@ function SignupInner() {
         });
         if (authError) throw authError;
         if (data.user) {
-          await saveUserStore(data.user.id, data.user.email, { bizName: form.bizName, phone: formattedPhone, storeUsername: form.storeUsername });
+          await saveUserStore(data.user.id, data.user.email, { ownerName: form.ownerName, bizName: form.bizName, phone: formattedPhone, storeUsername: form.storeUsername });
           if (data.session) router.push("/pro"); else setStep("verify");
         }
       }
@@ -506,6 +507,11 @@ function SignupInner() {
                           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                           className="space-y-3 overflow-visible"
                         >
+                          <FloatInput
+                            id="ownerName" label="Your Full Name" value={form.ownerName}
+                            onChange={(v) => setForm({ ...form, ownerName: v })}
+                            required placeholder="e.g. Michael Dosunmu"
+                          />
                           <FloatInput
                             id="bizName" label="Store name" value={form.bizName}
                             onChange={(v) => setForm({ ...form, bizName: v })}

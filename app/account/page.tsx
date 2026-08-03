@@ -148,6 +148,35 @@ export default function AccountPage() {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Your Full Name (Owner)</label>
+                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-black px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5">
+                                    <User size={14} className="text-slate-300 dark:text-zinc-700" />
+                                    <input 
+                                        type="text" 
+                                        value={state.ownerName || ""} 
+                                        onChange={(e) => updateState("ownerName", e.target.value)}
+                                        placeholder="e.g. Michael Dosunmu"
+                                        className="bg-transparent flex-1 font-black text-xs outline-none dark:text-white"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Store / Brand Name</label>
+                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-black px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5">
+                                    <Globe size={14} className="text-slate-300 dark:text-zinc-700" />
+                                    <input 
+                                        type="text" 
+                                        value={state.bizName || ""} 
+                                        onChange={(e) => updateState("bizName", e.target.value)}
+                                        placeholder="e.g. CyderStore"
+                                        className="bg-transparent flex-1 font-black text-xs outline-none dark:text-white"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Store Slug (Custom Link)</label>
                                 <div className="flex items-center gap-2 bg-slate-50 dark:bg-black px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5">
                                     <span className="text-[10px] font-bold text-slate-300 dark:text-zinc-700">swiftlink.so/</span>

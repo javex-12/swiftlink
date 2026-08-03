@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ChevronDown, ArrowRight, Sun, Moon, ExternalLink, Link as LinkIcon, Settings, Shield } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getSmartFirstName } from "@/lib/utils";
 
 export function LauncherView() {
   const { copyShopLink, state, theme, toggleTheme, user } = useSwiftLink();
@@ -14,22 +14,21 @@ export function LauncherView() {
   const activeSKUs = state.products.length;
   const inTransit = state.deliveries.filter(d => d.status === "dispatched").length;
 
-  // Extract user first name or fallback to store owner name
-  const rawName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || state.bizName || "Vendor";
-  const firstName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  // Smart first name extraction (e.g. "michaeldosunmu22@gmail.com" -> "Michael")
+  const firstName = getSmartFirstName(state.ownerName, user?.email, state.bizName);
 
   return (
-    <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 py-6 sm:py-10 space-y-12 min-h-screen transition-colors duration-300">
+    <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8 min-h-screen transition-colors duration-300">
       {/* ─── Top Header Row ─────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between border-b border-slate-200/50 dark:border-white/5 pb-4">
         <div className="flex items-center gap-3">
           {/* Logo on Mobile */}
           <img src="/logo.png" className="w-8 h-8 object-contain lg:hidden shrink-0" alt="SwiftLink" />
           <div>
-            <h2 className="font-serif-luxury italic text-2xl sm:text-4xl text-slate-400 dark:text-slate-300 leading-tight">
+            <h2 className="font-serif-luxury italic text-base sm:text-lg text-slate-400 dark:text-slate-300 leading-none">
               Welcome
             </h2>
-            <h1 className="text-3xl sm:text-6xl font-black text-emerald-600 dark:text-[#00c885] tracking-tight leading-none">
+            <h1 className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-[#00c885] tracking-tight leading-tight">
               {firstName}
             </h1>
           </div>
@@ -50,7 +49,7 @@ export function LauncherView() {
           {/* Avatar Pill Button */}
           <Link
             href="/account"
-            className="w-12 h-12 rounded-full border-2 border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center text-xl overflow-hidden hover:scale-105 active:scale-95 transition-transform"
+            className="w-10 h-10 rounded-full border-2 border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center text-lg overflow-hidden hover:scale-105 active:scale-95 transition-transform"
             title="Account Settings"
           >
             {state.bizImage ? (
@@ -63,20 +62,20 @@ export function LauncherView() {
       </header>
 
       {/* ─── Main Grid Layout (Figma Desktop & Mobile Match) ────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
         
         {/* Left Side: Store Name & Editor Action Pill Pair */}
-        <div className="lg:col-span-6 space-y-6">
-          <div className="inline-block bg-amber-500/10 text-amber-600 dark:bg-[#2a240c] dark:text-amber-400 border border-amber-500/20 px-3 py-1 rounded-md text-[10px] font-mono font-bold tracking-[0.2em] uppercase">
-            {state.plan ? `${state.plan.toUpperCase()} PLAN` : "BUSINESS PLAN"}
+        <div className="lg:col-span-6 space-y-2.5 sm:space-y-3">
+          <div className="inline-block bg-amber-500/10 text-amber-600 dark:bg-[#2a240c] dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-md text-[9px] font-mono font-bold tracking-[0.2em] uppercase">
+            {state.plan ? `${state.plan.toUpperCase()} PLAN` : "FREE PLAN"}
           </div>
 
-          <h1 className="font-brand-header text-5xl sm:text-7xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[0.95] break-words">
+          <h1 className="font-brand-header text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05] break-words">
             {state.bizName || "MY STORE"}
           </h1>
 
           {/* Button Group: EDITOR + Caret Dropdown Pair */}
-          <div className="relative inline-flex items-center gap-2 pt-2">
+          <div className="relative inline-flex items-center gap-2 pt-1">
             <Link
               href="/business"
               className="bg-emerald-500 dark:bg-[#00c885] hover:bg-emerald-600 dark:hover:bg-[#00b377] text-white dark:text-[#07110d] font-black text-sm uppercase tracking-widest px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center gap-2 transition-all active:scale-95"

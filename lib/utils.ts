@@ -109,3 +109,27 @@ export function parseShopFromPathname(pathname: string): ParsedShopPath | null {
     return { kind: "uid", shopId: parts[0], storeSlug: null };
   return null;
 }
+
+export function getSmartFirstName(ownerName?: string, email?: string, bizName?: string): string {
+  if (ownerName && ownerName.trim()) {
+    const firstWord = ownerName.trim().split(/\s+/)[0];
+    return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+  }
+  if (email && email.includes('@')) {
+    const handle = email.split('@')[0];
+    // Clean numbers, dots, and underscores from handle (e.g. "michaeldosunmu22" -> "Michael")
+    const cleaned = handle
+      .replace(/[0-9]/g, '')
+      .replace(/[._-]/g, ' ')
+      .trim();
+    if (cleaned) {
+      const firstWord = cleaned.split(/\s+/)[0];
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    }
+  }
+  if (bizName && bizName.trim()) {
+    const firstWord = bizName.trim().split(/\s+/)[0];
+    return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+  }
+  return "Merchant";
+}

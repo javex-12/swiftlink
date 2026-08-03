@@ -268,7 +268,10 @@ export function SwiftLinkProvider({
     
     const newState = normalizeShopState({ 
         id: newId, 
-        ownerId: user.id, 
+        ownerId: user.id,
+        ownerName: state.ownerName || "",
+        phone: state.phone || "",
+        currency: state.currency || "₦",
         bizName: name, 
         plan: "free",
         storeUsername: cleanHandle 
@@ -279,6 +282,7 @@ export function SwiftLinkProvider({
         owner_id: user.id,
         biz_name: name,
         store_username: cleanHandle,
+        phone: newState.phone,
         plan: 'free',
         account_status: 'active',
         state_json: newState
@@ -986,18 +990,22 @@ export function SwiftLinkProvider({
   }, [addToast]);
 
   const handleSignOut = useCallback(async () => {
-    const ok = await (window as any).customConfirm("Reset system?", "All local data will be lost.");
-    if (ok) {
-      localStorage.clear();
-      window.location.reload();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("swiftlink_demo_login");
+      localStorage.removeItem("swiftlink_state");
     }
-  }, []);
-
-  const authSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    addToast("Signed out.", "success");
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+    setState(defaultShopState());
+    addToast("Signed out successfully", "info");
     router.push("/signup?mode=login");
   }, [addToast, router]);
+
+  const authSignOut = useCallback(async () => {
+    await handleSignOut();
+  }, [handleSignOut]);
 
   const handleDispatchSubmit = useCallback(
     (form: {

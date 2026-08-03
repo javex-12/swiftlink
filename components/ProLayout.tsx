@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ProSidebar } from "./ProSidebar";
+import { OnboardingModal } from "./OnboardingModal";
 import { LayoutGrid, Edit3, Sliders, MoreHorizontal } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,9 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#07110d] text-slate-900 dark:text-white flex flex-col lg:flex-row font-sans transition-colors duration-300 relative selection:bg-emerald-500/30">
+      {/* Onboarding Wizard Modal */}
+      <OnboardingModal />
+
       {/* Sidebar Navigation */}
       <ProSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
