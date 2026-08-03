@@ -60,7 +60,25 @@ export type Delivery = {
   item: string;
   driver: string;
   ref: string;
-  lastLocation?: { lat: number; lng: number }; // For live tracking
+  lastLocation?: { lat: number; lng: number };
+  /** Customer delivery address / landmark */
+  destination?: string;
+  destLat?: number;
+  destLng?: number;
+  /** 4-digit PIN customer gives driver on handoff */
+  deliveryPin?: string;
+  /** Fine-grained logistics status from dispatch_tracking */
+  dispatchStatus?: "pending" | "en_route" | "nearby" | "delivered" | "cancelled";
+  driverPhone?: string;
+  driverVehicle?: string;
+  heading?: number;
+  speed?: number;
+  accuracy?: number;
+  path?: Array<{ lat: number; lng: number; t?: string }>;
+  lastPingAt?: string;
+  updatedAt?: string;
+  createdAt?: string;
+  distanceM?: number;
 };
 
 export type StoreSocials = {

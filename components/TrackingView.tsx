@@ -1,192 +1,692 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { useMap } from "react-leaflet";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { supabase } from "@/lib/supabase-client";
-import { MapPin, Wifi, WifiOff, Navigation } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
+import {
+  MapPin,
+  Wifi,
+  WifiOff,
+  Navigation,
+  Phone,
+  ShieldCheck,
+  Clock,
+  Route,
+  Package,
+} from "lucide-react";
+import {
+  trackRowToDelivery,
+  formatDistance,
+  formatEta,
+  estimateEtaMinutes,
+  formatLastSeen,
+  liveHealth,
+  statusLabel,
+  type DispatchTrackRow,
+  type DispatchStatus,
+  type LivePoint,
+  type PathPoint,
+  NEARBY_RADIUS_M,
+} from "@/lib/dispatch";
+import type { Delivery } from "@/lib/schema";
 import "leaflet/dist/leaflet.css";
 
-const MapContainer = dynamic(() => import("react-leaflet").then(m => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then(m => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then(m => m.Marker), { ssr: false });
-const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: false });
+// useMap must run under MapContainer; keep helpers in this client module only.
 
-// ─── Driver Location Beacon ───────────────────────────────────────────────────
-// Renders when URL has ?driver=1. Driver clicks "Share Location" to start GPS.
-function DriverLocationBeacon({ trackingCode }: { trackingCode: string }) {
-  const [status, setStatus] = useState<"idle" | "active" | "denied">("idle");
-  const watchId = useRef<number | null>(null);
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((m) => m.MapContainer),
+  { ssr: false },
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((m) => m.TileLayer),
+  { ssr: false },
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((m) => m.Marker),
+  { ssr: false },
+);
+const Popup = dynamic(
+  () => import("react-leaflet").then((m) => m.Popup),
+  { ssr: false },
+);
+const Polyline = dynamic(
+  () => import("react-leaflet").then((m) => m.Polyline),
+  { ssr: false },
+);
+const Circle = dynamic(
+  () => import("react-leaflet").then((m) => m.Circle),
+  { ssr: false },
+);
 
-  const start = () => {
-    if (!navigator.geolocation) { setStatus("denied"); return; }
-    setStatus("active");
-    watchId.current = navigator.geolocation.watchPosition(
-      async (pos) => {
-        await supabase.from("dispatch_tracking").upsert({
-          tracking_code: trackingCode,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "tracking_code" });
-      },
-      () => setStatus("denied"),
-      { enableHighAccuracy: true, maximumAge: 5000 }
-    );
-  };
+/** Keeps map centered on the moving driver without remounting MapContainer. */
+function RecenterMap({
+  position,
+  follow,
+}: {
+  position: LivePoint | null;
+  follow: boolean;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!position || !follow) return;
+    map.panTo([position.lat, position.lng], { animate: true, duration: 0.6 });
+  }, [position?.lat, position?.lng, follow, map]);
+  return null;
+}
+
+function FitBoundsOnce({
+  driver,
+  dest,
+}: {
+  driver: LivePoint | null;
+  dest: LivePoint | null;
+}) {
+  const map = useMap();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    if (driver && dest) {
+      map.fitBounds(
+        [
+          [driver.lat, driver.lng],
+          [dest.lat, dest.lng],
+        ],
+        { padding: [48, 48], maxZoom: 15 },
+      );
+      done.current = true;
+    }
+  }, [driver, dest, map]);
+  return null;
+}
+
+const STEPS: { key: DispatchStatus; label: string }[] = [
+  { key: "pending", label: "Created" },
+  { key: "en_route", label: "En route" },
+  { key: "nearby", label: "Nearby" },
+  { key: "delivered", label: "Delivered" },
+];
+
+function stepIndex(status: DispatchStatus): number {
+  if (status === "cancelled") return -1;
+  const i = STEPS.findIndex((s) => s.key === status);
+  return i >= 0 ? i : 0;
+}
+
+function LiveMap({
+  driver,
+  dest,
+  path,
+  accuracy,
+  isLive,
+}: {
+  driver: LivePoint | null;
+  dest: LivePoint | null;
+  path: PathPoint[];
+  accuracy?: number;
+  isLive: boolean;
+}) {
+  const [L, setL] = useState<typeof import("leaflet") | null>(null);
+  const [follow, setFollow] = useState(true);
 
   useEffect(() => {
-    return () => { if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current); };
+    void import("leaflet").then(setL);
   }, []);
 
+  const center: [number, number] = driver
+    ? [driver.lat, driver.lng]
+    : dest
+      ? [dest.lat, dest.lng]
+      : [6.5244, 3.3792]; // Lagos fallback
+
+  const driverIcon = useMemo(() => {
+    if (!L) return null;
+    return L.divIcon({
+      className: "",
+      html: `<div style="
+        width:36px;height:36px;border-radius:9999px;
+        background:linear-gradient(135deg,#10b981,#059669);
+        border:3px solid white;box-shadow:0 4px 14px rgba(16,185,129,.45);
+        display:flex;align-items:center;justify-content:center;
+      "><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+    });
+  }, [L]);
+
+  const destIcon = useMemo(() => {
+    if (!L) return null;
+    return L.divIcon({
+      className: "",
+      html: `<div style="
+        width:32px;height:32px;border-radius:10px;
+        background:#0f172a;border:3px solid white;
+        box-shadow:0 4px 12px rgba(15,23,42,.35);
+        display:flex;align-items:center;justify-content:center;
+        color:white;font-size:14px;font-weight:900;
+      ">🏠</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+  }, [L]);
+
+  if (!driver && !dest) {
+    return (
+      <div className="w-full h-72 rounded-3xl mb-4 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+        <MapPin size={28} className="text-slate-300" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          Waiting for live location…
+        </p>
+        <p className="text-[11px] text-slate-400 font-medium px-8">
+          Driver must open their GPS link and tap Share Location.
+        </p>
+      </div>
+    );
+  }
+
+  const pathLatLngs = path.map((p) => [p.lat, p.lng] as [number, number]);
+
   return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-[2rem] shadow-2xl border flex items-center gap-4 transition-all ${
-      status === "active"
-        ? "bg-emerald-500 border-emerald-600 text-white"
-        : status === "denied"
-        ? "bg-red-50 border-red-100 text-red-600"
-        : "bg-white border-slate-200 text-slate-900"
-    }`}>
-      {status === "active" ? (
-        <><Wifi size={20} className="animate-pulse" /><div><p className="text-xs font-black uppercase tracking-widest">Live Location ON</p><p className="text-[10px] opacity-70">Customer can see your position</p></div></>
-      ) : status === "denied" ? (
-        <><WifiOff size={20} /><p className="text-xs font-black">Location access denied</p></>
-      ) : (
-        <><Navigation size={20} className="text-emerald-500" /><div><p className="text-xs font-black uppercase tracking-widest text-slate-900">Driver Mode</p><p className="text-[10px] text-slate-400">Share your live location with customer</p></div>
-        <button onClick={start} className="ml-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">
-          Share Location
-        </button></>
-      )}
+    <div className="w-full h-72 sm:h-80 rounded-3xl overflow-hidden mb-4 shadow-inner border border-slate-100 relative z-0">
+      <MapContainer
+        center={center}
+        zoom={14}
+        scrollWheelZoom
+        style={{ height: "100%", width: "100%" }}
+        zoomControl={false}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <RecenterMap position={driver} follow={follow} />
+        <FitBoundsOnce driver={driver} dest={dest} />
+
+        {pathLatLngs.length > 1 && (
+          <Polyline
+            positions={pathLatLngs}
+            pathOptions={{
+              color: "#10b981",
+              weight: 4,
+              opacity: 0.75,
+              lineCap: "round",
+              lineJoin: "round",
+            }}
+          />
+        )}
+
+        {driver && driverIcon && (
+          <Marker position={[driver.lat, driver.lng]} icon={driverIcon}>
+            <Popup>Driver is here</Popup>
+          </Marker>
+        )}
+
+        {driver && accuracy && accuracy > 0 && accuracy < 200 && (
+          <Circle
+            center={[driver.lat, driver.lng]}
+            radius={accuracy}
+            pathOptions={{
+              color: "#10b981",
+              fillColor: "#10b981",
+              fillOpacity: 0.08,
+              weight: 1,
+            }}
+          />
+        )}
+
+        {dest && destIcon && (
+          <Marker position={[dest.lat, dest.lng]} icon={destIcon}>
+            <Popup>Delivery destination</Popup>
+          </Marker>
+        )}
+      </MapContainer>
+
+      <div className="absolute top-3 left-3 right-3 z-[500] flex items-center justify-between gap-2 pointer-events-none">
+        <div
+          className={`pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${
+            isLive
+              ? "bg-emerald-500 text-white"
+              : "bg-white/95 text-slate-600 border border-slate-200"
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${isLive ? "bg-white animate-pulse" : "bg-slate-400"}`}
+          />
+          {isLive ? "Live GPS" : "Map"}
+        </div>
+        <button
+          type="button"
+          onClick={() => setFollow((f) => !f)}
+          className={`pointer-events-auto px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg border transition-all ${
+            follow
+              ? "bg-slate-900 text-white border-slate-900"
+              : "bg-white/95 text-slate-600 border-slate-200"
+          }`}
+        >
+          {follow ? "Following" : "Free pan"}
+        </button>
+      </div>
     </div>
   );
 }
 
 export function TrackingView() {
   const { trackingDisplay, confirmDelivery, currentTrackId } = useSwiftLink();
-  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [isLive, setIsLive] = useState(false);
-  const [L, setL] = useState<any>(null);
+
+  const [row, setRow] = useState<Delivery | null>(trackingDisplay);
+  const [loading, setLoading] = useState(!trackingDisplay && !!currentTrackId);
+  const [tick, setTick] = useState(0);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // detect driver mode from URL
-  const [isDriverMode, setIsDriverMode] = useState(false);
+  // Sync from context when it loads
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsDriverMode(new URLSearchParams(window.location.search).has("driver"));
+    if (trackingDisplay) {
+      setRow(trackingDisplay);
+      setLoading(false);
     }
+  }, [trackingDisplay]);
+
+  // Clock for "updated Xs ago"
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 5000);
+    return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => { import("leaflet").then(setL); }, []);
+  const applyRow = useCallback((data: DispatchTrackRow) => {
+    setRow(trackRowToDelivery(data));
+    setLoading(false);
+  }, []);
 
+  // Initial fetch + realtime
   useEffect(() => {
     if (!currentTrackId) return;
 
-    supabase.from("dispatch_tracking").select("lat, lng").eq("tracking_code", currentTrackId).single()
-      .then(({ data }) => { if (data?.lat && data?.lng) setDriverLocation({ lat: data.lat, lng: data.lng }); });
+    let cancelled = false;
 
-    if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null; }
+    const fetchOnce = async () => {
+      if (!isSupabaseConfigured()) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("dispatch_tracking")
+        .select("*")
+        .eq("tracking_code", currentTrackId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.warn(error);
+        setLoading(false);
+        return;
+      }
+      if (data) applyRow(data as DispatchTrackRow);
+      else setLoading(false);
+    };
 
-    const ch = supabase
-      .channel(`tracking-${currentTrackId}-${Date.now()}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "dispatch_tracking", filter: `tracking_code=eq.${currentTrackId}` },
-        (payload) => {
-          if (payload.new.lat && payload.new.lng) {
-            setDriverLocation({ lat: payload.new.lat, lng: payload.new.lng });
-            setIsLive(true);
-          }
-        })
-      .subscribe();
+    void fetchOnce();
 
-    channelRef.current = ch;
-    return () => { if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null; } };
-  }, [currentTrackId]);
+    // Poll fallback every 12s (in case realtime is off)
+    const poll = window.setInterval(() => void fetchOnce(), 12_000);
 
-  const d = trackingDisplay;
+    if (channelRef.current) {
+      void supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    if (isSupabaseConfigured()) {
+      const ch = supabase
+        .channel(`tracking-${currentTrackId}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "dispatch_tracking",
+            filter: `tracking_code=eq.${currentTrackId}`,
+          },
+          (payload) => {
+            const next = (payload.new || payload.old) as DispatchTrackRow | undefined;
+            if (next && next.tracking_code) applyRow(next);
+          },
+        )
+        .subscribe();
+      channelRef.current = ch;
+    }
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [currentTrackId, applyRow]);
+
+  // tick forces re-render so "updated Xs ago" stays fresh
+  void tick;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+        <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin mb-4" />
+        <p className="text-sm font-bold text-slate-500">Loading live tracking…</p>
+      </div>
+    );
+  }
+
+  const d = row;
 
   if (!d) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
+          <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-6">
+            <Package className="text-slate-400" size={28} />
+          </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">Not Found</h1>
-          <p className="text-slate-500 font-bold mb-8">Tracking ID not found on this device.</p>
+          <p className="text-slate-500 font-bold mb-2">
+            Tracking ID not found.
+          </p>
+          <p className="text-xs text-slate-400 font-mono">
+            {currentTrackId || "—"}
+          </p>
+          <p className="text-sm text-slate-400 mt-4">
+            Ask the sender for a fresh tracking link, or check the code.
+          </p>
         </div>
         <div className="mt-8 opacity-30 flex items-center justify-center space-x-2">
           <img src="/logo.png" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
-          <span className="font-black text-slate-900 tracking-tight text-xl">SwiftLink<span className="text-emerald-500">Pro</span></span>
+          <span className="font-black text-slate-900 tracking-tight text-xl">
+            SwiftLink<span className="text-emerald-500">Pro</span>
+          </span>
         </div>
       </div>
     );
   }
 
-  const dispatched = d.status === "dispatched";
-  const customIcon = L ? L.icon({
-    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    iconSize: [25, 41], iconAnchor: [12, 41],
-  }) : null;
+  const delivered = d.status === "delivered" || d.dispatchStatus === "delivered";
+  const driverLoc = d.lastLocation ?? null;
+  const destLoc =
+    typeof d.destLat === "number" && typeof d.destLng === "number"
+      ? { lat: d.destLat, lng: d.destLng }
+      : null;
+
+  const health = liveHealth(d.lastPingAt || d.updatedAt, !!driverLoc);
+  const isLive = health === "live";
+  const distanceM = d.distanceM;
+  const etaMin = estimateEtaMinutes(distanceM ?? -1, d.speed);
+  const dispatchStatus = (d.dispatchStatus ||
+    (delivered ? "delivered" : driverLoc ? "en_route" : "pending")) as DispatchStatus;
+  const activeStep = stepIndex(dispatchStatus);
+
+  const handleConfirm = async () => {
+    if (d.deliveryPin) {
+      if (pinInput.trim() !== d.deliveryPin) {
+        setPinError(true);
+        return;
+      }
+    }
+    setPinError(false);
+    await confirmDelivery();
+  };
+
+  const callDriver = () => {
+    // No dedicated driver phone field yet — use customer phone is wrong.
+    // Merchant stores driver as name only. Skip if nothing useful.
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 text-center">
-      <div className="max-w-2xl w-full bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 mt-10">
-        <div id="track-status-icon" className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-6 shadow-xl ${dispatched ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`}>
-          <i className={`fas ${dispatched ? "fa-truck-fast" : "fa-check"} text-2xl text-white`} />
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/80 flex flex-col items-center p-4 sm:p-6 pb-16">
+      <div className="max-w-2xl w-full bg-white rounded-[2.5rem] p-5 sm:p-8 shadow-2xl border border-slate-100 mt-6 sm:mt-10">
+        {/* Header status */}
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div className="text-left">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+              Live tracking
+            </p>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+              {delivered ? "Delivered" : statusLabel(dispatchStatus)}
+            </h1>
+            <p className="text-slate-500 font-bold text-sm mt-1">
+              {delivered
+                ? "Item received. Thanks!"
+                : isLive
+                  ? "Driver location updating in real time."
+                  : health === "stale"
+                    ? "Signal weak — last fix is a bit old."
+                    : health === "offline"
+                      ? "Driver GPS appears offline."
+                      : "Waiting for driver to share GPS…"}
+            </p>
+          </div>
+          <div
+            className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+              delivered
+                ? "bg-emerald-500"
+                : isLive
+                  ? "bg-amber-500 animate-pulse"
+                  : "bg-slate-200"
+            }`}
+          >
+            {delivered ? (
+              <ShieldCheck className="text-white" size={26} />
+            ) : isLive ? (
+              <Navigation className="text-white" size={26} />
+            ) : (
+              <WifiOff className="text-slate-500" size={22} />
+            )}
+          </div>
         </div>
-        <h1 className="text-3xl font-black text-slate-900 mb-2">{dispatched ? "Dispatched" : "Delivered"}</h1>
-        <p className="text-slate-500 font-bold mb-8">{dispatched ? "On its way to you." : "Item Received."}</p>
 
-        {dispatched && driverLocation && MapContainer && (
-          <div className="w-full h-64 rounded-3xl overflow-hidden mb-4 shadow-inner border border-slate-100 relative z-0">
-            <MapContainer center={[driverLocation.lat, driverLocation.lng]} zoom={14} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
-              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[driverLocation.lat, driverLocation.lng]} icon={customIcon}>
-                <Popup>Driver is here</Popup>
-              </Marker>
-            </MapContainer>
-            {isLive && (
-              <div className="absolute top-3 right-3 z-[500] flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />Live GPS
-              </div>
+        {/* Trust chips */}
+        {!delivered && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                health === "live"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                  : health === "stale"
+                    ? "bg-amber-50 text-amber-700 border border-amber-100"
+                    : health === "offline"
+                      ? "bg-red-50 text-red-600 border border-red-100"
+                      : "bg-slate-50 text-slate-500 border border-slate-100"
+              }`}
+            >
+              {health === "live" ? (
+                <Wifi size={12} />
+              ) : health === "waiting" ? (
+                <Clock size={12} />
+              ) : (
+                <WifiOff size={12} />
+              )}
+              {health === "live"
+                ? "Verified live"
+                : health === "stale"
+                  ? "Stale signal"
+                  : health === "offline"
+                    ? "Offline"
+                    : "No GPS yet"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-600 border border-slate-100">
+              <Clock size={12} />
+              {formatLastSeen(d.lastPingAt || d.updatedAt)}
+            </span>
+            {distanceM != null && distanceM >= 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white">
+                <Route size={12} />
+                {formatDistance(distanceM)}
+                {etaMin != null && distanceM > NEARBY_RADIUS_M
+                  ? ` · ${formatEta(etaMin)}`
+                  : distanceM <= NEARBY_RADIUS_M
+                    ? " · arriving"
+                    : ""}
+              </span>
             )}
           </div>
         )}
 
-        {dispatched && !driverLocation && (
-          <div className="w-full h-32 rounded-3xl mb-4 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
-            <MapPin size={24} className="text-slate-300" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Waiting for driver location...</p>
+        {/* Map */}
+        {!delivered && (
+          <LiveMap
+            driver={driverLoc}
+            dest={destLoc}
+            path={d.path || []}
+            accuracy={d.accuracy}
+            isLive={isLive}
+          />
+        )}
+
+        {/* Timeline */}
+        <div className="flex items-center justify-between gap-1 mb-6 px-1">
+          {STEPS.map((step, i) => {
+            const done = activeStep >= i || delivered;
+            const current = activeStep === i && !delivered;
+            return (
+              <div key={step.key} className="flex-1 flex flex-col items-center gap-2 relative">
+                {i > 0 && (
+                  <div
+                    className={`absolute top-2 right-1/2 left-[-50%] h-0.5 ${
+                      activeStep >= i || delivered ? "bg-emerald-500" : "bg-slate-200"
+                    }`}
+                  />
+                )}
+                <div
+                  className={`relative z-10 w-4 h-4 rounded-full border-2 ${
+                    done
+                      ? "bg-emerald-500 border-emerald-500"
+                      : current
+                        ? "bg-white border-amber-500 animate-pulse"
+                        : "bg-white border-slate-200"
+                  }`}
+                />
+                <span
+                  className={`text-[9px] font-black uppercase tracking-wider ${
+                    done || current ? "text-slate-800" : "text-slate-300"
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Details card */}
+        <div className="bg-slate-50 rounded-3xl p-5 sm:p-6 text-left space-y-4 mb-5">
+          <div className="flex justify-between gap-4 border-b border-slate-200/80 pb-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase">Item</span>
+            <span className="font-bold text-slate-900 text-right">{d.item}</span>
+          </div>
+          <div className="flex justify-between gap-4 border-b border-slate-200/80 pb-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase">Driver</span>
+            <span className="font-bold text-slate-900 text-right">{d.driver}</span>
+          </div>
+          {d.destination && (
+            <div className="flex justify-between gap-4 border-b border-slate-200/80 pb-3">
+              <span className="text-[10px] font-black text-slate-400 uppercase">To</span>
+              <span className="font-bold text-slate-900 text-right text-sm">{d.destination}</span>
+            </div>
+          )}
+          <div className="flex justify-between gap-4 border-b border-slate-200/80 pb-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase">Ref</span>
+            <span className="font-bold text-slate-900 font-mono text-right">{d.ref}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-[10px] font-black text-slate-400 uppercase">Track code</span>
+            <span className="font-bold text-emerald-600 font-mono text-right text-sm">{d.id}</span>
+          </div>
+        </div>
+
+        {/* Delivery PIN — trust handoff */}
+        {d.deliveryPin && !delivered && (
+          <div className="mb-5 rounded-3xl border border-emerald-100 bg-emerald-50/60 p-5 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck size={18} className="text-emerald-600" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                Delivery PIN
+              </p>
+            </div>
+            <p className="text-3xl font-black tracking-[0.35em] text-slate-900 font-mono mb-2">
+              {d.deliveryPin}
+            </p>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              Only share this PIN with the driver when the package is in your hands.
+              It proves the right person arrived.
+            </p>
           </div>
         )}
 
-        <div className="bg-slate-50 rounded-3xl p-6 text-left space-y-4 mb-8">
-          <div className="flex justify-between border-b border-slate-200 pb-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase">Item</span>
-            <span className="font-bold text-slate-900">{d.item}</span>
+        {/* Confirm receipt */}
+        {!delivered ? (
+          <div className="space-y-3">
+            {d.deliveryPin && (
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 text-left">
+                  Enter PIN to confirm receipt
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value.replace(/\D/g, "").slice(0, 4));
+                    setPinError(false);
+                  }}
+                  placeholder="••••"
+                  className={`w-full bg-slate-50 p-4 rounded-2xl font-black text-center text-xl tracking-[0.5em] outline-none border ${
+                    pinError
+                      ? "border-red-300 focus:border-red-400"
+                      : "border-slate-100 focus:border-emerald-300"
+                  }`}
+                />
+                {pinError && (
+                  <p className="text-xs text-red-500 font-bold mt-2 text-left">
+                    Wrong PIN — check the code above or from your WhatsApp message.
+                  </p>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleConfirm()}
+              className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              I HAVE RECEIVED IT
+            </button>
           </div>
-          <div className="flex justify-between border-b border-slate-200 pb-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase">Sent Via</span>
-            <span className="font-bold text-slate-900">{d.driver}</span>
+        ) : (
+          <div className="bg-emerald-50 text-emerald-700 font-bold py-4 rounded-2xl border border-emerald-100 flex items-center justify-center gap-2">
+            <ShieldCheck size={18} />
+            Delivery confirmed
           </div>
-          <div className="flex justify-between">
-            <span className="text-[10px] font-black text-slate-400 uppercase">Ref No.</span>
-            <span className="font-bold text-slate-900 font-mono">{d.ref}</span>
-          </div>
-        </div>
+        )}
 
-        <button type="button" onClick={confirmDelivery}
-          className={`w-full bg-emerald-500 text-white py-5 rounded-2xl font-black shadow-xl hover:scale-[1.02] active:scale-95 transition-all ${d.status === "delivered" ? "hidden" : ""}`}>
-          I HAVE RECEIVED IT
-        </button>
-        <div className={`${d.status === "dispatched" ? "hidden" : ""} bg-emerald-50 text-emerald-600 font-bold py-4 rounded-2xl border border-emerald-100`}>
-          Delivery Confirmed ✓
-        </div>
+        {/* Customer phone quick actions — merchant may have left phone on record */}
+        {d.phone && !delivered && (
+          <a
+            href={`https://wa.me/${d.phone.replace(/\D/g, "")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors"
+            onClick={callDriver}
+          >
+            <Phone size={14} />
+            Message about this delivery
+          </a>
+        )}
       </div>
 
       <div className="mt-8 opacity-30 flex items-center justify-center space-x-2">
         <img src="/logo.png" className="w-6 h-6 grayscale" alt="" width={24} height={24} />
-        <span className="font-black text-slate-900 tracking-tight text-xl">SwiftLink<span className="text-emerald-500">Pro</span></span>
+        <span className="font-black text-slate-900 tracking-tight text-xl">
+          SwiftLink<span className="text-emerald-500">Pro</span>
+        </span>
       </div>
-
-      {isDriverMode && currentTrackId && <DriverLocationBeacon trackingCode={currentTrackId} />}
     </div>
   );
 }

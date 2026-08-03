@@ -20,6 +20,14 @@ import {
 } from "@/lib/utils";
 import { defaultShopState, loadStateLocal, normalizeShopState, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
+import {
+  generateDeliveryPin,
+  generateTrackingCode,
+  trackRowToDelivery,
+  customerTrackUrl,
+  driverTrackUrl,
+  type DispatchTrackRow,
+} from "@/lib/dispatch";
 
 type CartMap = Record<number, number>;
 
@@ -67,6 +75,7 @@ type SwiftLinkContextValue = {
     item: string;
     driver: string;
     ref: string;
+    destination?: string;
   }) => void;
   removeDelivery: (id: string) => void;
   copyTrackLink: (id: string) => void;
@@ -676,12 +685,64 @@ export function SwiftLinkProvider({
     }
   }, [authReady, isProtectedRoute, router, user]);
 
+  // Load customer tracking from Supabase (works on any device), fall back to local deliveries
   useEffect(() => {
-    if (!trackId) return;
+    if (!trackId) {
+      setCurrentTrackId(null);
+      return;
+    }
     setCurrentTrackId(trackId);
-    const d = state.deliveries.find((x) => x.id === trackId) ?? null;
-    setTrackingDisplay(d);
-  }, [trackId, state.deliveries]);
+
+    let cancelled = false;
+
+    const applyLocal = () => {
+      const local = state.deliveries.find((x) => x.id === trackId) ?? null;
+      if (!cancelled && local) setTrackingDisplay(local);
+    };
+
+    // Optimistic local hit (merchant device)
+    applyLocal();
+
+    void (async () => {
+      if (!isSupabaseConfigured()) {
+        applyLocal();
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("dispatch_tracking")
+          .select("*")
+          .eq("tracking_code", trackId)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (error) {
+          console.warn("track fetch failed:", error.message);
+          applyLocal();
+          return;
+        }
+        if (data) {
+          setTrackingDisplay(trackRowToDelivery(data as DispatchTrackRow));
+        } else {
+          // Keep local if present; otherwise leave null → Not Found
+          applyLocal();
+          if (!state.deliveries.find((x) => x.id === trackId)) {
+            setTrackingDisplay(null);
+          }
+        }
+      } catch (e) {
+        console.warn("track fetch error:", e);
+        applyLocal();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // intentionally not depending on full state.deliveries array identity every render —
+    // re-run when track id changes; local list is only a fallback seed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || pathname !== "/pro" || !isSupabaseActive) return;
@@ -981,12 +1042,8 @@ export function SwiftLinkProvider({
   }, [addToast]);
 
   const copyTrackLink = useCallback((id: string) => {
-    const url =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/?track=${id}`
-        : "";
-    void navigator.clipboard.writeText(url);
-    addToast("Tracking Link Copied!");
+    void navigator.clipboard.writeText(customerTrackUrl(id));
+    addToast("Customer tracking link copied!", "success");
   }, [addToast]);
 
   const handleSignOut = useCallback(async () => {
@@ -1015,49 +1072,75 @@ export function SwiftLinkProvider({
       item: string;
       driver: string;
       ref: string;
+      destination?: string;
     }) => {
-      const { sender, name, phone, item, driver, ref } = form;
+      const { sender, name, phone, item, driver, ref, destination } = form;
       if (!name || !driver || !ref) {
-        addToast("Please fill the required fields.", "error");
+        addToast("Please fill customer, driver, and waybill.", "error");
         return;
       }
 
-      const deliveryId =
-        "TRK-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const deliveryId = generateTrackingCode();
+      const pin = generateDeliveryPin();
+      const dest = (destination || "").trim();
+      const createdAt = new Date().toISOString();
+
       const newDel: Delivery = {
         id: deliveryId,
         status: "dispatched",
         customer: name,
         phone,
-        item,
+        item: item || "Package",
         driver,
         ref,
+        destination: dest,
+        deliveryPin: pin,
+        dispatchStatus: "pending",
+        createdAt,
+        path: [],
       };
 
-      // 1. Insert into dedicated tracking table for live updates
+      // Insert into dedicated tracking table so any device can resolve the link
       void (async () => {
-        if (isSupabaseConfigured() && user?.id) {
-           await supabase.from('dispatch_tracking').insert({
-              tracking_code: deliveryId,
-              store_id: user.id,
-              driver_name: driver,
-              customer_name: name,
-              destination: "", // can be expanded
-              status: 'pending'
-           });
+        if (!isSupabaseConfigured()) {
+          addToast("Dispatch saved locally (Supabase not configured).", "info");
+          return;
+        }
+        const payload = {
+          tracking_code: deliveryId,
+          store_id: user?.id ?? null,
+          driver_name: driver,
+          customer_name: name,
+          customer_phone: phone || null,
+          item_name: item || "Package",
+          waybill: ref,
+          destination: dest || null,
+          status: "pending",
+          delivery_pin: pin,
+          path: [],
+          updated_at: createdAt,
+          created_at: createdAt,
+        };
+        const { error } = await supabase.from("dispatch_tracking").upsert(payload, {
+          onConflict: "tracking_code",
+        });
+        if (error) {
+          console.error("dispatch_tracking insert failed:", error);
+          addToast(`Tracking cloud sync failed: ${error.message}`, "error");
         }
       })();
 
-      const trackUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/?track=${deliveryId}`
-          : "";
-      const driverUrl = 
-        typeof window !== "undefined"
-          ? `${window.location.origin}/dispatch/driver/${deliveryId}`
-          : "";
-      
-      const msg = `Package dispatched! Track here: ${trackUrl}`;
+      const trackUrl = customerTrackUrl(deliveryId);
+      const driverUrl = driverTrackUrl(deliveryId);
+
+      const msg =
+        `📦 *SwiftLink Dispatch*\n` +
+        `Item: ${item || "Package"}\n` +
+        `Driver: ${driver}\n` +
+        `Ref: ${ref}\n` +
+        (dest ? `To: ${dest}\n` : "") +
+        `Delivery PIN: *${pin}*\n\n` +
+        `Live track: ${trackUrl}`;
 
       setState((prev) => {
         let next = { ...prev };
@@ -1067,33 +1150,41 @@ export function SwiftLinkProvider({
         return next;
       });
 
+      setTrackingDisplay(newDel);
+      setCurrentTrackId(deliveryId);
+      addToast(`Dispatch ${deliveryId} created · PIN ${pin}`, "success");
+
       void (async () => {
         const choice = await (window as any).customConfirm(
           "Dispatch created",
-          "Send tracking link to Customer OR Driver?",
+          `PIN ${pin} — send tracking to Customer or copy Driver GPS link?`,
           "Customer (WA)",
-          "Driver Link"
+          "Driver Link",
         );
-        
-        if (choice === true) { // Customer
+
+        if (choice === true) {
           const wa = phone.replace(/\D/g, "");
           if (!wa) {
-            addToast("No customer phone number provided.", "error");
+            void navigator.clipboard.writeText(trackUrl);
+            addToast("No phone — customer track link copied instead.", "info");
             return;
           }
           window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
-        } else if (choice === false) { // Driver
+        } else if (choice === false) {
           void navigator.clipboard.writeText(driverUrl);
-          addToast("Driver tracking link copied!");
+          addToast("Driver GPS link copied!", "success");
         }
       })();
     },
-    [addToast, persistState],
+    [addToast, persistState, user?.id],
   );
 
   const removeDelivery = useCallback(async (id: string) => {
     const ok = await (window as any).customConfirm("Delete record?", "Are you sure you want to remove this delivery?");
     if (!ok) return;
+    if (isSupabaseConfigured()) {
+      void supabase.from("dispatch_tracking").delete().eq("tracking_code", id);
+    }
     setState((prev) => {
       const next = {
         ...prev,
@@ -1116,22 +1207,52 @@ export function SwiftLinkProvider({
   const confirmDelivery = useCallback(async () => {
     const ok = await (window as any).customConfirm(
       "Confirm receipt?",
-      "This will mark the delivery as delivered.",
+      "This will mark the delivery as delivered. Only confirm when you have the package.",
     );
     if (!ok) return;
     const tid = currentTrackId;
     if (!tid) return;
+
+    const now = new Date().toISOString();
+
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase
+        .from("dispatch_tracking")
+        .update({
+          status: "delivered",
+          updated_at: now,
+        })
+        .eq("tracking_code", tid);
+      if (error) console.warn("confirmDelivery cloud update:", error.message);
+    }
+
     setState((prev) => {
       const deliveries = prev.deliveries.map((d) =>
-        d.id === tid ? { ...d, status: "delivered" as const } : d,
+        d.id === tid
+          ? {
+              ...d,
+              status: "delivered" as const,
+              dispatchStatus: "delivered" as const,
+              updatedAt: now,
+            }
+          : d,
       );
       const next = { ...prev, deliveries };
       persistState(next);
-      const d = next.deliveries.find((x) => x.id === tid) ?? null;
-      setTrackingDisplay(d);
-      addToast("Delivery Confirmed. Thank you!", "success");
       return next;
     });
+
+    setTrackingDisplay((prev) =>
+      prev && prev.id === tid
+        ? {
+            ...prev,
+            status: "delivered",
+            dispatchStatus: "delivered",
+            updatedAt: now,
+          }
+        : prev,
+    );
+    addToast("Delivery confirmed. Thank you!", "success");
   }, [currentTrackId, addToast, persistState]);
 
   const addProduct = useCallback(() => {

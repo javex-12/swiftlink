@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { CountrySelector } from "./CountrySelector";
-import { Store, User, Smartphone, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Store, User, Smartphone, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function OnboardingModal() {
@@ -79,7 +79,7 @@ export function OnboardingModal() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">
-                <Sparkles size={20} />
+                <Store size={20} />
               </div>
               <div>
                 <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-emerald-600 dark:text-[#00c885] font-black">Quick Setup • Step {step} of 3</span>
@@ -109,7 +109,7 @@ export function OnboardingModal() {
                   type="text"
                   value={form.ownerName}
                   onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
-                  placeholder="e.g. Michael Dosunmu"
+                  placeholder="e.g. Alex Morgan"
                   className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white outline-none placeholder:text-slate-400"
                   autoFocus
                 />
