@@ -168,3 +168,21 @@ npm run build       → exit 0, 18 routes
 
 **Deferred on purpose:** the storefront's injected `<style>` class-hijack block. It is the live theming mechanism for every published store, and the token-based replacement is the P4 storefront rebuild — removing it first would untheme production. The scope element (`data-theme-scope="storefront"`) and the full `--t-*` set are already in `styles/tokens.css`, so P4 is a port, not a redesign.
 
+---
+
+# Addendum — the login breakage (2026-09-21)
+
+"Login doesn't work" after P0. Root cause, found by reading the two halves against each other:
+
+**The client stored the session in `localStorage`; the middleware read cookies.** `lib/supabase-client.ts` used plain `createClient` (default storage: localStorage), while the P0 middleware validates every request from the `sb-*` **cookies** (`docs/00-AUDIT.md` F-01). So `signInWithPassword` succeeded, the user object even cached — and then `router.push("/pro")` bounced straight back to `/signup`, because the browser sent no cookie for the middleware to read. The signup page saw the localStorage session and pushed `/pro` again: an infinite redirect loop that presents as "login is broken".
+
+**Fix:** `lib/supabase-client.ts` now uses `createBrowserClient` from `@supabase/ssr` — cookie storage, the same cookies the middleware refreshes. One session across client, middleware and server components. The singleton is created lazily through a typed `Proxy`, so all 11 existing import sites keep working unchanged; the explicit `SupabaseClient` type annotation matters because `ReturnType<typeof createBrowserClient>` resolves to the *last* overload and silently erased every call site's inference.
+
+**Second bug found on the same page:** `saveUserStore` upserted `id: uid` with no `owner_id`. `stores.id` is a free UUID (P0), so for a returning user that **inserted a second row with a NULL owner** — invisible to the dashboard, which queries `owner_id = user.id`. Confirmed live: production already had **2 orphan stores**. Now owner-correlated (`.eq("owner_id", uid)` → update, else insert with `owner_id`). The orphans in production need a one-time cleanup (P2 backfill).
+
+**Third:** the page never read the `?next=` param that middleware has been setting since P0 — every login landed on `/pro` regardless of where the merchant was heading. Fixed.
+
+**Also changed in the redesign:** the Google button without a client id no longer silently enters "demo mode" (i.e. fakes a login with no session). Demo mode is reachable explicitly from the "Supabase not configured" notice only.
+
+**Auth-page redesign** (`app/signup/page.tsx`, D5): tokens and UI-kit controls instead of the old light/dark hex forks; real `<label>`s with `aria-invalid` wiring; `next/font` self-hosted faces; marketing stats on the brand panel replaced by three concrete claims, since fake numbers on a login screen undermine the product.
+
