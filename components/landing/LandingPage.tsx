@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Shield, MessageSquare, Menu, X, Globe, Sparkles,
-  Truck, Sun, Moon, TrendingUp, Package, Users, Star, CheckCircle2,
+  Sun, Moon, TrendingUp, Package, Users, Star, CheckCircle2,
   UserPlus, Layers, Send, ShoppingBag, ArrowUpRight, Play, Check
 } from "lucide-react";
 import Link from "next/link";
@@ -115,8 +115,8 @@ function PhoneWorkflowDemo() {
     },
     {
       id: 3,
-      title: "4. Dispatch & Live GPS Tracking",
-      desc: "Send tracking links so buyers trace deliveries in real-time.",
+      title: "4. Publish & Share",
+      desc: "Go live in one click and share your store link anywhere.",
       badge: "Step 04",
     },
   ];
@@ -237,19 +237,19 @@ function PhoneWorkflowDemo() {
                   className="space-y-3 pt-2"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-900 dark:text-white">Live Tracking</span>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500">In Transit</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white">Store Published</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500">Live</span>
                   </div>
                   <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-3 bg-slate-50 dark:bg-white/5 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Truck size={16} className="text-emerald-500" />
+                      <Globe size={16} className="text-emerald-500" />
                       <div>
-                        <p className="text-[10px] font-black text-slate-900 dark:text-white">Driver assigned</p>
-                        <p className="text-[8px] text-slate-400">Estimated delivery: 12 mins</p>
+                        <p className="text-[10px] font-black text-slate-900 dark:text-white">swiftlink.store/luxe</p>
+                        <p className="text-[8px] text-slate-400">Ready to share on WhatsApp Status</p>
                       </div>
                     </div>
                     <div className="h-16 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                      <span className="text-[9px] font-bold text-emerald-500">📍 Interactive GPS Map View</span>
+                      <span className="text-[9px] font-bold text-emerald-500">Live storefront preview</span>
                     </div>
                   </div>
                 </motion.div>
@@ -307,7 +307,7 @@ function PhoneWorkflowDemo() {
 
 // ─── Cybernetic Holographic Hero Interface ──────────────────────────────────────
 function CyberHeroVisual() {
-  const [activeTab, setActiveTab] = useState<"store" | "live" | "checkout">("store");
+  const [activeTab, setActiveTab] = useState<"store" | "orders" | "checkout">("store");
   const [currencySymbol, setCurrencySymbol] = useState<string>("$");
 
   useEffect(() => {
@@ -323,7 +323,7 @@ function CyberHeroVisual() {
     }
 
     const timer = setInterval(() => {
-      setActiveTab((prev) => (prev === "store" ? "live" : prev === "live" ? "checkout" : "store"));
+      setActiveTab((prev) => (prev === "store" ? "orders" : prev === "orders" ? "checkout" : "store"));
     }, 3500);
     return () => clearInterval(timer);
   }, []);
@@ -363,7 +363,7 @@ function CyberHeroVisual() {
           </div>
 
           <div className="flex rounded-full bg-slate-100 dark:bg-white/5 p-1 border border-slate-200/50 dark:border-white/5">
-            {(["store", "live", "checkout"] as const).map((tab) => (
+            {(["store", "orders", "checkout"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -414,9 +414,9 @@ function CyberHeroVisual() {
               </motion.div>
             )}
 
-            {activeTab === "live" && (
+            {activeTab === "orders" && (
               <motion.div
-                key="live"
+                key="orders"
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 15 }}
@@ -424,20 +424,20 @@ function CyberHeroVisual() {
                 className="space-y-4"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Real-Time Dispatch</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Live Orders</span>
                   <span className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> GPS Active
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> WhatsApp connected
                   </span>
                 </div>
 
                 <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
-                      <Truck size={20} />
+                      <ShoppingBag size={20} />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-slate-900 dark:text-white">Order #SL-8849</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Rider assigned & en-route</p>
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white">New order · Ada O.</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">2 items · ₦24,500 · via WhatsApp</p>
                     </div>
                   </div>
                   <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
@@ -681,9 +681,9 @@ const Features = () => {
       className: "bg-white dark:bg-[#0f172a] border border-slate-100 dark:border-white/[0.06]",
     },
     {
-      icon: Truck,
-      title: "Logistics Hub",
-      description: "Real-time dispatch tracking. Customers watch their package move live.",
+      icon: Layers,
+      title: "Custom Storefront",
+      description: "Pick a theme, set your colors and fonts, then reorder your sections. No code.",
       className: "bg-emerald-50 dark:bg-emerald-950/20 border border-slate-100 dark:border-white/[0.06]",
     },
     {

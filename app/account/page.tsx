@@ -40,8 +40,8 @@ export default function AccountPage() {
 
   const stats = [
     { label: "Active Products", value: state.products.length, icon: Zap, color: "text-emerald-500" },
-    { label: "Total Deliveries", value: state.deliveries.length, icon: Smartphone, color: "text-blue-500" },
-    { label: "Public Status", value: state.isLive ? "Live" : "Paused", icon: Globe, color: state.isLive ? "text-emerald-500" : "text-amber-500" },
+    { label: "Categories", value: state.categories.length, icon: Globe, color: "text-blue-500" },
+    { label: "Public Status", value: state.isLive ? "Live" : "Paused", icon: CheckCircle2, color: state.isLive ? "text-emerald-500" : "text-amber-500" },
   ];
 
   return (

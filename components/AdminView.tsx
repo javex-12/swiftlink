@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +27,6 @@ import {
   Smartphone, 
   Filter, 
   Check, 
-  Truck, 
   ThumbsUp, 
   Star, 
   UserCheck, 
@@ -85,17 +85,6 @@ interface EventDB {
   created_at: string;
 }
 
-interface DispatchDB {
-  id: string;
-  tracking_code: string;
-  store_id: string;
-  driver_name: string;
-  customer_name: string;
-  destination: string;
-  status: string; // 'pending' | 'en_route' | 'delivered'
-  updated_at: string;
-}
-
 export function AdminView() {
   const { user, addToast, isAdmin } = useSwiftLink();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -105,7 +94,6 @@ export function AdminView() {
   const [profiles, setProfiles] = useState<ProfileDB[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackDB[]>([]);
   const [events, setEvents] = useState<EventDB[]>([]);
-  const [dispatches, setDispatches] = useState<DispatchDB[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -263,13 +251,7 @@ export function AdminView() {
       { id: "f3", user_id: "u3", store_id: "s3", type: "general", message: "This dashboard is incredibly easy to use. Setting up my food storefront took less than 5 minutes!", metadata: { path: "/" }, upvotes: 1, public_replies: [], is_public: false, status: "resolved", created_at: new Date(Date.now() - 2 * 86400000).toISOString() }
     ];
 
-    const mockDispatches: DispatchDB[] = [
-      { id: "d1", tracking_code: "SL-TRK-78A", store_id: "s1", driver_name: "Musa Audu", customer_name: "Rita Okoye", destination: "VI, Lagos", status: "en_route", updated_at: new Date().toISOString() },
-      { id: "d2", tracking_code: "SL-TRK-29B", store_id: "s2", driver_name: "John Okafor", customer_name: "Femi Adesina", destination: "Yaba, Lagos", status: "pending", updated_at: new Date().toISOString() },
-      { id: "d3", tracking_code: "SL-TRK-90C", store_id: "s3", driver_name: "Usman Danjuma", customer_name: "Hadiza Bello", destination: "Wuse 2, Abuja", status: "delivered", updated_at: new Date(Date.now() - 7200000).toISOString() }
-    ];
-
-    return { mockProfiles, mockStores, mockEvents, mockFeedbacks, mockDispatches };
+    return { mockProfiles, mockStores, mockEvents, mockFeedbacks };
   }, []);
 
   // Fetch Database tables from Supabase
@@ -303,18 +285,11 @@ export function AdminView() {
         .order("created_at", { ascending: false })
         .limit(1000);
 
-      // 5. Fetch Dispatch tracking
-      const { data: dispatchesData } = await supabase
-        .from("dispatch_tracking")
-        .select("*")
-        .order("updated_at", { ascending: false });
-
       // Apply DB values if available, otherwise fall back to mock data
       setStores(storesData && storesData.length > 0 ? storesData : mockData.mockStores);
       setProfiles(profilesData && profilesData.length > 0 ? profilesData : mockData.mockProfiles);
       setFeedbacks(feedbacksData && feedbacksData.length > 0 ? feedbacksData : mockData.mockFeedbacks);
       setEvents(eventsData && eventsData.length > 0 ? eventsData : mockData.mockEvents);
-      setDispatches(dispatchesData && dispatchesData.length > 0 ? dispatchesData : mockData.mockDispatches);
       
     } catch (err) {
       console.error("Error loading database tables, loading fallbacks", err);
@@ -323,7 +298,6 @@ export function AdminView() {
       setProfiles(mockData.mockProfiles);
       setFeedbacks(mockData.mockFeedbacks);
       setEvents(mockData.mockEvents);
-      setDispatches(mockData.mockDispatches);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -435,7 +409,6 @@ export function AdminView() {
     const checkouts = merchantEvents.filter(e => e.event_type === "whatsapp_checkout").length;
     
     const submittedFeedback = feedbacks.filter(f => f.user_id === selectedMerchantId);
-    const deliveries = dispatches.filter(d => storeIds.includes(d.store_id));
 
     return {
       profile,
@@ -443,9 +416,8 @@ export function AdminView() {
       events: merchantEvents,
       stats: { views, clicks, checkouts },
       feedback: submittedFeedback,
-      deliveries
     };
-  }, [selectedMerchantId, profiles, stores, events, feedbacks, dispatches]);
+  }, [selectedMerchantId, profiles, stores, events, feedbacks]);
 
   // Filters and searches
   const filteredProfiles = useMemo(() => {
@@ -498,7 +470,6 @@ export function AdminView() {
     const totalCheckouts = events.filter(e => e.event_type === "whatsapp_checkout").length;
     const totalFeedbackCount = feedbacks.length;
     const pendingBugs = feedbacks.filter(f => f.type === "bug" && f.status !== "resolved").length;
-    const activeDispatches = dispatches.filter(d => d.status !== "delivered").length;
     
     // Best Conversion Store
     const storeConversions = stores.map(store => {
@@ -517,11 +488,10 @@ export function AdminView() {
       totalCheckouts,
       totalFeedbackCount,
       pendingBugs,
-      activeDispatches,
       topStore,
       storeConversions
     };
-  }, [events, feedbacks, dispatches, stores]);
+  }, [events, feedbacks, stores]);
 
   if (checkingAuth) {
     return (
@@ -562,12 +532,12 @@ export function AdminView() {
           </div>
 
           <div className="flex gap-4 justify-center">
-            <a 
+            <Link
               href="/pro"
               className="flex-1 py-4 px-6 rounded-2xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
               Go to Storefront Dashboard
-            </a>
+            </Link>
           </div>
         </motion.div>
       </div>
@@ -870,43 +840,8 @@ export function AdminView() {
 
                 {/* Logistics & Alerts section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* CRITICAL ACTIONS & LOGISTICS */}
-                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm lg:col-span-1 flex flex-col">
-                    <div className="mb-6 flex justify-between items-center">
-                      <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Active Dispatches</h3>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Live tracking telemetry logs</p>
-                      </div>
-                      <Truck size={18} className="text-indigo-400" />
-                    </div>
-
-                    <div className="flex-1 space-y-4 max-h-72 overflow-y-auto pr-1 scrollbar-hide">
-                      {dispatches.slice(0, 4).map((d) => (
-                        <div key={d.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-white/5 flex justify-between items-center gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-black text-slate-950 dark:text-white uppercase tracking-wider truncate">{d.tracking_code}</p>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">To: {d.destination}</p>
-                          </div>
-                          
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider shrink-0",
-                            d.status === "delivered" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
-                            d.status === "en_route" ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" :
-                            "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400"
-                          )}>
-                            {d.status.replace("_", " ")}
-                          </span>
-                        </div>
-                      ))}
-
-                      {dispatches.length === 0 && (
-                        <div className="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active dispatches found</div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* RECENT CRITICAL USER FEEDBACK FEED */}
-                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm lg:col-span-2 flex flex-col">
+                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm lg:col-span-3 flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                       <div>
                         <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Pending Bug Reports</h3>
@@ -1233,7 +1168,7 @@ export function AdminView() {
                           </div>
                         </div>
 
-                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-350 leading-relaxed my-4">"{f.message}"</p>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-350 leading-relaxed my-4">&ldquo;{f.message}&rdquo;</p>
 
                         <div className="text-[9px] font-bold text-slate-400 space-y-1 border-t border-slate-50 dark:border-zinc-950 pt-3">
                           <p>User: <span className="text-slate-700 dark:text-slate-300">{reporter?.display_name || "Guest"}</span> (slug: {reporter?.username || "N/A"})</p>
@@ -1362,7 +1297,7 @@ export function AdminView() {
                 <div className="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-white/5">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profile Biography:</p>
                   <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 italic">
-                    "{merchantDrillDown.profile.bio || "No storefront summary information provided by this merchant user profile."}"
+                    &ldquo;{merchantDrillDown.profile.bio || "No storefront summary information provided by this merchant user profile."}&rdquo;
                   </p>
                 </div>
 
@@ -1433,24 +1368,24 @@ export function AdminView() {
                     </div>
                   </div>
 
-                  {/* ACTIVE DELIVERIES LOGISTICS */}
+                  {/* STOREFRONT LINKS */}
                   <div className="bg-slate-50 dark:bg-[#0c0e12]/40 border border-slate-100 dark:border-white/5 p-6 rounded-2xl flex flex-col justify-between">
                     <div>
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center justify-between">
-                        <span>Merchant Logistics Portal</span>
-                        <Truck size={14} className="text-indigo-400" />
+                        <span>Storefront Links</span>
+                        <Globe size={14} className="text-indigo-400" />
                       </h4>
                       
                       <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1 scrollbar-hide">
-                        {merchantDrillDown.deliveries.map((d) => (
-                          <div key={d.id} className="flex justify-between items-center text-[9px] font-bold text-slate-500 pb-2 border-b border-slate-200/50 dark:border-zinc-900/50 last:border-none">
-                            <span>{d.tracking_code} ({d.driver_name})</span>
-                            <span className="uppercase text-[8px] font-black text-slate-900 dark:text-white">{d.status}</span>
+                        {merchantDrillDown.stores.map((s) => (
+                          <div key={s.id} className="flex justify-between items-center text-[9px] font-bold text-slate-500 pb-2 border-b border-slate-200/50 dark:border-zinc-900/50 last:border-none">
+                            <span className="truncate">{s.biz_name || "Untitled store"}</span>
+                            <span className="uppercase text-[8px] font-black text-slate-900 dark:text-white shrink-0 ml-2">{s.store_username ? `@${s.store_username}` : "no handle"}</span>
                           </div>
                         ))}
 
-                        {merchantDrillDown.deliveries.length === 0 && (
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center py-6">No logistics dispatches tracked</p>
+                        {merchantDrillDown.stores.length === 0 && (
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center py-6">No stores on this account</p>
                         )}
                       </div>
                     </div>
@@ -1497,7 +1432,7 @@ export function AdminView() {
                           )}>{f.type}</span>
                           <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">{f.status}</span>
                         </div>
-                        <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-350">"{f.message}"</p>
+                        <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-350">&ldquo;{f.message}&rdquo;</p>
                       </div>
                     ))}
 

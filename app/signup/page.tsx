@@ -175,7 +175,6 @@ function SignupInner() {
         id: uid, plan: initialPlan, ownerName, bizName, storeUsername,
         phone: extra?.phone || (storeData?.state_json as any)?.phone || "",
         products: (storeData?.state_json as any)?.products || [],
-        deliveries: (storeData?.state_json as any)?.deliveries || [],
         currency: (storeData?.state_json as any)?.currency || "₦",
         bizImage: (storeData?.state_json as any)?.bizImage || "",
         bizDesc: (storeData?.state_json as any)?.bizDesc || "",

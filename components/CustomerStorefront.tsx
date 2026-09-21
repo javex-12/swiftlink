@@ -1282,7 +1282,7 @@ export function CustomerStorefront({
                             <div className="w-full flex flex-col items-center justify-center p-10 text-center min-h-screen bg-white">
                                 <CheckCircle2 size={64} className="text-emerald-500 mb-6" />
                                 <h2 className="text-3xl font-black text-gray-900 italic uppercase">Order Sent!</h2>
-                                <p className="text-gray-400 font-medium mt-4">We've forwarded your request to the store on WhatsApp.</p>
+                                <p className="text-gray-400 font-medium mt-4">We&apos;ve forwarded your request to the store on WhatsApp.</p>
                                 <button onClick={() => changeScreen("home")} className="mt-10 px-10 py-4 bg-gray-900 text-white rounded-full font-black shadow-xl">BACK TO STORE</button>
                             </div>
                         )}

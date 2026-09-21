@@ -72,14 +72,23 @@ export function getPublicStoreSlug(
   return slugifyStoreName(state.bizName);
 }
 
+/**
+ * Public path for a store.
+ *
+ * Always returns a reachable route: when a store has no handle yet we route
+ * through the home page's `?shop=` entry point instead of the non-existent
+ * `/store/visit` route (docs/00-AUDIT.md F-09).
+ */
 export function getShopPath(
   state: Pick<ShopState, "id" | "bizName" | "storeUsername">,
 ): string {
   if (!state.id) return "/";
-  const slug = getPublicStoreSlug(state);
-  if (!slug) return `/store/visit?shop=${state.id}`;
-  // Use BOTH for ultimate reliability (SEO friendly slug + exact shop ID fallback)
-  return `/store/${slug}?shop=${state.id}`;
+  // Only use a real, merchant-chosen handle. Deriving one from the business name
+  // here would silently send handle-less stores to the generic "store" slug,
+  // where two such stores would collide (docs/00-AUDIT.md F-09).
+  const handle = normalizeStoreUsername(state.storeUsername || "");
+  if (handle) return `/store/${handle}?shop=${state.id}`;
+  return `/?shop=${state.id}`;
 }
 
 export type ParsedShopPath =
@@ -117,7 +126,10 @@ export function getSmartFirstName(ownerName?: string, email?: string, bizName?: 
   }
   if (email && email.includes('@')) {
     const handle = email.split('@')[0];
-    // Clean numbers, dots, and underscores from handle (e.g. "michaeldosunmu22" -> "Michael")
+    // Strip digits and separators. Separators give us real word breaks
+    // ("ada.eze_9" -> "Ada"); a run-together handle cannot be split back into
+    // words, so "michaeldosunmu22" yields "Michaeldosunmu". Prefer provider
+    // display names (user_metadata.full_name) once the identity work lands in P1.
     const cleaned = handle
       .replace(/[0-9]/g, '')
       .replace(/[._-]/g, ' ')

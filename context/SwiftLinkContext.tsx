@@ -18,20 +18,12 @@ import {
   getPublicStoreSlug,
   normalizeStoreUsername,
 } from "@/lib/utils";
-import { defaultShopState, loadStateLocal, normalizeShopState, type Delivery, type ShopState, type AppNotification } from "@/lib/types";
+import { defaultShopState, loadStateLocal, normalizeShopState, type ShopState, type AppNotification } from "@/lib/types";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
-import {
-  generateDeliveryPin,
-  generateTrackingCode,
-  trackRowToDelivery,
-  customerTrackUrl,
-  driverTrackUrl,
-  type DispatchTrackRow,
-} from "@/lib/dispatch";
 
 type CartMap = Record<number, number>;
 
-type TourStepView = "launcher" | "business" | "dispatch";
+type TourStepView = "launcher" | "business";
 
 type TourStep = {
   title: string;
@@ -51,7 +43,6 @@ type SwiftLinkContextValue = {
   isAdmin: boolean;
   isSupabaseActive: boolean;
   isOwner: boolean;
-  currentTrackId: string | null;
   tourOpen: boolean;
   currentTourStep: number;
   isSimulating: boolean;
@@ -68,21 +59,7 @@ type SwiftLinkContextValue = {
   updateState: (field: keyof ShopState, value: unknown) => void;
   setStateMerge: (partial: Partial<ShopState>) => void;
   saveFullState: (next: ShopState) => void;
-  handleDispatchSubmit: (form: {
-    sender: string;
-    name: string;
-    phone: string;
-    item: string;
-    driver: string;
-    ref: string;
-    destination?: string;
-  }) => void;
-  removeDelivery: (id: string) => void;
-  copyTrackLink: (id: string) => void;
-  initTracking: (id: string) => void;
-  confirmDelivery: () => void;
   copyShopLink: () => void;
-  copyTrackingPortalLink: () => void;
   handleSignOut: () => void;
   authSignOut: () => Promise<void>;
   emailSignIn: (e: string, p: string) => Promise<void>;
@@ -101,11 +78,7 @@ type SwiftLinkContextValue = {
   updateCart: (id: number, delta: number) => void;
   toggleCartDrawer: (open: boolean) => void;
   sendWhatsAppOrder: () => void;
-  renderDeliveryCount: () => number;
-  trackingDisplay: Delivery | null;
   cartItemCount: number;
-  currentLocation: { lat: number; lng: number } | null;
-  startLocationTracking: () => void;
   isSyncing: boolean;
   toasts: any[];
   theme: "light" | "dark";
@@ -119,14 +92,12 @@ type SwiftLinkContextValue = {
   setSocialHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   submitFeedback: (type: string, message: string) => Promise<void>;
   logEvent: (type: string, metadata?: any) => Promise<void>;
-  editorMode: "basic" | "advanced";
-  setEditorMode: (mode: "basic" | "advanced") => void;
 };
 
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
 
-const PROTECTED_PATHS = ["/pro", "/business", "/dispatch", "/account", "/cart"];
+const PROTECTED_PATHS = ["/pro", "/business", "/account", "/cart"];
 
 export function SwiftLinkProvider({
   children,
@@ -170,7 +141,6 @@ export function SwiftLinkProvider({
   }, [router]);
 
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
-  const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [currentTourStep, setCurrentTourStep] = useState(0);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -182,17 +152,12 @@ export function SwiftLinkProvider({
   const [handClick, setHandClick] = useState(false);
   const [loadingOverlay, setLoadingOverlay] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
-  const [trackingDisplay, setTrackingDisplay] = useState<Delivery | null>(
-    null,
-  );
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [socialHubOpen, setSocialHubOpen] = useState(false);
-  const [editorMode, setEditorMode] = useState<"basic" | "advanced">("basic");
   const [isAdmin, setIsAdmin] = useState(false);
 
   const checkAdminStatus = useCallback(async (userId: string) => {
@@ -371,17 +336,14 @@ export function SwiftLinkProvider({
   stateRef.current = state;
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const trackId = searchParams.get("track");
   const shopFromQuery = searchParams.get("shop");
   const pathShop = parseShopFromPathname(pathname);
-  const trackQ = trackId;
   const shopQ = shopFromQuery;
 
-  const isTrackingMode = Boolean(trackId);
   const pathShopId = pathShop?.kind === "uid" ? pathShop.shopId : null;
   const customerShopId = shopFromQuery || pathShopId || null;
   const isCustomerMode = Boolean(customerShopId);
-  const isOwner = !isTrackingMode && !isCustomerMode;
+  const isOwner = !isCustomerMode;
   const isProtectedRoute = PROTECTED_PATHS.some(
     (protectedPath) =>
       pathname === protectedPath || pathname.startsWith(`${protectedPath}/`),
@@ -393,7 +355,6 @@ export function SwiftLinkProvider({
   const navigateTo = useCallback(
     (view: TourStepView) => {
       if (view === "launcher") router.push("/pro");
-      if (view === "dispatch") router.push("/dispatch");
       if (view === "business") router.push("/business");
     },
     [router],
@@ -563,10 +524,10 @@ export function SwiftLinkProvider({
   }, []);
 
   useEffect(() => {
-    if (isCustomerMode && customerShopId && !isTrackingMode) {
+    if (isCustomerMode && customerShopId) {
       setState((prev) => ({ ...prev, id: customerShopId }));
     }
-  }, [isCustomerMode, customerShopId, isTrackingMode]);
+  }, [isCustomerMode, customerShopId]);
 
   useEffect(() => {
     let unsub: { unsubscribe: () => void } | null = null;
@@ -675,7 +636,7 @@ export function SwiftLinkProvider({
       unsub?.unsubscribe();
       if (channel) supabase.removeChannel(channel);
     };
-  }, [pathname, trackQ, shopQ]);
+  }, [pathname, shopQ]);
 
   useEffect(() => {
     const isDemoMode = typeof window !== "undefined" && localStorage.getItem("swiftlink_demo_login") === "true";
@@ -684,65 +645,6 @@ export function SwiftLinkProvider({
       router.replace("/signup?mode=login");
     }
   }, [authReady, isProtectedRoute, router, user]);
-
-  // Load customer tracking from Supabase (works on any device), fall back to local deliveries
-  useEffect(() => {
-    if (!trackId) {
-      setCurrentTrackId(null);
-      return;
-    }
-    setCurrentTrackId(trackId);
-
-    let cancelled = false;
-
-    const applyLocal = () => {
-      const local = state.deliveries.find((x) => x.id === trackId) ?? null;
-      if (!cancelled && local) setTrackingDisplay(local);
-    };
-
-    // Optimistic local hit (merchant device)
-    applyLocal();
-
-    void (async () => {
-      if (!isSupabaseConfigured()) {
-        applyLocal();
-        return;
-      }
-      try {
-        const { data, error } = await supabase
-          .from("dispatch_tracking")
-          .select("*")
-          .eq("tracking_code", trackId)
-          .maybeSingle();
-
-        if (cancelled) return;
-        if (error) {
-          console.warn("track fetch failed:", error.message);
-          applyLocal();
-          return;
-        }
-        if (data) {
-          setTrackingDisplay(trackRowToDelivery(data as DispatchTrackRow));
-        } else {
-          // Keep local if present; otherwise leave null → Not Found
-          applyLocal();
-          if (!state.deliveries.find((x) => x.id === trackId)) {
-            setTrackingDisplay(null);
-          }
-        }
-      } catch (e) {
-        console.warn("track fetch error:", e);
-        applyLocal();
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // intentionally not depending on full state.deliveries array identity every render —
-    // re-run when track id changes; local list is only a fallback seed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || pathname !== "/pro" || !isSupabaseActive) return;
@@ -920,38 +822,6 @@ export function SwiftLinkProvider({
         },
       },
       {
-        title: "4. Create a dispatch",
-        desc: "Sold something? Fill the dispatch form instantly.",
-        view: "dispatch",
-        action: async () => {
-          const h = tourHelpersRef.current;
-          const cN = document.getElementById(
-            "disp-name",
-          ) as HTMLInputElement | null;
-          const cP = document.getElementById(
-            "disp-phone",
-          ) as HTMLInputElement | null;
-          const log = document.getElementById(
-            "disp-driver",
-          ) as HTMLInputElement | null;
-          const refEl = document.getElementById(
-            "disp-ref",
-          ) as HTMLInputElement | null;
-          await h.moveHandTo(cN);
-          await h.typeEffectOnInput(cN, "Customer Name");
-          await h.moveHandTo(cP);
-          await h.typeEffectOnInput(cP, "08000000000");
-          await h.moveHandTo(log);
-          await h.typeEffectOnInput(log, "Dispatch Company");
-          await h.moveHandTo(refEl);
-          await h.typeEffectOnInput(refEl, "REF-0001");
-          const submit = document.querySelector(
-            "[data-dispatch-submit]",
-          ) as HTMLElement | null;
-          await h.moveHandTo(submit);
-        },
-      },
-      {
         title: "All set",
         desc: "You're ready to build and share your storefront.",
         view: "launcher",
@@ -1034,18 +904,6 @@ export function SwiftLinkProvider({
     if (tourOpen && currentTourStep === 3) nextTourStep();
   }, [copyShopLinkInternal, tourOpen, currentTourStep, nextTourStep]);
 
-  const copyTrackingPortalLink = useCallback(() => {
-    const url =
-      typeof window !== "undefined" ? `${window.location.origin}/` : "";
-    void navigator.clipboard.writeText(url);
-    addToast("Portal Link Copied!");
-  }, [addToast]);
-
-  const copyTrackLink = useCallback((id: string) => {
-    void navigator.clipboard.writeText(customerTrackUrl(id));
-    addToast("Customer tracking link copied!", "success");
-  }, [addToast]);
-
   const handleSignOut = useCallback(async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("swiftlink_demo_login");
@@ -1063,226 +921,6 @@ export function SwiftLinkProvider({
   const authSignOut = useCallback(async () => {
     await handleSignOut();
   }, [handleSignOut]);
-
-  const handleDispatchSubmit = useCallback(
-    (form: {
-      sender: string;
-      name: string;
-      phone: string;
-      item: string;
-      driver: string;
-      ref: string;
-      destination?: string;
-    }) => {
-      const { sender, name, phone, item, driver, destination } = form;
-      // Auto-generate waybill ref if merchant didn't supply one
-      const ref = (form.ref || "").trim() ||
-        `SWL-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
-      if (!name || !driver) {
-        addToast("Please fill customer name and driver / logistics name.", "error");
-        return;
-      }
-
-      const deliveryId = generateTrackingCode();
-      const pin = generateDeliveryPin();
-      const dest = (destination || "").trim();
-      const createdAt = new Date().toISOString();
-
-      const newDel: Delivery = {
-        id: deliveryId,
-        status: "dispatched",
-        customer: name,
-        phone,
-        item: item || "Package",
-        driver,
-        ref,
-        destination: dest,
-        deliveryPin: pin,
-        dispatchStatus: "pending",
-        createdAt,
-        path: [],
-      };
-
-      // Insert into dedicated tracking table so any device can resolve the link
-      void (async () => {
-        if (!isSupabaseConfigured()) {
-          addToast("Dispatch saved locally (Supabase not configured).", "info");
-          return;
-        }
-        const payload = {
-          tracking_code: deliveryId,
-          store_id: user?.id ?? null,
-          driver_name: driver,
-          customer_name: name,
-          customer_phone: phone || null,
-          item_name: item || "Package",
-          waybill: ref,
-          destination: dest || null,
-          status: "pending",
-          delivery_pin: pin,
-          path: [],
-          updated_at: createdAt,
-          created_at: createdAt,
-        };
-        const { error } = await supabase.from("dispatch_tracking").upsert(payload, {
-          onConflict: "tracking_code",
-        });
-        if (error) {
-          console.error("dispatch_tracking insert failed:", error);
-          addToast(`Tracking cloud sync failed: ${error.message}`, "error");
-        }
-      })();
-
-      const trackUrl = customerTrackUrl(deliveryId);
-      const driverUrl = driverTrackUrl(deliveryId);
-
-      // Customer WhatsApp message — PIN is ONLY here, never shown on merchant UI
-      const msg =
-        `📦 *SwiftLink Delivery Notification*\n` +
-        `Hi ${name}, your item is on the way!\n\n` +
-        `Item: ${item || "Package"}\n` +
-        `Driver: ${driver}\n` +
-        (dest ? `Delivering to: ${dest}\n` : "") +
-        `Ref: ${ref}\n\n` +
-        `🔐 *Delivery Verification PIN: ${pin}*\n` +
-        `Keep this PIN private. Give it to the driver ONLY when your package arrives.\n\n` +
-        `📍 Track live: ${trackUrl}`;
-
-      setState((prev) => {
-        let next = { ...prev };
-        if (sender && !prev.bizName) next = { ...next, bizName: sender };
-        next = { ...next, deliveries: [newDel, ...next.deliveries] };
-        persistState(next);
-        return next;
-      });
-
-      setTrackingDisplay(newDel);
-      setCurrentTrackId(deliveryId);
-      // PIN deliberately NOT shown to merchant — it was sent to customer only
-      addToast(`Dispatch ${deliveryId} created. Send tracking to customer.`, "success");
-
-      void (async () => {
-        const choice = await (window as any).customConfirm(
-          "Dispatch created!",
-          `Send the live tracking link to your customer (includes their secret PIN), or copy the driver's GPS beacon link?`,
-          "Send to Customer (WA)",
-          "Copy Driver Link",
-        );
-
-        if (choice === true) {
-          const wa = phone.replace(/\D/g, "");
-          if (!wa) {
-            void navigator.clipboard.writeText(trackUrl);
-            addToast("No phone — customer track link copied instead.", "info");
-            return;
-          }
-          window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`);
-        } else if (choice === false) {
-          void navigator.clipboard.writeText(driverUrl);
-          addToast("Driver GPS link copied!", "success");
-        }
-      })();
-    },
-    [addToast, persistState, user?.id],
-  );
-
-  const removeDelivery = useCallback(async (id: string) => {
-    const ok = await (window as any).customConfirm("Delete record?", "Are you sure you want to remove this delivery?");
-    if (!ok) return;
-    if (isSupabaseConfigured()) {
-      void supabase.from("dispatch_tracking").delete().eq("tracking_code", id);
-    }
-    setState((prev) => {
-      const next = {
-        ...prev,
-        deliveries: prev.deliveries.filter((d) => d.id !== id),
-      };
-      persistState(next);
-      return next;
-    });
-  }, [persistState]);
-
-  const initTracking = useCallback(
-    (id: string) => {
-      setCurrentTrackId(id);
-      const d = state.deliveries.find((x) => x.id === id) ?? null;
-      setTrackingDisplay(d);
-    },
-    [state.deliveries],
-  );
-
-  const confirmDelivery = useCallback(async () => {
-    const ok = await (window as any).customConfirm(
-      "Confirm receipt?",
-      "This will mark the delivery as received. Only confirm when the package is in your hands.",
-    );
-    if (!ok) return;
-    const tid = currentTrackId;
-    if (!tid) return;
-
-    const now = new Date().toISOString();
-    const receiptRef = `RC-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
-
-    // Find the delivery record we have in local state for context
-    const localDel = state.deliveries.find((d) => d.id === tid);
-
-    if (isSupabaseConfigured()) {
-      // 1. Write immutable receipt (customer-side confirmation)
-      void supabase.from("delivery_receipts").insert({
-        receipt_ref: receiptRef,
-        tracking_code: tid,
-        store_id: user?.id ?? null,
-        driver_name: localDel?.driver ?? null,
-        customer_name: localDel?.customer ?? null,
-        customer_phone: localDel?.phone ?? null,
-        item_name: localDel?.item ?? null,
-        waybill: localDel?.ref ?? null,
-        destination: localDel?.destination ?? null,
-        verification_method: localDel?.deliveryPin ? "PIN_VERIFIED" : "CUSTOMER_CONFIRMED",
-        handoff_at: now,
-        full_path_snapshot: localDel?.path ?? [],
-      });
-
-      // 2. Update dispatch_tracking with delivery status + handoff timestamp
-      const { error } = await supabase
-        .from("dispatch_tracking")
-        .update({
-          status: "delivered",
-          handoff_at: now,
-          updated_at: now,
-        })
-        .eq("tracking_code", tid);
-      if (error) console.warn("confirmDelivery cloud update:", error.message);
-    }
-
-    setState((prev) => {
-      const deliveries = prev.deliveries.map((d) =>
-        d.id === tid
-          ? {
-              ...d,
-              status: "delivered" as const,
-              dispatchStatus: "delivered" as const,
-              updatedAt: now,
-            }
-          : d,
-      );
-      const next = { ...prev, deliveries };
-      persistState(next);
-      return next;
-    });
-
-    setTrackingDisplay((prev) =>
-      prev && prev.id === tid
-        ? {
-            ...prev,
-            status: "delivered",
-            dispatchStatus: "delivered",
-            updatedAt: now,
-          }
-        : prev,
-    );
-    addToast(`Delivery confirmed. Receipt: ${receiptRef}`, "success");
-  }, [currentTrackId, state.deliveries, addToast, persistState, user?.id]);
 
   const addProduct = useCallback(() => {
     setState((prev) => {
@@ -1439,14 +1077,6 @@ export function SwiftLinkProvider({
       if (error) throw error;
   }, []);
 
-  const startLocationTracking = useCallback(() => {
-      if (typeof window !== 'undefined' && navigator.geolocation) {
-          navigator.geolocation.watchPosition((pos) => {
-              setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          }, (err) => console.warn("Geo error:", err), { enableHighAccuracy: true });
-      }
-  }, []);
-
   const removeProductImage = useCallback(
     (productId: number, index: number) => {
       setState((prev) => {
@@ -1548,10 +1178,6 @@ export function SwiftLinkProvider({
     );
   }, [cart, state, addToast]);
 
-  const renderDeliveryCount = useCallback(() => {
-    return state.deliveries.filter((d) => d.status === "dispatched").length;
-  }, [state.deliveries]);
-
   const cartItemCount = useMemo(
     () => Object.values(cart).reduce((a, b) => a + b, 0),
     [cart],
@@ -1572,7 +1198,6 @@ export function SwiftLinkProvider({
     isAdmin,
     isSupabaseActive,
     isOwner,
-    currentTrackId,
     tourOpen,
     currentTourStep,
     isSimulating,
@@ -1589,13 +1214,7 @@ export function SwiftLinkProvider({
     updateState,
     setStateMerge,
     saveFullState,
-    handleDispatchSubmit,
-    removeDelivery,
-    copyTrackLink,
-    initTracking,
-    confirmDelivery,
     copyShopLink,
-    copyTrackingPortalLink,
     handleSignOut,
     authSignOut,
     emailSignIn,
@@ -1607,14 +1226,10 @@ export function SwiftLinkProvider({
     updateCart,
     toggleCartDrawer,
     sendWhatsAppOrder,
-    renderDeliveryCount,
-    trackingDisplay,
     cartItemCount,
     addProductImage,
     removeProductImage,
     setPrimaryImage,
-    currentLocation,
-    startLocationTracking,
     isSyncing,
     toasts,
     theme,
@@ -1628,8 +1243,6 @@ export function SwiftLinkProvider({
     setSocialHubOpen,
     submitFeedback,
     logEvent,
-    editorMode,
-    setEditorMode,
   };
 
   return (

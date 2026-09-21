@@ -1,18 +1,18 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import withPWAInit from "@ducanh2912/next-pwa";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: projectRoot,
+  // Type and lint failures must fail the build (docs/00-AUDIT.md F-11).
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   turbopack: {
     root: projectRoot,
@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path(pro|business|account|cart|dispatch|signup|reset-password)(.*)",
+        source: "/:path(pro|business|account|cart|signup|reset-password)(.*)",
         headers: [
           {
             key: "X-Robots-Tag",
@@ -28,26 +28,8 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        source: "/sw.js",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
-          },
-          {
-            key: "Service-Worker-Allowed",
-            value: "/",
-          },
-        ],
-      },
     ];
   },
 };
 
-const withPWA = withPWAInit({
-  dest: "public",
-  disable: true,
-});
-
-export default withPWA(nextConfig);
+export default nextConfig;

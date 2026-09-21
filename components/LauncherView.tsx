@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ChevronDown, ArrowRight, Sun, Moon, ExternalLink, Link as LinkIcon, Settings, Shield } from "lucide-react";
 import { cn, getSmartFirstName } from "@/lib/utils";
+// Direct module import, not the `@/components/ui` barrel. This file renders on
+// `/` and `/pro`, and going through the barrel pulled every Radix primitive into
+// those routes (+42 kB First Load JS, measured). Deep-import in hot paths; the
+// barrel is a convenience for screens that already use several components.
+import { Avatar } from "@/components/ui/avatar";
 
 export function LauncherView() {
   const { copyShopLink, state, theme, toggleTheme, user } = useSwiftLink();
@@ -12,7 +17,6 @@ export function LauncherView() {
 
   // Real Data Calculations
   const activeSKUs = state.products.length;
-  const inTransit = state.deliveries.filter(d => d.status === "dispatched").length;
 
   // Smart first name extraction (e.g. "michaeldosunmu22@gmail.com" -> "Michael")
   const firstName = getSmartFirstName(state.ownerName, user?.email, state.bizName);
@@ -46,17 +50,19 @@ export function LauncherView() {
             {theme === "light" ? <Moon size={18} className="fill-[#07110d]" /> : <Sun size={18} />}
           </button>
 
-          {/* Avatar Pill Button */}
-          <Link
-            href="/account"
-            className="w-10 h-10 rounded-full border-2 border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center text-lg overflow-hidden hover:scale-105 active:scale-95 transition-transform"
-            title="Account Settings"
-          >
-            {state.bizImage ? (
-              <img src={state.bizImage} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span>👨‍🚀</span>
-            )}
+          {/* Account entry point.
+              The hard-coded `👨‍🚀` that used to live here is gone: identity now goes
+              through the four-tier Avatar ladder, so a merchant with no logo gets a
+              generated mark seeded from their store rather than an emoji
+              (docs/00-AUDIT.md F-20, docs/01-DESIGN-SYSTEM.md §8). */}
+          <Link href="/account" title="Account settings" aria-label="Account settings">
+            <Avatar
+              src={state.bizImage || null}
+              name={state.bizName || firstName}
+              seed={state.id ?? user?.id ?? "merchant"}
+              size="md"
+              ring
+            />
           </Link>
         </div>
       </header>
@@ -101,13 +107,6 @@ export function LauncherView() {
                   <LinkIcon size={14} className="text-emerald-500" /> Copy Store Link
                 </button>
                 <Link
-                  href="/dispatch"
-                  onClick={() => setDropdownOpen(false)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-                >
-                  <ArrowRight size={14} className="text-amber-500" /> Logistics Hub
-                </Link>
-                <Link
                   href="/account"
                   onClick={() => setDropdownOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
@@ -150,33 +149,34 @@ export function LauncherView() {
             </div>
           </Link>
 
-          {/* Card 2: LOGISTICS */}
-          <Link
-            href="/dispatch"
-            className="block bg-white dark:bg-[#0e251b] border border-slate-200 dark:border-emerald-500/20 hover:border-amber-500/40 rounded-[2.5rem] p-8 sm:p-10 shadow-xl relative overflow-hidden group transition-all hover:scale-[1.01]"
+          {/* Card 2: SHARE STORE */}
+          <button
+            type="button"
+            onClick={copyShopLink}
+            className="block w-full text-left bg-white dark:bg-[#0e251b] border border-slate-200 dark:border-emerald-500/20 hover:border-amber-500/40 rounded-[2.5rem] p-8 sm:p-10 shadow-xl relative overflow-hidden group transition-all hover:scale-[1.01]"
           >
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-brand-header text-2xl sm:text-3xl font-bold tracking-wider text-slate-900 dark:text-white uppercase">
-                  LOGISTICS
+                  SHARE STORE
                 </h3>
                 <p className="text-amber-600 dark:text-amber-400 font-bold italic tracking-widest text-xs uppercase mt-1">
-                  ACTIVE ORDERS
+                  COPY YOUR LINK
                 </p>
               </div>
             </div>
 
             <div className="border-b border-slate-100 dark:border-white/10 my-6" />
 
-            <div className="flex items-end justify-between">
-              <span className="text-6xl sm:text-7xl font-black text-amber-500 dark:text-amber-400 tracking-tight">
-                {inTransit}
+            <div className="flex items-end justify-between gap-4">
+              <span className="text-lg sm:text-2xl font-black text-amber-500 dark:text-amber-400 tracking-tight truncate">
+                {state.storeUsername ? `@${state.storeUsername}` : "Set your handle"}
               </span>
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-amber-500 dark:group-hover:text-white group-hover:bg-amber-500/10 group-hover:translate-x-1 transition-all">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-amber-500 dark:group-hover:text-white group-hover:bg-amber-500/10 group-hover:translate-x-1 transition-all shrink-0">
                 <ArrowRight size={24} />
               </div>
             </div>
-          </Link>
+          </button>
 
         </div>
       </div>

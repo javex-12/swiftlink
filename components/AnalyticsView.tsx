@@ -8,19 +8,19 @@ import { supabase } from "@/lib/supabase-client";
 import { BarChart3, Users, Package, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, MessageSquare } from "lucide-react";
 
 export function AnalyticsView() {
-  const { state, user } = useSwiftLink();
+  const { state } = useSwiftLink();
   const accentStr = state.accentColor || "#10b981";
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.id) return;
-    
+    if (!state.id) return;
+
     const fetchAnalytics = async () => {
         const { data, error } = await supabase
             .from('store_events')
             .select('*')
-            .eq('store_id', user.id)
+            .eq('store_id', state.id)
             .order('created_at', { ascending: false })
             .limit(1000);
             
@@ -29,17 +29,14 @@ export function AnalyticsView() {
     };
 
     fetchAnalytics();
-  }, [user?.id]);
+  }, [state.id]);
 
   // Real calculations from events
   const totalViews = events.filter(e => e.event_type === 'view').length;
   const productViews = events.filter(e => e.event_type === 'product_click' || e.event_type === 'product_view').length;
   const totalCheckouts = events.filter(e => e.event_type === 'whatsapp_checkout' || e.event_type === 'checkout').length;
   const totalOrders = totalCheckouts;
-  const dispatchRate = state.deliveries.length > 0
-    ? (state.deliveries.filter((d) => d.status === "delivered").length / state.deliveries.length) * 100
-    : 0;
-  
+
   const conversionRate = totalViews > 0 ? (totalCheckouts / totalViews) * 100 : 0;
   
   // Trending products
@@ -105,7 +102,7 @@ export function AnalyticsView() {
 
             <div className="flex-1 min-h-[300px] flex items-end gap-3 px-2">
                {totalOrders > 0 ? (
-                  // Map deliveries to some distribution if we have them, otherwise show real counts
+                  // Real order-event counts land in the most recent bucket until we chart by period
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, totalOrders].slice(-12).map((h, i) => {
                      const barHeight = totalOrders > 0 ? (h / totalOrders) * 100 : 0;
                      return (
@@ -151,8 +148,7 @@ export function AnalyticsView() {
                   <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8">Performance Mix</h3>
                   <div className="space-y-6">
                      {(categories.length > 0 ? categories : ["General"]).slice(0, 4).map((cat, i) => {
-                        // Calculate actual category percentage if deliveries had categories
-                        // For now, we'll keep the visual bars but label them truthfully
+                        // Bars show category presence on the storefront, not per-category revenue yet
                         return (
                         <div key={cat} className="space-y-2">
                            <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
@@ -177,9 +173,9 @@ export function AnalyticsView() {
                         <span className="text-xs font-black uppercase tracking-widest">Store Pulse</span>
                      </div>
                      <p className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 leading-relaxed italic">
-                        {totalOrders > 0 
-                          ? `You have ${totalOrders} total deliveries recorded. Completion rate is at ${dispatchRate.toFixed(1)}%.`
-                          : "Your store pulse is waiting for its first delivery. Share your link to start selling!"}
+                        {totalOrders > 0
+                          ? `You have ${totalOrders} WhatsApp orders recorded, a ${conversionRate.toFixed(1)}% view-to-order conversion.`
+                          : "Your store pulse is waiting for its first order. Share your link to start selling!"}
                      </p>
                   </div>
                </div>

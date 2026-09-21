@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { LayoutGrid, Edit3, Truck, LineChart, Sliders, LogOut, HelpCircle, ShieldCheck, Lock } from "lucide-react";
+import { LayoutGrid, Edit3, LineChart, Sliders, LogOut, HelpCircle, ShieldCheck, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
@@ -17,7 +17,6 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
   const sidebarItems = [
     { href: "/pro", label: "Dashboard", icon: LayoutGrid },
     { href: "/business", label: "Store Editor", icon: Edit3 },
-    { href: "/dispatch", label: "Logistics", icon: Truck },
     { href: isPremium ? "/pro/analytics" : "#", label: "Analytics", icon: LineChart, locked: !isPremium },
     { href: "/account", label: "Account", icon: Sliders },
     ...(isAdmin ? [{ href: "/pro/admin", label: "Admin Panel", icon: ShieldCheck }] : [])

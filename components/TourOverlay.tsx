@@ -32,11 +32,6 @@ const TOUR_STEP_META = [
     desc: "Copy your unique store link and share it on your WhatsApp Status.",
     selector: "[data-tour-copy-shop]",
   },
-  {
-    title: "Logistics",
-    desc: "Manage your deliveries and track dispatches in real-time.",
-    selector: "#disp-name", // Placeholder for dispatch view
-  },
 ];
 
 export function TourOverlay() {

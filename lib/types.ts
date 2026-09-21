@@ -10,7 +10,6 @@ export const defaultShopState = (): ShopState => ({
   phone: "",
   currency: "₦",
   products: [],
-  deliveries: [],
   tagline: "Premium Products",
   aboutUs: "Store launched on SwiftLink.",
   
@@ -82,7 +81,6 @@ export function normalizeShopState(input?: Partial<ShopState> | null): ShopState
         image: p.image || (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : "")
       })) 
     : [];
-  next.deliveries = Array.isArray(next.deliveries) ? next.deliveries : [];
   next.categories = Array.isArray(next.categories) ? next.categories : [];
   next.notifications = Array.isArray(next.notifications) ? next.notifications : [];
   next.testimonials = Array.isArray(next.testimonials) ? next.testimonials : [];
