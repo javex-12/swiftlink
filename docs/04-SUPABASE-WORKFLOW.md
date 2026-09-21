@@ -106,3 +106,86 @@ supabase db start          # needs Docker in the runner
 supabase db reset          # replay every migration on a clean database
 supabase db lint --level error
 ```
+
+---
+
+## 7. Verified state of the remote database (2026-09-21)
+
+Recorded because the SQL files in `docs/` no longer describe the live database, and every RLS decision in this repo has to be made against reality.
+
+**Linked project:** `ytoejmdujqtbgjdtzwwl` (`swiftlink`, West EU — Ireland). The project was paused and has since been unpaused; `supabase link --project-ref ytoejmdujqtbgjdtzwwl` succeeded, and the CLI authenticates without a database password (`db query --linked` works).
+
+**Migration history:**
+
+```
+Local          | Remote | Time (UTC)
+20260921090000 |        | 2026-09-21 09:00:00   <- drop_dispatch_tracking, not yet applied
+```
+
+Remote has **no migration history at all** — the schema was assembled by hand. Adopting it requires a baseline; see §3.
+
+**Live row counts** (exact, not `pg_stat_user_tables` — see the warning below):
+
+| Table | Rows | Table | Rows |
+|---|---|---|---|
+| `stores` | 16 | `user_feedback` | 5 |
+| `store_reviews` | 24 | `system_admins` | 2 |
+| `store_review_comments` | 1 | `dispatch_tracking` | **5** |
+| `social_profiles` | 5 | `delivery_receipts` | 0 |
+| `auth.users` | 23 | everything else | 0 |
+
+> **Never use `pg_stat_user_tables.n_live_tup` to decide a destructive action.** It reported **0** for every table on this database, including `stores` with 16 real rows — stale statistics. A `DROP TABLE` decision made from that column would have looked completely safe. It was wrong.
+
+**`dispatch_tracking` held 5 real delivery records**, so `20260921090000_drop_dispatch_tracking.sql` was a genuine data loss rather than a no-op — hence the backup described below.
+
+**The `SECURITY DEFINER` functions are safe.** All six in `public` have `EXECUTE` granted to `anon`, which reads as a critical privilege-escalation surface. It is not: each enforces authorization in its own body (`is_admin(auth.uid())`, or an `auth.uid()` ownership check that raises when an anonymous caller supplies NULL), and each validates its arguments. Details and the reasoning are in `docs/00-AUDIT.md` F-23 so this is not re-raised as a new panic.
+
+### Applied on 2026-09-21
+
+`supabase db push` applied both migrations. Remote history now matches local:
+
+```
+Local          | Remote         | Time (UTC)
+20260921090000 | 20260921090000 | 2026-09-21 09:00:00   drop_dispatch_tracking
+20260921120000 | 20260921120000 | 2026-09-21 12:00:00   rls_dedupe_and_slug_hijack
+```
+
+Verified after the push:
+
+| Check | Result |
+|---|---|
+| `dispatch_tracking` / `delivery_receipts` | GONE |
+| `stores` / `store_reviews` rows | 16 / 24 — unchanged, no data loss |
+| RLS policies on `public` | 55 → 38 (17 removed) |
+| `UPDATE`/`ALL` policies with `qual = 'true'` | **0** — the "anyone can rewrite any row" class is closed across the whole schema |
+| Slug-hijack policies (`Authenticated can update/upsert slugs`) | 0 |
+| New author-scoped review `UPDATE` policy | present |
+
+### The backup, and why it wasn't `pg_dump`
+
+`supabase db dump` and `db pull` shell out to `pg_dump` **inside a Docker container**, and Docker Desktop is not installed on this machine — so neither can run. Instead the safety net was taken *inside* the database, from `supabase/.temp/backup-before-drop.sql`:
+
+| Object | Contents |
+|---|---|
+| `backups.dispatch_tracking_20260921` | the 5 delivery rows that were dropped |
+| `backups.delivery_receipts_20260921` | 0 rows |
+| `backups.rls_policies_20260921` | snapshot of all 55 policies, so any dropped one can be restored verbatim |
+
+The `backups` schema is not exposed to the API (`config.toml` exposes only `public` and `graphql_public`) and has been revoked from `anon`/`authenticated`. **Drop it once production has been stable for a release:** `drop schema backups cascade;`
+
+This is a good substitute for a policy-and-row rollback and a poor one for disaster recovery. It does not protect against a bad schema change to a table it doesn't cover, so installing Docker (or `pg_dump` via `scoop install postgresql`) is still worth doing before the P2 data model lands.
+
+### Still outstanding: the baseline migration
+
+The remote schema for the other 14 tables, 6 functions and 38 policies still has **no baseline migration**, so `supabase db reset` cannot reproduce a fresh environment yet. That is the P2 exit criterion, and it needs `pg_dump`:
+
+```bash
+# With Docker running (or a local pg_dump on PATH):
+supabase db pull --schema public
+
+# Rename the pulled file to sort BEFORE 20260921090000 (e.g. 20260920000000_remote_schema.sql),
+# or a fresh `db reset` would try to CREATE tables the drop migration already removed.
+
+# Mark it applied on the remote, or db push will re-run CREATE TABLE against tables that exist:
+supabase migration repair --status applied 20260920000000
+```

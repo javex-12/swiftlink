@@ -163,6 +163,22 @@ Every component that happens to use `.bg-white` or `.text-gray-900` inside the s
 
 **F-22 · Styling/UX smells in the shell.** `window.customPrompt` / `window.customConfirm` are monkey-patched onto `window` to build dialogs (`AppChrome.tsx:26-49`) — an untyped global replacing a component. A full-screen fake "loading" overlay gates every non-landing route (`AppChrome.tsx:65-75`). A scripted tour with a simulated hand cursor and fake typing (`SwiftLinkContext.tsx:779-1017`) runs over the merchant's real data.
 
+**F-23 · Permissive RLS policies accumulate and silently defeat each other.** Found by inspecting the live database on 2026-09-21 rather than the SQL files, which no longer describe it.
+
+Postgres **ORs** policies of the same command together. So a leftover `USING (true)` policy makes every narrower policy sitting beside it meaningless — and because the schema was built by hand from fourteen un-ordered SQL files that each added policies without removing the previous attempt, that is exactly what happened:
+
+| Table | Policies found | Consequence |
+|---|---|---|
+| `stores` | 3 overlapping `SELECT USING (true)`, plus an `ALL USING (auth.uid() = id)` that compares a *user* id to a *store* id | "Public can read **live** stores" was decorative; the dead policy can never be true |
+| `slugs` | 3 overlapping permissive `SELECT`, plus `UPDATE USING (auth.role() = 'authenticated')` | **Any signed-in user could rewrite any merchant's handle.** `slug` is the primary key, so this is storefront hijacking *and* a denial-of-service on the victim's existing link |
+| `store_reviews` | 3 byte-identical INSERT policies, plus `UPDATE USING (true)` with no `WITH CHECK` | Anyone could rewrite the text of any review on any storefront via `PATCH /rest/v1/store_reviews?id=eq.<x>` |
+| `store_review_comments`, `user_feedback` | duplicate INSERT policies each | noise that hides which policy is real |
+| `system_admins` | `SELECT USING (auth.role() = 'authenticated')` | any signed-in user could enumerate the platform's administrators |
+
+This is a stronger argument for migration tooling than F-11/F-16 are: the problem was not that the policies were individually careless, it was that nothing ever removed the previous attempt. Consolidation is a security control. Fixed for the unambiguous cases in `supabase/migrations/20260921120000_rls_dedupe_and_slug_hijack.sql`.
+
+**Checked and found safe — do not "fix" these.** The six `SECURITY DEFINER` functions in `public` (`is_admin`, `set_user_plan`, `set_account_status`, `promote_admin_by_email`, `transfer_store_by_email`, `auto_register_system_admins`) are all executable by `anon`, which looks alarming and is not: every one of them enforces authorization in its own body (`is_admin(auth.uid())`, or an `auth.uid()` ownership check that raises for an anonymous caller, since `auth.uid()` is NULL), and they validate their arguments (`new_plan IN ('free','pro','business')`, `new_status IN ('active','banned')`). Revoking `EXECUTE` from `anon` would be harmless tidiness, not a fix. Recorded here so nobody re-opens it as a panic — I did, before reading the bodies.
+
 ### P2 — Operations
 
 - No error tracking, no logging strategy, no uptime or perf monitoring.
