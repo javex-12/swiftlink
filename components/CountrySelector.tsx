@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-// Small subset for prototype, usually you'd import a full JSON
+/** Dial codes offered at signup. A curated shortlist, not the full ITU table. */
 const COUNTRIES = [
   { code: "+234", name: "Nigeria", flag: "🇳🇬" },
   { code: "+1", name: "United States", flag: "🇺🇸" },
@@ -20,15 +21,22 @@ const COUNTRIES = [
   { code: "+33", name: "France", flag: "🇫🇷" },
 ];
 
-export function CountrySelector({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+/**
+ * Dial-code picker for the phone field.
+ *
+ * Rebuilt on tokens so it sits level with the `Field`/`Input` kit: the trigger is
+ * `h-11` like every other control (it used to be `h-full … py-4`, which let it
+ * dictate the row height and made the phone field taller than the rest of the
+ * form). The menu is width-clamped so it never overflows a 320px viewport.
+ */
+export function CountrySelector({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selected = COUNTRIES.find(c => c.code === value) || COUNTRIES[0];
-  const filtered = COUNTRIES.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.code.includes(search)
+  const selected = COUNTRIES.find((c) => c.code === value) || COUNTRIES[0];
+  const filtered = COUNTRIES.filter(
+    (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.code.includes(search),
   );
 
   useEffect(() => {
@@ -46,57 +54,81 @@ export function CountrySelector({ value, onChange }: { value: string, onChange: 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="h-full bg-white/[0.02] dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-slate-400 text-xs font-black px-4 py-4 rounded-xl flex items-center gap-3 transition-all hover:border-emerald-500/30"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Country calling code"
+        className={cn(
+          "flex h-11 items-center gap-2 rounded-lg border border-app-border-strong bg-app-surface px-3",
+          "text-sm text-app-text transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-2 focus-visible:ring-offset-app-surface",
+        )}
       >
-        <span>{selected.flag}</span>
-        <span>{selected.code}</span>
-        <ChevronDown size={12} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
+        <span aria-hidden="true">{selected.flag}</span>
+        <span className="tabular-nums">{selected.code}</span>
+        <ChevronDown
+          size={14}
+          aria-hidden="true"
+          className={cn("text-app-text-subtle transition-transform", open && "rotate-180")}
+        />
       </button>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            role="listbox"
+            className="absolute left-0 z-dropdown mt-2 w-64 max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-lg"
           >
-            <div className="p-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02]">
-               <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    autoFocus
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search countries..."
-                    className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500/50"
-                  />
-               </div>
+            <div className="border-b border-app-border p-2.5">
+              <div className="relative">
+                <Search
+                  size={14}
+                  aria-hidden="true"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text-subtle"
+                />
+                <input
+                  autoFocus
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search countries…"
+                  className="h-9 w-full rounded-lg border border-app-border bg-app-surface-2 pl-9 pr-3 text-sm text-app-text placeholder:text-app-text-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
+                />
+              </div>
             </div>
 
-            <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
-               {filtered.length === 0 ? (
-                 <p className="text-[10px] font-bold text-slate-500 text-center py-4 uppercase">No results</p>
-               ) : (
-                 filtered.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => { onChange(c.code); setOpen(false); }}
-                      className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                         <span className="text-base">{c.flag}</span>
-                         <div className="text-left">
-                            <p className="text-[11px] font-black text-slate-900 dark:text-white leading-none mb-1">{c.name}</p>
-                            <p className="text-[9px] font-bold text-slate-500 uppercase">{c.code}</p>
-                         </div>
-                      </div>
-                      {value === c.code && <Check size={14} className="text-emerald-500" />}
-                    </button>
-                 ))
-               )}
+            <div className="custom-scrollbar max-h-60 overflow-y-auto p-1.5">
+              {filtered.length === 0 ? (
+                <p className="py-4 text-center text-xs text-app-text-subtle">No results</p>
+              ) : (
+                filtered.map((c, i) => (
+                  <button
+                    key={`${c.code}-${i}`}
+                    type="button"
+                    role="option"
+                    aria-selected={value === c.code}
+                    onClick={() => {
+                      onChange(c.code);
+                      setOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg p-2.5 text-left transition-colors hover:bg-app-surface-2"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span aria-hidden="true">{c.flag}</span>
+                      <span>
+                        <span className="block text-sm font-medium text-app-text">{c.name}</span>
+                        <span className="block text-xs tabular-nums text-app-text-subtle">{c.code}</span>
+                      </span>
+                    </span>
+                    {value === c.code && (
+                      <Check size={14} className="shrink-0 text-app-accent-text" aria-hidden="true" />
+                    )}
+                  </button>
+                ))
+              )}
             </div>
           </motion.div>
         )}

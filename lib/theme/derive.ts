@@ -37,7 +37,10 @@ import {
   type DensityPreset,
   type RadiusPreset,
 } from "./tokens";
-import { FONT_PAIRS, type TenantTheme, type FontPairing } from "./theme-schema";
+// `FONT_PAIRS` comes from the zod-free module so this file (and the storefront that
+// renders through it) never bundles a schema validator. `TenantTheme` is a type.
+import { FONT_PAIRS, type FontPairing } from "./font-pairs";
+import type { TenantTheme } from "./theme-schema";
 
 export type ColorScheme = "light" | "dark";
 

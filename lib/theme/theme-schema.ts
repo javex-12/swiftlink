@@ -19,74 +19,17 @@
 
 import { z } from "zod";
 import { parseHex, normalizeHex } from "./color";
+import { FONT_PAIR_IDS } from "./font-pairs";
+
+/* Re-exported so there is one definition, in the zod-free `font-pairs` module. */
+export { FONT_PAIR_IDS, FONT_PAIRS } from "./font-pairs";
+export type { FontPairId, FontPairing } from "./font-pairs";
 
 /* ------------------------------------------------------------------ *
  * Font pairings — the merchant picks a pairing, not a font file
  * ------------------------------------------------------------------ */
 
-export const FONT_PAIR_IDS = [
-  "editorial",
-  "modern",
-  "geometric",
-  "technical",
-  "luxury",
-  "friendly",
-] as const;
-
-export type FontPairId = (typeof FONT_PAIR_IDS)[number];
-
-export type FontPairing = {
-  name: string;
-  /** CSS font stack for headings. */
-  display: string;
-  /** CSS font stack for body copy. */
-  body: string;
-  description: string;
-};
-
-/**
- * Names `next/font` will own once the storefront rebuild lands in P4 — these
- * stacks reference the self-hosted variables where available and fall back to a
- * system family, so nothing depends on a live third-party request.
- */
-export const FONT_PAIRS: Record<FontPairId, FontPairing> = {
-  editorial: {
-    name: "Editorial",
-    display: "var(--font-instrument-serif, Georgia), Georgia, 'Times New Roman', serif",
-    body: "var(--font-sans)",
-    description: "Serif headlines, quiet body copy. Good for fashion, food and writing.",
-  },
-  modern: {
-    name: "Modern",
-    display: "var(--font-sans)",
-    body: "var(--font-sans)",
-    description: "One clean geometric sans throughout. Safe for almost any business.",
-  },
-  geometric: {
-    name: "Geometric",
-    display: "'Poppins', var(--font-sans)",
-    body: "var(--font-sans)",
-    description: "Rounded geometric headings — youthful and product-led.",
-  },
-  technical: {
-    name: "Technical",
-    display: "'IBM Plex Sans', var(--font-sans)",
-    body: "'IBM Plex Sans', var(--font-sans)",
-    description: "Neutral, engineered feel. Suits electronics, tools and services.",
-  },
-  luxury: {
-    name: "Luxury",
-    display: "'Playfair Display', Georgia, serif",
-    body: "var(--font-sans)",
-    description: "High-contrast serif display for premium and high-ticket goods.",
-  },
-  friendly: {
-    name: "Friendly",
-    display: "var(--font-sans)",
-    body: "var(--font-sans)",
-    description: "Soft and approachable with generous rounding. Suits boutiques and gifts.",
-  },
-};
+/* Font pairings live in `./font-pairs` (zod-free) and are re-exported above. */
 
 /* ------------------------------------------------------------------ *
  * Enumerations
@@ -125,7 +68,7 @@ export const themeSchema = z.object({
    * `derive.ts` still reports the failure.
    */
   enforceContrast: z.boolean().catch(true),
-  /** Set when the theme came from `themePresets`, so the editor can show lineage. */
+  /** Set when the theme came from a website template, so the editor can show lineage. */
   presetId: z.string().nullable().catch(null),
 });
 

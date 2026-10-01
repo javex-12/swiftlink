@@ -137,7 +137,7 @@ P1 = tokens + UI kit — "looks like a product". Status as of 2026-09-21:
 | 3-layer tokens, single source of truth | ✅ | `lib/theme/tokens.ts` ↔ `styles/tokens.css`, parity enforced by `lib/__tests__/tokens.test.ts` |
 | Tenant theme contract (zod) | ✅ | `lib/theme/theme-schema.ts` — never throws, repairs bad input, bridges the legacy blob |
 | Theme derivation + contrast report | ✅ | `lib/theme/derive.ts` — `buildTheme`, `themeToCssVars`, `adjustments` for the "we adjusted your color" note |
-| Theme preset library | ✅ | `lib/theme/presets.ts` — 20 presets across 8 families, every one audited for AA in `theme.test.ts` |
+| Website templates | ✅ | `lib/theme/templates.ts` — Editorial / Boutique / Bold, each in light + dark; all six variants audited for AA in `templates.test.ts` |
 | Semantic Tailwind layer | ✅ | `tailwind.config.ts` — `app-*` and `t-*` namespaces, all values resolve to tokens |
 | `!important` class hijack removed (console) | ✅ | `app/globals.css` rewritten; dark mode is now a token swap. Storefront block remains until P4 (see below) |
 | UI kit | ✅ | `components/ui/*` — Button, Card, Badge, Field/Input/Textarea/Select, Switch, Checkbox, Tabs, Tooltip, DropdownMenu, Dialog + ConfirmDialog + PromptDialog, EmptyState, Skeleton, Spinner, Icon, Avatar |
@@ -185,4 +185,84 @@ npm run build       → exit 0, 18 routes
 **Also changed in the redesign:** the Google button without a client id no longer silently enters "demo mode" (i.e. fakes a login with no session). Demo mode is reachable explicitly from the "Supabase not configured" notice only.
 
 **Auth-page redesign** (`app/signup/page.tsx`, D5): tokens and UI-kit controls instead of the old light/dark hex forks; real `<label>`s with `aria-invalid` wiring; `next/font` self-hosted faces; marketing stats on the brand panel replaced by three concrete claims, since fake numbers on a login screen undermine the product.
+
+---
+
+## D10 · The merchant journey is a guided checklist, not a dashboard
+
+**Decided:** 2026-09-26 · **Owner:** product ("if you create a website, finish what's next")
+
+New stores were dropped onto two decorative cards with no sense of progress or next action — the workflow felt chaotic because nothing told the merchant what to do after signing up. The dashboard now leads with a **setup checklist**: it shows how far along the store is, which step is next, and one primary action toward it, and it becomes a "share your store" prompt once everything is done.
+
+What "set up" means is defined once, as a pure function — `lib/setup-guide.ts` (`buildSetupGuide`) over `ShopState`, covering five steps: business name · store handle · WhatsApp number · first product · customised design. No new state fields were added; the "design" step is detected by comparing against the `defaultShopState()` values.
+
+This also **fixes F-21**: the old activation heuristic was `bizName.includes("store")`, so a business legitimately named "Storehouse Foods" could never complete onboarding. Both the wizard and the checklist now use `hasRealStoreName` / `hasWhatsAppNumber` from the same module.
+
+Moved onto the token layer + UI kit in the same slice: `LauncherView` (dashboard) and `OnboardingModal` (first-run wizard). The two novelty faces (`font-serif-luxury`, `font-brand-header`) are gone from `LauncherView`.
+
+**Verification:**
+
+```
+npm run typecheck   → exit 0, 0 errors
+npm run test        → 150 passed (7 files)   (+9: setup-guide.test.ts)
+npm run lint        → 0 errors, 0 warnings on all changed files
+npm run build       → exit 0, 18 routes
+```
+
+Bundle movement (First Load JS): `/` 253 → 267 kB · `/pro` 236 → 250 kB · `/business` 263 → 271 kB. The +14 kB is the dashboard now rendering through the UI kit (Card/Badge/Button/Icon + the checklist) rather than raw Tailwind — deep imports keep Radix out of these routes.
+
+## D11 · Three full website templates replace the twenty theme presets (implemented)
+
+**Decided:** 2026-09-26 · **Owner:** product
+
+`docs/02-BUILDER-ARCHITECTURE.md` §3 targeted ~20 themes across 8 families, and `lib/theme/presets.ts` shipped them in P1. The product direction is simpler: **three complete website templates**, not twenty color presets and not section templates — three distinct sites, each with a correct light and dark version. The 20-preset library has been deleted along with the 24-entry `PRESET_PALETTES` table in `BusinessView.tsx`; whole-site looks are now the three templates. (The current `CustomerStorefront` still themes through its injected `!important` block, per D6 — the storefront port to `--t-*` is P4.)
+
+**Implemented:** `lib/theme/templates.ts` defines the three templates (Editorial, Boutique, Bold), each with a full light and dark `TenantTheme` and a page composition. `components/WebsiteTemplatePicker.tsx` puts them on the dashboard with a light/dark toggle and writes `websiteTemplateId` + the composition ids onto the store (`ShopState.websiteTemplateId`). The storefront now applies the chosen template's `--t-*` tokens on a `data-theme-scope="storefront"` element, and its class block was rewritten to consume those tokens (falling back to the old inline vars), so light/dark is a real, contrast-checked theme swap.
+
+**Also in this slice:** `derive.ts` no longer imported zod at runtime. It took `FONT_PAIRS` from `theme-schema` (which imports zod), so rendering a storefront through it pulled a schema validator into every store visit. The font constants moved to the zod-free `lib/theme/font-pairs.ts`, and `templates.ts` is zod-free by design (validated in `templates.test.ts` instead of on import). Measured: the naive version cost **+29 kB First Load JS** on the storefront; the split brought it to **+5 kB**.
+
+**Deleted in this slice:** `lib/theme/presets.ts` (20 presets across 8 families) and the 24-entry `PRESET_PALETTES` hex table in `BusinessView.tsx` are gone. The editor's Appearance tab now leads with `WebsiteTemplatePicker` (the three templates + a light/dark toggle); the old per-section accordions remain as advanced overrides, and their "Randomize" dice now generates a palette from an HSL colour harmony instead of drawing from the deleted hex table. `theme.test.ts` and `app/dev/ui/page.tsx` were repointed at `websiteTemplates` (six variants instead of twenty presets).
+
+**Verification:**
+
+```
+npm run typecheck   → exit 0, 0 errors
+npm run test        → 150 passed (8 files)   (+23: templates.test.ts); the old
+                      preset audit in theme.test.ts shrank to a derivation sample
+npm run lint        → 0 new errors/warnings on changed files
+npm run build       → exit 0, 18 routes · /business 277 kB, storefront 249 kB
+```
+
+Bundle (First Load JS): `/` 271 kB · storefront `/store/[slug]` 249 kB · `/[storeSlug]/[shopId]` 245 kB — i.e. +4–5 kB over the pre-templates baseline, not the +29 kB the zod leak cost.
+
+## D12 · One calm column: the auth and marketing screens rebuilt on tokens (implemented)
+
+**Decided:** 2026-09-27 · **Owner:** product
+
+`/signup` (the login screen) and the landing page are the first two screens a visitor sees, and both were the least consistent surfaces in the product. The auth page spent half the viewport on a split marketing panel — pushing the primary action below the fold on phones — and carried a phone mockup with invented stats. The landing page was literal `slate-*`/`emerald-*` utilities over hard-coded `#020617` surfaces, opened with a 1.2s fake preloader, and stacked a "cybernetic holographic HUD", a double marquee and an auto-playing phone demo before saying what the product does.
+
+**Auth.** Rebuilt as one centred column: a compact header (logo + theme toggle), a single card, and a segmented **Sign in / Create account** switch instead of a heading plus a text link. Mobile-first throughout (`min-h-[100dvh]`, no fixed widths, no scale tricks).
+
+**Two bugs fixed in the auth screen.** (1) The Google button used an invisible `GoogleLogin` iframe scaled `1.5×`, which pushed the hit area past the form column — the cause of sideways scroll and dead taps on phones; it is now clipped and non-scaling. (2) `CountrySelector` was `h-full … py-4` on legacy `slate`/`emerald`, so it dictated the row height and made the phone field taller than the rest of the form; it is now token-based at the same `h-11` as `Input`, with a width-clamped menu.
+
+**Landing.** Rebuilt entirely on `--app-*` tokens (dark mode is a token swap, not a second palette). Deleted the fake preloader (`docs/00-AUDIT.md` F-22), the cyber HUD, the double marquee and the animated phone demo. What remains is one column: a hero with an honest storefront preview (no invented metrics), three features, three steps to go live, three plans, a closing CTA and a footer. Copy matches what the product does.
+
+**Verification:**
+
+```
+npm run typecheck   → exit 0, 0 errors
+npm run test        → 150 passed (8 files)
+npm run lint        → 0 warnings/errors on the changed files
+npm run build       → exit 0, 18 routes
+```
+
+Bundle (First Load JS): `/` 268 kB (page 10.9 kB, down from 14.3 kB) · `/signup` 230 kB (page 13.2 kB).
+
+## D13 · The three websites are visible before you apply one (implemented)
+
+**Decided:** 2026-09-30 · **Owner:** product
+
+D11 built Editorial, Boutique and Bold as complete storefronts, but the picker, the landing page and the sign-in screen still showed a colour block or a generic product grid. A merchant could not see the website they were about to choose.
+
+`components/storefront/template-frames.tsx` draws a miniature of each template from the same `--t-*` tokens as the live shop. The dashboard picker, the landing hero and a new Websites section, and a desktop-only rail on `/signup` all render that miniature. The sign-in form stays a single column below `lg`, so the preview never pushes the primary action below the fold on a phone. Light and dark on those previews are the template's own themes, not a second painted palette.
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONTRAST, contrastRatio, parseHex } from "@/lib/theme/color";
 import { THEME_COLOR_VARS, buildTheme, describeContrast, themeToCssVars } from "@/lib/theme/derive";
-import { THEME_FAMILIES, themePresets, themePresetsGrouped } from "@/lib/theme/presets";
+import { themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
 import {
   DEFAULT_THEME,
   FONT_PAIRS,
@@ -11,48 +11,22 @@ import {
 } from "@/lib/theme/theme-schema";
 
 /**
- * The preset audit.
+ * The derivation engine.
  *
  * `docs/01-DESIGN-SYSTEM.md` §4 promises that we never ship an unreadable
- * storefront. This is that promise as a test: every preset in the library is
- * derived and checked, and the failure message prints the measured ratios so a
- * regression is diagnosable without a debugger.
+ * storefront. Here we exercise the engine that keeps that promise; the audit of
+ * every shipped template variant lives in `templates.test.ts`.
  */
 
 const hexish = (value: string) => parseHex(value) !== null;
 
-describe("theme preset library", () => {
-  it("has unique ids", () => {
-    const ids = themePresets.map((preset) => preset.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
+// One representative template variant, used to drive the engine tests below.
+const sampleTheme = themeForTemplate(websiteTemplateById("editorial")!, "light");
 
-  it("covers every advertised family", () => {
-    const families = new Set(themePresets.map((preset) => preset.family));
-    expect([...families].sort()).toEqual([...THEME_FAMILIES].sort());
-  });
-
-  it("groups without losing presets", () => {
-    const grouped = themePresetsGrouped().flatMap((group) => group.presets);
-    expect(grouped).toHaveLength(themePresets.length);
-  });
-
-  it.each(themePresets.map((preset) => [preset.id, preset] as const))(
-    "%s passes WCAG AA",
-    (_id, preset) => {
-      const derived = buildTheme(preset);
-      expect(derived.passes, describeContrast(preset)).toBe(true);
-      expect(derived.contrast.textOnBg).toBeGreaterThanOrEqual(CONTRAST.comfortable);
-      expect(derived.contrast.textMutedOnBg).toBeGreaterThanOrEqual(CONTRAST.body);
-      expect(derived.contrast.accentFgOnAccent).toBeGreaterThanOrEqual(CONTRAST.body);
-      expect(derived.contrast.accentTextOnSubtle).toBeGreaterThanOrEqual(CONTRAST.body);
-      expect(derived.contrast.borderStrongOnBg).toBeGreaterThanOrEqual(CONTRAST.ui);
-    },
-  );
-
-  it("embeds the contrast report in its own failure output", () => {
-    const text = describeContrast(themePresets[0]!);
-    expect(text).toContain(themePresets[0]!.id);
+describe("describeContrast", () => {
+  it("embeds the measured ratios in its own output", () => {
+    const text = describeContrast(sampleTheme);
+    expect(text).toContain(sampleTheme.id);
     expect(text).toMatch(/text\/bg \d+\.\d{2}/);
   });
 });
@@ -87,7 +61,7 @@ describe("a merchant's own brand colour", () => {
 });
 
 describe("derivation", () => {
-  const theme = themePresets[0]!;
+  const theme = sampleTheme;
 
   it("is deterministic — identical input, identical tokens", () => {
     expect(buildTheme(theme)).toEqual(buildTheme(theme));
@@ -125,7 +99,7 @@ describe("derivation", () => {
 });
 
 describe("themeToCssVars", () => {
-  const theme = themePresets.find((preset) => preset.id === "modern-emerald")!;
+  const theme = sampleTheme;
 
   it("emits a valid value for every colour token", () => {
     const vars = themeToCssVars(theme);

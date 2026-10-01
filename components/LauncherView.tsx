@@ -2,63 +2,84 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { ChevronDown, ArrowRight, Sun, Moon, ExternalLink, Link as LinkIcon, Settings, Shield } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ExternalLink,
+  Link as LinkIcon,
+  Package,
+  Settings,
+  Store,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { cn, getSmartFirstName } from "@/lib/utils";
-// Direct module import, not the `@/components/ui` barrel. This file renders on
-// `/` and `/pro`, and going through the barrel pulled every Radix primitive into
-// those routes (+42 kB First Load JS, measured). Deep-import in hot paths; the
-// barrel is a convenience for screens that already use several components.
+// Deep imports, not the `@/components/ui` barrel: this file renders on `/` and
+// `/pro`, and going through the barrel pulls every Radix primitive into those
+// routes (measured +42 kB First Load JS once — see docs/03-DECISIONS.md P1).
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icon";
+import { SetupGuide } from "@/components/SetupGuide";
+import { WebsiteTemplatePicker } from "@/components/WebsiteTemplatePicker";
 
+/**
+ * The merchant dashboard.
+ *
+ * Rebuilt on the token layer and UI kit (docs/03-DECISIONS.md D5) so it reads as
+ * one product with the rest of the console. The guided `SetupGuide` is the
+ * centrepiece: instead of a dead-end pair of cards, a new merchant always sees
+ * what is done, what is next, and one action to move forward.
+ */
 export function LauncherView() {
   const { copyShopLink, state, theme, toggleTheme, user } = useSwiftLink();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Real Data Calculations
-  const activeSKUs = state.products.length;
-
-  // Smart first name extraction (e.g. "michaeldosunmu22@gmail.com" -> "Michael")
   const firstName = getSmartFirstName(state.ownerName, user?.email, state.bizName);
+  const storeName = state.bizName || "Your store";
+  const handle = state.storeUsername ? `@${state.storeUsername}` : null;
+  const planLabel = `${(state.plan ?? "free").toUpperCase()} PLAN`;
 
   return (
-    <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8 min-h-screen transition-colors duration-300">
-      {/* ─── Top Header Row ─────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between border-b border-slate-200/50 dark:border-white/5 pb-4">
-        <div className="flex items-center gap-3">
-          {/* Logo on Mobile */}
-          <img src="/logo.png" className="w-8 h-8 object-contain lg:hidden shrink-0" alt="SwiftLink" />
-          <div>
-            <h2 className="font-serif-luxury italic text-base sm:text-lg text-slate-400 dark:text-slate-300 leading-none">
-              Welcome
-            </h2>
-            <h1 className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-[#00c885] tracking-tight leading-tight">
-              {firstName}
-            </h1>
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+      {/* ─── Header ───────────────────────────────────────────────────────── */}
+      <header className="flex items-center justify-between gap-4 border-b border-app-border pb-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="SwiftLink"
+            width={36}
+            height={36}
+            priority
+            className="h-9 w-9 shrink-0 object-contain lg:hidden"
+          />
+          <div className="min-w-0">
+            <p className="text-sm text-app-text-muted">Welcome back</p>
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-app-text">{firstName}</h1>
           </div>
         </div>
 
-        {/* Right Top Controls */}
-        <div className="flex items-center gap-3">
-          {/* Dark / Light Mode Toggle Pill */}
-          <button
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full bg-[#d9b138] text-[#07110d] flex items-center justify-center font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-transform"
-            title="Toggle Theme"
-            aria-label="Toggle Theme"
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
           >
-            {theme === "light" ? <Moon size={18} className="fill-[#07110d]" /> : <Sun size={18} />}
-          </button>
-
-          {/* Account entry point.
-              The hard-coded `👨‍🚀` that used to live here is gone: identity now goes
-              through the four-tier Avatar ladder, so a merchant with no logo gets a
-              generated mark seeded from their store rather than an emoji
-              (docs/00-AUDIT.md F-20, docs/01-DESIGN-SYSTEM.md §8). */}
-          <Link href="/account" title="Account settings" aria-label="Account settings">
+            <Icon icon={theme === "light" ? Moon : Sun} size="md" />
+          </Button>
+          <Link
+            href="/account"
+            aria-label="Account settings"
+            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg"
+          >
             <Avatar
               src={state.bizImage || null}
-              name={state.bizName || firstName}
+              name={storeName}
               seed={state.id ?? user?.id ?? "merchant"}
               size="md"
               ring
@@ -67,120 +88,108 @@ export function LauncherView() {
         </div>
       </header>
 
-      {/* ─── Main Grid Layout (Figma Desktop & Mobile Match) ────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
-        
-        {/* Left Side: Store Name & Editor Action Pill Pair */}
-        <div className="lg:col-span-6 space-y-2.5 sm:space-y-3">
-          <div className="inline-block bg-amber-500/10 text-amber-600 dark:bg-[#2a240c] dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-md text-[9px] font-mono font-bold tracking-[0.2em] uppercase">
-            {state.plan ? `${state.plan.toUpperCase()} PLAN` : "FREE PLAN"}
+      {/* ─── Store identity ───────────────────────────────────────────────── */}
+      <Card className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 space-y-2">
+            <Badge tone="accent">{planLabel}</Badge>
+            <h2 className="truncate text-xl font-semibold tracking-tight text-app-text sm:text-2xl">
+              {storeName}
+            </h2>
+            <p className="truncate text-sm text-app-text-muted">{handle ?? "No store link yet"}</p>
           </div>
 
-          <h1 className="font-brand-header text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-[1.05] break-words">
-            {state.bizName || "MY STORE"}
-          </h1>
-
-          {/* Button Group: EDITOR + Caret Dropdown Pair */}
-          <div className="relative inline-flex items-center gap-2 pt-1">
-            <Link
-              href="/business"
-              className="bg-emerald-500 dark:bg-[#00c885] hover:bg-emerald-600 dark:hover:bg-[#00b377] text-white dark:text-[#07110d] font-black text-sm uppercase tracking-widest px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center gap-2 transition-all active:scale-95"
-            >
-              EDITOR
-            </Link>
-
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="bg-emerald-500 dark:bg-[#00c885] hover:bg-emerald-600 dark:hover:bg-[#00b377] text-white dark:text-[#07110d] p-4 rounded-2xl flex items-center justify-center transition-all shadow-xl active:scale-95"
+          <div className="relative flex items-center gap-2">
+            <Button asChild>
+              <Link href="/business">
+                <Icon icon={Store} size="sm" /> Open editor
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setDropdownOpen((open) => !open)}
               aria-label="Store options"
+              aria-expanded={dropdownOpen}
+              aria-haspopup="menu"
             >
-              <ChevronDown size={18} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
-            </button>
+              <Icon
+                icon={ChevronDown}
+                size="md"
+                className={cn("transition-transform duration-fast", dropdownOpen && "rotate-180")}
+              />
+            </Button>
 
-            {/* Quick Actions Dropdown */}
-            {dropdownOpen && (
-              <div className="absolute left-0 top-full mt-3 w-56 bg-white dark:bg-[#0e251b] border border-slate-200 dark:border-emerald-500/20 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+            {dropdownOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-dropdown mt-2 w-56 overflow-hidden rounded-lg border border-app-border bg-app-surface p-1 shadow-md"
+              >
                 <button
-                  onClick={() => { copyShopLink(); setDropdownOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
+                  role="menuitem"
+                  onClick={() => {
+                    copyShopLink();
+                    setDropdownOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm text-app-text transition-colors hover:bg-app-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
                 >
-                  <LinkIcon size={14} className="text-emerald-500" /> Copy Store Link
+                  <Icon icon={LinkIcon} size="sm" className="text-app-accent-text" /> Copy store link
                 </button>
                 <Link
+                  role="menuitem"
                   href="/account"
                   onClick={() => setDropdownOpen(false)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-app-text transition-colors hover:bg-app-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring"
                 >
-                  <Settings size={14} className="text-blue-500" /> Store Settings
+                  <Icon icon={Settings} size="sm" className="text-app-text-muted" /> Store settings
                 </Link>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
+      </Card>
 
-        {/* Right Side: 2 Big Curved Green Cards (STOREFRONT & LOGISTICS) */}
-        <div className="lg:col-span-6 space-y-6">
-          
-          {/* Card 1: STOREFRONT */}
-          <Link
-            href="/business"
-            className="block bg-white dark:bg-[#0e251b] border border-slate-200 dark:border-emerald-500/20 hover:border-emerald-500/40 rounded-[2.5rem] p-8 sm:p-10 shadow-xl relative overflow-hidden group transition-all hover:scale-[1.01]"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-brand-header text-2xl sm:text-3xl font-bold tracking-wider text-slate-900 dark:text-white uppercase">
-                  STOREFRONT
-                </h3>
-                <p className="text-amber-600 dark:text-amber-400 font-bold italic tracking-widest text-xs uppercase mt-1">
-                  LIVE PRODUCT
-                </p>
-              </div>
-            </div>
+      {/* ─── What's next ──────────────────────────────────────────────────── */}
+      <SetupGuide state={state} onShare={copyShopLink} />
 
-            <div className="border-b border-slate-100 dark:border-white/10 my-6" />
+      {/* ─── Choose your website ──────────────────────────────────────────── */}
+      <WebsiteTemplatePicker />
 
-            <div className="flex items-end justify-between">
-              <span className="text-6xl sm:text-7xl font-black text-emerald-600 dark:text-[#00c885] tracking-tight">
-                {activeSKUs}
-              </span>
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 dark:group-hover:text-white group-hover:bg-emerald-500/10 group-hover:translate-x-1 transition-all">
-                <ArrowRight size={24} />
-              </div>
-            </div>
-          </Link>
+      {/* ─── Store summary ────────────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="flex items-center justify-between gap-4 p-5">
+          <div className="min-w-0">
+            <p className="text-sm text-app-text-muted">Products</p>
+            <p className="text-3xl font-semibold tabular-nums text-app-text">{state.products.length}</p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href="/business">
+              <Icon icon={Package} size="sm" /> Manage
+            </Link>
+          </Button>
+        </Card>
 
-          {/* Card 2: SHARE STORE */}
-          <button
-            type="button"
-            onClick={copyShopLink}
-            className="block w-full text-left bg-white dark:bg-[#0e251b] border border-slate-200 dark:border-emerald-500/20 hover:border-amber-500/40 rounded-[2.5rem] p-8 sm:p-10 shadow-xl relative overflow-hidden group transition-all hover:scale-[1.01]"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-brand-header text-2xl sm:text-3xl font-bold tracking-wider text-slate-900 dark:text-white uppercase">
-                  SHARE STORE
-                </h3>
-                <p className="text-amber-600 dark:text-amber-400 font-bold italic tracking-widest text-xs uppercase mt-1">
-                  COPY YOUR LINK
-                </p>
-              </div>
-            </div>
+        <Card className="flex items-center justify-between gap-4 p-5">
+          <div className="min-w-0">
+            <p className="text-sm text-app-text-muted">Share your store</p>
+            <p className="truncate text-sm font-medium text-app-text">
+              {handle ?? "Set your handle first"}
+            </p>
+          </div>
+          <Button variant="outline" onClick={copyShopLink}>
+            <Icon icon={ExternalLink} size="sm" /> Copy link
+          </Button>
+        </Card>
+      </div>
 
-            <div className="border-b border-slate-100 dark:border-white/10 my-6" />
-
-            <div className="flex items-end justify-between gap-4">
-              <span className="text-lg sm:text-2xl font-black text-amber-500 dark:text-amber-400 tracking-tight truncate">
-                {state.storeUsername ? `@${state.storeUsername}` : "Set your handle"}
-              </span>
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-amber-500 dark:group-hover:text-white group-hover:bg-amber-500/10 group-hover:translate-x-1 transition-all shrink-0">
-                <ArrowRight size={24} />
-              </div>
-            </div>
-          </button>
-
-        </div>
+      <div className="flex items-center gap-2 text-sm text-app-text-muted">
+        <Link
+          href="/business"
+          className="inline-flex items-center gap-1 font-medium text-app-accent-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg"
+        >
+          Continue building <Icon icon={ArrowRight} size="xs" />
+        </Link>
       </div>
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { WebsiteTemplateId } from "./theme/templates";
 
 export type ProductAttribute = {
   label: string;
@@ -93,6 +94,9 @@ export type ShopState = {
   tagline: string;
   aboutUs: string;
   isLive?: boolean;
+
+  /** The chosen website template — three complete designs, each light + dark. */
+  websiteTemplateId?: WebsiteTemplateId;
   storeHours?: string;
   
   // The Visual Editor Engine

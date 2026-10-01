@@ -74,6 +74,8 @@ Local env (`cp .env.example .env.local`):
 
 Without the two public vars the app runs in local demo mode (`lib/supabase-client.ts` → `isSupabaseConfigured()`), which is why a misconfigured deploy currently looks like "empty store" rather than an error — making that loud is tracked in `docs/00-AUDIT.md` §P2.
 
+Demo mode must never touch the client: `getSupabaseBrowserClient()` throws by design when unconfigured. `SwiftLinkProvider`'s mount effect used to call `supabase.auth.getSession()` *before* checking `isSupabaseConfigured()`, so a checkout with no `.env.local` crashed on load ("Supabase is not configured…") instead of degrading to demo mode. It now branches on `isSupabaseConfigured()` like every other auth path.
+
 ## 5. Row-level security
 
 RLS is the only thing standing between one merchant's data and another's, and the audit found four unsafe policies (F-02…F-05). Where they stand:

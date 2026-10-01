@@ -30,6 +30,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
+import { themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
+import { TemplateSite } from "@/components/storefront/template-sites";
+import { themeToCssVars } from "@/lib/theme/derive";
 import { cn, isDarkColor } from "@/lib/utils";
 import { supabase } from "@/lib/supabase-client";
 import dynamic from "next/dynamic";
@@ -939,7 +942,14 @@ export function CustomerStorefront({
     );
   }
 
-  const s = effectiveState!;
+  const rawState = effectiveState!;
+  const template = websiteTemplateById(rawState.websiteTemplateId);
+  const backgroundIntent = rawState.storefrontTheme?.background === "dark" ? "dark" : "light";
+  const templateTheme = template ? themeForTemplate(template, backgroundIntent) : null;
+  const themeVars = templateTheme ? themeToCssVars(templateTheme) : null;
+  const s: ShopState = templateTheme
+    ? { ...rawState, accentColor: templateTheme.brandColor, buttonColor: templateTheme.brandColor }
+    : rawState;
   const pageAnim = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -955,9 +965,11 @@ export function CustomerStorefront({
   const buttonColor = s.buttonColor || accentColor;
 
   return (
-    <div className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-hidden"
+    <div
+      data-theme-scope={templateTheme ? "storefront" : undefined}
+      className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-hidden"
          style={{ 
-            backgroundColor: bgColor,
+            ...(themeVars ? (themeVars as React.CSSProperties) : { backgroundColor: bgColor }),
             "--theme-color": accentColor, 
             "--bg-color": bgColor, 
             "--text-color": textColor,
@@ -966,18 +978,18 @@ export function CustomerStorefront({
             "--btn-text-color": isDarkColor(buttonColor) ? "#ffffff" : "#000000"
          } as React.CSSProperties}>
       <style>{`
-         .bg-emerald-500 { background-color: var(--btn-color) !important; color: var(--btn-text-color) !important; }
-         .text-emerald-500 { color: var(--theme-color) !important; }
-         .text-emerald-600 { color: color-mix(in srgb, var(--theme-color) 80%, black) !important; }
-         .border-emerald-500 { border-color: var(--theme-color) !important; }
-         .bg-gray-100 { background-color: color-mix(in srgb, var(--bg-color) 95%, var(--text-color)) !important; }
-         .text-gray-900 { color: var(--text-color) !important; }
-         .bg-white { background-color: var(--surface-color) !important; border-color: color-mix(in srgb, var(--text-color) 10%, transparent) !important; }
-         .bg-gray-50 { background-color: color-mix(in srgb, var(--surface-color) 95%, var(--text-color)) !important; }
-         .text-gray-500, .text-gray-400 { color: color-mix(in srgb, var(--text-color) 60%, transparent) !important; }
-         .bg-gray-900 { background-color: var(--text-color) !important; color: var(--bg-color) !important; }
-         header.storefront-header, div.storefront-header { background-color: var(--bg-color) !important; }
-         footer.storefront-footer, div.storefront-footer, footer { background-color: var(--bg-color) !important; }
+         .bg-emerald-500 { background-color: var(--t-accent, var(--btn-color)) !important; color: var(--t-accent-fg, var(--btn-text-color)) !important; }
+         .text-emerald-500 { color: var(--t-accent-text, var(--theme-color)) !important; }
+         .text-emerald-600 { color: var(--t-accent-text, var(--theme-color)) !important; }
+         .border-emerald-500 { border-color: var(--t-accent, var(--theme-color)) !important; }
+         .bg-gray-100 { background-color: var(--t-surface-alt, color-mix(in srgb, var(--surface-color) 95%, var(--text-color))) !important; }
+         .text-gray-900 { color: var(--t-text, var(--text-color)) !important; }
+         .bg-white { background-color: var(--t-surface, var(--surface-color)) !important; border-color: var(--t-border, color-mix(in srgb, var(--text-color) 10%, transparent)) !important; }
+         .bg-gray-50 { background-color: var(--t-surface-alt, color-mix(in srgb, var(--surface-color) 95%, var(--text-color))) !important; }
+         .text-gray-500, .text-gray-400 { color: var(--t-text-muted, color-mix(in srgb, var(--text-color) 60%, transparent)) !important; }
+         .bg-gray-900 { background-color: var(--t-text, var(--text-color)) !important; color: var(--t-bg, var(--bg-color)) !important; }
+         header.storefront-header, div.storefront-header { background-color: var(--t-bg, var(--bg-color)) !important; }
+         footer.storefront-footer, div.storefront-footer, footer { background-color: var(--t-bg, var(--bg-color)) !important; }
          .custom-scrollbar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 20%, transparent); }
       `}</style>
       
@@ -992,8 +1004,8 @@ export function CustomerStorefront({
                 screen !== "home" && "opacity-0 pointer-events-none hidden"
               )}
             >
-                {/* Fixed Header */}
-                <div className="backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header" style={{ backgroundColor: `${bgColor}e6` }}>
+                {/* Fixed Header — website templates draw their own navigation. */}
+                <div className={cn("backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header", template && "hidden")} style={{ backgroundColor: `${bgColor}e6` }}>
                   <div className="w-full px-4 md:px-12 py-3 md:py-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
@@ -1023,6 +1035,25 @@ export function CustomerStorefront({
                 </div>
 
                 <div className="flex flex-col">
+                  {template ? (
+                    <TemplateSite
+                      state={s}
+                      products={filteredProducts}
+                      categories={categories}
+                      activeCategory={activeCategory}
+                      cartCount={cartItemCount}
+                      onCategory={setActiveCategory}
+                      onProduct={(p) => {
+                        setSelectedProduct(p);
+                        changeScreen("product");
+                        logEvent("product_click", { productId: p.id });
+                      }}
+                      onSearch={() => goTab("search")}
+                      onCart={() => goTab("cart")}
+                      onReviews={() => goTab("community")}
+                    />
+                  ) : (
+                  <>
                   <div className="w-full">
                     <HeroTemplate state={s} templateId={s.heroTemplateId || "hero-1"} onShopClick={() => {
                         const target = document.getElementById("sl-catalog");
@@ -1047,6 +1078,8 @@ export function CustomerStorefront({
                   <div className="w-full mt-auto">
                     <FooterTemplate state={s} templateId={s.footerTemplateId || "footer-1"} />
                   </div>
+                  </>
+                  )}
                 </div>
             </div>
 

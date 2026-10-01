@@ -1,33 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  AlertCircle,
-  ArrowRight,
-  BarChart3,
-  ChevronLeft,
-  Eye,
-  EyeOff,
-  MessageSquare,
-  Moon,
-  Store,
-  Sun,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Mail, Moon, Sun } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
-import { getPublicStoreSlug } from "@/lib/utils";
+import { getPublicStoreSlug, cn } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
+import { TemplateFrame } from "@/components/storefront/template-frames";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { Badge } from "@/components/ui/badge";
+import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
 
 /**
  * Sign in / sign up.
  *
- * Two real bugs are fixed here along with the redesign:
+ * Redesign (docs/03-DECISIONS.md D12): the split brand-panel layout was dropped
+ * for one calm, centred column. The old screen spent half the viewport on a
+ * marketing panel, put the primary action below a scroll on phones, and carried
+ * a decorative phone mockup with invented stats. This is a login form — it now
+ * looks like one, on any width.
+ *
+ * Two real bugs are also fixed here:
  *
  * 1. **The orphan store.** `saveUserStore` used to upsert `id: uid` with no
  *    `owner_id`. `stores.id` is a free UUID (P0 corrected the model so a user can
@@ -39,12 +36,6 @@ import { Badge } from "@/components/ui/badge";
  * 2. **The lost redirect.** Middleware (F-01) redirects unauthenticated users to
  *    `/signup?next=/pro`, but nothing ever read `next`. Every login landed on the
  *    dashboard root regardless of where the merchant was heading.
- *
- * Visual redesign (docs/03-DECISIONS.md D5): friendly Shopify-style console
- * look — tokens instead of the old light/dark hex forks, UI-kit controls with
- * real labels and `aria-invalid` wiring, one accent. The marketing panel keeps
- * the phone mockup because it earns its place; the fake numbers on it are now
- * labelled as an illustration, not presented as product stats.
  */
 
 type Mode = "login" | "signup";
@@ -69,19 +60,22 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
  * behaviour, which was to silently enter "demo mode" — i.e. pretend to sign in
  * with no session at all. Demo mode is reachable explicitly from the
  * "Supabase not configured" notice; a Google button must not fake a login.
+ *
+ * Google renders its own iframe, so we lay it — transparent, clipped and
+ * non-scaling — over our styled button. The old version scaled it 1.5×, which
+ * pushed the invisible hit area past the form column and made phones scroll
+ * sideways.
  */
 function GoogleButton({
   onSuccess,
   onError,
   label,
   loading,
-  mode,
 }: {
   onSuccess: (credential: string) => void;
   onError: () => void;
   label: string;
   loading: boolean;
-  mode: Mode;
 }) {
   if (!GOOGLE_CLIENT_ID) {
     return (
@@ -93,13 +87,19 @@ function GoogleButton({
   }
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="relative w-full">
+      <div className="relative w-full overflow-hidden rounded-lg">
         <Button type="button" variant="outline" block loading={loading}>
           {loading ? null : <GoogleLogo />}
           <span>{label}</span>
         </Button>
         {/* Interactive GoogleLogin iframe, transparent over the styled button. */}
-        <div className="absolute inset-0 z-10 flex scale-150 items-center justify-center opacity-[0.001]">
+        <div
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center opacity-0",
+            loading && "pointer-events-none",
+          )}
+        >
           <GoogleLogin
             onSuccess={(res) => {
               if (res.credential) onSuccess(res.credential);
@@ -107,11 +107,40 @@ function GoogleButton({
             onError={onError}
             width="400"
             shape="pill"
-            text={mode === "signup" ? "signup_with" : "signin_with"}
+            text="continue_with"
           />
         </div>
       </div>
     </GoogleOAuthProvider>
+  );
+}
+
+/** Segmented switch between the two forms. */
+function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
+  return (
+    <div
+      role="group"
+      aria-label="Sign in or create an account"
+      className="grid grid-cols-2 gap-1 rounded-xl border border-app-border bg-app-surface-2 p-1"
+    >
+      {(["login", "signup"] as const).map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => onChange(value)}
+          aria-pressed={mode === value}
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
+            mode === value
+              ? "bg-app-surface text-app-text shadow-xs"
+              : "text-app-text-muted hover:text-app-text",
+          )}
+        >
+          {value === "login" ? "Sign in" : "Create account"}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -304,104 +333,33 @@ function AuthPage() {
     }
   };
 
+  const isSignup = mode === "signup";
+
   return (
-    <div className="flex min-h-screen bg-app-bg font-sans">
-      {/* ── Brand panel (desktop) ─────────────────────────────────────────── */}
-      <aside className="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-app-text p-10 text-app-bg lg:flex xl:p-14">
-        {/* Brand ink on ink: decorative accents carry the color, per design doc §2.1. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 20%, rgba(52, 211, 153, 0.25), transparent 55%), radial-gradient(circle at 75% 85%, rgba(4, 120, 87, 0.35), transparent 50%)",
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"
-        />
+    <div className="relative min-h-[100dvh] bg-app-bg font-sans text-app-text">
+      {/* Decorative wash, token-driven so it follows the console theme. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+        style={{
+          background:
+            "radial-gradient(60% 100% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
+        }}
+      />
 
-        <div className="relative z-10 flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-app-surface">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col">
+        <header className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <Link href="/" className="inline-flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
-            <img src="/logo.png" alt="SwiftLink" className="h-5 w-5 object-contain" />
-          </span>
-          <span className="text-sm font-semibold tracking-tight">SwiftLink</span>
-        </div>
+            <img src="/logo.png" alt="SwiftLink" className="h-6 w-6 object-contain" />
+            <span className="text-sm font-semibold tracking-tight">SwiftLink</span>
+          </Link>
+          <ThemeToggle />
+        </header>
 
-        <div className="relative z-10 flex flex-1 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="flex w-full max-w-sm flex-col gap-8"
-          >
-            <h1 className="text-display-2 font-semibold leading-tight">
-              Your store,
-              <br />
-              in your pocket.
-            </h1>
-            <ul className="flex flex-col gap-4">
-              {[
-                { icon: Store, title: "Publish in minutes", body: "Add products, pick a theme, share one link." },
-                { icon: MessageSquare, title: "Orders on WhatsApp", body: "Checkout happens where your customers already are." },
-                { icon: BarChart3, title: "Real order records", body: "Every order is stored — totals, status, history." },
-              ].map(({ icon: ItemIcon, title, body }) => (
-                <li key={title} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                    <ItemIcon width={16} height={16} aria-hidden="true" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-medium">{title}</span>
-                    <span className="block text-sm text-white/60">{body}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
-        <p className="relative z-10 text-xs text-white/40">
-          Built for Nigerian brands that move fast.
-        </p>
-      </aside>
-
-      {/* ── Form panel ────────────────────────────────────────────────────── */}
-      <main className="flex flex-1 flex-col overflow-y-auto bg-app-surface">
-        <div className="flex min-h-full flex-col p-6 sm:p-10">
-          <header className="flex items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="inline-flex items-center gap-1.5 text-app-text-subtle transition-colors hover:text-app-text lg:hidden"
-            >
-              <ChevronLeft width={14} height={14} aria-hidden="true" />
-              <span className="text-xs font-medium">Back</span>
-            </button>
-
-            <Link href="/" className="hidden items-center gap-2 lg:flex">
-              {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
-              <img src="/logo.png" alt="SwiftLink" className="h-5 w-5 object-contain" />
-              <span className="text-sm font-semibold text-app-text">SwiftLink</span>
-            </Link>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === "login" ? "signup" : "login");
-                  setError(null);
-                }}
-                className="text-xs font-medium text-app-text-muted transition-colors hover:text-app-text"
-              >
-                {mode === "login" ? "Create an account" : "I already have an account"}
-              </button>
-              <ThemeToggle />
-            </div>
-          </header>
-
-          <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+        <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8">
+          <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-14">
+          <div className="mx-auto w-full max-w-[420px] lg:mx-0 lg:max-w-none">
             <AnimatePresence mode="wait">
               {step === "form" ? (
                 <motion.div
@@ -410,21 +368,31 @@ function AuthPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col gap-6"
+                  className="rounded-2xl border border-app-border bg-app-surface p-6 shadow-sm sm:p-8"
                 >
-                  <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-app-text sm:text-3xl">
-                      {mode === "login" ? "Welcome back" : "Create your store"}
-                    </h2>
-                    <p className="mt-1.5 text-sm text-app-text-muted">
-                      {mode === "login"
-                        ? "Sign in to open your workspace."
-                        : "Start selling from your WhatsApp storefront."}
+                  <div className="space-y-1.5">
+                    <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                      {isSignup ? "Create your store" : "Welcome back"}
+                    </h1>
+                    <p className="text-sm text-app-text-muted">
+                      {isSignup
+                        ? "Set up your WhatsApp storefront in minutes."
+                        : "Sign in to open your workspace."}
                     </p>
                   </div>
 
+                  <div className="mt-6">
+                    <ModeSwitch
+                      mode={mode}
+                      onChange={(m) => {
+                        setMode(m);
+                        setError(null);
+                      }}
+                    />
+                  </div>
+
                   {!isSupabaseConfigured() && (
-                    <div className="rounded-lg border border-app-warning bg-app-warning-subtle p-4 text-sm">
+                    <div className="mt-5 rounded-lg border border-app-warning bg-app-warning-subtle p-4 text-sm">
                       <p className="font-medium text-app-warning">Running without a database</p>
                       <p className="mt-1 text-app-text-muted">
                         Add your Supabase credentials to <code>.env.local</code> to sign in for real.
@@ -447,15 +415,15 @@ function AuthPage() {
                   {error && (
                     <div
                       role="alert"
-                      className="flex items-start gap-2.5 rounded-lg border border-app-danger bg-app-danger-subtle p-3.5 text-sm text-app-danger"
+                      className="mt-5 flex items-start gap-2.5 rounded-lg border border-app-danger bg-app-danger-subtle p-3.5 text-sm text-app-danger"
                     >
                       <AlertCircle width={16} height={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                       <span>{error}</span>
                     </div>
                   )}
 
-                  <form onSubmit={handleEmailAuth} className="flex flex-col gap-4" noValidate>
-                    {mode === "signup" && (
+                  <form onSubmit={handleEmailAuth} className="mt-6 flex flex-col gap-4" noValidate>
+                    {isSignup && (
                       <>
                         <Field label="Your name" required>
                           <Input
@@ -503,14 +471,18 @@ function AuthPage() {
                       />
                     </Field>
 
-                    <Field label="Password" required hint={mode === "signup" ? "At least 8 characters." : undefined}>
+                    <Field
+                      label="Password"
+                      required
+                      hint={isSignup ? "At least 8 characters." : undefined}
+                    >
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
                           value={form.password}
                           onChange={(e) => setForm({ ...form, password: e.target.value })}
-                          autoComplete={mode === "login" ? "current-password" : "new-password"}
-                          minLength={mode === "signup" ? 8 : undefined}
+                          autoComplete={isSignup ? "new-password" : "current-password"}
+                          minLength={isSignup ? 8 : undefined}
                           placeholder="••••••••"
                           className="pr-11"
                           required
@@ -530,8 +502,8 @@ function AuthPage() {
                       </div>
                     </Field>
 
-                    {mode === "login" && (
-                      <div className="text-right">
+                    {!isSignup && (
+                      <div className="-mt-1 text-right">
                         <Link
                           href="/reset-password"
                           className="text-xs font-medium text-app-accent-text hover:underline"
@@ -544,31 +516,32 @@ function AuthPage() {
                     <Button type="submit" block size="lg" loading={loading === "email"}>
                       {loading === "email" ? null : (
                         <>
-                          {mode === "login" ? "Sign in" : "Create account"}
+                          {isSignup ? "Create account" : "Sign in"}
                           <ArrowRight width={16} height={16} aria-hidden="true" />
                         </>
                       )}
                     </Button>
                   </form>
 
-                  <div className="flex items-center gap-4" aria-hidden="true">
+                  <div className="mt-6 flex items-center gap-4" aria-hidden="true">
                     <div className="h-px flex-1 bg-app-border" />
                     <span className="text-xs text-app-text-subtle">or</span>
                     <div className="h-px flex-1 bg-app-border" />
                   </div>
 
-                  <GoogleButton
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => {
-                      setError("Google sign-in was cancelled.");
-                      setLoading(null);
-                    }}
-                    label={mode === "signup" ? "Sign up with Google" : "Sign in with Google"}
-                    loading={loading === "google"}
-                    mode={mode}
-                  />
+                  <div className="mt-6">
+                    <GoogleButton
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => {
+                        setError("Google sign-in was cancelled.");
+                        setLoading(null);
+                      }}
+                      label={isSignup ? "Sign up with Google" : "Sign in with Google"}
+                      loading={loading === "google"}
+                    />
+                  </div>
 
-                  <p className="text-center text-xs text-app-text-subtle">
+                  <p className="mt-6 text-center text-xs text-app-text-subtle">
                     By continuing you agree to our{" "}
                     <Link href="/terms" className="font-medium text-app-accent-text hover:underline">
                       Terms
@@ -581,13 +554,13 @@ function AuthPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25 }}
-                  className="flex flex-col items-center gap-5 py-10 text-center"
+                  className="flex flex-col items-center gap-5 rounded-2xl border border-app-border bg-app-surface p-8 text-center shadow-sm"
                 >
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-app-accent-subtle">
-                    <MessageSquare width={26} height={26} className="text-app-accent-text" aria-hidden="true" />
+                    <Mail width={26} height={26} className="text-app-accent-text" aria-hidden="true" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-app-text">Check your inbox</h2>
+                    <h1 className="text-2xl font-semibold tracking-tight">Check your inbox</h1>
                     <p className="mt-2 text-sm text-app-text-muted">
                       We sent a verification link to{" "}
                       <span className="font-medium text-app-text">{form.email}</span>
@@ -605,27 +578,98 @@ function AuthPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
 
-          <footer className="flex items-center justify-between gap-4 border-t border-app-border pt-4">
-            <Badge tone="neutral">WhatsApp-first commerce</Badge>
-            <span className="text-xs text-app-text-subtle">SwiftLink App &amp; Workspace</span>
-          </footer>
-        </div>
-      </main>
+            <p className="mt-6 text-center text-xs text-app-text-subtle">
+              Prefer to look around first?{" "}
+              <Link href="/" className="font-medium text-app-accent-text hover:underline">
+                Explore SwiftLink
+              </Link>
+            </p>
+          </div>
+          <DesignRail />
+          </div>
+        </main>
+
+        <footer className="px-5 pb-6 pt-2 sm:px-8">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-app-text-subtle">
+            <span>© 2026 SwiftLink</span>
+            <Link href="/terms" className="hover:text-app-text">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-app-text">
+              Privacy
+            </Link>
+            <a href="mailto:support@swiftlink.pro" className="hover:text-app-text">
+              Support
+            </a>
+          </div>
+        </footer>
+      </div>
     </div>
+  );
+}
+
+/**
+ * The three websites, shown beside the form on wide screens only.
+ * Phones stay a single column so the sign-in action is never pushed below the fold.
+ */
+function DesignRail() {
+  const { theme } = useSwiftLink();
+  const appearance = theme === "dark" ? "dark" : "light";
+  const [active, setActive] = useState<WebsiteTemplateId>("editorial");
+
+  return (
+    <aside className="hidden min-w-0 lg:block" aria-label="Website previews">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-app-text-subtle">
+        Three websites
+      </p>
+      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-app-text">
+        Pick a look after you sign in.
+      </h2>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-app-text-muted">
+        Editorial, Boutique, and Bold are complete shops, each in light and dark. Your customers order on WhatsApp.
+      </p>
+      <div className="mt-5 flex gap-2" role="group" aria-label="Preview a website">
+        {websiteTemplates.map((template) => {
+          const selected = active === template.id;
+          return (
+            <button
+              key={template.id}
+              type="button"
+              onClick={() => setActive(template.id)}
+              aria-pressed={selected}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
+                selected
+                  ? "border-app-accent bg-app-accent-subtle text-app-text"
+                  : "border-app-border bg-app-surface text-app-text-muted hover:text-app-text",
+              )}
+            >
+              {template.name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-4">
+        <TemplateFrame
+          id={active}
+          appearance={appearance}
+          size="card"
+          className="rounded-2xl border border-app-border shadow-lg"
+        />
+      </div>
+    </aside>
   );
 }
 
 /** Theme toggle lives at page level so the brand panel stays server-pure. */
 function ThemeToggle() {
+  const { toggleTheme } = useSwiftLink();
   return (
     <button
       type="button"
-      onClick={() => {
-        document.documentElement.classList.toggle("dark");
-        localStorage.setItem("swiftlink_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
-      }}
+      onClick={toggleTheme}
       aria-label="Toggle dark mode"
       className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border text-app-text-muted transition-colors hover:bg-app-surface-2 hover:text-app-text"
     >
@@ -635,6 +679,36 @@ function ThemeToggle() {
   );
 }
 
+/**
+ * Static shell shown while the form hydrates.
+ *
+ * `AuthPage` reads `useSearchParams`, so without a Suspense boundary Next bails
+ * the whole route out to client-side rendering — meaning an empty `<body>` and a
+ * blank flash on first paint. This keeps the chrome on screen and styled until
+ * the interactive form takes over.
+ */
+function AuthFallback() {
+  return (
+    <div className="min-h-[100dvh] bg-app-bg font-sans text-app-text">
+      <div className="flex min-h-[100dvh] items-center justify-center px-5">
+        <div className="w-full max-w-[420px] rounded-2xl border border-app-border bg-app-surface p-6 shadow-sm sm:p-8">
+          <div className="h-7 w-40 animate-pulse rounded-md bg-app-surface-2" />
+          <div className="mt-3 h-4 w-56 animate-pulse rounded-md bg-app-surface-2" />
+          <div className="mt-8 flex flex-col gap-4">
+            <div className="h-11 w-full animate-pulse rounded-lg bg-app-surface-2" />
+            <div className="h-11 w-full animate-pulse rounded-lg bg-app-surface-2" />
+            <div className="h-12 w-full animate-pulse rounded-lg bg-app-surface-2" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SignupPage() {
-  return <AuthPage />;
+  return (
+    <Suspense fallback={<AuthFallback />}>
+      <AuthPage />
+    </Suspense>
+  );
 }

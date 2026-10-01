@@ -42,7 +42,7 @@ import {
 } from "@/components/ui";
 import { contrastRatio } from "@/lib/theme/color";
 import { buildTheme, themeToCssVars } from "@/lib/theme/derive";
-import { themePresets } from "@/lib/theme/presets";
+import { websiteTemplates } from "@/lib/theme/templates";
 import { consoleContrastPairs, consoleDarkTokens, consoleLightTokens } from "@/lib/theme/tokens";
 
 /**
@@ -50,11 +50,22 @@ import { consoleContrastPairs, consoleDarkTokens, consoleLightTokens } from "@/l
  *
  * `docs/01-DESIGN-SYSTEM.md` §12.3/§12.4 asks for screenshot tests and a
  * Storybook-equivalent. This is the equivalent: one page rendering every kit
- * component in both console modes, every theme preset, and the real measured
- * contrast ratios. Playwright screenshots of this page are the natural next step.
+ * component in both console modes, every website template in both appearances, and
+ * the real measured contrast ratios. Playwright screenshots of this page are the
+ * natural next step.
  *
  * Dev only — it renders 404 in production, so it can never be indexed or shipped.
  */
+
+const templateVariants = websiteTemplates.flatMap((template) =>
+  ([
+    ["light", template.light],
+    ["dark", template.dark],
+  ] as const).map(([appearance, theme]) => ({
+    theme,
+    label: `${template.name} · ${appearance}`,
+  })),
+);
 
 export default function DevUiPage() {
   if (process.env.NODE_ENV === "production") notFound();
@@ -132,11 +143,11 @@ function Showcase() {
       </Section>
 
       <Section
-        title="Theme presets"
-        note="Each preset is a validated TenantTheme. Colors, type, radius, density and motion all come from the same derive() that will render the storefront."
+        title="Website templates"
+        note="The three shipped templates, each in light and dark. Colors, type, radius, density and motion all come from the same derive() that renders the storefront."
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {themePresets.map((preset) => {
+          {templateVariants.map(({ theme: preset, label }) => {
             const vars = themeToCssVars(preset) as React.CSSProperties;
             const derived = buildTheme(preset);
             return (
@@ -145,9 +156,9 @@ function Showcase() {
                   className="flex flex-col gap-2 p-3"
                   style={{ background: "var(--t-bg)", color: "var(--t-text)", fontFamily: "var(--t-font-display)" }}
                 >
-                  <span className="text-sm font-semibold">{preset.name}</span>
+                  <span className="text-sm font-semibold">{label}</span>
                   <span className="text-xs" style={{ color: "var(--t-text-muted)" }}>
-                    {preset.family} · {preset.fontPair} · {preset.radius} · {preset.density}
+                    {preset.fontPair} · {preset.radius} · {preset.density}
                   </span>
                   <div className="flex items-center gap-2">
                     <span

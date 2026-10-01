@@ -92,7 +92,7 @@ Fixed for now, ready for white-labelling later (e.g. an agency plan). Ship ~1 ac
 - `lib/theme/derive.ts` — pure functions: ramp generation, contrast fixing, dark-mode derivation.
 - `styles/tokens.css` — the variables, imported once.
 
-This is also the *only* place a color is ever written down. `PRESET_PALETTES` (24 hard-coded palettes in `BusinessView.tsx:19-45`) becomes 24 **theme presets** referencing the same structure, each with a validated contrast pass.
+This is also the *only* place a color is ever written down. The 24-entry `PRESET_PALETTES` table that used to live in `BusinessView.tsx` is gone; whole-site looks are now the three **website templates** in `lib/theme/templates.ts`, each a validated theme with a light and a dark variant.
 
 ## 4. Color engine
 
@@ -213,6 +213,6 @@ Concretely: visible focus rings everywhere (never `outline: none`), semantic lan
 - storefront injected `<style>` class-hijack block (`CustomerStorefront.tsx:963-973`) → F-17
 - Font Awesome CDN + Google Fonts `<link>` block in `app/layout.tsx` → F-19/F-20
 - emoji avatars (`LauncherView.tsx:66`, `SocialPage.tsx:46-52`) → F-20
-- hard-coded `PRESET_PALETTES` hex table → replaced by validated theme presets → F-18
+- hard-coded `PRESET_PALETTES` hex table → deleted; replaced by the three validated website templates → F-18
 - `window.customPrompt` / `window.customConfirm` → real `Dialog`/`PromptDialog` components → F-22
 - fake loading overlay + scripted hand-cursor tour (move behind an explicit "Take a tour" action) → F-22

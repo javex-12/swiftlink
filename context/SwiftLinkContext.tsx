@@ -505,19 +505,22 @@ export function SwiftLinkProvider({
   useEffect(() => {
     const t = setTimeout(() => setLoadingOverlay(false), 2000);
     
-    // STRICT PRODUCTION LOGIC: 
+    // STRICT PRODUCTION LOGIC:
     // We do NOT call setState(loadStateLocal()) immediately.
     // Instead, we wait for the session check in initAuth() or handle it here.
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setState(loadStateLocal());
-      } else {
-        setState(defaultShopState());
-      }
-    });
-
     if (isSupabaseConfigured()) {
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        setState(session ? loadStateLocal() : defaultShopState());
+      });
       setIsSupabaseActive(true);
+    } else {
+      // Demo / unconfigured: the Supabase client throws by design, so never touch
+      // it here (docs/04-SUPABASE-WORKFLOW.md §4). Restore the local blob when a
+      // demo login is active, otherwise start from a fresh store.
+      const isDemo =
+        typeof window !== "undefined" &&
+        localStorage.getItem("swiftlink_demo_login") === "true";
+      setState(isDemo ? loadStateLocal() : defaultShopState());
     }
     
     return () => clearTimeout(t);
