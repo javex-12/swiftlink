@@ -16,8 +16,8 @@ export default async function AdminPage() {
       <Suspense
         fallback={
           <div className="flex-1 flex flex-col items-center justify-center p-12 min-h-[60vh]">
-            <div className="animate-spin text-emerald-500 w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mb-4" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <div className="animate-spin text-[#19C37D] w-10 h-10 border-4 border-[#19C37D] border-t-transparent rounded-full mb-4" />
+            <p className="text-xs font-medium text-[#9DB3A8]">
               Loading Command Center...
             </p>
           </div>

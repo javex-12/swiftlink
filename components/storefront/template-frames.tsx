@@ -97,7 +97,7 @@ function EditorialMini({
               stage ? "text-5xl" : "text-xl",
             )}
           >
-            Considered goods, cut this week.
+            New items in stock.
           </p>
         </div>
         <div className={cn("col-span-2 overflow-hidden bg-t-surface-alt", stage ? "aspect-[4/5]" : "h-16")}>
@@ -144,7 +144,7 @@ function BoutiqueMini({
   return (
     <div className={cn("bg-t-bg text-t-text", size === "strip" && "max-h-[168px] overflow-hidden")}>
       <div className={cn("bg-t-accent-subtle text-center text-t-accent-text", stage ? "px-6 py-2 text-xs" : "px-3 py-1 text-[9px]")}>
-        Small-batch, wrapped to order
+        Order direct on WhatsApp
       </div>
       <div className={cn("text-center", stage ? "px-8 pt-6" : "px-3 pt-2")}>
         <div
@@ -159,7 +159,7 @@ function BoutiqueMini({
       </div>
       <div className={cn(stage ? "px-8 py-6" : "px-3 py-2")}>
         <div className={cn("bg-t-surface-alt text-center", stage ? "rounded-t-lg px-6 py-10" : "rounded-t-md px-3 py-3")}>
-          <p className={cn("font-t-display leading-tight", stage ? "text-4xl" : "text-lg")}>Gifts, made slowly.</p>
+          <p className={cn("font-t-display leading-tight", stage ? "text-4xl" : "text-lg")}>Featured products</p>
           {stage && (
             <span className="mt-5 inline-block rounded-t-pill bg-t-accent px-4 py-2 text-xs font-semibold text-t-accent-fg">
               Shop favourites
@@ -209,9 +209,9 @@ function BoldMini({
       </div>
       <div className={cn("bg-t-accent text-t-accent-fg", stage ? "px-8 py-10" : "px-3 py-3")}>
         <p className={cn("font-semibold uppercase leading-[0.85] tracking-tight", stage ? "text-6xl" : "text-2xl")}>
-          New drop.
+          Latest
           <br />
-          This week.
+          arrivals.
         </p>
       </div>
       {size !== "strip" && (

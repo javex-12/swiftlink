@@ -3,7 +3,7 @@
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, Zap, CreditCard, MessageSquare, XCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, CreditCard, MessageSquare, XCircle } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";

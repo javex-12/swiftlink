@@ -73,10 +73,13 @@ export const supabase: SupabaseBrowserClient = new Proxy({} as SupabaseBrowserCl
 });
 
 export function isSupabaseConfigured() {
-  return Boolean(
-    supabaseUrl &&
-      supabaseAnonKey &&
-      supabaseUrl.includes("supabase.co") &&
-      !supabaseUrl.includes("dummy-project"),
-  );
+  if (!supabaseUrl || !supabaseAnonKey) return false;
+  if (!supabaseUrl.startsWith("http")) return false;
+  if (supabaseUrl.includes("dummy-project") || supabaseUrl.includes("your-project")) return false;
+  try {
+    new URL(supabaseUrl);
+    return true;
+  } catch {
+    return false;
+  }
 }

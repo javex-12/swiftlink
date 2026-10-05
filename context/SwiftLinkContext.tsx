@@ -154,7 +154,7 @@ export function SwiftLinkProvider({
   const [cartOpen, setCartOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [authReady, setAuthReady] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [socialHubOpen, setSocialHubOpen] = useState(false);
@@ -184,44 +184,28 @@ export function SwiftLinkProvider({
     }
   }, []);
 
-  // Load theme: DB (social_profiles) takes priority, then localStorage
-  const applyTheme = useCallback((t: "light" | "dark") => {
-    setTheme(t);
-    localStorage.setItem("swiftlink_theme", t);
-    if (t === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+  // The console is DARK ONLY: permanently enforce dark tokens and the .dark class
+  const applyTheme = useCallback((_t?: "light" | "dark") => {
+    setTheme("dark");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("swiftlink_theme", "dark");
+      document.documentElement.classList.add("dark");
+    }
   }, []);
 
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("swiftlink_theme") as "light" | "dark" : null;
-    applyTheme(saved || "light");
+    // Console is strictly dark-only
+    applyTheme("dark");
   }, [applyTheme]);
 
-  const loadThemeFromDB = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured()) return;
-    try {
-      const { data } = await supabase
-        .from('social_profiles')
-        .select('preferences')
-        .eq('user_id', userId)
-        .maybeSingle();
-      const dbTheme = (data?.preferences as any)?.theme as "light" | "dark" | undefined;
-      if (dbTheme === 'light' || dbTheme === 'dark') applyTheme(dbTheme);
-    } catch (e) { /* silent — fallback to localStorage */ }
+  const loadThemeFromDB = useCallback(async (_userId: string) => {
+    // Console is dark only
+    applyTheme("dark");
   }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "light" ? "dark" : "light";
-      applyTheme(next);
-      // Persist to DB (per-user, so syncs across devices)
-      if (isSupabaseConfigured() && userRef.current?.id) {
-        void supabase.from('social_profiles')
-          .update({ preferences: { theme: next } })
-          .eq('user_id', userRef.current.id);
-      }
-      return next;
-    });
+    // No-op for console: strictly dark only
+    applyTheme("dark");
   }, [applyTheme]);
 
   const addToast = useCallback((message: string, type: ToastType = "success") => {

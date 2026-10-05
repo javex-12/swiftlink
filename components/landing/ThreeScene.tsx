@@ -7,7 +7,6 @@ import {
   MeshDistortMaterial,
   MeshWobbleMaterial,
   Environment,
-  Sparkles,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -188,14 +187,6 @@ function Scene() {
       <FloatingCube position={[3.5, 1.5, 0]} />
       <FloatingSmallSphere position={[-3, 2, 0.5]} color="#10b981" />
       <FloatingSmallSphere position={[2.5, -2, 1.0]} color="#34d399" />
-      <Sparkles
-        count={25}
-        scale={10}
-        size={1.2}
-        speed={0.2}
-        color="#10b981"
-        opacity={0.4}
-      />
     </group>
   );
 }

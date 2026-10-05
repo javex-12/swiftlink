@@ -12,6 +12,7 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { TemplateFrame } from "@/components/storefront/template-frames";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { Logo } from "@/components/Logo";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
 
@@ -350,9 +351,7 @@ function AuthPage() {
       <div className="relative z-10 flex min-h-[100dvh] flex-col">
         <header className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
-            <img src="/logo.png" alt="SwiftLink" className="h-6 w-6 object-contain" />
-            <span className="text-sm font-semibold tracking-tight">SwiftLink</span>
+            <Logo size="sm" showWordmark={true} />
           </Link>
           <ThemeToggle />
         </header>

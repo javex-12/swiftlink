@@ -4,15 +4,21 @@ import { CustomerStorefrontPage } from "@/components/CustomerStorefrontPage";
 
 // Server-side Supabase — read-only, uses public anon key
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key || !url.startsWith("http") || url.includes("dummy-project") || url.includes("your-project")) return null;
+  try {
+    new URL(url);
+    return createClient(url, key);
+  } catch {
+    return null;
+  }
 }
 
 async function getStoreData(shopId: string) {
   try {
     const supabase = getSupabase();
+    if (!supabase) return null;
     const { data } = await supabase
       .from("stores")
       .select("state_json, biz_name")

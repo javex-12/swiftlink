@@ -6,6 +6,7 @@ import { Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ArrowRight } f
 import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -46,8 +47,8 @@ export default function ResetPasswordPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/[0.08] rounded-[2rem] p-8 shadow-2xl">
-          <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
-            <Shield size={24} className="text-emerald-400" />
+          <div className="flex justify-center mb-6">
+            <Logo size="lg" showWordmark={true} />
           </div>
 
           <h1 className="text-2xl font-black text-white text-center mb-2 italic uppercase tracking-tight">Set New Password</h1>

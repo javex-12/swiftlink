@@ -1,10 +1,10 @@
 import { ProLayout } from "@/components/ProLayout";
-import { BusinessView } from "@/components/BusinessView";
+import { StoreEditorRouter } from "@/components/editor/StoreEditorRouter";
 
 export default function BusinessPage() {
   return (
     <ProLayout>
-      <BusinessView />
+      <StoreEditorRouter />
     </ProLayout>
   );
 }

@@ -22,13 +22,14 @@ export function StoreSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-[9px] font-black uppercase text-slate-500 transition-all hover:text-slate-900 dark:bg-black dark:text-zinc-400 dark:hover:text-white"
+        className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-3.5 py-2 text-xs font-semibold text-[#E8F1EC] transition-all hover:border-[#19C37D]"
       >
-        Switch Store <ChevronDown size={12} />
+        <span className="truncate max-w-[120px]">{state.bizName || "Switch Store"}</span>
+        <ChevronDown size={14} className="text-[#9DB3A8]" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-zinc-900">
+        <div className="absolute right-0 top-12 z-50 w-72 rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-2 shadow-2xl">
           <div className="max-h-72 overflow-y-auto">
             {(stores.length > 0 ? stores : [state]).map((store) => (
               <button
@@ -39,16 +40,16 @@ export function StoreSwitcher() {
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-white/5",
-                  store.id === state.id && "bg-emerald-50 dark:bg-emerald-500/10",
+                  "flex w-full items-center gap-3 rounded-[12px] p-3 text-left transition-colors hover:bg-[#14231D]",
+                  store.id === state.id && "bg-[#14231D] text-[#19C37D]",
                 )}
               >
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-slate-900 text-white dark:bg-white dark:text-black">
+                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[8px] bg-[#0A1210] border border-[#24382F] text-[#19C37D]">
                   {store.bizImage ? <img src={store.bizImage} alt="" className="h-full w-full object-cover" /> : <Store size={16} />}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-black uppercase text-slate-900 dark:text-white">{store.bizName || "Untitled Store"}</p>
-                  <p className="truncate text-[9px] font-bold uppercase tracking-widest text-slate-400">{store.id || "Local draft"}</p>
+                  <p className="truncate text-xs font-semibold text-[#E8F1EC]">{store.bizName || "Untitled Store"}</p>
+                  <p className="truncate text-[10px] text-[#9DB3A8]">{store.currency || "NGN"} • {store.storeUsername ? `@${store.storeUsername}` : "Workspace"}</p>
                 </div>
               </button>
             ))}
@@ -56,7 +57,7 @@ export function StoreSwitcher() {
           <button
             type="button"
             onClick={handleCreate}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-[10px] font-black uppercase tracking-widest text-white dark:bg-white dark:text-black"
+            className="mt-2 flex w-full min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-[#19C37D] py-2.5 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070]"
           >
             <Plus size={14} /> New Store
           </button>

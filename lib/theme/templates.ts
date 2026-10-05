@@ -63,8 +63,8 @@ export const websiteTemplateSeeds: TemplateSeed[] = [
     id: "editorial",
     name: "Editorial",
     description:
-      "Serif headlines, generous whitespace and a magazine grid. Made for fashion, food and writing.",
-    tagline: "Considered goods, thoughtfully made.",
+      "A spacious editorial layout suited for clothing, accessories, and home goods.",
+    tagline: "",
     swatch: "#111111",
     brandColor: "#111111",
     darkBrandColor: "#e7e5e4",
@@ -87,8 +87,8 @@ export const websiteTemplateSeeds: TemplateSeed[] = [
     id: "boutique",
     name: "Boutique",
     description:
-      "Warm, rounded and friendly, with a drawer menu. Suits gifts, beauty and small-batch makers.",
-    tagline: "Small-batch favourites, made with care.",
+      "A rounded card layout suited for gifts, beauty products, and everyday items.",
+    tagline: "",
     swatch: "#be123c",
     brandColor: "#be123c",
     darkBrandColor: "#fb7185",
@@ -111,8 +111,8 @@ export const websiteTemplateSeeds: TemplateSeed[] = [
     id: "bold",
     name: "Bold",
     description:
-      "High-contrast, tightly packed and built for drops. Electronics, streetwear and limited runs.",
-    tagline: "New drops, every week.",
+      "A compact, high-contrast grid suited for electronics and retail catalogs.",
+    tagline: "",
     swatch: "#111827",
     brandColor: "#111827",
     darkBrandColor: "#a3e635",

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, Heart, Search, Star, ChevronLeft,
   CheckCircle2, MessageCircle, Plus, Minus, ArrowRight,
-  Zap, Package, Home, User,
+  ShoppingBag, Package, Home, User,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ const PRODUCTS: Product[] = [
     priceRaw: 45000,
     image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400",
     category: "Tops",
-    badge: "🔥 HOT",
+    badge: "HOT",
     desc: "Premium heavyweight cotton with ribbed cuffs and hem.",
   },
   {
@@ -39,7 +39,7 @@ const PRODUCTS: Product[] = [
     priceRaw: 72500,
     image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=400",
     category: "Footwear",
-    badge: "✨ NEW",
+    badge: "NEW",
     desc: "Chunky sole silhouette for maximum street presence.",
   },
   {
@@ -58,7 +58,7 @@ const PRODUCTS: Product[] = [
     priceRaw: 22000,
     image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=400",
     category: "Accessories",
-    badge: "🏷 SALE",
+    badge: "SALE",
     desc: "18k gold-plated stainless steel, tarnish-resistant.",
   },
 ];
@@ -149,7 +149,7 @@ export const LivePreview = () => {
                   style={{ background: "rgba(242,242,247,0.95)", backdropFilter: "blur(12px)", borderColor: "rgba(0,0,0,0.06)" }}>
                   <div className="flex items-center gap-1.5">
                     <div className="w-6 h-6 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: ACCENT }}>
-                      <Zap size={10} fill="white" className="text-white" />
+                      <ShoppingBag size={10} className="text-white" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-gray-900 leading-none">EliteFashion</p>

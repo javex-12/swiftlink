@@ -509,7 +509,7 @@ export function AdminView() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-black p-10 md:p-14 rounded-[3rem] border border-slate-200 dark:border-white/5 shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
+          className="bg-[#111C18] p-10 md:p-14 rounded-[3rem] border border-[#1E2D27] shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-red-500" />
           
@@ -517,12 +517,12 @@ export function AdminView() {
             <Lock size={36} />
           </div>
 
-          <h2 className="text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-4">Access Denied</h2>
-          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] leading-relaxed mb-8">
+          <h2 className="text-3xl font-black text-[#E8F1EC] italic uppercase tracking-tight mb-4">Access Denied</h2>
+          <p className="text-[11px] font-bold text-[#9DB3A8] uppercase tracking-[0.25em] leading-relaxed mb-8">
             You require administrator permissions to access this control center dashboard portal.
           </p>
 
-          <div className="bg-slate-50 dark:bg-zinc-950 p-6 rounded-2xl border border-slate-100 dark:border-white/5 mb-8 text-left">
+          <div className="bg-[#14231D] p-6 rounded-2xl border border-[#1E2D27] mb-8 text-left">
             <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Security Rules:</p>
             <ul className="text-[10px] font-bold text-slate-400 space-y-2 list-disc list-inside">
               <li>User must be signed in with an authorized administrator account</li>
@@ -548,13 +548,13 @@ export function AdminView() {
     <div className="space-y-8 max-w-7xl mx-auto w-full pb-16 transition-colors duration-300">
       
       {/* Admin Title Card */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111C18] p-8 rounded-[2.5rem] border border-[#1E2D27] shadow-sm">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight leading-tight">Admin System Telemetry</h2>
+            <h2 className="text-2xl font-black text-[#E8F1EC] italic uppercase tracking-tight leading-tight">Admin System Telemetry</h2>
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mt-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#9DB3A8] mt-2">
             Monitoring {profiles.length} Merchants, {stores.length} storefronts, and {events.length} system events.
           </p>
         </div>
@@ -563,7 +563,7 @@ export function AdminView() {
           <button 
             onClick={fetchData} 
             disabled={refreshing}
-            className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-white/5 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 flex items-center gap-2"
+            className="p-3.5 rounded-xl bg-[#14231D] border border-[#1E2D27] text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 flex items-center gap-2"
             title="Refresh Data"
           >
             <RefreshCw size={15} className={cn("transition-transform duration-700", refreshing && "animate-spin")} />
@@ -574,7 +574,7 @@ export function AdminView() {
 
       {/* Overview Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400">
               <Users size={20} />
@@ -582,12 +582,12 @@ export function AdminView() {
             <span className="text-[8px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-full">System</span>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">Total Users</p>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight">{profiles.length}</h3>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#9DB3A8] mb-1">Total Users</p>
+            <h3 className="text-xl font-black text-[#E8F1EC] italic tracking-tight">{profiles.length}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
               <Store size={20} />
@@ -595,12 +595,12 @@ export function AdminView() {
             <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">Stores</span>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">Active Stores</p>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight">{stores.length}</h3>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#9DB3A8] mb-1">Active Stores</p>
+            <h3 className="text-xl font-black text-[#E8F1EC] italic tracking-tight">{stores.length}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 dark:bg-purple-500/10 text-purple-500 dark:text-purple-400">
               <Activity size={20} />
@@ -608,12 +608,12 @@ export function AdminView() {
             <span className="text-[8px] font-black uppercase tracking-widest text-purple-500 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full">Telemetry</span>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">Store Clicks</p>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight">{globalStats.totalClicks + globalStats.totalViews}</h3>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#9DB3A8] mb-1">Store Clicks</p>
+            <h3 className="text-xl font-black text-[#E8F1EC] italic tracking-tight">{globalStats.totalClicks + globalStats.totalViews}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400">
               <MessageSquare size={20} />
@@ -621,12 +621,12 @@ export function AdminView() {
             <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full">WhatsApp</span>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">Checkouts</p>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight">{globalStats.totalCheckouts}</h3>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#9DB3A8] mb-1">Checkouts</p>
+            <h3 className="text-xl font-black text-[#E8F1EC] italic tracking-tight">{globalStats.totalCheckouts}</h3>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400">
               <AlertCircle size={20} />
@@ -638,14 +638,14 @@ export function AdminView() {
             )}
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">Pending Bugs</p>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight">{globalStats.pendingBugs}</h3>
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#9DB3A8] mb-1">Pending Bugs</p>
+            <h3 className="text-xl font-black text-[#E8F1EC] italic tracking-tight">{globalStats.pendingBugs}</h3>
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-slate-100 dark:border-white/5 flex flex-wrap gap-1">
+      <div className="border-b border-[#1E2D27] flex flex-wrap gap-1">
         {[
           { id: "overview", label: "Overview", icon: TrendingUp },
           { id: "timeline", label: "Telemetry Log", icon: Activity },
@@ -673,7 +673,7 @@ export function AdminView() {
       {/* Interactive Content Windows */}
       <div className="min-h-[500px]">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-white dark:bg-black border border-slate-100 dark:border-white/5 rounded-[2.5rem]">
+          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-[#111C18] border border-[#1E2D27] rounded-[2.5rem]">
             <div className="animate-spin text-emerald-500 w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-3" />
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Syncing database registers...</p>
           </div>
@@ -682,14 +682,14 @@ export function AdminView() {
             {/* SEARCH AND FILTERS ROW */}
             {activeTab !== "overview" && (
               <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1 flex items-center bg-white dark:bg-black border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3 text-slate-400 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 shadow-sm transition-all">
+                <div className="flex-1 flex items-center bg-[#111C18] border border-[#1E2D27] rounded-2xl px-4 py-3 text-slate-400 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 shadow-sm transition-all">
                   <Search size={16} />
                   <input 
                     type="text" 
                     placeholder={`Search ${activeTab === 'timeline' ? 'events' : activeTab === 'merchants' ? 'merchants' : activeTab === 'stores' ? 'stores' : 'feedback'}...`} 
                     value={globalSearch}
                     onChange={(e) => setGlobalSearch(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs font-bold px-3 w-full text-slate-900 dark:text-white"
+                    className="bg-transparent border-none outline-none text-xs font-bold px-3 w-full text-[#E8F1EC]"
                   />
                   {globalSearch && (
                     <button onClick={() => setGlobalSearch("")}>
@@ -708,7 +708,7 @@ export function AdminView() {
                           "px-4 py-3 rounded-2xl border text-[9px] font-black uppercase tracking-widest transition-all",
                           feedbackFilter === f
                             ? "bg-slate-900 dark:bg-white text-white dark:text-black border-slate-900 dark:border-white"
-                            : "bg-white dark:bg-black text-slate-500 border-slate-200 dark:border-white/10 hover:border-slate-400"
+                            : "bg-[#111C18] text-slate-500 border-[#1E2D27] hover:border-slate-400"
                         )}
                       >
                         {f}
@@ -727,7 +727,7 @@ export function AdminView() {
                           "px-4 py-3 rounded-2xl border text-[9px] font-black uppercase tracking-widest transition-all",
                           eventFilter === f
                             ? "bg-slate-900 dark:bg-white text-white dark:text-black border-slate-900 dark:border-white"
-                            : "bg-white dark:bg-black text-slate-500 border-slate-200 dark:border-white/10 hover:border-slate-400"
+                            : "bg-[#111C18] text-slate-500 border-[#1E2D27] hover:border-slate-400"
                         )}
                       >
                         {f.replace("_", " ")}
@@ -744,13 +744,13 @@ export function AdminView() {
                 {/* Graphics Dashboard Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* TRAFFIC & CONVERSION CHART */}
-                  <div className="lg:col-span-2 bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col">
+                  <div className="lg:col-span-2 bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-8">
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white italic tracking-tight uppercase">Conversion and Traffic Funnel</h3>
-                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest mt-1">Global view to WhatsApp checkout ratio</p>
+                      <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Conversion and Traffic Funnel</h3>
+                      <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Global view to WhatsApp checkout ratio</p>
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-end min-h-[220px] pt-4 border-b border-slate-100 dark:border-white/5 pb-2">
+                    <div className="flex-1 flex flex-col justify-end min-h-[220px] pt-4 border-b border-[#1E2D27] pb-2">
                       <div className="grid grid-cols-3 gap-8 items-end max-w-lg mx-auto w-full">
                         {/* VIEWS */}
                         <div className="flex flex-col items-center gap-3">
@@ -792,24 +792,24 @@ export function AdminView() {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-[#9DB3A8] uppercase tracking-widest">
                       <span>Funnel Base: All Active Stores</span>
                       <span className="text-emerald-500 font-black">Conversion: {(globalStats.totalViews > 0 ? (globalStats.totalCheckouts / globalStats.totalViews) * 100 : 15).toFixed(1)}%</span>
                     </div>
                   </div>
 
                   {/* ACTIVE STORE LEADERBOARD */}
-                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col">
+                  <div className="bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-6">
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white italic tracking-tight uppercase">Leaderboard</h3>
-                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest mt-1">Top converting storefront platforms</p>
+                      <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Leaderboard</h3>
+                      <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Top converting storefront platforms</p>
                     </div>
 
                     <div className="flex-1 space-y-5">
                       {globalStats.storeConversions.slice(0, 4).map((s, i) => (
                         <div key={s.name} className="space-y-2">
                           <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
-                            <span className="text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span className="text-[#E8F1EC] flex items-center gap-1.5">
                               <span className="text-emerald-500 font-mono">#{i+1}</span> {s.name}
                             </span>
                             <span className="text-slate-400">{s.rate.toFixed(1)}% ({s.checkouts} checkouts)</span>
@@ -829,10 +829,10 @@ export function AdminView() {
                       )}
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                    <div className="mt-6 pt-4 border-t border-[#1E2D27]">
                       <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
                         <TrendingUp size={14} className="text-emerald-500" />
-                        <span>Top Store: <span className="text-slate-900 dark:text-white italic">{globalStats.topStore.name}</span></span>
+                        <span>Top Store: <span className="text-[#E8F1EC] italic">{globalStats.topStore.name}</span></span>
                       </div>
                     </div>
                   </div>
@@ -841,10 +841,10 @@ export function AdminView() {
                 {/* Logistics & Alerts section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* RECENT CRITICAL USER FEEDBACK FEED */}
-                  <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm lg:col-span-3 flex flex-col">
+                  <div className="bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm lg:col-span-3 flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                       <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Pending Bug Reports</h3>
+                        <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Pending Bug Reports</h3>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Needs attention</p>
                       </div>
                       <span className="text-[9px] font-black bg-rose-50 dark:bg-rose-950/20 text-rose-500 px-3 py-1 rounded-full border border-rose-100 dark:border-rose-950/30">
@@ -856,13 +856,13 @@ export function AdminView() {
                       {feedbacks.filter(f => f.type === "bug" && f.status !== "resolved").slice(0, 3).map((f) => {
                         const reporter = profiles.find(p => p.id === f.user_id);
                         return (
-                          <div key={f.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-white/5 flex gap-4 items-start">
+                          <div key={f.id} className="p-4 rounded-2xl bg-[#14231D] border border-[#1E2D27] flex gap-4 items-start">
                             <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
                               <AlertCircle size={16} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex justify-between items-center gap-2">
-                                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">
+                                <p className="text-[10px] font-black text-[#E8F1EC] uppercase tracking-wider truncate">
                                   {reporter?.display_name || "Merchant"}
                                 </p>
                                 <span className="text-[8px] font-bold text-slate-400">{f.created_at ? new Date(f.created_at).toLocaleDateString() : ""}</span>
@@ -902,7 +902,7 @@ export function AdminView() {
 
             {/* TAB CONTENT: TIMELINE LOG */}
             {activeTab === "timeline" && (
-              <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden p-6 md:p-8">
+              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden p-6 md:p-8">
                 <div className="space-y-6">
                   {filteredEvents.slice(0, 100).map((e) => {
                     const storeObj = stores.find(s => s.id === e.store_id);
@@ -924,7 +924,7 @@ export function AdminView() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
-                            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider italic">
+                            <h4 className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider italic">
                               {e.event_type === "view" ? "Storefront View" : 
                                e.event_type === "product_click" ? "Product Clicked" : 
                                e.event_type === "whatsapp_checkout" ? "WhatsApp Checkout Intention" :
@@ -936,11 +936,11 @@ export function AdminView() {
                           </div>
 
                           <div className="mt-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 space-y-1">
-                            <p>Store: <span className="text-slate-900 dark:text-white">{storeObj?.biz_name || e.store_id}</span> ({storeObj?.store_username || "anonymous"})</p>
+                            <p>Store: <span className="text-[#E8F1EC]">{storeObj?.biz_name || e.store_id}</span> ({storeObj?.store_username || "anonymous"})</p>
                             
                             {/* Metadata render */}
                             {e.metadata && (
-                              <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-xl border border-slate-100 dark:border-white/5 font-mono text-[9px] mt-2 text-slate-400 select-all overflow-x-auto">
+                              <div className="bg-[#14231D] p-3 rounded-xl border border-[#1E2D27] font-mono text-[9px] mt-2 text-slate-400 select-all overflow-x-auto">
                                 {JSON.stringify(e.metadata, null, 2)}
                               </div>
                             )}
@@ -959,11 +959,11 @@ export function AdminView() {
 
             {/* TAB CONTENT: MERCHANTS DIRECTORY */}
             {activeTab === "merchants" && (
-              <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <tr className="border-b border-[#1E2D27] bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
                         <th className="py-5 px-6">Merchant Profile</th>
                         <th className="py-5 px-6">Username Slug</th>
                         <th className="py-5 px-6">Bio Details</th>
@@ -978,9 +978,9 @@ export function AdminView() {
                           <tr key={p.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
                             <td className="py-5 px-6">
                               <div className="flex items-center gap-3">
-                                <img src={p.avatar_url} className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-white/10" alt="" />
+                                <img src={p.avatar_url} className="w-10 h-10 rounded-xl object-cover border border-[#1E2D27]" alt="" />
                                 <div>
-                                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">{p.display_name}</span>
+                                  <span className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider block">{p.display_name}</span>
                                   <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">{storesCount} store{storesCount !== 1 ? "s" : ""} owned</span>
                                 </div>
                               </div>
@@ -994,7 +994,7 @@ export function AdminView() {
                                   "mx-auto w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90",
                                   p.is_verified 
                                     ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 border-emerald-100 dark:border-emerald-500/20"
-                                    : "bg-slate-100 dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-white/5"
+                                    : "bg-slate-100 dark:bg-zinc-800 text-slate-400 border-[#1E2D27]"
                                 )}
                                 title={p.is_verified ? "Revoke Verification" : "Verify Profile"}
                               >
@@ -1026,11 +1026,11 @@ export function AdminView() {
 
             {/* TAB CONTENT: STORES DIRECTORY */}
             {activeTab === "stores" && (
-              <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <tr className="border-b border-[#1E2D27] bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
                         <th className="py-5 px-6">Store Platform</th>
                         <th className="py-5 px-6">Username Route</th>
                         <th className="py-5 px-6">Merchant Owner</th>
@@ -1045,7 +1045,7 @@ export function AdminView() {
                           <tr key={s.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
                             <td className="py-5 px-6">
                               <div>
-                                <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">{s.biz_name}</span>
+                                <span className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider block">{s.biz_name}</span>
                                 <span className="text-[8px] font-bold text-slate-400 block font-mono mt-0.5">{s.id}</span>
                               </div>
                             </td>
@@ -1071,7 +1071,7 @@ export function AdminView() {
                                   disabled={updatingStoreId === s.id}
                                   value={(s as any).plan || (s.state_json as any)?.plan || "free"}
                                   onChange={(e) => handleSetUserPlan(s.id, e.target.value as any)}
-                                  className="bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500/50"
+                                  className="bg-[#14231D] border border-[#1E2D27] rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500/50"
                                 >
                                   <option value="free">Free</option>
                                   <option value="pro">Pro</option>
@@ -1087,7 +1087,7 @@ export function AdminView() {
                                   "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
                                   (s as any).account_status === "banned"
                                     ? "bg-rose-50 dark:bg-rose-500/10 text-rose-500 border-rose-100 dark:border-rose-500/20"
-                                    : "bg-slate-50 dark:bg-zinc-950 text-slate-400 border-slate-100 dark:border-white/5 hover:border-slate-355"
+                                    : "bg-[#14231D] text-slate-400 border-[#1E2D27] hover:border-slate-355"
                                 )}
                               >
                                 {(s as any).account_status === "banned" ? "Banned" : "Ban"}
@@ -1097,7 +1097,7 @@ export function AdminView() {
                                 href={`/?shop=${s.id}`} 
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-2 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-950 dark:hover:text-white transition-all"
+                                className="p-2 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-[#1E2D27] text-slate-500 hover:text-slate-950 dark:hover:text-white transition-all"
                                 title="View Store storefront"
                               >
                                 <ExternalLink size={14} />
@@ -1135,7 +1135,7 @@ export function AdminView() {
                     <motion.div 
                       key={f.id}
                       layout
-                      className="bg-white dark:bg-black p-6 rounded-[2rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group"
+                      className="bg-[#111C18] p-6 rounded-[2rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group"
                     >
                       <div>
                         <div className="flex justify-between items-start gap-4 mb-4">
@@ -1159,7 +1159,7 @@ export function AdminView() {
                                     ? st === "resolved" ? "bg-emerald-500 text-white border-emerald-500" :
                                       st === "in_progress" ? "bg-amber-500 text-white border-amber-500" :
                                       "bg-slate-500 text-white border-slate-500"
-                                    : "bg-slate-50 dark:bg-zinc-950 text-slate-400 border-slate-100 dark:border-white/5 hover:border-slate-300"
+                                    : "bg-[#14231D] text-slate-400 border-[#1E2D27] hover:border-slate-300"
                                 )}
                               >
                                 {st.replace("_", " ")}
@@ -1178,11 +1178,11 @@ export function AdminView() {
 
                         {/* Public replies section */}
                         {f.public_replies && f.public_replies.length > 0 && (
-                          <div className="mt-4 p-3 bg-slate-50 dark:bg-zinc-950 rounded-xl space-y-2 border border-slate-100 dark:border-white/5">
+                          <div className="mt-4 p-3 bg-[#14231D] rounded-xl space-y-2 border border-[#1E2D27]">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Admin Replies:</p>
                             {f.public_replies.map((rep: any, idx: number) => (
                               <div key={idx} className="text-[10px] leading-relaxed">
-                                <span className="font-black text-slate-900 dark:text-white">{rep.author}: </span>
+                                <span className="font-black text-[#E8F1EC]">{rep.author}: </span>
                                 <span className="text-slate-500 dark:text-slate-400">{rep.text}</span>
                                 <span className="text-[7px] text-slate-300 dark:text-slate-600 block mt-0.5">{rep.time}</span>
                               </div>
@@ -1199,7 +1199,7 @@ export function AdminView() {
                               value={replyMessage}
                               onChange={(e) => setReplyMessage(e.target.value)}
                               rows={2}
-                              className="w-full text-[10px] font-bold bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 rounded-xl p-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500/50"
+                              className="w-full text-[10px] font-bold bg-[#14231D] border border-[#1E2D27] rounded-xl p-3 text-[#E8F1EC] focus:outline-none focus:border-emerald-500/50"
                             />
                             <div className="flex gap-2 justify-end">
                               <button 
@@ -1219,7 +1219,7 @@ export function AdminView() {
                         ) : (
                           <button 
                             onClick={() => setReplyingToId(f.id)}
-                            className="w-full py-2.5 rounded-xl text-center bg-slate-50 hover:bg-slate-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-slate-100 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all"
+                            className="w-full py-2.5 rounded-xl text-center bg-slate-50 hover:bg-slate-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-[#1E2D27] text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all"
                           >
                             Reply Admin
                           </button>
@@ -1230,7 +1230,7 @@ export function AdminView() {
                 })}
 
                 {filteredFeedbacks.length === 0 && (
-                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-100 dark:border-white/10 rounded-[2.5rem]">
+                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-[#1E2D27] rounded-[2.5rem]">
                     No feedbacks logged matching selected status filter
                   </div>
                 )}
@@ -1256,17 +1256,17 @@ export function AdminView() {
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="bg-white dark:bg-black w-full max-w-4xl h-[85vh] rounded-[3rem] border border-slate-200 dark:border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
+              className="bg-[#111C18] w-full max-w-4xl h-[85vh] rounded-[3rem] border border-[#1E2D27] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
             >
               
               {/* Header profile banner */}
-              <div className="p-6 md:p-8 bg-slate-50/50 dark:bg-[#0c0e12] border-b border-slate-100 dark:border-white/5 flex items-center justify-between gap-4 shrink-0">
+              <div className="p-6 md:p-8 bg-slate-50/50 dark:bg-[#0c0e12] border-b border-[#1E2D27] flex items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-4 min-w-0">
-                  <img src={merchantDrillDown.profile.avatar_url} className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-200 dark:border-white/10" alt="" />
+                  <img src={merchantDrillDown.profile.avatar_url} className="w-16 h-16 rounded-2xl object-cover border-2 border-[#1E2D27]" alt="" />
                   
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight truncate leading-tight">
+                      <h3 className="text-xl font-black text-[#E8F1EC] italic uppercase tracking-tight truncate leading-tight">
                         {merchantDrillDown.profile.display_name}
                       </h3>
                       {merchantDrillDown.profile.is_verified && (
@@ -1284,7 +1284,7 @@ export function AdminView() {
 
                 <button 
                   onClick={() => setSelectedMerchantId(null)}
-                  className="w-10 h-10 rounded-full bg-white dark:bg-zinc-950 border border-slate-200 dark:border-white/5 text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-10 h-10 rounded-full bg-white dark:bg-zinc-950 border border-[#1E2D27] text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center active:scale-90 transition-transform"
                 >
                   <X size={18} />
                 </button>
@@ -1294,7 +1294,7 @@ export function AdminView() {
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
                 
                 {/* BIO STATEMENT */}
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-white/5">
+                <div className="p-5 rounded-2xl bg-[#14231D] border border-[#1E2D27]">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profile Biography:</p>
                   <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 italic">
                     &ldquo;{merchantDrillDown.profile.bio || "No storefront summary information provided by this merchant user profile."}&rdquo;
@@ -1309,14 +1309,14 @@ export function AdminView() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {merchantDrillDown.stores.map((s) => (
-                      <div key={s.id} className="p-5 rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-[#0c0e12]/30 flex flex-col justify-between">
+                      <div key={s.id} className="p-5 rounded-2xl border border-[#1E2D27] bg-slate-50/20 dark:bg-[#0c0e12]/30 flex flex-col justify-between">
                         <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">{s.biz_name}</span>
+                          <span className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider block">{s.biz_name}</span>
                           <span className="text-[10px] text-emerald-500 font-mono block mt-0.5">/{s.store_username}</span>
                           <span className="text-[9px] text-slate-400 block font-mono mt-1">Phone: {s.phone}</span>
                         </div>
                         
-                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex gap-2">
+                        <div className="mt-4 pt-3 border-t border-[#1E2D27] flex gap-2">
                           <a 
                             href={`/?shop=${s.id}`} 
                             target="_blank" 
@@ -1341,7 +1341,7 @@ export function AdminView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
                   {/* TRAFFIC ANALYSIS */}
-                  <div className="bg-slate-50 dark:bg-[#0c0e12]/40 border border-slate-100 dark:border-white/5 p-6 rounded-2xl">
+                  <div className="bg-slate-50 dark:bg-[#0c0e12]/40 border border-[#1E2D27] p-6 rounded-2xl">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center justify-between">
                       <span>Conversion Metrics</span>
                       <Activity size={14} className="text-blue-500" />
@@ -1350,15 +1350,15 @@ export function AdminView() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
                         <span className="uppercase tracking-wider">Storefront Views</span>
-                        <span className="font-mono text-slate-900 dark:text-white font-black">{merchantDrillDown.stats.views}</span>
+                        <span className="font-mono text-[#E8F1EC] font-black">{merchantDrillDown.stats.views}</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
                         <span className="uppercase tracking-wider">Product Click-Throughs</span>
-                        <span className="font-mono text-slate-900 dark:text-white font-black">{merchantDrillDown.stats.clicks}</span>
+                        <span className="font-mono text-[#E8F1EC] font-black">{merchantDrillDown.stats.clicks}</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
                         <span className="uppercase tracking-wider">WA Checkout Volume</span>
-                        <span className="font-mono text-slate-900 dark:text-white font-black">{merchantDrillDown.stats.checkouts}</span>
+                        <span className="font-mono text-[#E8F1EC] font-black">{merchantDrillDown.stats.checkouts}</span>
                       </div>
                       
                       <div className="pt-3 border-t border-slate-200 dark:border-zinc-900 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-emerald-500">
@@ -1369,7 +1369,7 @@ export function AdminView() {
                   </div>
 
                   {/* STOREFRONT LINKS */}
-                  <div className="bg-slate-50 dark:bg-[#0c0e12]/40 border border-slate-100 dark:border-white/5 p-6 rounded-2xl flex flex-col justify-between">
+                  <div className="bg-slate-50 dark:bg-[#0c0e12]/40 border border-[#1E2D27] p-6 rounded-2xl flex flex-col justify-between">
                     <div>
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center justify-between">
                         <span>Storefront Links</span>
@@ -1380,7 +1380,7 @@ export function AdminView() {
                         {merchantDrillDown.stores.map((s) => (
                           <div key={s.id} className="flex justify-between items-center text-[9px] font-bold text-slate-500 pb-2 border-b border-slate-200/50 dark:border-zinc-900/50 last:border-none">
                             <span className="truncate">{s.biz_name || "Untitled store"}</span>
-                            <span className="uppercase text-[8px] font-black text-slate-900 dark:text-white shrink-0 ml-2">{s.store_username ? `@${s.store_username}` : "no handle"}</span>
+                            <span className="uppercase text-[8px] font-black text-[#E8F1EC] shrink-0 ml-2">{s.store_username ? `@${s.store_username}` : "no handle"}</span>
                           </div>
                         ))}
 
@@ -1399,11 +1399,11 @@ export function AdminView() {
                     <Activity size={14} className="text-blue-500" /> Merchant Activity Timeline ({merchantDrillDown.events.length} logs)
                   </h4>
 
-                  <div className="p-5 rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-[#0c0e12]/20 max-h-72 overflow-y-auto space-y-4 custom-scrollbar pr-2">
+                  <div className="p-5 rounded-2xl border border-[#1E2D27] bg-slate-50/20 dark:bg-[#0c0e12]/20 max-h-72 overflow-y-auto space-y-4 custom-scrollbar pr-2">
                     {merchantDrillDown.events.map((e) => (
                       <div key={e.id} className="text-[10px] font-bold text-slate-500 flex justify-between gap-4 pb-2.5 border-b border-slate-100 dark:border-zinc-950 last:border-none">
                         <div>
-                          <span className="text-slate-900 dark:text-white uppercase tracking-wider font-black mr-2">[{e.event_type}]</span>
+                          <span className="text-[#E8F1EC] uppercase tracking-wider font-black mr-2">[{e.event_type}]</span>
                           <span className="text-slate-450 font-normal">{JSON.stringify(e.metadata || {})}</span>
                         </div>
                         <span className="font-mono text-slate-400 shrink-0">{new Date(e.created_at).toLocaleTimeString()}</span>
@@ -1424,7 +1424,7 @@ export function AdminView() {
 
                   <div className="space-y-3">
                     {merchantDrillDown.feedback.map((f) => (
-                      <div key={f.id} className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-150 dark:border-white/5">
+                      <div key={f.id} className="p-4 rounded-xl bg-[#14231D] border border-slate-150 dark:border-white/5">
                         <div className="flex justify-between items-center mb-2">
                           <span className={cn(
                             "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border",
@@ -1447,7 +1447,7 @@ export function AdminView() {
               </div>
               
               {/* Close Footer bar */}
-              <div className="p-6 bg-slate-50 dark:bg-[#0c0e12] border-t border-slate-100 dark:border-white/5 text-right shrink-0">
+              <div className="p-6 bg-slate-50 dark:bg-[#0c0e12] border-t border-[#1E2D27] text-right shrink-0">
                 <button 
                   onClick={() => setSelectedMerchantId(null)}
                   className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 text-[10px] font-black uppercase tracking-widest transition-all"
@@ -1469,13 +1469,13 @@ export function AdminView() {
           className="space-y-6"
         >
           {/* Add new admin */}
-          <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm p-8">
+          <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                 <UserPlus size={20} />
               </div>
               <div>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Add New Administrator</h3>
+                <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Add New Administrator</h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">The user must already have a SwiftLink account registered.</p>
               </div>
             </div>
@@ -1487,7 +1487,7 @@ export function AdminView() {
                 onChange={e => setNewAdminEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddAdmin()}
                 placeholder="colleague@email.com"
-                className="flex-1 px-5 py-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-white/10 text-sm font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                className="flex-1 px-5 py-3.5 rounded-2xl bg-[#14231D] border border-[#1E2D27] text-sm font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
               />
               <button
                 onClick={handleAddAdmin}
@@ -1505,9 +1505,9 @@ export function AdminView() {
           </div>
 
           {/* Current admins list */}
-          <div className="bg-white dark:bg-black rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-100 dark:border-white/5">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tight">Current Administrators</h3>
+          <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-[#1E2D27]">
+              <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Current Administrators</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{adminsList.length} admin{adminsList.length !== 1 ? "s" : ""} registered</p>
             </div>
 
@@ -1525,7 +1525,7 @@ export function AdminView() {
                         <Shield size={16} />
                       </div>
                       <div>
-                        <p className="text-sm font-black text-slate-900 dark:text-white">{admin.email}</p>
+                        <p className="text-sm font-black text-[#E8F1EC]">{admin.email}</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                           Added {new Date(admin.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
                           {admin.email === user?.email && <span className="ml-2 text-emerald-500">(You)</span>}

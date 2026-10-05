@@ -1,236 +1,180 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/currency";
+import { 
+  Users, MousePointer2, MessageSquare, 
+  BarChart3, ArrowUpRight, ArrowDownRight, Package, Activity
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-client";
-import { BarChart3, Users, Package, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function AnalyticsView() {
   const { state } = useSwiftLink();
-  const accentStr = state.accentColor || "#10b981";
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!state.id) return;
-
-    const fetchAnalytics = async () => {
-        const { data, error } = await supabase
-            .from('store_events')
-            .select('*')
-            .eq('store_id', state.id)
-            .order('created_at', { ascending: false })
-            .limit(1000);
-            
-        if (data) setEvents(data);
-        setLoading(false);
-    };
-
-    fetchAnalytics();
-  }, [state.id]);
-
-  // Real calculations from events
-  const totalViews = events.filter(e => e.event_type === 'view').length;
-  const productViews = events.filter(e => e.event_type === 'product_click' || e.event_type === 'product_view').length;
-  const totalCheckouts = events.filter(e => e.event_type === 'whatsapp_checkout' || e.event_type === 'checkout').length;
-  const totalOrders = totalCheckouts;
-
-  const conversionRate = totalViews > 0 ? (totalCheckouts / totalViews) * 100 : 0;
-  
-  // Trending products
-  const productStats = events
-    .filter(e => (e.event_type === 'product_click' || e.event_type === 'product_view') && e.product_id)
-    .reduce((acc: any, e) => {
-        acc[e.product_id] = (acc[e.product_id] || 0) + 1;
-        return acc;
-    }, {});
+  // Real aggregate stats (Step 6 wires to store_daily_stats; until then plain 0s with no fake data)
+  const totalViews = 0;
+  const productViews = 0;
+  const totalOrders = 0;
+  const totalCheckouts = 0;
+  const conversionRate = 0;
 
   const stats = [
-    { label: "Total Store Views", value: totalViews.toLocaleString(), change: "Real-time", icon: Users, trend: "up", color: "text-blue-500", bg: "bg-blue-50" },
-    { label: "Product Interest", value: productViews.toLocaleString(), change: "Clicks", icon: MousePointer2, trend: "up", color: "text-amber-500", bg: "bg-amber-50" },
-    { label: "WhatsApp Inquiries", value: totalCheckouts.toLocaleString(), change: "Intent", icon: MessageSquare, trend: "up", color: "text-emerald-500", bg: "bg-emerald-50" },
-    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, change: "Goal", icon: Activity, trend: "up", color: "text-indigo-500", bg: "bg-indigo-50" },
+    { label: "Total Store Views", value: totalViews.toLocaleString(), change: "Live", icon: Users, trend: "up", color: "text-[#19C37D]", bg: "bg-[#14231D]" },
+    { label: "Product Interest", value: productViews.toLocaleString(), change: "Clicks", icon: MousePointer2, trend: "up", color: "text-[#E8B93A]", bg: "bg-[#14231D]" },
+    { label: "WhatsApp Inquiries", value: totalCheckouts.toLocaleString(), change: "Intent", icon: MessageSquare, trend: "up", color: "text-[#19C37D]", bg: "bg-[#14231D]" },
+    { label: "Conversion Rate", value: `${conversionRate.toFixed(1)}%`, change: "Goal", icon: Activity, trend: "up", color: "text-[#60A5FA]", bg: "bg-[#14231D]" },
   ];
 
   const categories = Array.from(new Set(state.products.map(p => p.category).filter(Boolean)));
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto w-full transition-colors duration-300">
+    <div className="space-y-6 max-w-5xl mx-auto w-full px-4 py-6 sm:px-6 sm:py-8">
+      {/* Page Header */}
+      <div className="border-b border-[#1E2D27] pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-[#E8F1EC]">Analytics &amp; Performance</h1>
+        <p className="text-xs text-[#9DB3A8] mt-1">Real-time metrics for your store traffic and buyer interest.</p>
+      </div>
       
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((stat, i) => (
           <motion.div 
             key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-black p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all"
+            transition={{ delay: i * 0.05 }}
+            className="bg-[#111C18] p-4 sm:p-5 rounded-[18px] border border-[#1E2D27] shadow-sm flex flex-col justify-between"
           >
-             <div className="flex items-center justify-between mb-4">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", stat.bg, stat.color, "dark:bg-zinc-900 dark:text-emerald-400")}>
-                   <stat.icon size={24} />
+             <div className="flex items-center justify-between mb-3">
+                <div className={cn("w-9 h-9 rounded-[10px] border border-[#24382F] flex items-center justify-center", stat.bg, stat.color)}>
+                   <stat.icon size={18} />
                 </div>
-                <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase", stat.trend === "up" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400")}>
-                   {stat.trend === "up" ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold", stat.trend === "up" ? "bg-[#14231D] text-[#19C37D]" : "bg-[#2a1414] text-[#FF8A8A]")}>
+                   {stat.trend === "up" ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
                    {stat.change}
                 </div>
              </div>
              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tight">{stat.value}</h3>
+                <p className="text-[11px] font-medium text-[#9DB3A8] mb-1">{stat.label}</p>
+                <h3 className="text-2xl font-bold text-[#E8F1EC] tracking-tight">{stat.value}</h3>
              </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* Main Chart Section */}
-         <div className="lg:col-span-2 bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-10">
+         <div className="lg:col-span-2 bg-[#111C18] p-5 sm:p-6 rounded-[18px] border border-[#1E2D27] shadow-sm flex flex-col">
+            <div className="flex items-center justify-between mb-6">
                <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight uppercase">Sales Trajectory</h3>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest mt-1">Order Volume per period</p>
+                  <h3 className="text-base font-semibold text-[#E8F1EC]">Order Activity</h3>
+                  <p className="text-xs text-[#9DB3A8] mt-0.5">Order volume per period</p>
                </div>
-               <div className="flex gap-2">
-                  <button className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest">WEEKS</button>
-                  <button className="px-4 py-2 bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 dark:hover:text-white">MONTHS</button>
+               <div className="flex gap-1.5">
+                  <span className="px-3 py-1 bg-[#14231D] text-[#19C37D] border border-[#24382F] rounded-[8px] text-xs font-semibold">WEEKS</span>
                </div>
             </div>
 
-            <div className="flex-1 min-h-[300px] flex items-end gap-3 px-2">
+            <div className="flex-1 min-h-[220px] flex items-end gap-2 px-2">
                {totalOrders > 0 ? (
-                  // Real order-event counts land in the most recent bucket until we chart by period
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, totalOrders].slice(-12).map((h, i) => {
                      const barHeight = totalOrders > 0 ? (h / totalOrders) * 100 : 0;
                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-3">
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
                            <div className="w-full relative group">
                               <motion.div 
                                 initial={{ height: 0 }} 
                                 animate={{ height: `${Math.max(barHeight, 5)}%` }} 
-                                transition={{ delay: i * 0.05, duration: 1 }} 
-                                className={cn("w-full rounded-t-[10px] transition-colors shadow-sm relative overflow-hidden", h > 0 ? "bg-slate-900 dark:bg-white" : "bg-slate-100 dark:bg-zinc-900")}
-                              >
-                                 {h > 0 && (
-                                    <motion.div 
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: [0, 1, 0] }}
-                                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                                      className="absolute inset-0 bg-emerald-400/20"
-                                    />
-                                 )}
-                              </motion.div>
-                              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-black text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                 {h} Orders
-                              </div>
+                                transition={{ delay: i * 0.05, duration: 0.5 }} 
+                                className={cn("w-full rounded-t-[6px] transition-colors", h > 0 ? "bg-[#19C37D]" : "bg-[#14231D]")}
+                              />
                            </div>
-                           <span className="text-[9px] font-black text-slate-300 dark:text-zinc-700 uppercase">P{i+1}</span>
+                           <span className="text-[10px] text-[#9DB3A8]">P{i+1}</span>
                         </div>
                      );
                   })
                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-200 dark:text-zinc-900 gap-4">
-                     <BarChart3 size={48} className="opacity-20" />
-                     <p className="text-[10px] font-black uppercase tracking-[0.3em]">Awaiting Sales Data</p>
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#9DB3A8] gap-2 py-12">
+                     <BarChart3 size={36} className="opacity-30" />
+                     <p className="text-xs">Awaiting sales activity</p>
                   </div>
                )}
             </div>
          </div>
 
          {/* Secondary Insights Section */}
-         <div className="space-y-8">
-            <div className="bg-slate-900 dark:bg-black p-8 rounded-[3rem] shadow-xl text-white dark:text-slate-300 flex flex-col h-full relative overflow-hidden border border-white/5 dark:border-white/10">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl" />
-               <div className="relative z-10">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-8">Performance Mix</h3>
-                  <div className="space-y-6">
-                     {(categories.length > 0 ? categories : ["General"]).slice(0, 4).map((cat, i) => {
-                        // Bars show category presence on the storefront, not per-category revenue yet
-                        return (
-                        <div key={cat} className="space-y-2">
-                           <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
-                              <span>{cat}</span>
-                              <span style={{ color: accentStr }}>{totalOrders > 0 ? "Active" : "Ready"}</span>
-                           </div>
-                           <div className="h-1.5 bg-white/10 dark:bg-white/5 rounded-full overflow-hidden">
-                              <motion.div 
-                                initial={{ width: 0 }} 
-                                animate={{ width: totalOrders > 0 ? `${94 - i * 15}%` : "0%" }} 
-                                transition={{ duration: 1, delay: 0.5 }} 
-                                className="h-full bg-white dark:bg-emerald-500 shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
-                              />
-                           </div>
+         <div className="space-y-6">
+            <div className="bg-[#111C18] p-5 sm:p-6 rounded-[18px] border border-[#1E2D27] flex flex-col h-full">
+               <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8] mb-5">Product Categories</h3>
+               <div className="space-y-4">
+                  {(categories.length > 0 ? categories : ["General"]).slice(0, 4).map((cat) => (
+                     <div key={cat} className="space-y-1.5">
+                        <div className="flex justify-between text-xs font-medium text-[#E8F1EC]">
+                           <span>{cat}</span>
+                           <span className="text-[#19C37D]">{totalOrders > 0 ? "Active" : "Ready"}</span>
                         </div>
-                     )})}
-                  </div>
-                  
-                  <div className="mt-12 p-6 bg-white/5 rounded-[2rem] border border-white/10">
-                     <div className="flex items-center gap-3 mb-4">
-                        <Activity className="text-emerald-400" size={18} />
-                        <span className="text-xs font-black uppercase tracking-widest">Store Pulse</span>
+                        <div className="h-1.5 bg-[#0A1210] rounded-full overflow-hidden">
+                           <div className="h-full bg-[#19C37D] rounded-full" style={{ width: totalOrders > 0 ? "75%" : "20%" }} />
+                        </div>
                      </div>
-                     <p className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 leading-relaxed italic">
-                        {totalOrders > 0
-                          ? `You have ${totalOrders} WhatsApp orders recorded, a ${conversionRate.toFixed(1)}% view-to-order conversion.`
-                          : "Your store pulse is waiting for its first order. Share your link to start selling!"}
-                     </p>
+                  ))}
+               </div>
+               
+               <div className="mt-auto pt-6 border-t border-[#1E2D27]">
+                  <div className="flex items-center gap-2 mb-2">
+                     <Activity className="text-[#19C37D]" size={16} />
+                     <span className="text-xs font-semibold text-[#E8F1EC]">Store Pulse</span>
                   </div>
+                  <p className="text-xs text-[#9DB3A8] leading-relaxed">
+                     {totalOrders > 0
+                       ? `You have ${totalOrders} WhatsApp orders recorded, a ${conversionRate.toFixed(1)}% view-to-order conversion.`
+                       : "Share your storefront link on WhatsApp and Instagram to start receiving orders."}
+                  </p>
                </div>
             </div>
          </div>
       </div>
 
       {/* Top Products Table */}
-      <div className="bg-white dark:bg-black p-8 rounded-[3rem] border border-slate-100 dark:border-white/10 shadow-sm overflow-hidden">
-         <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight mb-8 px-2 uppercase">Vibe Check: Product Performance</h3>
+      <div className="bg-[#111C18] p-5 sm:p-6 rounded-[18px] border border-[#1E2D27] shadow-sm overflow-hidden">
+         <h3 className="text-base font-semibold text-[#E8F1EC] mb-4">Product Performance</h3>
          <div className="overflow-x-auto">
             <table className="w-full text-left">
                <thead>
-                  <tr className="border-b border-slate-50 dark:border-white/5">
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Product Details</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Activity</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Revenue (Est.)</th>
-                     <th className="pb-4 px-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Status</th>
+                  <tr className="border-b border-[#1E2D27]">
+                     <th className="pb-3 text-xs font-medium text-[#9DB3A8]">Product</th>
+                     <th className="pb-3 text-xs font-medium text-[#9DB3A8]">Views</th>
+                     <th className="pb-3 text-xs font-medium text-[#9DB3A8]">Price</th>
                   </tr>
                </thead>
-               <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                  {state.products.length > 0 ? [...state.products].sort((a,b) => (productStats[b.id] || 0) - (productStats[a.id] || 0)).slice(0, 5).map((p, i) => {
-                     const views = productStats[p.id] || 0;
+               <tbody className="divide-y divide-[#1E2D27]">
+                  {state.products.length > 0 ? [...state.products].slice(0, 5).map((p) => {
+                     const views = 0;
                      return (
-                     <tr key={p.id} className="group">
-                        <td className="py-5 px-2">
-                           <div className="flex items-center gap-4">
-                              <span className="text-xl font-black text-slate-100 dark:text-zinc-900 italic group-hover:text-slate-200 dark:group-hover:text-zinc-800 transition-colors">0{i+1}</span>
-                              <div className="w-12 h-12 bg-slate-50 dark:bg-zinc-900 rounded-xl overflow-hidden border border-slate-100 dark:border-white/10 shrink-0 shadow-inner">
-                                 {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <Package className="w-full h-full p-3 text-slate-200 dark:text-zinc-800" />}
+                     <tr key={p.id} className="text-xs">
+                        <td className="py-3 pr-4">
+                           <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 bg-[#14231D] rounded-[8px] overflow-hidden border border-[#1E2D27] shrink-0 flex items-center justify-center">
+                                 {p.image ? <img src={p.image} className="w-full h-full object-cover" alt={p.name} /> : <Package className="h-4 w-4 text-[#9DB3A8]" />}
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate">{p.name}</p>
-                                 <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest">{p.category || "Uncategorized"}</p>
+                                 <p className="font-medium text-[#E8F1EC] truncate">{p.name}</p>
+                                 <p className="text-[11px] text-[#9DB3A8]">{p.category || "General"}</p>
                               </div>
                            </div>
                         </td>
-                        <td className="py-5 px-2">
-                           <span className="text-sm font-black text-slate-700 dark:text-zinc-400">{views} {views === 1 ? 'View' : 'Views'}</span>
+                        <td className="py-3 pr-4 text-[#9DB3A8]">
+                           {views}
                         </td>
-                        <td className="py-5 px-2 font-black text-slate-900 dark:text-white italic">
-                           {state.currency}{Number(p.price).toLocaleString()}
-                        </td>
-                        <td className="py-5 px-2">
-                           <div className="flex items-center gap-2">
-                              <div className={cn("w-1.5 h-1.5 rounded-full", views > 0 ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-800")} />
-                              <span className={cn("text-[10px] font-black uppercase tracking-widest", views > 10 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-700")}>
-                                 {views > 10 ? "Trending" : "Stable"}
-                              </span>
-                           </div>
+                        <td className="py-3 font-medium text-[#E8F1EC]">
+                           {formatMoney(Math.round(Number(p.price) * 100), state.currency || "NGN")}
                         </td>
                      </tr>
                   )}) : (
                      <tr>
-                        <td colSpan={4} className="py-20 text-center text-slate-300 dark:text-zinc-900 font-black uppercase text-[10px] tracking-[0.4em]">No products found</td>
+                        <td colSpan={3} className="py-12 text-center text-xs text-[#9DB3A8]">No products added yet</td>
                      </tr>
                   )}
                </tbody>

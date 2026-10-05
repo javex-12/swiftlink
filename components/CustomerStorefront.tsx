@@ -6,11 +6,12 @@ import {
   ShoppingCart, 
   ChevronLeft, 
   ArrowRight, 
-  Zap, 
   Plus, 
   Minus, 
   Star, 
   MessageCircle,
+  MessageSquare,
+  Store,
   Home,
   Loader2,
   CheckCircle2,
@@ -23,7 +24,6 @@ import {
   Package,
   Verified,
   User,
-  Sparkles,
   Ghost,
   ShieldCheck
 } from "lucide-react";
@@ -212,7 +212,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                         {subtitle}
                     </p>
                     <button onClick={onShopClick} style={{ display:"inline-flex", alignItems:"center", gap:12, padding:"18px 48px", background:accent, color: isDarkColor(accent) ? "#ffffff" : "#000000", fontWeight:900, fontSize:11, letterSpacing:"0.25em", textTransform:"uppercase", borderRadius:9999, border:"none", cursor:"pointer", boxShadow:`0 20px 40px -10px ${accent}cc` }} className="hover:scale-105 active:scale-95 transition-all">
-                        {btnText} ⚡
+                        {btnText}
                     </button>
                 </div>
             </div>
@@ -296,7 +296,7 @@ const HeroTemplate = ({ state, templateId, onShopClick }: { state: ShopState, te
                     
                     <button onClick={onShopClick} 
                             className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black text-xs tracking-widest uppercase rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]">
-                        {btnText} <Zap size={14} />
+                        {btnText}
                     </button>
                     
                     {/* Tech details hud strip */}
@@ -620,8 +620,8 @@ const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: s
 // ==========================================
 const PROF_AVATARS = [
     { id: "User", icon: User, color: "bg-blue-500" },
-    { id: "Zap", icon: Zap, color: "bg-amber-500" },
-    { id: "Sparkles", icon: Sparkles, color: "bg-emerald-500" },
+    { id: "MessageSquare", icon: MessageSquare, color: "bg-emerald-500" },
+    { id: "Store", icon: Store, color: "bg-amber-500" },
     { id: "Globe", icon: Globe, color: "bg-indigo-500" },
     { id: "Ghost", icon: Ghost, color: "bg-slate-800" },
     { id: "ShieldCheck", icon: ShieldCheck, color: "bg-rose-500" },
@@ -1009,7 +1009,7 @@ export function CustomerStorefront({
                   <div className="w-full px-4 md:px-12 py-3 md:py-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
-                        {s.bizImage ? <img src={s.bizImage} className="w-full h-full object-cover" /> : <Zap size={14} fill="white" className="text-white" />}
+                        {s.bizImage ? <img src={s.bizImage} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-white">{(s.bizName || "S").slice(0, 1).toUpperCase()}</span>}
                       </div>
                       <div>
                         <p className="text-[11px] md:text-sm font-black text-gray-900 leading-none">{s.bizName || "Store"}</p>

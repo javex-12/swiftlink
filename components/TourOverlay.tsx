@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { RefreshCw, ArrowRight, ArrowLeft, X, Sparkles } from "lucide-react";
+import { RefreshCw, ArrowRight, ArrowLeft, X, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -111,10 +111,10 @@ export function TourOverlay() {
           
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
-               <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <Sparkles className="text-white" size={20} />
-               </div>
-               <button onClick={closeTour} className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+              <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Store className="text-white" size={20} />
+              </div>
+              <button onClick={closeTour} className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                   <X size={20} />
                </button>
             </div>

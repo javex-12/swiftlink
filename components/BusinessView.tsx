@@ -262,9 +262,9 @@ export function BusinessView() {
   const Accordion = ({ id, title, icon: Icon, subtitle, children }: { id: string, title: string, icon: any, subtitle?: string, children: React.ReactNode }) => {
       const isOpen = expandedSection === id;
       return (
-          <div className={cn("bg-white dark:bg-black rounded-3xl border transition-all duration-300 mb-4 overflow-hidden", isOpen ? "border-slate-200 dark:border-white/10 shadow-md" : "border-slate-100 dark:border-white/5 shadow-sm")}>
+          <div className={cn("bg-[#111C18] rounded-3xl border transition-all duration-300 mb-4 overflow-hidden", isOpen ? "border-[#1E2D27] shadow-md" : "border-[#1E2D27] shadow-sm")}>
               <button 
-                  className="w-full px-5 py-4 flex items-center justify-between bg-white dark:bg-black hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors"
+                  className="w-full px-5 py-4 flex items-center justify-between bg-[#111C18] hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors"
                   onClick={() => setExpandedSection(isOpen ? "" : id)}
               >
                   <div className="flex items-center gap-4">
@@ -276,7 +276,7 @@ export function BusinessView() {
                           {subtitle && <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{subtitle}</span>}
                       </div>
                   </div>
-                  <Plus className={cn("w-5 h-5 text-slate-300 dark:text-zinc-700 transition-transform duration-300", isOpen && "rotate-[135deg] text-slate-900 dark:text-white")} />
+                  <Plus className={cn("w-5 h-5 text-slate-300 dark:text-zinc-700 transition-transform duration-300", isOpen && "rotate-[135deg] text-[#E8F1EC]")} />
               </button>
               <div className={cn("transition-all duration-300 origin-top overflow-hidden", isOpen ? "max-h-[3000px] opacity-100 scale-y-100" : "max-h-0 opacity-0 scale-y-0")}>
                   <div className="p-5 pt-2 border-t border-slate-50 dark:border-white/5">
@@ -328,7 +328,7 @@ export function BusinessView() {
           <button 
               onClick={handleDiceClick}
               title={title}
-              className="p-3 bg-slate-50 dark:bg-zinc-900 text-slate-400 hover:text-emerald-500 rounded-xl transition-all active:scale-90"
+              className="p-3 bg-[#14231D] text-slate-400 hover:text-emerald-500 rounded-xl transition-all active:scale-90"
           >
               <motion.div animate={isSpinning ? { rotate: 360, scale: [1, 1.2, 1] } : {}} transition={{ duration: 0.5, ease: "easeInOut" }}>
                   <Dices size={18} />
@@ -410,7 +410,7 @@ export function BusinessView() {
                 "relative w-full p-0 rounded-2xl border-2 transition-all overflow-hidden group flex flex-col",
                 current === t.id
                   ? "border-emerald-500 ring-2 ring-emerald-500/20"
-                  : "border-slate-100 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20"
+                  : "border-[#1E2D27] hover:border-slate-300 dark:hover:border-white/20"
               )}
             >
               {/* Visual thumbnail */}
@@ -499,10 +499,12 @@ export function BusinessView() {
           </div>
 
           {/* Preview area */}
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-zinc-900">
+          <div className="flex-1 overflow-y-auto p-6 bg-[#14231D]">
             {isPro && !isProUser ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
-                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-2xl flex items-center justify-center text-3xl">🔒</div>
+                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
+                  <Lock className="w-8 h-8" />
+                </div>
                 <h4 className="font-black text-gray-900 dark:text-white uppercase">Pro Template</h4>
                 <p className="text-sm text-gray-400 max-w-xs">Upgrade to SwiftLink Pro to unlock this template and 20+ other premium designs.</p>
                 <button className="px-6 py-3 bg-amber-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-amber-400 transition-colors">
@@ -510,7 +512,7 @@ export function BusinessView() {
                 </button>
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden border border-black/[0.04] dark:border-white/5 shadow-sm bg-white dark:bg-black">
+              <div className="rounded-2xl overflow-hidden border border-black/[0.04] dark:border-white/5 shadow-sm bg-[#111C18]">
                 {/* Render different template previews */}
                 {type === "hero" && (
                   <div className="text-xs text-center text-gray-400 py-3 border-b border-black/[0.04] dark:border-white/5">
@@ -550,7 +552,7 @@ export function BusinessView() {
                   : "bg-emerald-500 hover:bg-emerald-400 active:scale-95"
               )}
             >
-              {isPro && !isProUser ? "🔒 Pro Only" : "✓ Apply Design"}
+              {isPro && !isProUser ? "Pro Only" : "Apply Design"}
             </button>
           </div>
         </div>
@@ -755,15 +757,15 @@ export function BusinessView() {
             <motion.div key="store" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
                 
                 {/* Store Profile Card */}
-                <section className="bg-white dark:bg-black rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 shadow-sm border border-slate-100 dark:border-white/10 space-y-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] pointer-events-none text-slate-900 dark:text-white hidden md:block">
+                <section className="bg-[#111C18] rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 shadow-sm border border-[#1E2D27] space-y-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] pointer-events-none text-[#E8F1EC] hidden md:block">
                         <FileText size={200} />
                     </div>
                     <div className="flex flex-col md:flex-row gap-8 md:gap-10 items-center md:items-start relative z-10">
                         <div className="flex flex-col items-center">
                             <label
                             htmlFor="biz-img-upload"
-                            className="relative block w-28 h-28 md:w-40 md:h-40 rounded-[2rem] md:rounded-[3.5rem] bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-white/5 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
+                            className="relative block w-28 h-28 md:w-40 md:h-40 rounded-[2rem] md:rounded-[3.5rem] bg-[#14231D] border-2 border-[#1E2D27] flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-inner transition-all hover:scale-105 hover:border-emerald-500"
                             style={ localState.bizImage ? { backgroundImage: `url(${localState.bizImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined }
                             >
                             {!localState.bizImage && !isUploading && <Plus size={32} className="text-slate-200" />}
@@ -780,7 +782,7 @@ export function BusinessView() {
                         <div className="flex-1 space-y-6 w-full">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">Business Name</label>
-                                <StableInput type="text" value={localState.bizName || ""} onChange={(v) => updateLocalState("bizName", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-black text-lg md:text-xl text-slate-900 dark:text-white outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="Elite Fashion" />
+                                <StableInput type="text" value={localState.bizName || ""} onChange={(v) => updateLocalState("bizName", v)} className="w-full bg-[#14231D]/50 rounded-2xl p-4 md:p-5 font-black text-lg md:text-xl text-[#E8F1EC] outline-none border border-[#1E2D27] focus:border-emerald-500 transition-all" placeholder="Elite Fashion" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">WhatsApp Number</label>
@@ -798,7 +800,7 @@ export function BusinessView() {
                                    <StableInput type="tel" value={localState.phone?.replace(/^\+\d+\s?/, "") || ""} onChange={(v) => {
                                        const code = localState.phone?.startsWith('+') ? localState.phone.split(' ')[0] : "+234";
                                        updateLocalState("phone", `${code} ${v}`);
-                                   }} className="flex-1 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all" placeholder="808 000 0000" />
+                                   }} className="flex-1 bg-[#14231D]/50 rounded-2xl p-4 md:p-5 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-[#1E2D27] focus:border-emerald-500 transition-all" placeholder="808 000 0000" />
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -810,7 +812,7 @@ export function BusinessView() {
                                 </div>
                                 <div className="relative">
                                   <span className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 font-bold">@</span>
-                                  <input type="text" value={handleInput} onChange={(e) => setHandleInput(e.target.value)} className={`w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl py-4 md:py-5 pl-10 md:pl-12 pr-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border ${handleStatus === "taken" ? "border-red-500" : handleStatus === "available" ? "border-emerald-500" : "border-slate-100 dark:border-white/5"} transition-all`} placeholder="my-store" />
+                                  <input type="text" value={handleInput} onChange={(e) => setHandleInput(e.target.value)} className={`w-full bg-[#14231D]/50 rounded-2xl py-4 md:py-5 pl-10 md:pl-12 pr-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border ${handleStatus === "taken" ? "border-red-500" : handleStatus === "available" ? "border-emerald-500" : "border-[#1E2D27]"} transition-all`} placeholder="my-store" />
                                 </div>
                             </div>
                         </div>
@@ -818,9 +820,9 @@ export function BusinessView() {
                 </section>
 
                 {/* About & Socials */}
-                <section className="bg-white dark:bg-black rounded-[3rem] p-8 md:p-10 shadow-sm border border-slate-100 dark:border-white/10 space-y-8">
+                <section className="bg-[#111C18] rounded-[3rem] p-8 md:p-10 shadow-sm border border-[#1E2D27] space-y-8">
                     <div className="px-2">
-                        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 dark:text-white">About & Socials</h3>
+                        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#E8F1EC]">About & Socials</h3>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mt-1">Your story, links & contact info</p>
                     </div>
 
@@ -829,17 +831,17 @@ export function BusinessView() {
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1 tracking-[0.2em]">
                                 <User size={12} /> Bio / About You
                             </label>
-                            <StableTextarea value={localState.aboutUs || localState.bio || ""} onChange={(v) => { updateLocalState("aboutUs", v); updateLocalState("bio", v); }} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
+                            <StableTextarea value={localState.aboutUs || localState.bio || ""} onChange={(v) => { updateLocalState("aboutUs", v); updateLocalState("bio", v); }} className="w-full bg-[#14231D]/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-28 border border-[#1E2D27] resize-none transition-all focus:border-emerald-500" placeholder="Tell your customers who you are..." />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 ml-1"><Mail size={12} /> Contact Email</label>
-                                <StableInput type="email" value={localState.contactEmail || ""} onChange={(v) => updateLocalState("contactEmail", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="hello@brand.com" />
+                                <StableInput type="email" value={localState.contactEmail || ""} onChange={(v) => updateLocalState("contactEmail", v)} className="w-full bg-[#14231D]/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-[#1E2D27] focus:border-emerald-500" placeholder="hello@brand.com" />
                             </div>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 ml-1"><MapPin size={12} /> Address</label>
-                                <StableInput type="text" value={localState.contactAddress || ""} onChange={(v) => updateLocalState("contactAddress", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500" placeholder="Lagos, Nigeria" />
+                                <StableInput type="text" value={localState.contactAddress || ""} onChange={(v) => updateLocalState("contactAddress", v)} className="w-full bg-[#14231D]/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-[#1E2D27] focus:border-emerald-500" placeholder="Lagos, Nigeria" />
                             </div>
                         </div>
 
@@ -850,7 +852,7 @@ export function BusinessView() {
                                 { key: "tiktok", icon: Hash, placeholder: "tiktok.com/@..." },
                                 { key: "twitter", icon: AtSign, placeholder: "x.com/..." }
                             ].map(({ key, icon: Icon, placeholder }) => (
-                                <div key={key} className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl px-4 py-3 border border-slate-100 dark:border-white/5">
+                                <div key={key} className="flex items-center gap-4 bg-[#14231D]/50 rounded-2xl px-4 py-3 border border-[#1E2D27]">
                                     <Icon size={16} className="text-slate-400 shrink-0" />
                                     <StableInput type="url" value={(localState.socials as any)?.[key] || ""} onChange={(v) => updateLocalState("socials", { ...(localState.socials || {}), [key]: v })} className="flex-1 bg-transparent text-sm font-bold text-slate-600 dark:text-zinc-400 outline-none placeholder:text-slate-300" placeholder={placeholder} />
                                 </div>
@@ -860,23 +862,23 @@ export function BusinessView() {
                 </section>
 
                 {/* Categories Manager */}
-                <section className="bg-white dark:bg-black rounded-[3rem] p-8 md:p-10 shadow-sm border border-slate-100 dark:border-white/10 space-y-8">
+                <section className="bg-[#111C18] rounded-[3rem] p-8 md:p-10 shadow-sm border border-[#1E2D27] space-y-8">
                     <div className="flex justify-between items-center px-2">
                         <div>
-                            <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Categories</h3>
+                            <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#E8F1EC]">Your Categories</h3>
                         </div>
                         <button onClick={async () => {
                             const name = await (window as any).customPrompt("New Category", "Enter name:");
                             if (name && !categories.includes(name)) updateLocalState("categories", [...categories, name]);
-                        }} className="bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-slate-100 px-5 py-3 rounded-xl transition-all">
+                        }} className="bg-[#14231D] text-[#E8F1EC] font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-slate-100 px-5 py-3 rounded-xl transition-all">
                             <Plus size={14} /> Add New
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-3">
                         {categories.map(cat => (
-                            <div key={cat} className="bg-white dark:bg-black border border-slate-100 dark:border-white/10 pl-5 pr-2 py-2.5 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+                            <div key={cat} className="bg-[#111C18] border border-[#1E2D27] pl-5 pr-2 py-2.5 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
                             <span className="text-xs font-black text-slate-700 dark:text-zinc-300 uppercase tracking-tighter">{cat}</span>
-                            <button onClick={() => updateLocalState("categories", categories.filter(c => c !== cat))} className="w-7 h-7 rounded-xl bg-slate-50 dark:bg-zinc-900 text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center">
+                            <button onClick={() => updateLocalState("categories", categories.filter(c => c !== cat))} className="w-7 h-7 rounded-xl bg-[#14231D] text-slate-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center">
                                 <X size={12} strokeWidth={3} />
                             </button>
                             </div>
@@ -886,9 +888,9 @@ export function BusinessView() {
 
                 <section className="space-y-6 md:space-y-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">Products</h2>
+                    <h2 className="text-2xl font-black text-[#E8F1EC] italic uppercase tracking-tight">Products</h2>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <label className="w-full sm:w-auto text-slate-900 dark:text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 hover:dark:bg-emerald-800/50 cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-700">
+                        <label className="w-full sm:w-auto text-[#E8F1EC] px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 hover:dark:bg-emerald-800/50 cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-700">
                             <Sparkles size={16} className="text-emerald-500" /> Smart Add
                             <input type="file" multiple accept="image/*" className="hidden" disabled={isUploading} onChange={async (e) => {
                                 if (!e.target.files?.length) return;
@@ -946,9 +948,9 @@ export function BusinessView() {
                     {localState.products.map((p) => {
                         const imgs = p.images || (p.image ? [p.image] : []);
                         return (
-                        <div key={p.id} className="bg-white dark:bg-black rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-10 border border-slate-100 dark:border-white/10 shadow-sm relative group transition-all hover:border-emerald-500/20 hover:shadow-2xl">
+                        <div key={p.id} className="bg-[#111C18] rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-10 border border-[#1E2D27] shadow-sm relative group transition-all hover:border-emerald-500/20 hover:shadow-2xl">
                         
-                        <button onClick={() => updateLocalState("products", localState.products.filter(prod => prod.id !== p.id))} className="absolute top-6 right-6 md:top-8 md:right-8 w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-900 text-slate-300 hover:text-red-500 flex items-center justify-center transition-all z-20">
+                        <button onClick={() => updateLocalState("products", localState.products.filter(prod => prod.id !== p.id))} className="absolute top-6 right-6 md:top-8 md:right-8 w-10 h-10 rounded-xl bg-[#14231D] text-slate-300 hover:text-red-500 flex items-center justify-center transition-all z-20">
                             <Trash2 size={18} />
                         </button>
 
@@ -956,7 +958,7 @@ export function BusinessView() {
                             {/* MULTIPLE IMAGE MANAGER */}
                             <div className="w-full md:w-48 shrink-0 flex flex-col gap-4">
                                 <label
-                                    className="w-full aspect-square bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-white/5 flex items-center justify-center overflow-hidden rounded-[2.5rem] cursor-pointer relative group transition-all shadow-inner"
+                                    className="w-full aspect-square bg-[#14231D] border-2 border-[#1E2D27] flex items-center justify-center overflow-hidden rounded-[2.5rem] cursor-pointer relative group transition-all shadow-inner"
                                     style={imgs.length > 0 ? { backgroundImage: `url(${imgs[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
                                 >
                                     {!imgs.length && <Plus size={48} className="text-slate-200" />}
@@ -971,7 +973,7 @@ export function BusinessView() {
                                 {imgs.length > 0 && (
                                     <div className="flex gap-3 overflow-x-auto pb-2 px-1 no-scrollbar">
                                         {imgs.map((img, idx) => (
-                                            <div key={idx} className="w-14 h-14 overflow-hidden relative group shrink-0 border-2 border-slate-100 dark:border-white/10 rounded-xl">
+                                            <div key={idx} className="w-14 h-14 overflow-hidden relative group shrink-0 border-2 border-[#1E2D27] rounded-xl">
                                                 <img src={img} className="w-full h-full object-cover" alt="" />
                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                                     {idx > 0 && <button onClick={() => {
@@ -987,7 +989,7 @@ export function BusinessView() {
                                             </div>
                                         ))}
                                         {imgs.length < 5 && (
-                                            <label className="w-14 h-14 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-xl flex items-center justify-center cursor-pointer hover:border-emerald-500 shrink-0">
+                                            <label className="w-14 h-14 bg-[#14231D] border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-xl flex items-center justify-center cursor-pointer hover:border-emerald-500 shrink-0">
                                                 <Plus size={16} className="text-slate-400" />
                                                 <input type="file" className="hidden" accept="image/*" onChange={async (e) => { 
                                                     if (e.target.files?.[0]) { 
@@ -1002,35 +1004,35 @@ export function BusinessView() {
                             </div>
 
                             <div className="flex-1 space-y-6 min-w-0">
-                                <StableInput value={p.name || ""} onChange={(v) => updateProductLocal(p.id, "name", v)} className="w-full font-black text-2xl md:text-3xl outline-none bg-transparent text-slate-900 dark:text-white uppercase italic" placeholder="Product Name" />
+                                <StableInput value={p.name || ""} onChange={(v) => updateProductLocal(p.id, "name", v)} className="w-full font-black text-2xl md:text-3xl outline-none bg-transparent text-[#E8F1EC] uppercase italic" placeholder="Product Name" />
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Price</label>
-                                        <div className="bg-slate-50 dark:bg-zinc-900/50 px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5 flex items-center gap-2">
+                                        <div className="bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] flex items-center gap-2">
                                             <span className="text-slate-400 font-black">{localState.currency}</span>
-                                            <input type="number" value={p.price || ''} onChange={(e) => updateProductLocal(p.id, "price", Number(e.target.value))} className="bg-transparent font-black text-slate-900 dark:text-white outline-none w-full" />
+                                            <input type="number" value={p.price || ''} onChange={(e) => updateProductLocal(p.id, "price", Number(e.target.value))} className="bg-transparent font-black text-[#E8F1EC] outline-none w-full" />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Category</label>
-                                        <select value={p.category || ""} onChange={(e) => updateProductLocal(p.id, "category", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5 font-black text-xs uppercase dark:text-white">
+                                        <select value={p.category || ""} onChange={(e) => updateProductLocal(p.id, "category", e.target.value)} className="w-full bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] font-black text-xs uppercase dark:text-white">
                                             <option value="">None</option>
                                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Badge</label>
-                                        <select value={p.badge || ""} onChange={(e) => updateProductLocal(p.id, "badge", e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-900/50 px-4 py-3 rounded-xl border border-slate-100 dark:border-white/5 font-black text-xs uppercase dark:text-white">
+                                        <select value={p.badge || ""} onChange={(e) => updateProductLocal(p.id, "badge", e.target.value)} className="w-full bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] font-black text-xs uppercase dark:text-white">
                                             <option value="">None</option>
-                                            <option value="hot">🔥 Hot</option>
-                                            <option value="new">✨ New</option>
-                                            <option value="sale">🏷️ Sale</option>
+                                            <option value="hot">Hot</option>
+                                            <option value="new">New</option>
+                                            <option value="sale">Sale</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <StableTextarea value={p.description || ""} onChange={(v) => updateProductLocal(p.id, "description", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-24 border border-slate-100 dark:border-white/5 resize-none transition-all focus:border-emerald-500" placeholder="Describe your product..." />
+                                <StableTextarea value={p.description || ""} onChange={(v) => updateProductLocal(p.id, "description", v)} className="w-full bg-[#14231D]/50 rounded-2xl p-4 text-sm font-medium text-slate-600 dark:text-zinc-400 outline-none h-24 border border-[#1E2D27] resize-none transition-all focus:border-emerald-500" placeholder="Describe your product..." />
 
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-3 cursor-pointer">
@@ -1081,11 +1083,11 @@ export function BusinessView() {
                         </div>
                         <TemplateSelector type="hero" current={localState.heroTemplateId || "hero-1"} onChange={(v) => updateLocalState("heroTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Hero Content Overrides</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#E8F1EC]">Hero Content Overrides</h4>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase text-slate-400">Hero Image</label>
-                                    <label className="block w-full h-24 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
+                                    <label className="block w-full h-24 bg-[#14231D] border-2 border-dashed border-[#1E2D27] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
                                         {localState.heroImage ? (
                                             <img src={localState.heroImage} className="w-full h-full object-cover" />
                                         ) : (
@@ -1100,9 +1102,9 @@ export function BusinessView() {
                                     </label>
                                 </div>
                                 <div className="space-y-3">
-                                    <StableInput value={localState.heroTitle || ""} onChange={(v) => updateLocalState("heroTitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-black text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5" placeholder="Welcome to our store" />
-                                    <StableInput value={localState.heroSubtitle || ""} onChange={(v) => updateLocalState("heroSubtitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Quality products, delivered" />
-                                    <StableInput value={localState.heroButtonText || ""} onChange={(v) => updateLocalState("heroButtonText", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-slate-100 dark:border-white/5" placeholder="Shop Now" />
+                                    <StableInput value={localState.heroTitle || ""} onChange={(v) => updateLocalState("heroTitle", v)} className="w-full bg-[#14231D]/50 rounded-xl p-3 font-black text-xs text-[#E8F1EC] border border-[#1E2D27]" placeholder="Welcome to our store" />
+                                    <StableInput value={localState.heroSubtitle || ""} onChange={(v) => updateLocalState("heroSubtitle", v)} className="w-full bg-[#14231D]/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-[#1E2D27]" placeholder="Quality products, delivered" />
+                                    <StableInput value={localState.heroButtonText || ""} onChange={(v) => updateLocalState("heroButtonText", v)} className="w-full bg-[#14231D]/50 rounded-xl p-3 font-bold text-xs text-slate-600 dark:text-zinc-400 border border-[#1E2D27]" placeholder="Shop Now" />
                                 </div>
                             </div>
                         </div>
@@ -1137,8 +1139,8 @@ export function BusinessView() {
                         </div>
                         <TemplateSelector type="footer" current={localState.footerTemplateId || "footer-1"} onChange={(v) => updateLocalState("footerTemplateId", v)} />
                         <div className="pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Footer Content</h4>
-                                    <StableInput value={localState.tagline || ""} onChange={(v) => updateLocalState("tagline", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-4 font-bold text-sm text-slate-600 border border-slate-100" placeholder="Premium Products Tagline" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[#E8F1EC]">Footer Content</h4>
+                                    <StableInput value={localState.tagline || ""} onChange={(v) => updateLocalState("tagline", v)} className="w-full bg-[#14231D]/50 rounded-xl p-4 font-bold text-sm text-slate-600 border border-slate-100" placeholder="Premium Products Tagline" />
                                 </div>
                     </div>
                 </Accordion>
@@ -1151,17 +1153,17 @@ export function BusinessView() {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Title (SEO Title)</label>
-                                    <StableInput value={localState.seoTitle || ""} onChange={(v) => updateLocalState("seoTitle", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3.5 font-bold text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 focus:border-emerald-500 outline-none" placeholder={localState.bizName || "Store name"} />
+                                    <StableInput value={localState.seoTitle || ""} onChange={(v) => updateLocalState("seoTitle", v)} className="w-full bg-[#14231D]/50 rounded-xl p-3.5 font-bold text-xs text-[#E8F1EC] border border-[#1E2D27] focus:border-emerald-500 outline-none" placeholder={localState.bizName || "Store name"} />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Description (Social Sharing)</label>
-                                    <StableTextarea value={localState.ogDescription || ""} onChange={(v) => updateLocalState("ogDescription", v)} className="w-full bg-slate-50 dark:bg-zinc-900/50 rounded-xl p-3.5 font-bold text-xs text-slate-900 dark:text-white border border-slate-100 dark:border-white/5 focus:border-emerald-500 outline-none h-24 resize-none" placeholder="Get the best products at the most affordable prices. Fast WhatsApp orders and quick deliveries." />
+                                    <StableTextarea value={localState.ogDescription || ""} onChange={(v) => updateLocalState("ogDescription", v)} className="w-full bg-[#14231D]/50 rounded-xl p-3.5 font-bold text-xs text-[#E8F1EC] border border-[#1E2D27] focus:border-emerald-500 outline-none h-24 resize-none" placeholder="Get the best products at the most affordable prices. Fast WhatsApp orders and quick deliveries." />
                                 </div>
                             </div>
                             
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Share Image (OG Image)</label>
-                                <label className="block w-full h-40 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
+                                <label className="block w-full h-40 bg-[#14231D] border-2 border-dashed border-[#1E2D27] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
                                     {localState.ogImage ? (
                                         <img src={localState.ogImage} className="w-full h-full object-cover" />
                                     ) : (
@@ -1182,13 +1184,13 @@ export function BusinessView() {
                     </div>
                 </Accordion>
                 
-                <section className="bg-white dark:bg-black rounded-[3rem] p-8 md:p-10 shadow-sm border border-red-100 dark:border-red-900/30 space-y-6 mt-10">
+                <section className="bg-[#111C18] rounded-[3rem] p-8 md:p-10 shadow-sm border border-red-100 dark:border-red-900/30 space-y-6 mt-10">
                     <div className="px-2">
                         <h3 className="font-black text-xs uppercase tracking-[0.2em] text-red-500 dark:text-red-400">Danger Zone</h3>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase mt-1">Transfer ownership of this store to another user via email. They must be registered on SwiftLink.</p>
                     </div>
                     <div className="flex flex-col md:flex-row gap-4 px-2">
-                        <StableInput type="email" placeholder="New owner's email address" value={(window as any)._transferEmail || ""} onChange={(v) => { (window as any)._transferEmail = v; }} className="w-full md:flex-1 bg-slate-50 dark:bg-zinc-900/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-slate-100 dark:border-white/5 focus:border-red-500" />
+                        <StableInput type="email" placeholder="New owner's email address" value={(window as any)._transferEmail || ""} onChange={(v) => { (window as any)._transferEmail = v; }} className="w-full md:flex-1 bg-[#14231D]/50 rounded-2xl p-4 font-bold text-sm text-slate-600 dark:text-zinc-400 outline-none border border-[#1E2D27] focus:border-red-500" />
                         <button onClick={async () => {
                             const email = (window as any)._transferEmail;
                             if (!email) return addToast("Please enter an email", "error");
@@ -1208,14 +1210,14 @@ export function BusinessView() {
 
         {activeTab === "inbox" && (
             <motion.div key="inbox" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-6">
-                <div className="bg-white dark:bg-black rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 dark:border-white/10">
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight mb-1">Customer Reviews</h2>
+                <div className="bg-[#111C18] rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-[#1E2D27]">
+                    <h2 className="text-2xl font-black text-[#E8F1EC] italic uppercase tracking-tight mb-1">Customer Reviews</h2>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">What your customers are saying publicly</p>
                     
                     {reviewsLoading ? (
                         <div className="py-16 flex justify-center"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
                     ) : reviews.length === 0 ? (
-                        <div className="py-16 flex flex-col items-center text-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem]">
+                        <div className="py-16 flex flex-col items-center text-center border-2 border-dashed border-[#1E2D27] rounded-[2rem]">
                             <MessageSquare size={32} className="text-slate-200 mb-3" />
                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No reviews yet</p>
                         </div>
@@ -1224,14 +1226,14 @@ export function BusinessView() {
                             {reviews.map((r) => {
                                 const revComments = comments[r.id] || [];
                                 return (
-                                    <div key={r.id} className="bg-slate-50 dark:bg-zinc-900 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 space-y-4">
+                                    <div key={r.id} className="bg-[#14231D] p-6 rounded-[2rem] border border-[#1E2D27] space-y-4">
                                         <div className="flex items-start justify-between flex-wrap gap-2">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-black text-sm shadow-inner">
                                                     {r.author_name?.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-slate-900 dark:text-white">{r.author_name}</p>
+                                                    <p className="text-sm font-black text-[#E8F1EC]">{r.author_name}</p>
                                                     <p className="text-[9px] text-slate-400 mt-0.5">
                                                         {r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}
                                                     </p>
@@ -1255,10 +1257,10 @@ export function BusinessView() {
                                         {revComments.length > 0 && (
                                             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3 pl-4 md:pl-8">
                                                 {revComments.map((c) => (
-                                                    <div key={c.id} className="bg-white dark:bg-black/50 p-4 rounded-2xl border border-slate-100 dark:border-white/5">
+                                                    <div key={c.id} className="bg-[#111C18]/50 p-4 rounded-2xl border border-[#1E2D27]">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                            <h5 className="font-black text-[10px] text-slate-900 dark:text-white uppercase">{c.author_name}</h5>
+                                                            <h5 className="font-black text-[10px] text-[#E8F1EC] uppercase">{c.author_name}</h5>
                                                             <span className="text-[7px] font-black uppercase text-white bg-emerald-500 px-1 rounded">Store Owner</span>
                                                         </div>
                                                         <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed font-semibold pl-3">{c.message}</p>
@@ -1274,7 +1276,7 @@ export function BusinessView() {
                                                 value={replyInputs[r.id] || ""} 
                                                 onChange={(e) => setReplyInputs(prev => ({ ...prev, [r.id]: e.target.value }))} 
                                                 placeholder="Write an official reply..." 
-                                                className="flex-1 bg-white dark:bg-black p-3.5 rounded-xl text-xs font-medium dark:text-white outline-none border border-slate-100 dark:border-white/5 focus:border-emerald-500 transition-all"
+                                                className="flex-1 bg-[#111C18] p-3.5 rounded-xl text-xs font-medium dark:text-white outline-none border border-[#1E2D27] focus:border-emerald-500 transition-all"
                                             />
                                             <button 
                                                 onClick={() => submitReply(r.id)} 

@@ -94,6 +94,8 @@ export type ShopState = {
   tagline: string;
   aboutUs: string;
   isLive?: boolean;
+  onboarding_step?: number;
+  ask_buyer_details?: boolean;
 
   /** The chosen website template — three complete designs, each light + dark. */
   websiteTemplateId?: WebsiteTemplateId;

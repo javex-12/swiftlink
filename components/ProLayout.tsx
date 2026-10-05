@@ -5,79 +5,87 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ProSidebar } from "./ProSidebar";
 import { OnboardingModal } from "./OnboardingModal";
-import { LayoutGrid, Edit3, Sliders, MoreHorizontal } from "lucide-react";
-import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { Logo } from "./Logo";
+import { LayoutGrid, MessageSquare, Store, LineChart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ProLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close sidebar on route change (mobile)
+  // Close sidebar drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
+  const mobileNavItems = [
+    { href: "/pro", label: "Home", icon: LayoutGrid, matchExact: true },
+    { href: "/pro/inquiries", label: "Inquiries", icon: MessageSquare, matchExact: false },
+    { href: "/business", label: "Store", icon: Store, matchExact: false },
+    { href: "/pro/analytics", label: "Stats", icon: LineChart, matchExact: false },
+    { href: "/account", label: "Settings", icon: Settings, matchExact: false },
+  ];
+
+  const isTabActive = (item: typeof mobileNavItems[0]) => {
+    if (item.href === "/pro") {
+      return pathname === "/pro" || pathname === "/";
+    }
+    if (item.matchExact) return pathname === item.href;
+    return pathname.startsWith(item.href);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#07110d] text-slate-900 dark:text-white flex flex-col lg:flex-row font-sans transition-colors duration-300 relative selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[#0A1210] text-[#E8F1EC] flex flex-col md:flex-row font-sans selection:bg-[#19C37D]/30">
       {/* Onboarding Wizard Modal */}
       <OnboardingModal />
 
-      {/* Sidebar Navigation */}
+      {/* Desktop Sidebar & Mobile Drawer */}
       <ProSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-20 lg:pb-0">
-        {/* Content Section */}
-        <main className="flex-1 flex flex-col p-4 md:p-8 animate-fade-in">
-           {children}
+      {/* Main Content Area: Padding bottom accounts for bottom bar height + safe area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        {/* Mobile Header (<768px) with shared Logo */}
+        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#1E2D27] bg-[#111C18]/95 px-4 backdrop-blur-md">
+          <Link href="/pro" className="flex items-center gap-2">
+            <Logo size="sm" showWordmark={true} />
+          </Link>
+        </header>
+
+        <main className="flex-1 flex flex-col">
+          {children}
         </main>
       </div>
 
-      {/* Mobile Floating Bottom Navigation Bar (Figma Design Match - Adaptive Theme) */}
-      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50 flex items-center justify-around bg-white/95 dark:bg-[#0b1c15]/90 backdrop-blur-xl border border-slate-200/80 dark:border-emerald-500/20 py-3 px-6 rounded-full shadow-2xl shadow-slate-300/40 dark:shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-        <Link
-          href="/pro"
-          className={cn(
-            "flex flex-col items-center gap-1 transition-all",
-            pathname === "/pro" ? "text-emerald-600 dark:text-[#00c885] scale-110" : "text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-          )}
-        >
-          <LayoutGrid size={20} />
-          {pathname === "/pro" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#00c885]" />}
-        </Link>
+      {/* Mobile Bottom Tab Bar (<768px) with 44px Minimum Touch Targets & Non-Shifting Indicator */}
+      <nav
+        aria-label="Mobile navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch justify-around bg-[#111C18]/95 backdrop-blur-xl border-t border-[#1E2D27] px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] shadow-2xl"
+      >
+        {mobileNavItems.map((item) => {
+          const active = isTabActive(item);
+          const Icon = item.icon;
 
-        <Link
-          href="/business"
-          className={cn(
-            "flex flex-col items-center gap-1 transition-all",
-            pathname === "/business" ? "text-emerald-600 dark:text-[#00c885] scale-110" : "text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-          )}
-        >
-          <Edit3 size={20} />
-          {pathname === "/business" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#00c885]" />}
-        </Link>
-
-        <Link
-          href="/account"
-          className={cn(
-            "flex flex-col items-center gap-1 transition-all",
-            pathname === "/account" ? "text-emerald-600 dark:text-[#00c885] scale-110" : "text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-          )}
-        >
-          <Sliders size={20} />
-          {pathname === "/account" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#00c885]" />}
-        </Link>
-
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
-        >
-          <MoreHorizontal size={20} />
-        </button>
-      </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "relative flex flex-col items-center justify-center min-h-[48px] min-w-[44px] flex-1 py-1.5 transition-colors",
+                active ? "text-[#19C37D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+              )}
+            >
+              {/* Absolute top indicator bar: does NOT shift label or icon layout */}
+              {active && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-[#19C37D]" />
+              )}
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="mt-1 text-[11px] font-medium tracking-tight">
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
-
-

@@ -60,59 +60,59 @@
 
 /* @tokens:console-light */
 :root {
-  --app-bg: #f8fafc;
-  --app-surface: #ffffff;
-  --app-surface-2: #f1f5f9;
-  --app-border: #e2e8f0;
-  --app-border-strong: #64748b;
-  --app-text: #0f172a;
-  --app-text-muted: #475569;
-  --app-text-subtle: #64748b;
-  --app-accent: #047857;
-  --app-accent-hover: #065f46;
-  --app-accent-fg: #ffffff;
-  --app-accent-subtle: #ecfdf5;
-  --app-accent-text: #047857;
-  --app-ring: #047857;
-  --app-success: #15803d;
-  --app-success-subtle: #f0fdf4;
-  --app-warning: #b45309;
-  --app-warning-subtle: #fffbeb;
-  --app-danger: #dc2626;
-  --app-danger-fg: #ffffff;
-  --app-danger-subtle: #fef2f2;
-  --app-info: #2563eb;
-  --app-info-subtle: #eff6ff;
-  --app-overlay: rgba(2, 6, 23, 0.5);
+  --app-bg: #0a1210;
+  --app-surface: #111c18;
+  --app-surface-2: #14231d;
+  --app-border: #1e2d27;
+  --app-border-strong: #5c7c6d;
+  --app-text: #e8f1ec;
+  --app-text-muted: #9db3a8;
+  --app-text-subtle: #9db3a8;
+  --app-accent: #19c37d;
+  --app-accent-hover: #16b070;
+  --app-accent-fg: #04140d;
+  --app-accent-subtle: #142e23;
+  --app-accent-text: #19c37d;
+  --app-ring: #19c37d;
+  --app-success: #19c37d;
+  --app-success-subtle: #142e23;
+  --app-warning: #e8b93a;
+  --app-warning-subtle: #292008;
+  --app-danger: #ff8a8a;
+  --app-danger-fg: #04140d;
+  --app-danger-subtle: #2a1414;
+  --app-info: #60a5fa;
+  --app-info-subtle: #0f1f3d;
+  --app-overlay: rgba(10, 18, 16, 0.7);
 }
 /* @tokens:end */
 
 /* @tokens:console-dark */
 .dark {
-  --app-bg: #0b1220;
-  --app-surface: #131c2e;
-  --app-surface-2: #1a2337;
-  --app-border: #232d42;
-  --app-border-strong: #64748b;
-  --app-text: #f1f5f9;
-  --app-text-muted: #94a3b8;
-  --app-text-subtle: #7c8da6;
-  --app-accent: #34d399;
-  --app-accent-hover: #6ee7b7;
-  --app-accent-fg: #04231a;
-  --app-accent-subtle: #0c2a22;
-  --app-accent-text: #6ee7b7;
-  --app-ring: #6ee7b7;
-  --app-success: #4ade80;
-  --app-success-subtle: #0d2416;
-  --app-warning: #fbbf24;
-  --app-warning-subtle: #291d06;
-  --app-danger: #f87171;
-  --app-danger-fg: #2a1214;
-  --app-danger-subtle: #2a1214;
+  --app-bg: #0a1210;
+  --app-surface: #111c18;
+  --app-surface-2: #14231d;
+  --app-border: #1e2d27;
+  --app-border-strong: #5c7c6d;
+  --app-text: #e8f1ec;
+  --app-text-muted: #9db3a8;
+  --app-text-subtle: #9db3a8;
+  --app-accent: #19c37d;
+  --app-accent-hover: #16b070;
+  --app-accent-fg: #04140d;
+  --app-accent-subtle: #142e23;
+  --app-accent-text: #19c37d;
+  --app-ring: #19c37d;
+  --app-success: #19c37d;
+  --app-success-subtle: #142e23;
+  --app-warning: #e8b93a;
+  --app-warning-subtle: #292008;
+  --app-danger: #ff8a8a;
+  --app-danger-fg: #04140d;
+  --app-danger-subtle: #2a1414;
   --app-info: #60a5fa;
   --app-info-subtle: #0f1f3d;
-  --app-overlay: rgba(2, 6, 23, 0.7);
+  --app-overlay: rgba(10, 18, 16, 0.7);
 }
 /* @tokens:end */
 
@@ -194,9 +194,9 @@
    * request loaded four families that never reached the page. A fallback inside
    * `var()` makes that failure mode impossible.
    */
-  --font-sans: var(--font-plus-jakarta, ui-sans-serif), ui-sans-serif, system-ui,
+  --font-sans: var(--font-dm-sans, var(--font-plus-jakarta, ui-sans-serif)), ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-plus-jakarta, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage, var(--font-plus-jakarta, ui-sans-serif)), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 

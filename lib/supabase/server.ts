@@ -13,7 +13,12 @@ import type { User } from "@supabase/supabase-js";
 export function supabaseServerEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key || url.includes("dummy-project")) return null;
+  if (!url || !key || !url.startsWith("http") || url.includes("dummy-project") || url.includes("your-project")) return null;
+  try {
+    new URL(url);
+  } catch {
+    return null;
+  }
   return { url, key };
 }
 

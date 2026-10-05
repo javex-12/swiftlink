@@ -125,43 +125,43 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
       <AnimatePresence>
         {modal && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-[#020617]/80 backdrop-blur-xl">
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-[#0A1210]/80 backdrop-blur-xl">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#0f172a] rounded-[2rem] w-full max-w-sm overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-white/5"
+              className="bg-[#111C18] rounded-[18px] w-full max-w-sm overflow-hidden shadow-2xl border border-[#1E2D27]"
             >
-              <div className="p-10 pb-0 text-center">
-                 <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-8 border border-emerald-500/20">
-                    <AlertTriangle size={28} />
+              <div className="p-8 pb-0 text-center">
+                 <div className="w-14 h-14 bg-[#14231D] text-[#19C37D] rounded-[14px] flex items-center justify-center mx-auto mb-6 border border-[#24382F]">
+                    <AlertTriangle size={24} />
                  </div>
-                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-3">{modal.title}</h3>
-                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] leading-relaxed mb-8">{modal.message}</p>
+                 <h3 className="text-xl font-bold text-[#E8F1EC] tracking-tight mb-2">{modal.title}</h3>
+                 <p className="text-xs text-[#9DB3A8] leading-relaxed mb-6">{modal.message}</p>
                  
                  {modal.isPrompt && (
-                    <div className="mb-8">
+                    <div className="mb-6">
                        <input 
                          autoFocus
                          type="text" 
                          value={promptValue} 
                          onChange={(e) => setPromptValue(e.target.value)}
-                         className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-5 py-4 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-slate-800"
+                         className="w-full bg-[#14231D] border border-[#24382F] rounded-[12px] px-4 py-3 text-xs font-medium text-[#E8F1EC] focus:outline-none focus:border-[#19C37D] transition-colors placeholder:text-[#9DB3A8]/50"
                          onKeyDown={(e) => { if (e.key === 'Enter') modal.onConfirm(promptValue); }}
                        />
                     </div>
                  )}
               </div>
-              <div className="p-8 flex gap-4">
+              <div className="p-6 flex gap-3">
                  <button 
                    onClick={modal.onCancel}
-                   className="flex-1 py-4 rounded-xl bg-white/5 text-slate-500 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
+                   className="flex-1 min-h-[44px] py-2.5 rounded-[12px] bg-[#14231D] text-[#9DB3A8] text-xs font-semibold hover:text-[#E8F1EC] border border-[#24382F] transition-colors"
                  >
                    {modal.cancelLabel || "Cancel"}
                  </button>
                  <button 
                    onClick={() => modal.onConfirm(modal.isPrompt ? promptValue : undefined)}
-                   className="flex-1 py-4 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
+                   className="flex-1 min-h-[44px] py-2.5 rounded-[12px] bg-[#19C37D] text-[#04140D] text-xs font-semibold shadow-md active:scale-95 transition-all"
                  >
                    {modal.isPrompt ? "Save" : (modal.confirmLabel || "Confirm")}
                  </button>
@@ -202,7 +202,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
               <h2 className="text-3xl font-black text-white italic uppercase tracking-tight">Social Hub</h2>
               <div className="inline-block mt-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-widest rounded-full">
-                🚧 Building in Public
+                Building in Public
               </div>
 
               <p className="mt-6 text-xs text-slate-400 dark:text-zinc-400 font-medium leading-relaxed max-w-sm mx-auto">

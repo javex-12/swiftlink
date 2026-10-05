@@ -14,9 +14,9 @@ import {
   Loader2,
   X,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar } from "@/components/ui/avatar";
 
 type Post = {
   id: string;
@@ -41,12 +41,6 @@ type SocialPageProps = {
   accentColor?: string;
   onBack: () => void;
 };
-
-const AVATARS = ["🧑‍💼", "👩‍🦱", "🧑‍🎤", "👨‍💻", "👩‍🚀", "🧑‍🍳", "👩‍🎨", "🧔", "👩‍🔬", "🧑‍✈️"];
-function getAvatar(name: string) {
-  if (!name) return "👤";
-  return AVATARS[name.charCodeAt(0) % AVATARS.length];
-}
 
 const timeAgo = (date: string) => {
   const diff = Date.now() - new Date(date).getTime();
@@ -282,9 +276,6 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
             </button>
             <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Community</h1>
           </div>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">
-            <Sparkles size={20} />
-          </button>
         </div>
       </header>
 
@@ -298,7 +289,9 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-20 px-6">
-              <div className="w-20 h-20 bg-slate-100 dark:bg-zinc-900 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">💭</div>
+              <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-900 rounded-full flex items-center justify-center text-slate-400 dark:text-zinc-500 mx-auto mb-6">
+                <MessageCircle size={28} />
+              </div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">It&apos;s quiet in here</h2>
               <p className="text-slate-500 dark:text-zinc-400 text-sm mb-8">Be the first to share your thoughts with the community.</p>
               <button 
@@ -328,9 +321,7 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
                       {/* Post Header */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0" style={{ backgroundColor: `${accentColor}15` }}>
-                            {getAvatar(post.author_name)}
-                          </div>
+                          <Avatar name={post.author_name} seed={post.id} size="md" />
                           <div>
                             <p className="font-bold text-[15px] text-slate-900 dark:text-white leading-tight">
                               {post.author_name}
@@ -408,9 +399,7 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
                               {/* Existing Comments */}
                               {postComments.map((comment) => (
                                 <div key={comment.id} className="flex gap-3">
-                                  <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-xs shrink-0">
-                                    {getAvatar(comment.author_name)}
-                                  </div>
+                                  <Avatar name={comment.author_name} seed={comment.id} size="xs" />
                                   <div className="bg-slate-50 dark:bg-zinc-900 rounded-2xl rounded-tl-none px-4 py-2.5 flex-1 border border-slate-100 dark:border-zinc-800">
                                     <p className="text-xs font-black text-slate-900 dark:text-white mb-0.5">{comment.author_name}</p>
                                     <p className="text-sm text-slate-700 dark:text-zinc-300 leading-snug">{comment.message}</p>

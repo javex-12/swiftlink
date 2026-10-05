@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
-  Sparkles,
+  Store,
   ImagePlus,
   MoreHorizontal,
   Share2,
@@ -34,7 +34,6 @@ import {
   LogOut,
   Hash,
   X,
-  Zap,
   Globe,
   Ghost,
   ShieldCheck,
@@ -81,8 +80,8 @@ type SocialHubProps = {
 
 const PROF_AVATARS = [
     { id: "User", icon: User, color: "bg-blue-500" },
-    { id: "Zap", icon: Zap, color: "bg-amber-500" },
-    { id: "Sparkles", icon: Sparkles, color: "bg-emerald-500" },
+    { id: "Store", icon: Store, color: "bg-amber-500" },
+    { id: "Package", icon: Package, color: "bg-emerald-500" },
     { id: "Globe", icon: Globe, color: "bg-indigo-500" },
     { id: "Ghost", icon: Ghost, color: "bg-slate-800" },
     { id: "ShieldCheck", icon: ShieldCheck, color: "bg-rose-500" },
@@ -494,8 +493,9 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         <AnimatePresence mode="wait">
           {tab === "feed" && (
             <motion.div key="feed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col">
-              <div className="flex border-b border-slate-50 dark:border-zinc-900 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 px-6 py-4">
-                 <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">🌍 Global Timeline</h2>
+              <div className="flex items-center gap-2 border-b border-slate-50 dark:border-zinc-900 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 px-6 py-4">
+                 <Globe size={14} className="text-slate-500 dark:text-zinc-400" />
+                 <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Global Timeline</h2>
               </div>
               {activeUsers.length > 0 && (
                 <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 py-4 border-b border-slate-100 dark:border-zinc-900 bg-slate-50/50 dark:bg-zinc-950/20">
@@ -527,7 +527,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                         <div className="mt-5 grid grid-cols-2 gap-3 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-zinc-800">{r.attachments.map((img, idx) => <img key={idx} src={img} onClick={(e) => { e.stopPropagation(); setActiveImage(img); }} className="w-full h-56 object-cover hover:scale-110 transition-transform duration-700" />)}</div>
                       )}
                       <div className="flex items-center gap-10 mt-6 pt-2" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => handleVibe(r.id, "🔥")} className={cn("flex items-center gap-2.5 transition-all active:scale-75", interactions[r.id] === "like" ? "text-rose-500" : "text-slate-400")}><Heart size={20} className={interactions[r.id] === "like" ? "fill-current" : ""} strokeWidth={2.5} /><span className="text-xs font-black">{r.likes > 0 ? r.likes : ""}</span></button>
+                        <button onClick={() => handleVibe(r.id, "like")} className={cn("flex items-center gap-2.5 transition-all active:scale-75", interactions[r.id] === "like" ? "text-rose-500" : "text-slate-400")}><Heart size={20} className={interactions[r.id] === "like" ? "fill-current" : ""} strokeWidth={2.5} /><span className="text-xs font-black">{r.likes > 0 ? r.likes : ""}</span></button>
                         <button onClick={() => { setActiveThread(r); fetchComments(r.id); }} className="flex items-center gap-2.5 text-slate-400"><MessageSquare size={20} strokeWidth={2.5} /></button>
                         {r.user_id !== user?.id && <button onClick={() => { setActiveChat({ id: r.user_id!, display_name: r.author_name, username: r.author_name, avatar_url: r.author_avatar || "User" }); }} className="text-slate-400 ml-auto"><Send size={19} strokeWidth={2.5} /></button>}
                       </div>
@@ -543,7 +543,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
             <motion.div key="activity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 space-y-6">
                <h2 className="text-xl font-black dark:text-white italic uppercase px-2">Activity</h2>
                {notifications.length === 0 ? <div className="py-20 text-center text-slate-400 font-bold">No new activity.</div> : notifications.map((n, i) => (
-                 <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl"><div className="w-12 h-12 shrink-0"><AvatarIcon src={n.actor?.avatar_url} /></div><div className="flex-1"><p className="text-sm dark:text-zinc-300 font-bold"><span className="font-black dark:text-white">{n.actor?.display_name}</span> {n.type === "vibe" ? "vibed with your post 🔥" : n.type === "comment" ? "replied to your thread 💬" : "started following you 👥"}</p></div></div>
+                 <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-zinc-900/50 rounded-3xl"><div className="w-12 h-12 shrink-0"><AvatarIcon src={n.actor?.avatar_url} /></div><div className="flex-1"><p className="text-sm dark:text-zinc-300 font-bold"><span className="font-black dark:text-white">{n.actor?.display_name}</span> {n.type === "vibe" ? "liked your post" : n.type === "comment" ? "replied to your thread" : "started following you"}</p></div></div>
                ))}
             </motion.div>
           )}

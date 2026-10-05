@@ -94,7 +94,7 @@ export function Avatar({
           className={cn(
             "h-full w-full object-cover",
             shapeClass,
-            ring && "ring-2 ring-app-surface",
+            ring && "ring-2 ring-app-border",
           )}
         />
       ) : (
@@ -103,7 +103,7 @@ export function Avatar({
           width={px}
           height={px}
           aria-hidden="true"
-          className={cn(shapeClass, ring && "ring-2 ring-app-surface", "overflow-hidden")}
+          className={cn(shapeClass, ring && "ring-2 ring-app-border", "overflow-hidden")}
         >
           <defs>
             <linearGradient id={ids.gradient} x1="0" y1="0" x2="1" y2="1">

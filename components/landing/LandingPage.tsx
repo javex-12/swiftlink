@@ -9,10 +9,11 @@ import {
   CheckCircle2,
   Globe,
   Layers,
+  Layout,
   Menu,
   Moon,
-  Shield,
-  Sparkles,
+  MessageSquare,
+  Package,
   Sun,
   X,
 } from "lucide-react";
@@ -21,20 +22,15 @@ import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { TemplateFrame } from "@/components/storefront/template-frames";
 import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
+import { Logo } from "@/components/Logo";
+import { FEATURE_FLAGS, isFeatureEnabled } from "@/lib/flags";
 
 /**
  * The marketing page.
  *
- * Rebuilt on design tokens (`docs/03-DECISIONS.md` D12). The previous version was
- * a patchwork of literal `slate-*`/`emerald-*` utilities with hard-coded `#020617`
- * dark surfaces, so it drifted from the console and could not be re-themed. It
- * also opened with a 1.2s fake preloader and carried a "cybernetic holographic
- * HUD", a double marquee and an auto-playing phone demo — four separate things
- * competing for attention before a visitor read what the product does.
- *
- * What is left is one calm column that says what SwiftLink is, three features,
- * three steps to go live, three plans, and a way in. Nothing is claimed that the
- * product does not do.
+ * Rebuilt on design tokens (`docs/03-DECISIONS.md` D12).
+ * Hero v2 is gated behind FEATURE_FLAGS.landingV2.
+ * Real SwiftLink logo is rendered via shared Logo component.
  */
 
 // ─── Motion helpers ───────────────────────────────────────────────────────────
@@ -135,9 +131,7 @@ function Navbar() {
     >
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
         <Link href="/" className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
-          <img src="/logo.png" alt="" className="h-7 w-7 object-contain" />
-          <span className="text-base font-semibold tracking-tight text-app-text">SwiftLink</span>
+          <Logo size="sm" showWordmark={true} />
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
@@ -152,17 +146,17 @@ function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <ThemeButton isDark={isDark} onToggle={toggleTheme} />
           <Link
             href="/signup"
-            className="rounded-lg px-3.5 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
+            className="rounded-[10px] border border-[#1E2D27] bg-[#111C18]/60 px-4 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
           >
-            Sign in
+            Log in
           </Link>
           <Link
             href="/signup?mode=signup"
-            className="rounded-lg bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
+            className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
           >
             Get started
           </Link>
@@ -209,7 +203,7 @@ function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
                 className="rounded-lg border border-app-border px-4 py-3 text-center text-sm font-medium text-app-text"
               >
-                Sign in
+                Log in
               </Link>
               <Link
                 href="/signup?mode=signup"
@@ -226,8 +220,209 @@ function Navbar() {
   );
 }
 
-// ─── Hero visual: one of the three real website templates ────────────────────
-function StorePreview() {
+// ─── Hero Phone Mockup (Pure CSS/SVG, fictional sample data, no photos) ─────
+function HeroPhoneMockup() {
+  return (
+    <div className="relative mx-auto w-full max-w-[310px] sm:max-w-[340px] pt-4 lg:pt-0">
+      {/* Subtle background glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-4 -z-10 rounded-[44px] bg-[#19C37D]/10 blur-2xl"
+      />
+
+      {/* Phone Shell */}
+      <div className="relative w-full rounded-[42px] border-[3px] border-[#1E2D27] bg-[#0A1210] p-4 sm:p-5 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] select-none">
+        {/* Dynamic Island / Speaker Pill */}
+        <div className="w-24 h-3.5 bg-[#14231D] rounded-full mx-auto mb-4 border border-[#1E2D27] flex items-center justify-end pr-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#1E2D27]" />
+        </div>
+
+        {/* Store Avatar & Info */}
+        <div className="text-center mb-3">
+          <div className="w-14 h-14 rounded-2xl bg-[#14231D] border border-[#24382F] mx-auto mb-2 flex items-center justify-center text-[#19C37D] shadow-inner">
+            <svg
+              className="w-7 h-7"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+              <path d="M3 6h18" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+          </div>
+          <h3 className="text-sm sm:text-base font-bold text-[#E8F1EC] tracking-tight">Kemi Studio</h3>
+          <p className="text-[11px] sm:text-xs text-[#9DB3A8] mt-0.5">Clothing, bags, and home goods</p>
+        </div>
+
+        {/* Chat on WhatsApp CTA Button */}
+        <div className="w-full py-2.5 px-4 rounded-[12px] bg-[#19C37D] text-[#04140D] font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+          <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.979-.275-.1-.475-.15-.675.15-.2.301-.774.98-1.025 1.23-.25.251-.5.276-.801.126-.301-.15-1.272-.469-2.423-1.496-.896-.799-1.5-1.787-1.676-2.088-.175-.301-.019-.464.132-.614.136-.135.301-.351.451-.526.15-.175.2-.301.301-.501.1-.2.05-.376-.025-.526-.075-.15-.676-1.63-.926-2.231-.244-.587-.492-.507-.676-.516l-.576-.01c-.2 0-.526.075-.801.376-.275.301-1.052 1.028-1.052 2.508 0 1.48 1.077 2.909 1.228 3.109.15.2 2.119 3.235 5.132 4.538.717.31 1.277.496 1.713.634.72.229 1.375.197 1.893.12.577-.087 1.78-.727 2.03-1.428.25-.702.25-1.304.175-1.43-.075-.125-.275-.2-.576-.351z" />
+            <path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.83.498 3.545 1.365 5.018L2 22l5.127-1.345A9.954 9.954 0 0 0 12.004 22c5.523 0 10.004-4.48 10.004-10s-4.481-10-10.004-10zm0 18.067c-1.579 0-3.056-.445-4.32-1.217l-.31-.188-3.048.8 1.026-2.973-.203-.326A8.04 8.04 0 0 1 3.937 12c0-4.448 3.619-8.067 8.067-8.067 4.448 0 8.067 3.619 8.067 8.067 0 4.448-3.619 8.067-8.067 8.067z" />
+          </svg>
+          <span>Chat on WhatsApp</span>
+        </div>
+
+        {/* 2x2 Product Grid (CSS/SVG geometric cards, no photos) */}
+        <div className="grid grid-cols-2 gap-2.5 mt-3">
+          {/* Item 1 */}
+          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
+            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />
+              </svg>
+            </div>
+            <div className="mt-2">
+              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Linen Shirt</p>
+              <p className="text-[10px] font-bold text-[#19C37D]">₦18,500</p>
+            </div>
+          </div>
+
+          {/* Item 2 */}
+          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
+            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+            </div>
+            <div className="mt-2">
+              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Leather Tote</p>
+              <p className="text-[10px] font-bold text-[#19C37D]">₦24,000</p>
+            </div>
+          </div>
+
+          {/* Item 3 */}
+          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
+            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 2v4" />
+                <path d="M12 18v4" />
+                <path d="m4.93 4.93 2.83 2.83" />
+                <path d="m16.24 16.24 2.83 2.83" />
+              </svg>
+            </div>
+            <div className="mt-2">
+              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Silk Scarf</p>
+              <p className="text-[10px] font-bold text-[#19C37D]">₦9,200</p>
+            </div>
+          </div>
+
+          {/* Item 4 */}
+          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
+            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect width="16" height="16" x="4" y="4" rx="2" />
+                <path d="M9 9h6v6H9z" />
+              </svg>
+            </div>
+            <div className="mt-2">
+              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Amber Candle</p>
+              <p className="text-[10px] font-bold text-[#19C37D]">₦7,500</p>
+            </div>
+          </div>
+        </div>
+
+        {/* WhatsApp Chat Bubble Overlapping Lower-Left Corner without Horizontal Scroll */}
+        <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-6 z-20 w-[240px] sm:w-[270px] max-w-[calc(100vw-3rem)] rounded-2xl border border-[#1E2D27] bg-[#111C18]/95 backdrop-blur-md p-3 sm:p-3.5 shadow-2xl">
+          <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-[#19C37D]">
+            <span className="w-2 h-2 rounded-full bg-[#19C37D] animate-pulse" />
+            <span>WhatsApp Order</span>
+          </div>
+          <p className="text-[11px] sm:text-xs font-medium text-[#E8F1EC] leading-relaxed">
+            &ldquo;Hi, I am interested in Linen Shirt (₦18,500).&rdquo;
+          </p>
+          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#9DB3A8]">
+            <span>10:42 AM</span>
+            <svg className="w-3.5 h-3.5 text-[#19C37D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="m18 6-9.5 9.5-4-4" />
+              <path d="m22 10-9.5 9.5L11 18" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Hero v2 (Active redesign) ────────────────────────────────────────────────
+function HeroV2() {
+  return (
+    <section className="relative overflow-x-clip px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
+        style={{
+          background: "radial-gradient(60% 100% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
+        }}
+      />
+
+      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="text-center lg:text-left">
+          <FadeUp>
+            <div className="inline-flex items-center rounded-full border border-[#E8B93A]/30 bg-[#1A1910] px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E8B93A]">
+              BUILT FOR WHATSAPP SELLERS
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.08}>
+            <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[62px] font-bold leading-[1.06] tracking-tight text-[#E8F1EC]">
+              Stop sending prices{" "}
+              <span className="text-[#19C37D]">one by one.</span>
+            </h1>
+          </FadeUp>
+
+          <FadeUp delay={0.16}>
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#9DB3A8] sm:text-lg lg:mx-0">
+              Put your products on one clean store link. Buyers browse, tap, and land in your WhatsApp chat, ready to order.
+            </p>
+          </FadeUp>
+
+          <FadeUp delay={0.24}>
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-center lg:justify-start">
+              <Link
+                href="/signup?mode=signup"
+                className="inline-flex items-center justify-center min-h-[48px] px-7 py-3.5 rounded-[12px] bg-[#19C37D] hover:bg-[#15A86B] text-[#04140D] font-bold text-sm sm:text-base shadow-sm transition-colors"
+              >
+                Create your store free
+              </Link>
+              <a
+                href="#templates"
+                className="inline-flex items-center justify-center min-h-[48px] px-6 py-3.5 rounded-[12px] border border-[#1E2D27] bg-[#111C18]/60 hover:bg-[#14231D] text-[#E8F1EC] font-semibold text-sm sm:text-base transition-colors"
+              >
+                See the templates
+              </a>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.32}>
+            <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
+              {["Free to start", "No card needed", "Live in minutes"].map((item) => (
+                <li key={item} className="flex items-center gap-2 text-xs font-medium text-app-text-muted">
+                  <Check width={14} height={14} className="text-[#19C37D]" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </FadeUp>
+        </div>
+
+        <FadeUp delay={0.2}>
+          <HeroPhoneMockup />
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+// ─── Legacy Hero (Preserved behind feature flag) ───────────────────────────────
+function StorePreviewLegacy() {
   const currency = useCurrency();
   const { theme } = useSwiftLink();
   const appearance = theme === "dark" ? "dark" : "light";
@@ -249,105 +444,29 @@ function StorePreview() {
         className="relative"
       >
         <TemplateFrame id={active} appearance={appearance} currency={currency} size="stage" />
-        <div className="mt-3 grid grid-cols-3 gap-2" role="group" aria-label="Preview a website">
-          {websiteTemplates.map((template) => {
-            const selected = active === template.id;
-            return (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => setActive(template.id)}
-                aria-pressed={selected}
-                className={cn(
-                  "rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
-                  selected
-                    ? "border-app-accent bg-app-accent-subtle text-app-text"
-                    : "border-app-border bg-app-surface text-app-text-muted hover:text-app-text",
-                )}
-              >
-                {template.name}
-              </button>
-            );
-          })}
-        </div>
       </motion.div>
     </div>
   );
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-const VALUE_PROPS = ["No transaction fees", "Live in minutes", "Order tracking", "Multi-store workspace"];
-
-function Hero() {
+function HeroLegacy() {
   return (
     <section className="relative px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
-        style={{
-          background: "radial-gradient(60% 100% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
-        }}
-      />
-
       <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div className="text-center lg:text-left">
-          <FadeUp>
-            <span className="inline-flex items-center gap-2 rounded-full border border-app-border bg-app-surface px-3 py-1 text-xs font-medium text-app-text-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-app-accent" aria-hidden="true" />
-              WhatsApp-first commerce
-            </span>
-          </FadeUp>
-
-          <FadeUp delay={0.08}>
-            <h1 className="mt-5 text-4xl font-semibold leading-[1.05] tracking-tight text-app-text sm:text-5xl lg:text-6xl">
-              Sell on WhatsApp <span className="text-app-accent-text">like a pro.</span>
-            </h1>
-          </FadeUp>
-
-          <FadeUp delay={0.16}>
-            <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-app-text-muted sm:text-lg lg:mx-0">
-              Build a storefront, add your products, and share one link. Your customers order in the
-              app they already use — and every order lands in your dashboard.
-            </p>
-          </FadeUp>
-
-          <FadeUp delay={0.24}>
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center lg:justify-start">
-              <Link
-                href="/signup?mode=signup"
-                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-app-accent px-6 py-3.5 text-sm font-semibold text-app-accent-fg shadow-sm transition-colors hover:bg-app-accent-hover"
-              >
-                Start selling free
-                <ArrowRight
-                  width={16}
-                  height={16}
-                  aria-hidden="true"
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-app-border px-6 py-3.5 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
-              >
-                See how it works
-              </a>
-            </div>
-          </FadeUp>
-
-          <FadeUp delay={0.32}>
-            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:justify-start">
-              {VALUE_PROPS.map((prop) => (
-                <li key={prop} className="flex items-center gap-2 text-xs font-medium text-app-text-muted">
-                  <Check width={14} height={14} className="text-app-accent-text" aria-hidden="true" />
-                  {prop}
-                </li>
-              ))}
-            </ul>
-          </FadeUp>
+          <h1 className="text-4xl font-semibold text-app-text sm:text-5xl">
+            Sell on WhatsApp <span className="text-app-accent-text">like a pro.</span>
+          </h1>
+          <p className="mt-5 text-base text-app-text-muted">
+            Build a storefront, add your products, and share one link.
+          </p>
+          <div className="mt-8 flex gap-3">
+            <Link href="/signup?mode=signup" className="rounded-lg bg-app-accent px-6 py-3.5 text-sm font-semibold text-app-accent-fg">
+              Create your store free
+            </Link>
+          </div>
         </div>
-
-        <StorePreview />
+        <StorePreviewLegacy />
       </div>
     </section>
   );
@@ -356,19 +475,19 @@ function Hero() {
 // ─── Features ─────────────────────────────────────────────────────────────────
 const FEATURES = [
   {
-    icon: Sparkles,
-    title: "Smart catalog",
+    icon: Package,
+    title: "Product catalog",
     description: "Add products with photos, variants and stock. The storefront keeps itself organised.",
   },
   {
-    icon: Layers,
-    title: "Three complete websites",
-    description: "Editorial, Boutique, or Bold. Each is a whole shop, in light and in dark. You pick one look.",
+    icon: Layout,
+    title: "Storefront templates",
+    description: "Pick a look that fits your brand. Each is a whole shop in light and dark, designed for fast browsing.",
   },
   {
-    icon: Shield,
-    title: "Workspace for real shops",
-    description: "Run more than one store from a single account, with orders and customers in one place.",
+    icon: MessageSquare,
+    title: "WhatsApp order inbox",
+    description: "Receive orders directly in chat with product details and customer selections.",
   },
 ];
 
@@ -392,10 +511,8 @@ function Features() {
               delay={index * 0.08}
               className="rounded-2xl border border-app-border bg-app-surface p-6 sm:p-7"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-app-accent-subtle">
-                <feature.icon width={20} height={20} className="text-app-accent-text" aria-hidden="true" />
-              </span>
-              <h3 className="mt-5 text-lg font-semibold text-app-text">{feature.title}</h3>
+              <feature.icon width={22} height={22} className="text-app-accent-text" aria-hidden="true" />
+              <h3 className="mt-4 text-lg font-semibold text-app-text">{feature.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-app-text-muted">{feature.description}</p>
             </InView>
           ))}
@@ -405,7 +522,7 @@ function Features() {
   );
 }
 
-// ─── The three websites ───────────────────────────────────────────────────────
+// ─── Storefront Templates (Dynamic, no hard-coded counts) ─────────────────────
 function Templates() {
   const currency = useCurrency();
   const [appearance, setAppearance] = useState<"light" | "dark">("light");
@@ -416,10 +533,10 @@ function Templates() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <InView className="max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
-              Websites
+              Storefront Templates
             </span>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-              Three shops. Light and dark.
+              Pick a look that fits your brand.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-app-text-muted sm:text-base">
               You choose a whole website, not a pile of sections. The same brand stays readable in both appearances.
@@ -451,12 +568,32 @@ function Templates() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+        {/* Gallery: Responsive grid when <= 3, horizontally scrollable gallery when > 3 */}
+        <div
+          className={cn(
+            "mt-10",
+            websiteTemplates.length > 3
+              ? "flex gap-5 overflow-x-auto pb-6 pt-2 snap-x snap-mandatory scrollbar-thin"
+              : "grid gap-5 md:grid-cols-2 lg:grid-cols-3"
+          )}
+        >
           {websiteTemplates.map((template, index) => (
-            <InView key={template.id} delay={index * 0.08} className="overflow-hidden rounded-2xl border border-app-border bg-app-surface">
+            <InView
+              key={template.id}
+              delay={index * 0.08}
+              className={cn(
+                "overflow-hidden rounded-2xl border border-app-border bg-app-surface",
+                websiteTemplates.length > 3 && "min-w-[300px] sm:min-w-[340px] flex-shrink-0 snap-start"
+              )}
+            >
               <TemplateFrame id={template.id} appearance={appearance} currency={currency} size="card" />
               <div className="border-t border-app-border p-5">
-                <h3 className="text-base font-semibold text-app-text">{template.name}</h3>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-base font-semibold text-app-text">{template.name}</h3>
+                  <span className="rounded-full bg-app-accent-subtle px-2 py-0.5 text-[10px] font-semibold text-app-accent-text uppercase">
+                    Ready
+                  </span>
+                </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-app-text-muted">{template.description}</p>
               </div>
             </InView>
@@ -475,8 +612,8 @@ const STEPS = [
     icon: Globe,
   },
   {
-    title: "Choose a website",
-    description: "Pick Editorial, Boutique, or Bold, then add your products. The whole shop follows that look.",
+    title: "Choose a template",
+    description: "Pick a design that fits your brand, then add your products. Your whole shop follows that look.",
     icon: Layers,
   },
   {
@@ -546,7 +683,7 @@ function Pricing() {
       description: "Try the whole workflow. No card required.",
       features: [
         { label: "5 live products" },
-        { label: "WhatsApp checkout" },
+        { label: "WhatsApp order inquiries" },
         { label: "Basic order tracking" },
         { label: "SwiftLink branding" },
         { label: "Community support" },
@@ -561,8 +698,6 @@ function Pricing() {
       features: [
         { label: "Unlimited products" },
         { label: "Custom branding" },
-        { label: "Paystack / Flutterwave" },
-        { label: "Delivery tracking" },
         { label: "Detailed analytics" },
         { label: "Discount codes" },
         { label: "Export orders (CSV)" },
@@ -580,7 +715,6 @@ function Pricing() {
         { label: "Everything in Pro" },
         { label: "Multi-store management" },
         { label: "Team roles" },
-        { label: "Multiple payment gateways" },
         { label: "Custom domain" },
         { label: "White-label experience" },
         { label: "API access & webhooks", soon: true },
@@ -719,7 +853,7 @@ function CTASection() {
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   const productLinks = [
-    { href: "#templates", label: "Websites" },
+    { href: "#templates", label: "Templates" },
     { href: "#features", label: "Capabilities" },
     { href: "#how-it-works", label: "Workflow" },
     { href: "#pricing", label: "Pricing" },
@@ -731,9 +865,7 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
-              <img src="/logo.png" alt="" className="h-7 w-7 object-contain" />
-              <span className="text-base font-semibold text-app-text">SwiftLink</span>
+              <Logo size="sm" showWordmark={true} />
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-app-text-muted">
               The storefront builder for merchants who do business on WhatsApp.
@@ -793,10 +925,12 @@ function Footer() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const isV2 = FEATURE_FLAGS.landingV2;
+
   return (
     <main className="min-h-[100dvh] bg-app-bg font-sans text-app-text">
       <Navbar />
-      <Hero />
+      {isV2 ? <HeroV2 /> : <HeroLegacy />}
       <Templates />
       <Features />
       <HowItWorks />

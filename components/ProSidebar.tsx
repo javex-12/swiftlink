@@ -1,25 +1,47 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { LayoutGrid, Edit3, LineChart, Sliders, LogOut, HelpCircle, ShieldCheck, Lock } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import {
+  LayoutGrid,
+  MessageSquare,
+  Store,
+  LineChart,
+  Settings,
+  HelpCircle,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
+// Plan and billing remains hidden behind feature flag
+const FEATURE_FLAG_BILLING = false;
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  isHelp?: boolean;
+}
+
+export function ProSidebar({
+  mobileOpen,
+  setMobileOpen,
+}: {
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+}) {
   const pathname = usePathname();
-  const { handleSignOut, state, startTour, isAdmin, addToast } = useSwiftLink();
-  const [isHovered, setIsHovered] = useState(false);
+  const { handleSignOut, state, startTour } = useSwiftLink();
 
-  const isPremium = state.plan === "pro" || state.plan === "business";
-
-  const sidebarItems = [
-    { href: "/pro", label: "Dashboard", icon: LayoutGrid },
-    { href: "/business", label: "Store Editor", icon: Edit3 },
-    { href: isPremium ? "/pro/analytics" : "#", label: "Analytics", icon: LineChart, locked: !isPremium },
-    { href: "/account", label: "Account", icon: Sliders },
-    ...(isAdmin ? [{ href: "/pro/admin", label: "Admin Panel", icon: ShieldCheck }] : [])
+  const navItems: NavItem[] = [
+    { href: "/pro", label: "Overview", icon: LayoutGrid },
+    { href: "/pro/inquiries", label: "Inquiries", icon: MessageSquare },
+    { href: "/business", label: "Store editor", icon: Store },
+    { href: "/pro/analytics", label: "Analytics", icon: LineChart },
+    { href: "/account", label: "Settings", icon: Settings },
+    { href: "#help", label: "Help", icon: HelpCircle, isHelp: true },
   ];
 
   const isActive = (href: string) => {
@@ -27,117 +49,117 @@ export function ProSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean,
     return pathname.startsWith(href);
   };
 
+  const storeInitials = (state.bizName || "S").slice(0, 1).toUpperCase();
+
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile Drawer Backdrop */}
       {mobileOpen && (
         <button
           type="button"
-          className="lg:hidden fixed inset-0 z-40 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm"
-          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          aria-label="Close navigation"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* Floating Desktop & Mobile Sidebar Pod */}
+      {/* Sidebar Container */}
       <aside
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "flex flex-col bg-white/95 dark:bg-[#07130e] border border-slate-200/80 dark:border-emerald-500/10 text-slate-900 dark:text-white transition-all duration-300 ease-in-out overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-40 backdrop-blur-xl",
+          "flex flex-col bg-[#111C18] border-r border-[#1E2D27] text-[#E8F1EC] transition-all duration-300 z-40",
           // Mobile drawer style
-          "max-lg:fixed max-lg:bottom-4 max-lg:left-4 max-lg:top-4 max-lg:w-64 max-lg:rounded-[2rem]",
-          mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-[120%]",
-          // Desktop floating column style
-          "lg:sticky lg:top-4 lg:my-4 lg:ml-4 lg:h-[calc(100vh-2rem)] lg:rounded-[2rem] lg:shrink-0 lg:translate-x-0",
-          isHovered ? "lg:w-60" : "lg:w-20"
+          "max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-0 max-md:w-72 max-md:shadow-2xl",
+          mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full",
+          // Desktop sidebar style
+          "hidden md:flex md:w-64 md:shrink-0 md:min-h-screen md:sticky md:top-0"
         )}
       >
-        {/* Logo / Brand Header */}
-        <div className="p-4 flex items-center justify-between shrink-0 h-20 border-b border-slate-100 dark:border-white/5">
+        {/* Brand Header */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#1E2D27] px-6">
           <Link href="/pro" className="flex items-center gap-3">
-            <img src="/logo.png" className="w-8 h-8 object-contain shrink-0" alt="SwiftLink" />
-            <div className={cn("min-w-0 transition-all duration-300", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-2")}>
-              <span className="text-xs font-black tracking-tight text-slate-900 dark:text-white block truncate uppercase italic">
-                {state.bizName || "My Store"}
-              </span>
-              <span className="text-[8px] font-mono uppercase tracking-widest text-emerald-600 dark:text-[#00c885]">
-                {state.plan ? `${state.plan.toUpperCase()} PLAN` : "PRO PLAN"}
-              </span>
-            </div>
+            <Logo size="md" showWordmark={true} />
           </Link>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 py-6 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar px-3">
-          {sidebarItems.map((item) => {
+        {/* Primary Navigation */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Dashboard navigation">
+          {navItems.map((item) => {
             const active = isActive(item.href);
+            const Icon = item.icon;
+
+            if (item.isHelp) {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    startTour();
+                  }}
+                  className="flex w-full min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-sm font-medium text-[#9DB3A8] transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-[#9DB3A8]" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={(e) => {
-                  if ((item as any).locked) {
-                    e.preventDefault();
-                    addToast("Analytics is a premium Pro feature.", "info");
-                    return;
-                  }
-                  setMobileOpen(false);
-                }}
+                onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-4 rounded-2xl px-3.5 py-3.5 transition-all relative group font-bold",
+                  "relative flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-sm font-medium transition",
                   active
-                    ? "bg-emerald-50 dark:bg-white/10 text-emerald-600 dark:text-[#00c885] font-black"
-                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-[#14231D] text-[#19C37D] font-semibold"
+                    : "text-[#9DB3A8] hover:bg-[#14231D] hover:text-[#E8F1EC]"
                 )}
               >
-                {/* Active Green Pill Bar */}
                 {active && (
-                  <div className="absolute left-0 top-2 bottom-2 w-1.5 bg-emerald-500 dark:bg-[#00c885] rounded-r-full shadow-[0_0_12px_rgba(16,185,129,0.5)]" />
+                  <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#19C37D]" />
                 )}
-                
-                <item.icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", active ? "text-emerald-600 dark:text-[#00c885]" : "text-slate-400 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white")} />
-                
-                <span className={cn("text-xs whitespace-nowrap transition-all duration-300 flex items-center gap-1.5", isHovered ? "opacity-100 translate-x-0" : "lg:opacity-0 lg:-translate-x-4")}>
-                  {item.label}
-                  {(item as any).locked && <Lock size={10} className="text-amber-400 shrink-0" />}
-                </span>
-
-                {!isHovered && !active && (
-                  <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 dark:bg-[#07130e] text-white border border-slate-700 dark:border-emerald-500/20 text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity uppercase tracking-widest z-50 whitespace-nowrap shadow-xl">
-                    {item.label}
-                  </div>
-                )}
+                <Icon
+                  className={cn(
+                    "h-5 w-5 shrink-0 transition-colors",
+                    active ? "text-[#19C37D]" : "text-[#9DB3A8]"
+                  )}
+                />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="p-3 border-t border-slate-100 dark:border-white/5 space-y-1">
-          <button
-            onClick={() => { setMobileOpen(false); startTour(); }}
-            className="flex w-full items-center gap-4 rounded-2xl px-3.5 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <HelpCircle className="w-5 h-5 shrink-0 text-slate-400 dark:text-slate-500" />
-            <span className={cn("text-xs font-bold whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
-              Help &amp; Guide
-            </span>
-          </button>
+        {/* Profile Chip & Sign Out */}
+        <div className="shrink-0 border-t border-[#1E2D27] p-4">
+          <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[#0A1210] p-2.5 border border-[#1E2D27]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#14231D] text-xs font-bold text-[#19C37D] border border-[#24382F]">
+                {storeInitials}
+              </div>
+              <div className="min-w-0">
+                <span className="block truncate text-xs font-medium text-[#E8F1EC]">
+                  {state.bizName || "Merchant"}
+                </span>
+                <span className="block truncate text-[10px] text-[#9DB3A8]">
+                  {state.currency || "NGN"} Store
+                </span>
+              </div>
+            </div>
 
-          <button
-            onClick={handleSignOut}
-            className="flex w-full items-center gap-4 rounded-2xl px-3.5 py-3 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-          >
-            <LogOut className="w-5 h-5 shrink-0 text-red-500 dark:text-red-400" />
-            <span className={cn("text-xs font-bold whitespace-nowrap transition-opacity duration-300", isHovered ? "opacity-100" : "lg:opacity-0")}>
-              Log Out
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              title="Sign out"
+              className="flex h-8 w-8 min-h-[32px] shrink-0 items-center justify-center rounded-[8px] text-[#9DB3A8] transition hover:bg-[#14231D] hover:text-[#FF8A8A]"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </aside>
     </>
   );
 }
-
-

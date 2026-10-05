@@ -35,7 +35,12 @@ export async function middleware(request: NextRequest) {
 
   // Unconfigured environment (local demo mode): nothing is reachable that needs
   // protecting, so let the request through untouched.
-  if (!url || !key || url.includes("dummy-project")) return response;
+  if (!url || !key || !url.startsWith("http") || url.includes("dummy-project") || url.includes("your-project")) return response;
+  try {
+    new URL(url);
+  } catch {
+    return response;
+  }
 
   const supabase = createServerClient(url, key, {
     cookies: {

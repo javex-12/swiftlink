@@ -4,7 +4,7 @@
   "private": true,
   "description": "SwiftLink Pro — Next.js storefront",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -39,6 +39,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
+    "libphonenumber-js": "^1.13.14",
     "lucide-react": "^1.7.0",
     "next": "^15.1.7",
     "react": "^19.0.0",
@@ -52,10 +53,13 @@
     "serialize-javascript": "7.0.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
+    "axe-core": "^4.13.0",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.7",
     "postcss": "^8.4.49",

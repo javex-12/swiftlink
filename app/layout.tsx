@@ -1,11 +1,29 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Plus_Jakarta_Sans, Instrument_Serif, Cinzel } from "next/font/google";
+import {
+  Plus_Jakarta_Sans,
+  Instrument_Serif,
+  Cinzel,
+  DM_Sans,
+  Bricolage_Grotesque,
+} from "next/font/google";
 import { AppChrome } from "@/components/AppChrome";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import "@/styles/tokens.css";
 import "./globals.css";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-bricolage",
+});
 
 /**
  * Fonts are self-hosted through `next/font`, which removes the two
@@ -147,7 +165,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${instrumentSerif.variable} ${cinzel.variable}`}
+      className={`dark ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} ${instrumentSerif.variable} ${cinzel.variable}`}
     >
       <head>
         <script
@@ -156,7 +174,7 @@ export default function RootLayout({
         />
         {/* Fonts are self-hosted by next/font — no third-party stylesheet here. */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#047857" />
+        <meta name="theme-color" content="#0A1210" />
         <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
