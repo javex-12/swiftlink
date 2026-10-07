@@ -1006,21 +1006,21 @@ export function CustomerStorefront({
             >
                 {/* Fixed Header — website templates draw their own navigation. */}
                 <div className={cn("backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header", template && "hidden")} style={{ backgroundColor: `${bgColor}e6` }}>
-                  <div className="w-full px-4 md:px-12 py-3 md:py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
+                  <div className="w-full px-4 md:px-12 py-3 md:py-4 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                      <div className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
                         {s.bizImage ? <img src={s.bizImage} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-white">{(s.bizName || "S").slice(0, 1).toUpperCase()}</span>}
                       </div>
-                      <div>
-                        <p className="text-[11px] md:text-sm font-black text-gray-900 leading-none">{s.bizName || "Store"}</p>
+                      <div className="min-w-0">
+                        <p className="text-[11px] md:text-sm font-black text-gray-900 leading-none truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs">{s.bizName || "Store"}</p>
                         <p className="text-[8px] md:text-[10px] text-emerald-500 font-bold leading-none mt-1">● Online</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <button onClick={() => goTab("search")} className="p-1.5 hover:bg-black/5 rounded-full transition-colors">
+                    <div className="flex shrink-0 items-center gap-3 md:gap-4">
+                      <button onClick={() => goTab("search")} className="p-1.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Search">
                         <Search size={16} className="text-gray-900" />
                       </button>
-                      <button onClick={() => goTab("cart")} className="relative p-1.5 hover:bg-black/5 rounded-full transition-colors">
+                      <button onClick={() => goTab("cart")} className="relative p-1.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Cart">
                         <ShoppingCart size={16} className="text-gray-900" />
                         <AnimatePresence>
                           {cartItemCount > 0 && (
@@ -1051,6 +1051,10 @@ export function CustomerStorefront({
                       onSearch={() => goTab("search")}
                       onCart={() => goTab("cart")}
                       onReviews={() => goTab("community")}
+                      onLeaveFeedback={() => {
+                        goTab("community");
+                        setShowReviewForm(true);
+                      }}
                     />
                   ) : (
                   <>

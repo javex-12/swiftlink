@@ -87,11 +87,11 @@ export const websiteTemplateSeeds: TemplateSeed[] = [
     id: "boutique",
     name: "Boutique",
     description:
-      "A rounded card layout suited for gifts, beauty products, and everyday items.",
+      "A warm, artisanal boutique layout suited for gifts, beauty, and curated goods.",
     tagline: "",
-    swatch: "#be123c",
-    brandColor: "#be123c",
-    darkBrandColor: "#fb7185",
+    swatch: "#9a3412",
+    brandColor: "#9a3412",
+    darkBrandColor: "#ea580c",
     shape: {
       fontPair: "friendly",
       radius: "rounded",

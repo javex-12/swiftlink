@@ -11,10 +11,8 @@ import {
   Layers,
   Layout,
   Menu,
-  Moon,
   MessageSquare,
   Package,
-  Sun,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -87,21 +85,6 @@ function useCurrency(): "₦" | "$" {
   return currency;
 }
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-function ThemeButton({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label="Toggle dark mode"
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border text-app-text-muted transition-colors hover:bg-app-surface-2 hover:text-app-text"
-    >
-      <Sun width={15} height={15} className={cn(!isDark && "hidden")} aria-hidden="true" />
-      <Moon width={15} height={15} className={cn(isDark && "hidden")} aria-hidden="true" />
-    </button>
-  );
-}
-
 const NAV_LINKS = [
   { href: "#templates", label: "Templates" },
   { href: "#features", label: "Features" },
@@ -112,8 +95,6 @@ const NAV_LINKS = [
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useSwiftLink();
-  const isDark = theme === "dark";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 12);
@@ -147,7 +128,6 @@ function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <ThemeButton isDark={isDark} onToggle={toggleTheme} />
           <Link
             href="/signup"
             className="rounded-[10px] border border-[#1E2D27] bg-[#111C18]/60 px-4 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
@@ -163,7 +143,6 @@ function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeButton isDark={isDark} onToggle={toggleTheme} />
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
@@ -542,30 +521,6 @@ function Templates() {
               You choose a whole website, not a pile of sections. The same brand stays readable in both appearances.
             </p>
           </InView>
-          <div
-            role="group"
-            aria-label="Template appearance"
-            className="inline-flex rounded-lg border border-app-border bg-app-surface p-1"
-          >
-            {(["light", "dark"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setAppearance(mode)}
-                aria-pressed={appearance === mode}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
-                  appearance === mode
-                    ? "bg-app-surface-2 text-app-text shadow-xs"
-                    : "text-app-text-muted hover:text-app-text",
-                )}
-              >
-                {mode === "light" ? <Sun width={14} height={14} aria-hidden="true" /> : <Moon width={14} height={14} aria-hidden="true" />}
-                {mode}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Gallery: Responsive grid when <= 3, horizontally scrollable gallery when > 3 */}

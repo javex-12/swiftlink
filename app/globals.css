@@ -80,14 +80,38 @@
     border: 1px solid var(--app-border);
   }
 
+  /* Universal Custom Scrollbar across the entire application */
+  html, body, * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 140, 130, 0.4) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(120, 140, 130, 0.35);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 140, 130, 0.6);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 5px;
     height: 5px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--app-border-strong);
-    border-radius: var(--radius-full);
+    background: var(--app-border-strong, rgba(120, 140, 130, 0.5));
+    border-radius: var(--radius-full, 9999px);
   }
 
   .scrollbar-hide {

@@ -271,55 +271,140 @@ export function StoreEditorV2() {
     <div className="min-h-screen bg-[#0A1210] pb-24 text-[#E8F1EC]">
       {/* ─── Sticky Header with Tabs & Save ─── */}
       <header className="sticky top-0 z-30 border-b border-[#1E2D27] bg-[#0A1210]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          {/* Store status and link */}
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#1E2D27] bg-[#14231D] text-[#19C37D]">
-              <Store className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-sm font-semibold text-[#E8F1EC]">
-                  {localState.bizName || "My Store"}
-                </h1>
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                    localState.isLive
-                      ? "bg-[#14231D] text-[#19C37D] border border-[#19C37D]/30"
-                      : "bg-[#14231D] text-[#9DB3A8] border border-[#1E2D27]"
-                  )}
-                >
+        <div className="mx-auto max-w-6xl px-3.5 py-2.5 sm:px-6 sm:py-3">
+          {/* Top Row: Store info on left, Save on right, desktop center tabs */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Store status and link */}
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-[#1E2D27] bg-[#14231D] text-[#19C37D]">
+                <Store className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="truncate text-xs sm:text-sm font-semibold text-[#E8F1EC] max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-none">
+                    {localState.bizName || "My Store"}
+                  </h1>
                   <span
                     className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      localState.isLive ? "bg-[#19C37D]" : "bg-[#9DB3A8]"
+                      "inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-medium",
+                      localState.isLive
+                        ? "bg-[#14231D] text-[#19C37D] border border-[#19C37D]/30"
+                        : "bg-[#14231D] text-[#9DB3A8] border border-[#1E2D27]"
                     )}
-                  />
-                  {localState.isLive ? "Live" : "Draft"}
-                </span>
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        localState.isLive ? "bg-[#19C37D]" : "bg-[#9DB3A8]"
+                      )}
+                    />
+                    {localState.isLive ? "Live" : "Draft"}
+                  </span>
+                </div>
+                {localState.storeUsername && (
+                  <a
+                    href={`/store/${localState.storeUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-0.5 inline-flex items-center gap-1 text-[11px] sm:text-xs text-[#9DB3A8] hover:text-[#19C37D] truncate max-w-[160px] sm:max-w-none"
+                  >
+                    <span className="truncate">swiftlink.pro/store/{localState.storeUsername}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </a>
+                )}
               </div>
-              {localState.storeUsername && (
-                <a
-                  href={`/store/${localState.storeUsername}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#9DB3A8] hover:text-[#19C37D]"
+            </div>
+
+            {/* Desktop Center Tabs: Products, Design & Live Preview */}
+            <div className="hidden sm:flex rounded-xl border border-[#1E2D27] bg-[#111C18] p-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("products")}
+                className={cn(
+                  "flex min-h-[36px] items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                  activeTab === "products"
+                    ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
+                    : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                )}
+              >
+                <span>Products</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.2 text-[10px] font-semibold tabular-nums",
+                    activeTab === "products" ? "bg-[#04140D]/20 text-[#04140D]" : "bg-[#14231D] text-[#9DB3A8]"
+                  )}
                 >
-                  <span>swiftlink.pro/store/{localState.storeUsername}</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
+                  {localState.products.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("design")}
+                className={cn(
+                  "flex min-h-[36px] items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                  activeTab === "design"
+                    ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
+                    : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                )}
+              >
+                <span>Design</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("preview")}
+                className={cn(
+                  "flex min-h-[36px] items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                  activeTab === "preview"
+                    ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
+                    : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                )}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                <span>Live Preview</span>
+              </button>
+            </div>
+
+            {/* Right Action: Save changes */}
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving || !isDirty}
+                className={cn(
+                  "flex min-h-[38px] sm:min-h-[42px] items-center gap-1.5 sm:gap-2 rounded-xl px-3.5 sm:px-5 py-1.5 sm:py-2 text-xs font-semibold transition active:scale-98",
+                  isDirty
+                    ? "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20"
+                    : "border border-[#1E2D27] bg-[#14231D] text-[#9DB3A8] opacity-60 cursor-not-allowed"
+                )}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                    <span className="hidden xs:inline">Saving…</span>
+                  </>
+                ) : isDirty ? (
+                  <>
+                    <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span>Save</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#04140D]" />
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#19C37D]" />
+                    <span>Saved</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Center Tabs: Products, Design & Live Preview */}
-          <div className="flex rounded-xl border border-[#1E2D27] bg-[#111C18] p-1">
+          {/* Mobile Tabs: Full-width responsive 3-column tabs */}
+          <div className="mt-2.5 flex sm:hidden rounded-xl border border-[#1E2D27] bg-[#111C18] p-1">
             <button
               type="button"
               onClick={() => setActiveTab("products")}
               className={cn(
-                "flex min-h-[38px] items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                "flex flex-1 min-h-[36px] items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition",
                 activeTab === "products"
                   ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
                   : "text-[#9DB3A8] hover:text-[#E8F1EC]"
@@ -339,7 +424,7 @@ export function StoreEditorV2() {
               type="button"
               onClick={() => setActiveTab("design")}
               className={cn(
-                "flex min-h-[38px] items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                "flex flex-1 min-h-[36px] items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition",
                 activeTab === "design"
                   ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
                   : "text-[#9DB3A8] hover:text-[#E8F1EC]"
@@ -351,42 +436,14 @@ export function StoreEditorV2() {
               type="button"
               onClick={() => setActiveTab("preview")}
               className={cn(
-                "flex min-h-[38px] items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
+                "flex flex-1 min-h-[36px] items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition",
                 activeTab === "preview"
                   ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
                   : "text-[#9DB3A8] hover:text-[#E8F1EC]"
               )}
             >
               <Eye className="h-3.5 w-3.5" />
-              <span>Live Preview</span>
-            </button>
-          </div>
-
-          {/* Right Action: Save changes */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving || !isDirty}
-              className={cn(
-                "flex min-h-[44px] items-center gap-2 rounded-xl px-5 py-2 text-xs font-semibold transition active:scale-98",
-                isDirty
-                  ? "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20"
-                  : "border border-[#1E2D27] bg-[#14231D] text-[#9DB3A8] opacity-60 cursor-not-allowed"
-              )}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  <span>Save changes</span>
-                  {isDirty && <span className="h-2 w-2 rounded-full bg-[#04140D]" />}
-                </>
-              )}
+              <span>Preview</span>
             </button>
           </div>
         </div>
@@ -1201,40 +1258,54 @@ export function StoreEditorV2() {
         {activeTab === "preview" && (
           <div className="space-y-6 pb-16">
             {/* Live Preview Controls Header */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("products")}
-                  className="flex items-center gap-1.5 rounded-xl border border-[#24382F] bg-[#14231D] px-3.5 py-2 text-xs font-medium text-[#E8F1EC] transition hover:bg-[#19C37D]/10 hover:text-[#19C37D]"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back to Products</span>
-                </button>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-[#19C37D] animate-pulse" />
-                    <h2 className="text-sm font-semibold text-[#E8F1EC]">
-                      Live Storefront Preview
-                    </h2>
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#1E2D27] bg-[#111C18] p-3.5 sm:p-5 lg:flex-row lg:items-center lg:justify-between shadow-xs">
+              <div className="flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("products")}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[#24382F] bg-[#14231D] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-medium text-[#E8F1EC] transition hover:bg-[#19C37D]/10 hover:text-[#19C37D]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Products</span>
+                  </button>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-[#19C37D] animate-pulse" />
+                      <h2 className="truncate text-xs sm:text-sm font-semibold text-[#E8F1EC]">
+                        Live Preview
+                      </h2>
+                    </div>
+                    <p className="truncate text-[10px] sm:text-[11px] text-[#9DB3A8]">
+                      {localState.bizName || "Store"} ({localState.products.length} products)
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[#9DB3A8]">
-                    Real-time preview of {localState.bizName || "your store"} ({localState.products.length} products)
-                  </p>
                 </div>
+
+                {localState.storeUsername && (
+                  <a
+                    href={`/store/${localState.storeUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex lg:hidden shrink-0 items-center gap-1 rounded-xl border border-[#24382F] bg-[#14231D] px-2.5 py-1.5 text-[11px] font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span>Open</span>
+                  </a>
+                )}
               </div>
 
               {/* Toolbar Controls */}
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 pt-2 border-t border-[#1E2D27] lg:border-t-0 lg:pt-0">
                 {/* Template Quick Switcher */}
-                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-1">
+                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-0.5 sm:p-1">
                   {websiteTemplates.map((tmpl) => (
                     <button
                       key={tmpl.id}
                       type="button"
                       onClick={() => updateField("websiteTemplateId", tmpl.id)}
                       className={cn(
-                        "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
+                        "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
                         (localState.websiteTemplateId || "editorial") === tmpl.id
                           ? "bg-[#19C37D] text-[#04140D]"
                           : "text-[#9DB3A8] hover:text-[#E8F1EC]"
@@ -1246,85 +1317,61 @@ export function StoreEditorV2() {
                 </div>
 
                 {/* Device Viewport Toggle */}
-                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-1">
+                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-0.5 sm:p-1">
                   <button
                     type="button"
                     aria-label="Desktop viewport"
                     onClick={() => setDesignViewport("desktop")}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
+                      "flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
                       designViewport === "desktop"
                         ? "bg-[#14231D] text-[#19C37D]"
                         : "text-[#9DB3A8] hover:text-[#E8F1EC]"
                     )}
                   >
-                    <Monitor className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Desktop</span>
+                    <Monitor className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden xs:inline">Desktop</span>
                   </button>
                   <button
                     type="button"
                     aria-label="Tablet viewport"
                     onClick={() => setDesignViewport("tablet")}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
+                      "flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
                       designViewport === "tablet"
                         ? "bg-[#14231D] text-[#19C37D]"
                         : "text-[#9DB3A8] hover:text-[#E8F1EC]"
                     )}
                   >
-                    <Tablet className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Tablet</span>
+                    <Tablet className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden xs:inline">Tablet</span>
                   </button>
                   <button
                     type="button"
                     aria-label="Mobile viewport"
                     onClick={() => setDesignViewport("mobile")}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
+                      "flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
                       designViewport === "mobile"
                         ? "bg-[#14231D] text-[#19C37D]"
                         : "text-[#9DB3A8] hover:text-[#E8F1EC]"
                     )}
                   >
-                    <Smartphone className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Mobile</span>
+                    <Smartphone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden xs:inline">Mobile</span>
                   </button>
                 </div>
 
-                {/* Color Mode Toggle */}
-                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-1">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode("dark")}
-                    className={cn(
-                      "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
-                      previewMode === "dark" ? "bg-[#14231D] text-[#19C37D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                    )}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode("light")}
-                    className={cn(
-                      "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
-                      previewMode === "light" ? "bg-[#14231D] text-[#19C37D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                    )}
-                  >
-                    Light
-                  </button>
-                </div>
-
-                {/* Open in new tab */}
+                {/* Open in new tab (desktop) */}
                 {localState.storeUsername && (
                   <a
                     href={`/store/${localState.storeUsername}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-[11px] font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
+                    className="hidden lg:flex items-center gap-1.5 rounded-xl border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-[11px] font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="hidden md:inline">Open Store</span>
+                    <span>Open Store</span>
                   </a>
                 )}
               </div>
@@ -1352,7 +1399,7 @@ export function StoreEditorV2() {
             )}
 
             {/* Live Storefront Canvas */}
-            <div className="flex justify-center overflow-x-hidden rounded-2xl border border-[#1E2D27] bg-[#0A1210] p-2 sm:p-6 md:p-8">
+            <div className="flex justify-center overflow-x-auto rounded-2xl border border-[#1E2D27] bg-[#0A1210] p-1.5 sm:p-6 md:p-8">
               {designViewport === "mobile" ? (
                 <div className="w-full max-w-[390px] mx-auto overflow-hidden rounded-2xl sm:rounded-[36px] border-2 sm:border-[8px] border-[#1E2D27] bg-[#111C18] shadow-2xl">
                   {/* Phone Notch */}
@@ -1733,20 +1780,21 @@ function ProductEditModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md overscroll-contain"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onWheel={(e) => e.stopPropagation()}
     >
       <div
-        className="relative flex w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex-col rounded-2xl border border-[#1E2D27] bg-[#111C18] text-[#E8F1EC] shadow-2xl overflow-hidden"
+        className="relative flex w-full h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[850px] sm:max-w-2xl flex-col rounded-none sm:rounded-2xl border-0 sm:border border-[#1E2D27] bg-[#111C18] text-[#E8F1EC] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Fixed Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-[#1E2D27] px-5 sm:px-6 py-4 bg-[#111C18]">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#1E2D27] px-4 sm:px-6 py-3.5 bg-[#111C18]">
           <div>
-            <h2 id="product-modal-title" className="text-base sm:text-lg font-semibold text-[#E8F1EC]">
-              {existing ? "Edit product" : "Add product"}
+            <h2 id="product-modal-title" className="text-base sm:text-lg font-bold text-[#E8F1EC]">
+              {existing ? "Edit Product" : "Add Product"}
             </h2>
             <p className="text-[11px] text-[#9DB3A8]">
               Manage product media, details, pricing, and WhatsApp order message.
@@ -1756,38 +1804,94 @@ function ProductEditModal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9DB3A8] transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#9DB3A8] transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Section Quick Jump Bar */}
+        <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#1E2D27] bg-[#0A1210] px-4 sm:px-6 py-2 text-[11px] font-semibold text-[#9DB3A8] scrollbar-none">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-[#19C37D] shrink-0">Jump:</span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("modal-media")}
+            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+          >
+            1. Media & Ideas
+          </button>
+          <span className="text-[#24382F]">·</span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("modal-details")}
+            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+          >
+            2. Details & Price
+          </button>
+          <span className="text-[#24382F]">·</span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("modal-options")}
+            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+          >
+            3. Options
+          </button>
+          <span className="text-[#24382F]">·</span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("modal-whatsapp")}
+            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
+          >
+            4. WhatsApp Order
           </button>
         </div>
 
         {/* Scrollable Form Body with contained scroll */}
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 overscroll-contain">
+          <div ref={modalScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6 overscroll-contain">
+            {/* Feedback notification toast */}
+            {stockToast && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-400 flex items-center justify-between">
+                <span>{stockToast}</span>
+                <button type="button" onClick={() => setStockToast(null)} className="text-emerald-400 hover:text-white">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* 1. PRODUCT PICTURE & MEDIA */}
-            <div className="rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#1E2D27] pb-3">
+            <div id="modal-media" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1E2D27] pb-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <ImageIcon className="h-4 w-4 text-[#19C37D]" />
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-[#E8F1EC]">
-                      Product Picture
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#E8F1EC]">
+                      Product Picture & Stock Ideas
                     </h3>
                   </div>
                   <p className="mt-0.5 text-[11px] text-[#9DB3A8]">
-                    Upload a file, paste an image link, or pick a stock preset.
+                    Pick a ready-to-sell stock idea, upload photos, or paste an image URL.
                   </p>
                 </div>
 
                 {/* Picture input mode switcher */}
-                <div className="flex items-center rounded-lg border border-[#24382F] bg-[#14231D] p-0.5">
+                <div className="flex items-center rounded-xl border border-[#24382F] bg-[#14231D] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode("presets")}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-[11px] font-semibold transition",
+                      photoMode === "presets" ? "bg-[#19C37D] text-[#04140D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                    )}
+                  >
+                    Stock Ideas
+                  </button>
                   <button
                     type="button"
                     onClick={() => setPhotoMode("upload")}
                     className={cn(
-                      "rounded px-2.5 py-1 text-[11px] font-medium transition",
-                      photoMode === "upload" ? "bg-[#19C37D] text-[#04140D] font-semibold" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                      "rounded-lg px-3 py-1.5 text-[11px] font-semibold transition",
+                      photoMode === "upload" ? "bg-[#19C37D] text-[#04140D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
                     )}
                   >
                     Upload File
@@ -1796,21 +1900,11 @@ function ProductEditModal({
                     type="button"
                     onClick={() => setPhotoMode("url")}
                     className={cn(
-                      "rounded px-2.5 py-1 text-[11px] font-medium transition",
-                      photoMode === "url" ? "bg-[#19C37D] text-[#04140D] font-semibold" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                      "rounded-lg px-3 py-1.5 text-[11px] font-semibold transition",
+                      photoMode === "url" ? "bg-[#19C37D] text-[#04140D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
                     )}
                   >
                     Paste URL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPhotoMode("presets")}
-                    className={cn(
-                      "rounded px-2.5 py-1 text-[11px] font-medium transition",
-                      photoMode === "presets" ? "bg-[#19C37D] text-[#04140D] font-semibold" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                    )}
-                  >
-                    Stock Ideas
                   </button>
                 </div>
               </div>
@@ -1823,7 +1917,7 @@ function ProductEditModal({
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={images[0]} alt={name || "Product"} className="h-full w-full object-cover" />
-                      <span className="absolute bottom-1.5 left-1.5 rounded bg-[#19C37D] px-1.5 py-0.5 text-[9px] font-bold text-[#04140D]">
+                      <span className="absolute bottom-1.5 left-1.5 rounded-full bg-[#19C37D] px-2 py-0.5 text-[9px] font-bold text-[#04140D]">
                         Cover
                       </span>
                     </>
@@ -1837,6 +1931,55 @@ function ProductEditModal({
 
                 {/* Input area based on mode */}
                 <div className="flex-1 space-y-3">
+                  {photoMode === "presets" && (
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] font-medium text-[#19C37D]">
+                        One-click to populate photo, title, description, category and price:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[280px] overflow-y-auto pr-1">
+                        {STOCK_PRODUCT_IDEAS.map((idea) => (
+                          <div
+                            key={idea.id}
+                            className="flex items-start gap-2.5 rounded-xl border border-[#24382F] bg-[#14231D] p-2.5 transition hover:border-[#19C37D]/60"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={idea.url}
+                              alt={idea.name}
+                              className="h-14 w-14 shrink-0 rounded-lg object-cover border border-[#24382F]"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-[#19C37D]">
+                                {idea.category}
+                              </span>
+                              <h4 className="text-xs font-bold text-[#E8F1EC] truncate">
+                                {idea.name}
+                              </h4>
+                              <p className="text-[10px] text-[#9DB3A8] line-clamp-1 mt-0.5">
+                                {idea.description}
+                              </p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApplyStockIdea(idea, true)}
+                                  className="rounded-lg bg-[#19C37D] px-2.5 py-1 text-[10px] font-bold text-[#04140D] hover:bg-[#16B070] transition"
+                                >
+                                  + Use Full Idea
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApplyStockIdea(idea, false)}
+                                  className="text-[10px] text-[#9DB3A8] hover:text-[#E8F1EC] underline"
+                                >
+                                  Photo only
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {photoMode === "upload" && (
                     <div>
                       <label className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#5C7C6D]/60 bg-[#14231D] p-4 text-center cursor-pointer transition hover:border-[#19C37D]">
@@ -1898,24 +2041,6 @@ function ProductEditModal({
                     </div>
                   )}
 
-                  {photoMode === "presets" && (
-                    <div className="space-y-2">
-                      <span className="text-[11px] text-[#9DB3A8]">Tap to add high-resolution sample photos:</span>
-                      <div className="flex flex-wrap gap-2">
-                        {STOCK_PHOTO_PRESETS.map((preset) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => setImages((prev) => [...prev, preset.url])}
-                            className="rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-xs text-[#E8F1EC] transition hover:border-[#19C37D] hover:text-[#19C37D]"
-                          >
-                            + {preset.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Additional photos gallery */}
                   {images.length > 1 && (
                     <div className="space-y-1.5 pt-1">
@@ -1965,21 +2090,21 @@ function ProductEditModal({
             </div>
 
             {/* 2. PRODUCT NAME & PRICE */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div id="modal-details" className="scroll-mt-4 grid gap-4 sm:grid-cols-3">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-[#E8F1EC]">Product Name *</label>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">Product Name *</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Classic Linen Shirt"
+                  placeholder="e.g. Signature Oxford Cotton Shirt"
                   className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#E8F1EC]">Price ({currency}) *</label>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">Price ({currency}) *</label>
                 <input
                   type="number"
                   required
@@ -1987,7 +2112,7 @@ function ProductEditModal({
                   step="any"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  placeholder="15000"
+                  placeholder="18500"
                   className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm font-semibold tabular-nums text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
                 />
               </div>
@@ -1996,7 +2121,7 @@ function ProductEditModal({
             {/* 3. CATEGORY & STOCK */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-medium text-[#E8F1EC]">Category</label>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -2014,7 +2139,7 @@ function ProductEditModal({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#E8F1EC]">Availability</label>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">Inventory Availability</label>
                 <div className="mt-1.5 flex h-[44px] items-center gap-3 rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5">
                   <input
                     type="checkbox"
@@ -2024,7 +2149,7 @@ function ProductEditModal({
                     className="h-4 w-4 rounded border-[#1E2D27] text-[#19C37D] focus:ring-[#19C37D]"
                   />
                   <label htmlFor="out-of-stock-toggle" className="text-xs font-medium text-[#E8F1EC] cursor-pointer">
-                    Mark as Sold out
+                    Mark as Sold Out (shown with Sold Out badge)
                   </label>
                 </div>
               </div>
@@ -2032,21 +2157,21 @@ function ProductEditModal({
 
             {/* 4. DESCRIPTION */}
             <div>
-              <label className="block text-xs font-medium text-[#E8F1EC]">Description</label>
+              <label className="block text-xs font-semibold text-[#E8F1EC]">Product Description</label>
               <textarea
-                rows={2}
+                rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Material, fit, sizing notes or care instructions..."
+                placeholder="Describe material, fit, sizing notes or care instructions..."
                 className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
               />
             </div>
 
             {/* 5. OPTIONS (VARIANTS) */}
-            <div className="rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
+            <div id="modal-options" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
               <div className="flex items-center justify-between border-b border-[#1E2D27] pb-2.5">
                 <div>
-                  <span className="text-xs font-semibold text-[#E8F1EC]">Product Options</span>
+                  <span className="text-xs font-bold text-[#E8F1EC]">Product Options & Sizes</span>
                   <p className="text-[11px] text-[#9DB3A8]">
                     e.g. Size (Small, Medium, Large) or Color (Black, Tan)
                   </p>
@@ -2054,7 +2179,7 @@ function ProductEditModal({
                 <button
                   type="button"
                   onClick={addOptionRow}
-                  className="flex min-h-[34px] items-center gap-1 rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-xs font-medium text-[#19C37D] hover:bg-[#19C37D]/10"
+                  className="flex min-h-[34px] items-center gap-1 rounded-xl border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-xs font-medium text-[#19C37D] hover:bg-[#19C37D]/10"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Add option</span>
@@ -2074,21 +2199,22 @@ function ProductEditModal({
                         value={opt.name}
                         onChange={(e) => updateOptionRow(idx, "name", e.target.value)}
                         placeholder="Option name (e.g. Size)"
-                        className="w-1/3 rounded-lg border border-[#5C7C6D] bg-[#14231D] px-2.5 py-1.5 text-xs text-[#E8F1EC] outline-none focus:border-[#19C37D]"
+                        className="w-1/3 rounded-xl border border-[#5C7C6D] bg-[#14231D] px-3 py-2 text-xs text-[#E8F1EC] outline-none focus:border-[#19C37D]"
                       />
                       <input
                         type="text"
                         value={opt.choices}
                         onChange={(e) => updateOptionRow(idx, "choices", e.target.value)}
                         placeholder="Choices separated by commas (e.g. Small, Medium, Large)"
-                        className="flex-1 rounded-lg border border-[#5C7C6D] bg-[#14231D] px-2.5 py-1.5 text-xs text-[#E8F1EC] outline-none focus:border-[#19C37D]"
+                        className="flex-1 rounded-xl border border-[#5C7C6D] bg-[#14231D] px-3 py-2 text-xs text-[#E8F1EC] outline-none focus:border-[#19C37D]"
                       />
                       <button
                         type="button"
                         onClick={() => removeOptionRow(idx)}
-                        className="p-1.5 text-[#9DB3A8] hover:text-[#FF8A8A]"
+                        className="p-2 text-[#9DB3A8] hover:text-[#FF8A8A]"
+                        title="Remove option"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))
@@ -2097,12 +2223,12 @@ function ProductEditModal({
             </div>
 
             {/* 6. WHATSAPP ORDER MESSAGE (EDITABLE & LIVE PREVIEW) */}
-            <div className="rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4 space-y-3">
+            <div id="modal-whatsapp" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-[#1E2D27] pb-2">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-[#19C37D]" />
-                  <span className="text-xs font-semibold text-[#E8F1EC]">
-                    WhatsApp Order Message
+                  <span className="text-xs font-bold text-[#E8F1EC]">
+                    WhatsApp Order Message Customization
                   </span>
                 </div>
                 <button
@@ -2117,7 +2243,7 @@ function ProductEditModal({
 
               <div>
                 <label className="block text-[11px] font-medium text-[#9DB3A8] mb-1.5">
-                  Insert Variables:
+                  Insert Variables into WhatsApp Message:
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {ALLOWED_TEMPLATE_VARIABLES.map((v) => (
@@ -2125,7 +2251,7 @@ function ProductEditModal({
                       key={v}
                       type="button"
                       onClick={() => insertWaVariable(v)}
-                      className="rounded border border-[#24382F] bg-[#14231D] px-2 py-0.5 text-[11px] font-medium text-[#19C37D] hover:border-[#19C37D]"
+                      className="rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-[11px] font-medium text-[#19C37D] hover:border-[#19C37D]"
                     >
                       + {v}
                     </button>
@@ -2135,7 +2261,7 @@ function ProductEditModal({
 
               <div>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={waTemplateMessage}
                   onChange={(e) => setWaTemplateMessage(e.target.value)}
                   placeholder={DEFAULT_WA_TEMPLATE}
@@ -2145,11 +2271,11 @@ function ProductEditModal({
 
               {/* Rendered Live WhatsApp Message Preview */}
               <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9DB3A8]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#9DB3A8]">
                   Buyer WhatsApp Message Preview
                 </span>
-                <div className="mt-1.5 rounded-xl border border-[#24382F] bg-[#14231D] p-3 text-xs text-[#E8F1EC]">
-                  <p className="whitespace-pre-line leading-relaxed text-[#E8F1EC]/90">
+                <div className="mt-1.5 rounded-xl border border-[#24382F] bg-[#14231D] p-3.5 text-xs text-[#E8F1EC]">
+                  <p className="whitespace-pre-line leading-relaxed text-[#E8F1EC]/90 font-mono">
                     {liveWhatsAppPreview}
                   </p>
                 </div>
@@ -2157,18 +2283,18 @@ function ProductEditModal({
             </div>
           </div>
 
-          {/* Fixed Footer Actions */}
-          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-[#1E2D27] px-5 sm:px-6 py-4 bg-[#0E1714]">
+          {/* Fixed Footer Actions - Always visible across mobile, tablet, and desktop */}
+          <div className="sticky bottom-0 z-30 flex shrink-0 items-center justify-between sm:justify-end gap-3 border-t border-[#1E2D27] bg-[#0E1714] px-4 sm:px-6 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] shadow-2xl">
             <button
               type="button"
               onClick={onClose}
-              className="flex min-h-[44px] items-center rounded-xl px-4 py-2 text-xs font-medium text-[#9DB3A8] hover:text-[#E8F1EC]"
+              className="flex-1 sm:flex-initial flex items-center justify-center min-h-[44px] rounded-xl border border-[#24382F] bg-[#14231D] sm:border-transparent sm:bg-transparent px-5 py-2.5 text-xs font-semibold text-[#9DB3A8] transition hover:text-[#E8F1EC] hover:bg-[#1C2E26] active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[#19C37D] px-6 py-2.5 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] active:scale-98 shadow-md shadow-[#19C37D]/20"
+              className="flex-1 sm:flex-initial flex items-center justify-center min-h-[44px] gap-2 rounded-xl bg-[#19C37D] px-6 py-2.5 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] active:scale-95 shadow-md shadow-[#19C37D]/25"
             >
               <Check className="h-4 w-4" />
               <span>{existing ? "Save changes" : "Add product"}</span>

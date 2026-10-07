@@ -488,7 +488,7 @@ export function StoreEditorView() {
                     type="text"
                     value={localState.deliveryAreas || ""}
                     onChange={(e) => updateField("deliveryAreas", e.target.value)}
-                    placeholder="e.g. Nationwide via dispatch"
+                    placeholder="e.g. Nationwide delivery (Lagos, Abuja, PH)"
                     className="w-full rounded-[10px] border border-[#1E2D27] bg-[#14231D] px-3.5 py-2.5 text-xs text-[#E8F1EC] focus:border-[#19C37D] focus:outline-none"
                   />
                 </div>

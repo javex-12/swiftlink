@@ -18,16 +18,21 @@ import {
   CheckCircle2,
   Clock,
   ChevronDown,
+  X,
+  MessageSquare,
+  Send,
+  Check,
 } from "lucide-react";
 
 /**
- * The three website templates as complete, production-grade storefronts.
- *
- * Editorial, Boutique, and Bold each deliver a full, responsive e-commerce experience:
- * trust announcement bar, branded navigation, responsive hero, trust/benefits strip,
- * interactive category & search catalog, rich product cards with descriptions & badges,
- * customer testimonials, FAQ, store footer, and mobile quick-cart drawer.
+ * High-resolution aesthetic fallback imagery when merchant has not uploaded a photo yet.
  */
+const EDITORIAL_FALLBACK_HERO =
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80";
+const BOUTIQUE_FALLBACK_HERO =
+  "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1200&q=80";
+const BOLD_FALLBACK_HERO =
+  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80";
 
 export type TemplateSiteProps = {
   state: ShopState;
@@ -40,6 +45,7 @@ export type TemplateSiteProps = {
   onSearch: () => void;
   onCart: () => void;
   onReviews: () => void;
+  onLeaveFeedback?: () => void;
 };
 
 const focusRing =
@@ -152,7 +158,7 @@ function TrustFeaturesStrip({ template }: { template: WebsiteTemplate }) {
           </div>
           <div>
             <h4 className={cn("text-xs font-bold text-t-text", isBold && "uppercase tracking-wider")}>
-              Verified Quality
+              Quality Guarantee
             </h4>
             <p className="mt-0.5 text-[11px] leading-relaxed text-t-text-muted">
               Authentic products guaranteed
@@ -178,7 +184,205 @@ function TrustFeaturesStrip({ template }: { template: WebsiteTemplate }) {
   );
 }
 
-function TestimonialsSection({ bizName }: { bizName: string }) {
+export function StoreFeedbackModal({
+  bizName,
+  phone,
+  isOpen,
+  onClose,
+  onSubmitReview,
+}: {
+  bizName: string;
+  phone?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmitReview?: (review: { name: string; rating: number; message: string }) => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    if (onSubmitReview) {
+      onSubmitReview({
+        name: name.trim() || "Verified Buyer",
+        rating,
+        message: message.trim(),
+      });
+    }
+    setIsSubmitted(true);
+  };
+
+  const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
+  const handleWhatsAppSend = () => {
+    if (!cleanPhone) return;
+    const reviewName = name.trim() || "Store Visitor";
+    const waText = encodeURIComponent(
+      `Hello ${bizName},\n\nI visited your storefront and would like to share my feedback:\nRating: ${rating}/5 Stars\nFrom: ${reviewName}\nMessage: ${message || "I really liked your collection!"}`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${waText}`, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feedback-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl border border-t-border bg-t-surface p-6 shadow-2xl text-t-text"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between border-b border-t-border/50 pb-4">
+          <div>
+            <h3 id="feedback-modal-title" className="font-t-display text-xl font-bold">
+              Leave Store Feedback
+            </h3>
+            <p className="mt-1 text-xs text-t-text-muted">
+              Share your thoughts, review products, or send direct feedback to {bizName}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-t-text-muted hover:bg-t-surface-alt hover:text-t-text transition"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {isSubmitted ? (
+          <div className="py-8 text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+              <Check className="h-6 w-6" />
+            </div>
+            <h4 className="font-t-display text-lg font-bold">Thank You!</h4>
+            <p className="mx-auto max-w-xs text-xs text-t-text-muted">
+              Your feedback for {bizName} has been received. Your input helps improve our store.
+            </p>
+            <div className="pt-2 flex justify-center gap-3">
+              {cleanPhone && (
+                <button
+                  type="button"
+                  onClick={handleWhatsAppSend}
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>Also Send on WhatsApp</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl bg-t-accent px-5 py-2.5 text-xs font-bold text-t-accent-fg transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-t-text mb-1.5">
+                Your Rating
+              </label>
+              <div className="flex items-center gap-1.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="p-1 transition hover:scale-110"
+                    aria-label={`Rate ${star} star`}
+                  >
+                    <Star
+                      className={cn(
+                        "h-6 w-6",
+                        star <= rating
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-t-border fill-transparent"
+                      )}
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-xs font-semibold text-t-text-muted">
+                  {rating} of 5 Stars
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-t-text mb-1">
+                Your Name / Location (Optional)
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Bukola from Ikeja"
+                className="w-full rounded-xl border border-t-border bg-t-surface-alt p-3 text-xs text-t-text placeholder-t-text-muted outline-none focus:border-t-accent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-t-text mb-1">
+                Feedback & Review
+              </label>
+              <textarea
+                required
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tell us what you loved about the products, customer experience, or what we can improve..."
+                className="w-full rounded-xl border border-t-border bg-t-surface-alt p-3 text-xs text-t-text placeholder-t-text-muted outline-none focus:border-t-accent"
+              />
+            </div>
+
+            <div className="pt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-t-border/50">
+              {cleanPhone && (
+                <button
+                  type="button"
+                  onClick={handleWhatsAppSend}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>Send on WhatsApp</span>
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={!message.trim()}
+                className="flex items-center justify-center gap-2 rounded-xl bg-t-accent px-5 py-2.5 text-xs font-bold text-t-accent-fg transition hover:opacity-95 disabled:opacity-50"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>Submit Feedback</span>
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TestimonialsSection({
+  bizName,
+  storePhone,
+  onLeaveFeedback,
+}: {
+  bizName: string;
+  storePhone?: string;
+  onLeaveFeedback?: () => void;
+}) {
   const reviews = [
     {
       name: "Tunde A.",
@@ -206,19 +410,34 @@ function TestimonialsSection({ bizName }: { bizName: string }) {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-t-accent">
-              Verified Feedback
+              Customer Reviews
             </span>
             <h3 className="mt-2 font-t-display text-2xl font-bold sm:text-3xl text-t-text">
               What customers say about {bizName}
             </h3>
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-t-accent">
-            <div className="flex text-amber-400">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-              ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-t-accent">
+              <div className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span>4.9 / 5.0 (verified ratings)</span>
             </div>
-            <span>4.9 / 5.0 (verified orders)</span>
+            {onLeaveFeedback && (
+              <button
+                type="button"
+                onClick={onLeaveFeedback}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xl border border-t-border bg-t-surface px-3.5 py-2 text-xs font-semibold text-t-text shadow-xs transition hover:border-t-accent hover:text-t-accent",
+                  focusRing
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span>Leave Feedback</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -262,8 +481,8 @@ function FaqSection() {
       a: "We support direct bank transfer, USSD, and secure online cards. Payment details are sent immediately upon order confirmation on WhatsApp.",
     },
     {
-      q: "How quickly will my order be dispatched?",
-      a: "Orders confirmed before 2:00 PM are dispatched same-day. Nationwide delivery typically arrives in 24 to 48 hours with door-to-door tracking.",
+      q: "When will my order arrive?",
+      a: "Orders confirmed before 2:00 PM are prepared and shipped same-day. Nationwide delivery typically arrives in 24 to 48 hours with door-to-door tracking.",
     },
   ];
 
@@ -350,8 +569,10 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
   const title = state.heroTitle || state.bizName || template.name;
   const subtitle = state.heroSubtitle || state.tagline || template.tagline;
   const heroImage = state.heroImage || state.bizImage || products[0]?.image;
+  const displayHeroImage = heroImage || EDITORIAL_FALLBACK_HERO;
   const story = storyOf(state, template);
   const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -364,6 +585,14 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
     });
   }, [products, activeCategory, searchFilter]);
 
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-t-bg pb-24 font-t-body text-t-text">
       {/* Top Announcement Bar */}
@@ -374,28 +603,28 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             {state.deliveryAreas || "Express Nationwide Delivery"}
           </span>
           <span className="mx-auto sm:mx-0 font-medium">
-            Direct WhatsApp Checkout · Verified Store
+            Direct WhatsApp Checkout · Official Storefront
           </span>
           <span className="hidden md:inline-flex items-center gap-1 font-medium">
             <Clock className="h-3.5 w-3.5 text-t-accent" />
-            Orders dispatched in 24 hours
+            Orders Shipped Within 24 Hours
           </span>
         </div>
       </div>
 
       {/* Main Header */}
       <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-3 sm:px-6 sm:py-4 md:px-8">
           <button
             type="button"
             onClick={shopNow}
-            className={cn("flex items-center gap-2.5 font-t-display text-xl sm:text-2xl font-bold leading-none tracking-tight", focusRing)}
+            className={cn("flex min-w-0 items-center gap-2 font-t-display text-base sm:text-2xl font-bold leading-none tracking-tight text-left", focusRing)}
           >
             {state.bizImage && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={state.bizImage} alt="" className="h-7 w-7 rounded-full object-cover border border-t-border" />
+              <img src={state.bizImage} alt="" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 rounded-full object-cover border border-t-border" />
             )}
-            <span>{state.bizName || template.name}</span>
+            <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs md:max-w-none">{state.bizName || template.name}</span>
           </button>
 
           <nav className="hidden items-center gap-7 text-sm font-medium md:flex" aria-label="Store">
@@ -405,16 +634,16 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             <a href="#story" className={cn("text-t-text-muted hover:text-t-text transition", focusRing)}>
               Our Story
             </a>
-            <button type="button" onClick={props.onReviews} className={cn("text-t-text-muted hover:text-t-text transition", focusRing)}>
-              Reviews
+            <button type="button" onClick={handleFeedbackClick} className={cn("text-t-text-muted hover:text-t-text transition", focusRing)}>
+              Feedback & Reviews
             </button>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <button
               type="button"
               onClick={props.onSearch}
-              className={cn("flex items-center gap-1.5 rounded-xl border border-t-border bg-t-surface px-3 py-2 text-xs font-medium text-t-text transition hover:border-t-accent", focusRing)}
+              className={cn("flex items-center gap-1 rounded-xl border border-t-border bg-t-surface p-2 sm:px-3 sm:py-2 text-xs font-medium text-t-text transition hover:border-t-accent", focusRing)}
               aria-label="Search catalog"
             >
               <Search className="h-3.5 w-3.5" />
@@ -426,7 +655,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
                 href={`https://wa.me/${state.phone.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn("hidden sm:flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20", focusRing)}
+                className={cn("hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20", focusRing)}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 <span>WhatsApp</span>
@@ -436,10 +665,10 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             <button
               type="button"
               onClick={props.onCart}
-              className={cn("flex items-center gap-2 rounded-xl bg-t-accent px-3.5 py-2 text-xs font-semibold text-t-accent-fg shadow-xs transition hover:opacity-95 active:scale-95", focusRing)}
+              className={cn("flex items-center gap-1.5 rounded-xl bg-t-accent px-3 py-2 text-xs font-semibold text-t-accent-fg shadow-xs transition hover:opacity-95 active:scale-95", focusRing)}
               aria-label="Shopping Cart"
             >
-              <ShoppingBag className="h-4 w-4" />
+              <ShoppingBag className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Cart</span>
               <CartMark count={cartCount} />
             </button>
@@ -479,16 +708,17 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
         </div>
 
         <div className="md:col-span-5">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-t-border bg-t-surface-alt shadow-xl">
-            {heroImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={heroImage} alt={title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full flex-col justify-end p-6 bg-gradient-to-t from-black/80 to-transparent">
-                <p className="font-t-display text-2xl font-bold text-white">{template.name}</p>
-                <p className="text-xs text-white/70 mt-1">Curated products ready to dispatch</p>
-              </div>
-            )}
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-t-border bg-t-surface-alt shadow-xl group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={displayHeroImage}
+              alt={title}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
+              <p className="font-t-display text-xl font-bold text-white">{state.bizName || template.name}</p>
+              <p className="text-xs text-white/80 mt-1">Curated collection with direct WhatsApp ordering</p>
+            </div>
           </div>
         </div>
       </section>
@@ -661,7 +891,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             <div className="mt-8 flex flex-wrap gap-6 border-t border-t-border pt-6 text-xs text-t-text-muted">
               <div>
                 <span className="block font-bold text-t-text">Nationwide Delivery</span>
-                <span>{state.deliveryAreas || "Dispatched with tracking"}</span>
+                <span>{state.deliveryAreas || "Delivered nationwide with tracking"}</span>
               </div>
               <div>
                 <span className="block font-bold text-t-text">WhatsApp Direct Orders</span>
@@ -673,7 +903,11 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
       </section>
 
       {/* Customer Testimonials */}
-      <TestimonialsSection bizName={state.bizName || template.name} />
+      <TestimonialsSection
+        bizName={state.bizName || template.name}
+        storePhone={state.phone}
+        onLeaveFeedback={handleFeedbackClick}
+      />
 
       {/* FAQ Section */}
       <FaqSection />
@@ -713,6 +947,14 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
 
       {/* Mobile Sticky Cart Trigger */}
       <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      {/* Store Feedback Modal */}
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   );
 }
@@ -724,9 +966,11 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
   const { state, products, categories, activeCategory, cartCount, template } = props;
   const title = state.heroTitle || state.bizName || template.name;
   const subtitle = state.heroSubtitle || state.tagline || template.tagline;
+  const heroImage = state.heroImage || state.bizImage || products[0]?.image || BOUTIQUE_FALLBACK_HERO;
   const story = storyOf(state, template);
   const mark = state.bizImage;
   const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -739,74 +983,132 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
     });
   }, [products, activeCategory, searchFilter]);
 
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-t-bg pb-24 font-t-body text-t-text">
       {/* Top Banner */}
       <div className="bg-t-accent-subtle px-4 py-2 text-center text-xs font-semibold text-t-accent-text border-b border-t-border">
-        {state.tagline || template.tagline} · Nationwide Tracked Delivery
+        {state.tagline || template.tagline || "Artisanal Boutique"} · Fast Nationwide Tracked Delivery
       </div>
 
       {/* Header */}
       <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3.5 py-3 sm:px-6 sm:py-3.5 md:px-8">
           <button
             type="button"
             onClick={props.onSearch}
-            className={cn("flex items-center gap-1.5 rounded-full border border-t-border bg-t-surface px-3 py-1.5 text-xs text-t-text transition hover:border-t-accent", focusRing)}
+            className={cn("flex shrink-0 items-center gap-1 rounded-full border border-t-border bg-t-surface p-2 sm:px-3 sm:py-1.5 text-xs text-t-text transition hover:border-t-accent", focusRing)}
+            aria-label="Search"
           >
             <Search className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Search</span>
           </button>
 
-          <button type="button" onClick={shopNow} className={cn("flex items-center gap-2", focusRing)}>
-            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-t-accent-subtle shadow-xs">
+          <button type="button" onClick={shopNow} className={cn("flex min-w-0 items-center gap-1.5 sm:gap-2", focusRing)}>
+            <span className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-t-accent-subtle shadow-xs">
               {mark ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={mark} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-sm font-bold text-t-accent-text">
+                <span className="text-xs sm:text-sm font-bold text-t-accent-text">
                   {(state.bizName || template.name).slice(0, 1)}
                 </span>
               )}
             </span>
-            <span className="font-t-display text-base sm:text-lg font-bold text-t-text">
+            <span className="truncate max-w-[130px] xs:max-w-[180px] sm:max-w-xs font-t-display text-sm sm:text-lg font-bold text-t-text">
               {state.bizName || template.name}
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={props.onCart}
-            className={cn("flex items-center gap-2 rounded-full bg-t-accent px-4 py-2 text-xs font-bold text-t-accent-fg shadow-xs transition hover:opacity-95 active:scale-95", focusRing)}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            <span className="hidden sm:inline">Cart</span>
-            <CartMark count={cartCount} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn("hidden sm:flex items-center gap-1 rounded-full border border-t-border bg-t-surface px-3 py-1.5 text-xs font-medium text-t-text transition hover:border-t-accent", focusRing)}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Reviews</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn("flex shrink-0 items-center gap-1.5 rounded-full bg-t-accent px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold text-t-accent-fg shadow-xs transition hover:opacity-95 active:scale-95", focusRing)}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Cart</span>
+              <CartMark count={cartCount} />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:px-8 md:py-16">
-        <div className="rounded-3xl bg-t-surface-alt border border-t-border px-6 py-12 text-center sm:px-12 md:py-20 shadow-md">
-          <span className="inline-block rounded-full bg-t-accent-subtle px-3 py-1 text-xs font-bold text-t-accent-text mb-4">
-            Boutique Collection
-          </span>
-          <h1 className="font-t-display text-3xl font-bold leading-tight sm:text-5xl md:text-6xl text-t-text">
-            {title}
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-sm sm:text-base leading-relaxed text-t-text-muted">
-            {subtitle}
-          </p>
-          <div className="mt-8 flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={shopNow}
-              className={cn("flex items-center gap-2 rounded-full bg-t-accent px-7 py-3 text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95", focusRing)}
-            >
-              <span>{state.heroButtonText || "Browse Collection"}</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
+      {/* Boutique Hero: Warm, 2-column artisanal storefront banner */}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-8 md:py-16">
+        <div className="grid items-center gap-8 rounded-3xl border border-t-border bg-t-surface-alt/70 p-6 sm:p-10 md:grid-cols-12 md:gap-12 md:p-12 shadow-sm">
+          <div className="md:col-span-7 space-y-4">
+            <span className="inline-block rounded-full bg-t-accent-subtle px-3.5 py-1 text-xs font-bold text-t-accent-text">
+              Artisanal Boutique Collection
+            </span>
+            <h1 className="font-t-display text-3xl font-bold leading-tight sm:text-5xl md:text-6xl text-t-text break-words">
+              {title}
+            </h1>
+            <p className="max-w-lg text-sm sm:text-base leading-relaxed text-t-text-muted">
+              {subtitle}
+            </p>
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={shopNow}
+                className={cn(
+                  "flex items-center gap-2 rounded-full bg-t-accent px-6 py-3 text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
+                  focusRing
+                )}
+              >
+                <span>{state.heroButtonText || "Browse Collection"}</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              {state.phone && (
+                <a
+                  href={`https://wa.me/${state.phone.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border border-t-border bg-t-surface px-5 py-3 text-sm font-semibold text-t-text transition hover:border-t-accent",
+                    focusRing
+                  )}
+                >
+                  <MessageCircle className="h-4 w-4 text-emerald-500" />
+                  <span>Inquire via WhatsApp</span>
+                </a>
+              )}
+            </div>
+          </div>
+          <div className="md:col-span-5">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-t-border bg-t-surface shadow-md group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={heroImage}
+                alt={title}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">
+                  Curated Selection
+                </span>
+                <p className="text-xs text-white/80 mt-0.5">
+                  Hand-selected items with personal WhatsApp checkout
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -935,14 +1237,18 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
             {story}
           </p>
           <div className="mt-6 flex items-center gap-4 text-xs font-semibold text-t-accent-text">
-            <span>Verified Boutique</span>
+            <span>Artisanal Boutique</span>
             <span>·</span>
-            <span>Nationwide Coverage</span>
+            <span>Fast Nationwide Delivery</span>
           </div>
         </div>
       </section>
 
-      <TestimonialsSection bizName={state.bizName || template.name} />
+      <TestimonialsSection
+        bizName={state.bizName || template.name}
+        storePhone={state.phone}
+        onLeaveFeedback={handleFeedbackClick}
+      />
       <FaqSection />
 
       {/* Footer */}
@@ -953,6 +1259,13 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
       </footer>
 
       <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   );
 }
@@ -966,6 +1279,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const subtitle = state.heroSubtitle || state.tagline || template.tagline;
   const story = storyOf(state, template);
   const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -978,26 +1292,44 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
     });
   }, [products, activeCategory, searchFilter]);
 
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-t-bg pb-24 font-t-body text-t-text">
       <div className="h-2 bg-t-accent" />
 
       {/* Header */}
       <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-3 sm:px-6">
           <button
             type="button"
             onClick={shopNow}
-            className={cn("text-base sm:text-lg font-black uppercase tracking-[0.18em]", focusRing)}
+            className={cn("truncate min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none text-left text-sm sm:text-lg font-black uppercase tracking-[0.14em]", focusRing)}
           >
             {state.bizName || template.name}
           </button>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn("hidden sm:flex items-center gap-1 border border-t-border px-3 py-2 text-xs font-bold uppercase tracking-wider text-t-text hover:bg-t-surface", focusRing)}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Reviews</span>
+            </button>
+
             <button
               type="button"
               onClick={props.onSearch}
-              className={cn("flex items-center gap-1.5 border border-t-border px-3 py-2 text-xs font-bold uppercase tracking-wider", focusRing)}
+              className={cn("flex items-center gap-1 border border-t-border p-2 sm:px-3 sm:py-2 text-xs font-bold uppercase tracking-wider", focusRing)}
+              aria-label="Search"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Search</span>
@@ -1005,10 +1337,11 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             <button
               type="button"
               onClick={props.onCart}
-              className={cn("flex items-center gap-2 bg-t-accent px-4 py-2 text-xs font-bold uppercase tracking-wider text-t-accent-fg shadow-sm transition active:scale-95", focusRing)}
+              className={cn("flex items-center gap-1.5 bg-t-accent px-3 py-2 sm:px-4 sm:py-2 text-xs font-bold uppercase tracking-wider text-t-accent-fg shadow-sm transition active:scale-95", focusRing)}
+              aria-label="Cart"
             >
-              <ShoppingBag className="h-4 w-4" />
-              <span>Cart</span>
+              <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Cart</span>
               <CartMark count={cartCount} />
             </button>
           </div>
@@ -1039,7 +1372,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 md:col-span-5">
-            {products.slice(0, 2).map((product) => (
+            {(products.length > 0 ? products.slice(0, 2) : []).map((product) => (
               <button
                 key={product.id}
                 type="button"
@@ -1049,6 +1382,16 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 <ProductMedia product={product} />
               </button>
             ))}
+            {products.length === 0 && (
+              <div className="col-span-2 aspect-[16/9] overflow-hidden rounded-xl border border-white/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={BOLD_FALLBACK_HERO}
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1174,7 +1517,11 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         </div>
       </section>
 
-      <TestimonialsSection bizName={state.bizName || template.name} />
+      <TestimonialsSection
+        bizName={state.bizName || template.name}
+        storePhone={state.phone}
+        onLeaveFeedback={handleFeedbackClick}
+      />
       <FaqSection />
 
       {/* Footer */}
@@ -1187,6 +1534,13 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       </footer>
 
       <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </div>
   );
 }

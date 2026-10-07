@@ -7,8 +7,6 @@
  */
 
 import type { Product, ShopState } from "./schema";
-
-import type { Product, ShopState } from "./schema";
 import { STOCK_PRODUCT_IDEAS } from "./stock-ideas";
 
 export function getSampleProducts(currency: string = "NGN"): Product[] {
@@ -37,7 +35,7 @@ export function getSampleShopState(templateId: string = "editorial", currency: s
     bizName: "Aura Goods & Co.",
     storeUsername: "aura-goods",
     tagline: "Modern essentials for living, apparel and bespoke lifestyle.",
-    aboutUs: "Founded in 2022, Aura Goods & Co. curates premium, timeless everyday essentials designed to last. Every garment, accessory, and object is hand-selected with high craftsmanship standards and dispatched nationwide with tracking.",
+    aboutUs: "Founded in 2022, Aura Goods & Co. curates premium, timeless everyday essentials designed to last. Every garment, accessory, and object is hand-selected with high craftsmanship standards and delivered nationwide with tracking.",
     bio: "Minimalist fashion, leather goods, and refined objects for daily living.",
     phone: "+2348123456789",
     currency: currency,
@@ -60,7 +58,7 @@ export function getSampleShopState(templateId: string = "editorial", currency: s
     orderMethod: "whatsapp",
     waTemplate: "Hello Aura Goods, I would like to order: {product} for {price}. Options: {option}.",
     categories: ["All", "Tops & Shirts", "Footwear", "Bags & Accessories", "Watches & Jewelry", "Apparel", "Home & Living"],
-    deliveryAreas: "Lagos, Abuja, Port Harcourt, nationwide & express dispatch",
+    deliveryAreas: "Lagos, Abuja, Port Harcourt, and nationwide delivery",
     deliveryFee: "Free on orders over ₦50,000",
     location: "Victoria Island, Lagos, Nigeria",
     products: getSampleProducts(currency),

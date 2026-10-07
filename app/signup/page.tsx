@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Mail, Moon, Sun } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Mail } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug, cn } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
@@ -353,7 +353,6 @@ function AuthPage() {
           <Link href="/" className="inline-flex items-center gap-2">
             <Logo size="sm" showWordmark={true} />
           </Link>
-          <ThemeToggle />
         </header>
 
         <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8">
@@ -659,22 +658,6 @@ function DesignRail() {
         />
       </div>
     </aside>
-  );
-}
-
-/** Theme toggle lives at page level so the brand panel stays server-pure. */
-function ThemeToggle() {
-  const { toggleTheme } = useSwiftLink();
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label="Toggle dark mode"
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border text-app-text-muted transition-colors hover:bg-app-surface-2 hover:text-app-text"
-    >
-      <Sun width={15} height={15} className="hidden dark:block" aria-hidden="true" />
-      <Moon width={15} height={15} className="dark:hidden" aria-hidden="true" />
-    </button>
   );
 }
 

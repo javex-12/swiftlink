@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Moon, Sun, Eye } from "lucide-react";
+import { Check, Eye } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
@@ -16,13 +16,7 @@ export function WebsiteTemplatePicker() {
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   const selected = state.websiteTemplateId;
-  const appearance: "light" | "dark" = state.storefrontTheme?.background === "dark" ? "dark" : "light";
-
-  const applyAppearance = (next: "light" | "dark") => {
-    setStateMerge({
-      storefrontTheme: { ...(state.storefrontTheme ?? {}), background: next },
-    });
-  };
+  const appearance: "light" | "dark" = state.storefrontTheme?.background === "light" ? "light" : "dark";
 
   const applyTemplate = (id: WebsiteTemplateId) => {
     const template = websiteTemplates.find((item) => item.id === id);
@@ -47,31 +41,6 @@ export function WebsiteTemplatePicker() {
             <p className="max-w-md text-sm text-[#9DB3A8]">
               Choose a design for your public catalog. Preview anytime with sample products.
             </p>
-          </div>
-
-          {/* Light / dark version toggle */}
-          <div
-            role="group"
-            aria-label="Storefront appearance"
-            className="inline-flex rounded-lg border border-[#24382F] bg-[#0A1210] p-1"
-          >
-            {(["light", "dark"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => applyAppearance(mode)}
-                aria-pressed={appearance === mode}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors",
-                  appearance === mode
-                    ? "bg-[#14231D] text-[#19C37D] shadow-xs"
-                    : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                )}
-              >
-                <Icon icon={mode === "light" ? Sun : Moon} size="xs" />
-                {mode}
-              </button>
-            ))}
           </div>
         </div>
 

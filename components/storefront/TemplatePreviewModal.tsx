@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { X, Smartphone, Monitor, Check } from "lucide-react";
+import { X, Smartphone, Tablet, Monitor, Check } from "lucide-react";
 import type { Product, ShopState } from "@/lib/schema";
 import { getSampleShopState } from "@/lib/sample-store";
 import { websiteTemplateById } from "@/lib/theme/templates";
@@ -36,7 +36,7 @@ export function TemplatePreviewModal({
   onSelectTemplate,
 }: TemplatePreviewModalProps) {
   const hasVendorProducts = (vendorState.products?.length || 0) > 0;
-  const [device, setDevice] = useState<"desktop" | "phone">("phone");
+  const [device, setDevice] = useState<"desktop" | "tablet" | "phone">("phone");
   const [useSampleData, setUseSampleData] = useState<boolean>(!hasVendorProducts);
   const [activeCategory, setActiveCategory] = useState<string>("All");
 
@@ -82,7 +82,7 @@ export function TemplatePreviewModal({
   // Scoped theme variables compiled from active template theme
   const themeVars = useMemo(() => {
     if (!template) return {};
-    const tenantTheme = template.dark || template.light;
+    const tenantTheme = template.light || template.dark;
     return themeToCssVars(tenantTheme) as React.CSSProperties;
   }, [template]);
 
@@ -104,7 +104,7 @@ export function TemplatePreviewModal({
                 !useSampleData ? "bg-[#19C37D]" : "bg-[#E8B93A]"
               }`}
             />
-            <span className="text-xs font-medium text-[#E8F1EC]">
+            <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none text-xs font-medium text-[#E8F1EC]">
               {!useSampleData
                 ? `Live preview: ${vendorState.bizName || "Your store"} (${vendorState.products.length} products)`
                 : "Sample template preview"}
@@ -151,6 +151,16 @@ export function TemplatePreviewModal({
             </button>
             <button
               type="button"
+              aria-label="Tablet viewport"
+              onClick={() => setDevice("tablet")}
+              className={`flex h-7 w-7 items-center justify-center rounded transition ${
+                device === "tablet" ? "bg-[#14231D] text-[#19C37D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+              }`}
+            >
+              <Tablet className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
               aria-label="Desktop viewport"
               onClick={() => setDevice("desktop")}
               className={`flex h-7 w-7 items-center justify-center rounded transition ${
@@ -170,7 +180,8 @@ export function TemplatePreviewModal({
             className="flex items-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 py-2 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070]"
           >
             <Check className="h-3.5 w-3.5" />
-            Use this template
+            <span className="hidden xs:inline">Use this template</span>
+            <span className="xs:hidden">Use</span>
           </button>
 
           <button
@@ -187,7 +198,7 @@ export function TemplatePreviewModal({
       {/* Preview Content Area */}
       <main className="flex-1 overflow-auto bg-[#0A1210] p-2 sm:p-6">
         {device === "phone" ? (
-          <div className="mx-auto my-4 w-full max-w-[390px] overflow-hidden rounded-[40px] border-[8px] border-[#1E2D27] bg-[#111C18] shadow-2xl">
+          <div className="mx-auto my-4 w-full max-w-[390px] overflow-hidden rounded-2xl sm:rounded-[40px] border-2 sm:border-[8px] border-[#1E2D27] bg-[#111C18] shadow-2xl">
             {/* Phone Speaker Notch */}
             <div className="flex h-5 w-full items-center justify-center bg-[#111C18]">
               <div className="h-1 w-16 rounded-full bg-[#1E2D27]" />
@@ -196,7 +207,7 @@ export function TemplatePreviewModal({
             <div
               data-theme-scope="storefront"
               style={themeVars}
-              className="max-h-[750px] overflow-y-auto"
+              className="max-h-[750px] overflow-y-auto overscroll-contain"
             >
               <TemplateSite
                 state={activeState}
@@ -211,6 +222,25 @@ export function TemplatePreviewModal({
                 onReviews={() => {}}
               />
             </div>
+          </div>
+        ) : device === "tablet" ? (
+          <div
+            data-theme-scope="storefront"
+            style={themeVars}
+            className="mx-auto min-h-full max-w-[768px] overflow-hidden rounded-2xl border-4 border-[#1E2D27] bg-[#111C18] shadow-2xl"
+          >
+            <TemplateSite
+              state={activeState}
+              products={filteredProducts}
+              categories={categories}
+              activeCategory={activeCategory}
+              cartCount={0}
+              onCategory={setActiveCategory}
+              onProduct={() => {}}
+              onSearch={() => {}}
+              onCart={() => {}}
+              onReviews={() => {}}
+            />
           </div>
         ) : (
           <div
