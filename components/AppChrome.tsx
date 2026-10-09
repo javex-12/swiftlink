@@ -6,7 +6,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { X, Check, AlertTriangle, Globe } from "lucide-react";
+import { X, Check, AlertTriangle, Globe, MousePointer2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 
@@ -114,7 +114,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         className={`fixed ${handHidden ? "hidden" : ""} top-0 left-0 ${handClick ? "hand-click" : ""}`}
         style={handStyle}
       >
-        <i className="fas fa-hand-pointer text-3xl text-yellow-400" />
+        <MousePointer2 size={30} className="text-yellow-400" />
       </div>
 
       <TourOverlay />

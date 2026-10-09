@@ -30,7 +30,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
-import { themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
+import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
+import { isProductVisible } from "@/lib/plans";
 import { TemplateSite } from "@/components/storefront/template-sites";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn, isDarkColor } from "@/lib/utils";
@@ -495,7 +496,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
                 {products.map(p => (
                     <button key={p.id} onClick={() => onProductClick(p)} className="w-full flex items-center gap-6 p-4 rounded-[2rem] bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all group text-left border border-black/[0.02] dark:border-white/5">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-[1.5rem] overflow-hidden bg-gray-50 dark:bg-zinc-800 shrink-0 relative">
-                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                            <img src={p.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
                             {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-2 py-1 rounded-md shadow-sm">Sold Out</span></div>}
                         </div>
                         <div className="flex-1">
@@ -520,7 +521,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
                 {products.map((p, idx) => (
                     <button key={p.id} onClick={() => onProductClick(p)} className="break-inside-avoid w-full flex flex-col text-left group bg-white dark:bg-zinc-900 rounded-[2rem] p-4 border border-black/[0.02] dark:border-white/5 hover:shadow-xl transition-all">
                         <div className={`w-full rounded-[1.5rem] overflow-hidden mb-4 relative ${idx % 3 === 0 ? "aspect-[4/5]" : idx % 3 === 1 ? "aspect-square" : "aspect-[3/4]"}`}>
-                            <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
+                            <img src={p.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
                             {p.outOfStock && <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center"><span className="text-[9px] font-black uppercase text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-3 py-1 rounded">Sold Out</span></div>}
                         </div>
                         <h3 className="font-black text-sm text-gray-900 dark:text-white truncate px-1 uppercase tracking-tight">{p.name}</h3>
@@ -537,7 +538,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                 {products.map(p => (
                     <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group relative overflow-hidden rounded-[2rem] aspect-[4/5] bg-slate-100 dark:bg-zinc-800">
-                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
+                        <img src={p.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
                         <div className="absolute inset-0 flex flex-col justify-end p-5 z-10 transition-transform duration-500 translate-y-3 group-hover:translate-y-0">
                             <h3 className="font-black text-base text-white truncate uppercase tracking-tight">{p.name}</h3>
@@ -557,7 +558,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
                 {products.map(p => (
                     <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group bg-yellow-100/10 dark:bg-zinc-900 border-[3px] border-black dark:border-white p-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-[0_0_0_0_#000] dark:hover:shadow-[0_0_0_0_#fff] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all">
                         <div className="w-full aspect-[4/5] border-2 border-black dark:border-white overflow-hidden mb-3 relative">
-                            <img src={p.image} className="w-full h-full object-cover" alt={p.name} />
+                            <img src={p.image} loading="lazy" decoding="async" className="w-full h-full object-cover" alt={p.name} />
                             {p.outOfStock && <div className="absolute inset-0 bg-white/90 dark:bg-black/90 flex items-center justify-center border-b-2 border-black dark:border-white"><span className="text-[11px] font-black uppercase text-black dark:text-white border-2 border-black dark:border-white px-3 py-1">SOLD OUT</span></div>}
                         </div>
                         <h3 className="font-black text-xs md:text-sm text-gray-900 dark:text-white uppercase tracking-tight">{p.name}</h3>
@@ -574,7 +575,7 @@ const CatalogTemplate = ({ state, templateId, products, onProductClick }: { stat
             {products.map(p => (
                 <button key={p.id} onClick={() => onProductClick(p)} className="flex flex-col text-left group">
                     <div className="w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-white dark:bg-zinc-900 shadow-sm mb-4 relative border border-black/[0.02] dark:border-white/5 group-hover:shadow-xl transition-all">
-                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
+                        <img src={p.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.name} />
                         {p.outOfStock && (
                             <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl shadow-lg">Sold Out</span>
@@ -903,13 +904,15 @@ export function CustomerStorefront({
   const categories: string[] = useMemo(() => {
       if (!effectiveState) return ["All"];
       const custom = effectiveState.categories || [];
-      const collected = Array.from(new Set((effectiveState.products || []).map(p => p.category).filter(Boolean)));
+      const collected = Array.from(new Set((effectiveState.products || []).filter(isProductVisible).map(p => p.category).filter(Boolean)));
       return Array.from(new Set(["All", ...custom, ...(collected as string[])]));
   }, [effectiveState]);
 
   const filteredProducts = useMemo(() => {
     if (!effectiveState) return [];
     return effectiveState.products.filter(p => {
+        // Hidden products are kept in state but must never reach the storefront.
+        if (!isProductVisible(p)) return false;
         const matchesCat = activeCategory === "All" || p.category === activeCategory;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              (p.description || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -943,7 +946,12 @@ export function CustomerStorefront({
   }
 
   const rawState = effectiveState!;
-  const template = websiteTemplateById(rawState.websiteTemplateId);
+  // Phase 2: **every** store renders a website template. A store with no
+  // `websiteTemplateId` — or one pointing at a retired id — falls back to the
+  // default template instead of dropping to the legacy section-composed layout
+  // (which is what 14 of the 16 live stores used to hit).
+  const template =
+    websiteTemplateById(rawState.websiteTemplateId) ?? websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!;
   const backgroundIntent = rawState.storefrontTheme?.background === "dark" ? "dark" : "light";
   const templateTheme = template ? themeForTemplate(template, backgroundIntent) : null;
   const themeVars = templateTheme ? themeToCssVars(templateTheme) : null;
@@ -966,7 +974,7 @@ export function CustomerStorefront({
 
   return (
     <div
-      data-theme-scope={templateTheme ? "storefront" : undefined}
+      data-theme-scope="storefront"
       className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-hidden"
          style={{ 
             ...(themeVars ? (themeVars as React.CSSProperties) : { backgroundColor: bgColor }),
@@ -977,21 +985,6 @@ export function CustomerStorefront({
             "--btn-color": buttonColor,
             "--btn-text-color": isDarkColor(buttonColor) ? "#ffffff" : "#000000"
          } as React.CSSProperties}>
-      <style>{`
-         .bg-emerald-500 { background-color: var(--t-accent, var(--btn-color)) !important; color: var(--t-accent-fg, var(--btn-text-color)) !important; }
-         .text-emerald-500 { color: var(--t-accent-text, var(--theme-color)) !important; }
-         .text-emerald-600 { color: var(--t-accent-text, var(--theme-color)) !important; }
-         .border-emerald-500 { border-color: var(--t-accent, var(--theme-color)) !important; }
-         .bg-gray-100 { background-color: var(--t-surface-alt, color-mix(in srgb, var(--surface-color) 95%, var(--text-color))) !important; }
-         .text-gray-900 { color: var(--t-text, var(--text-color)) !important; }
-         .bg-white { background-color: var(--t-surface, var(--surface-color)) !important; border-color: var(--t-border, color-mix(in srgb, var(--text-color) 10%, transparent)) !important; }
-         .bg-gray-50 { background-color: var(--t-surface-alt, color-mix(in srgb, var(--surface-color) 95%, var(--text-color))) !important; }
-         .text-gray-500, .text-gray-400 { color: var(--t-text-muted, color-mix(in srgb, var(--text-color) 60%, transparent)) !important; }
-         .bg-gray-900 { background-color: var(--t-text, var(--text-color)) !important; color: var(--t-bg, var(--bg-color)) !important; }
-         header.storefront-header, div.storefront-header { background-color: var(--t-bg, var(--bg-color)) !important; }
-         footer.storefront-footer, div.storefront-footer, footer { background-color: var(--t-bg, var(--bg-color)) !important; }
-         .custom-scrollbar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 20%, transparent); }
-      `}</style>
       
       <div className="w-full min-h-screen flex flex-col relative overflow-x-hidden">
         <div className="flex-1 flex flex-col relative">
@@ -1004,39 +997,8 @@ export function CustomerStorefront({
                 screen !== "home" && "opacity-0 pointer-events-none hidden"
               )}
             >
-                {/* Fixed Header — website templates draw their own navigation. */}
-                <div className={cn("backdrop-blur-md border-b border-black/[0.06] sticky top-0 z-50 w-full shrink-0 storefront-header", template && "hidden")} style={{ backgroundColor: `${bgColor}e6` }}>
-                  <div className="w-full px-4 md:px-12 py-3 md:py-4 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                      <div className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-lg md:rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm overflow-hidden">
-                        {s.bizImage ? <img src={s.bizImage} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-white">{(s.bizName || "S").slice(0, 1).toUpperCase()}</span>}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[11px] md:text-sm font-black text-gray-900 leading-none truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs">{s.bizName || "Store"}</p>
-                        <p className="text-[8px] md:text-[10px] text-emerald-500 font-bold leading-none mt-1">● Online</p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3 md:gap-4">
-                      <button onClick={() => goTab("search")} className="p-1.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Search">
-                        <Search size={16} className="text-gray-900" />
-                      </button>
-                      <button onClick={() => goTab("cart")} className="relative p-1.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Cart">
-                        <ShoppingCart size={16} className="text-gray-900" />
-                        <AnimatePresence>
-                          {cartItemCount > 0 && (
-                            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                              {cartItemCount}
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="flex flex-col">
-                  {template ? (
-                    <TemplateSite
+                  <TemplateSite
                       state={s}
                       products={filteredProducts}
                       categories={categories}
@@ -1056,34 +1018,6 @@ export function CustomerStorefront({
                         setShowReviewForm(true);
                       }}
                     />
-                  ) : (
-                  <>
-                  <div className="w-full">
-                    <HeroTemplate state={s} templateId={s.heroTemplateId || "hero-1"} onShopClick={() => {
-                        const target = document.getElementById("sl-catalog");
-                        if(target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }} />
-                  </div>
-                  <div className="w-full flex-1">
-                    <div className="max-w-screen-xl mx-auto px-4 md:px-12 py-4 md:py-8">
-                        <div id="sl-catalog" className="pb-8 sticky top-0 z-40 backdrop-blur-xl pt-2">
-                            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
-                                {categories.map((c) => (
-                                <button key={c} onClick={() => setActiveCategory(c)} className={`flex-shrink-0 px-5 py-2 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-black transition-all active:scale-95 ${activeCategory === c ? "shadow-lg bg-gray-900 text-white" : "border border-black/[0.05] bg-white text-gray-900 hover:brightness-95"}`}>
-                                    {c}
-                                </button>
-                                ))}
-                            </div>
-                        </div>
-                        <CatalogTemplate state={s} templateId={s.catalogTemplateId || "catalog-1"} products={filteredProducts} onProductClick={(p) => { setSelectedProduct(p); changeScreen("product"); logEvent("product_click", { productId: p.id }); }} />
-                        <AboutTemplate state={s} templateId={s.aboutTemplateId || "about-1"} />
-                    </div>
-                  </div>
-                  <div className="w-full mt-auto">
-                    <FooterTemplate state={s} templateId={s.footerTemplateId || "footer-1"} />
-                  </div>
-                  </>
-                  )}
                 </div>
             </div>
 
@@ -1095,18 +1029,18 @@ export function CustomerStorefront({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
-                      className="fixed inset-0 z-[100] flex flex-col bg-white overflow-y-auto custom-scrollbar"
+                      className="fixed inset-0 z-[100] flex flex-col sf-surface overflow-y-auto custom-scrollbar"
                     >
                         {screen === "product" && selectedProduct && (
-                            <div className="w-full md:flex md:items-stretch md:min-h-screen bg-white text-gray-900">
-                                <div className="md:w-1/2 relative bg-gray-100 shrink-0">
+                            <div className="w-full md:flex md:items-stretch md:min-h-screen sf-surface sf-ink">
+                                <div className="md:w-1/2 relative sf-surface-alt shrink-0">
                                     {(() => {
                                         const imgs = selectedProduct.images?.length ? selectedProduct.images : (selectedProduct.image ? [selectedProduct.image] : []);
                                         const idx = activeImgIdx % (imgs.length || 1);
                                         return (
                                             <>
                                                 <img src={imgs[idx]} alt={selectedProduct.name} className="w-full h-[400px] md:h-full object-cover" />
-                                                <button onClick={() => changeScreen("home")} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg text-gray-900"><ChevronLeft size={20} /></button>
+                                                <button onClick={() => changeScreen("home")} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg sf-ink"><ChevronLeft size={20} /></button>
                                                 {imgs.length > 1 && (
                                                     <div className="absolute bottom-12 left-0 right-0 flex gap-2 px-4 overflow-x-auto no-scrollbar z-20">
                                                         {imgs.map((img, i) => (
@@ -1120,18 +1054,18 @@ export function CustomerStorefront({
                                 </div>
                                 <div className="p-6 md:p-12 md:w-1/2 flex flex-col justify-center">
                                     <div className="flex items-start justify-between">
-                                        <h1 className="text-2xl md:text-4xl font-black text-gray-900 leading-tight">{selectedProduct.name}</h1>
-                                        <p className="text-2xl md:text-4xl font-black text-emerald-600">{s.currency}{Number(selectedProduct.price).toLocaleString()}</p>
+                                        <h1 className="text-2xl md:text-4xl font-black sf-ink leading-tight">{selectedProduct.name}</h1>
+                                        <p className="text-2xl md:text-4xl font-black sf-accent-text">{s.currency}{Number(selectedProduct.price).toLocaleString()}</p>
                                     </div>
-                                    <p className="text-xs md:text-base text-gray-500 mt-6 md:mt-10 leading-relaxed max-w-md">{selectedProduct.description || `Premium quality product.`}</p>
+                                    <p className="text-xs md:text-base sf-muted mt-6 md:mt-10 leading-relaxed max-w-md">{selectedProduct.description || `Premium quality product.`}</p>
                                     <div className="mt-10 md:mt-16 space-y-3 md:space-y-4 max-w-md">
                                         {qty(selectedProduct.id) === 0 ? (
-                                            <button disabled={selectedProduct.outOfStock} onClick={() => updateCart(selectedProduct.id, 1)} className="w-full py-4 md:py-6 bg-gray-900 text-white rounded-2xl md:rounded-3xl text-xs md:text-sm font-black flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all"><ShoppingCart size={18} /> ADD TO CART</button>
+                                            <button disabled={selectedProduct.outOfStock} onClick={() => updateCart(selectedProduct.id, 1)} className="w-full py-4 md:py-6 sf-inverse text-white rounded-2xl md:rounded-3xl text-xs md:text-sm font-black flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all"><ShoppingCart size={18} /> ADD TO CART</button>
                                         ) : (
-                                            <div className="flex items-center justify-between bg-gray-100 rounded-2xl md:rounded-3xl px-8 py-4 md:py-6 text-gray-900">
+                                            <div className="flex items-center justify-between sf-surface-alt rounded-2xl md:rounded-3xl px-8 py-4 md:py-6 sf-ink">
                                                 <button onClick={() => updateCart(selectedProduct.id, -1)} className="active:scale-90"><Minus size={20} /></button>
                                                 <span className="text-lg md:text-xl font-black">{qty(selectedProduct.id)}</span>
-                                                <button onClick={() => updateCart(selectedProduct.id, 1)} className="active:scale-90 text-emerald-500"><Plus size={20} /></button>
+                                                <button onClick={() => updateCart(selectedProduct.id, 1)} className="active:scale-90 sf-accent-text"><Plus size={20} /></button>
                                             </div>
                                         )}
                                     </div>
@@ -1139,38 +1073,38 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "search" && (
-                            <div className="w-full flex flex-col min-h-screen bg-white" style={{ backgroundColor: bgColor }}>
-                                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header p-6">
-                                    <button onClick={() => changeScreen("home")} className="mb-4 text-gray-900"><ChevronLeft size={24} /></button>
+                            <div className="w-full flex flex-col min-h-screen sf-surface" style={{ backgroundColor: bgColor }}>
+                                <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6">
+                                    <button onClick={() => changeScreen("home")} className="mb-4 sf-ink"><ChevronLeft size={24} /></button>
                                     <div className="relative">
-                                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input autoFocus type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search catalog..." className="w-full pl-12 pr-6 py-4 bg-gray-100 rounded-2xl outline-none text-gray-900" />
+                                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 sf-muted" />
+                                        <input autoFocus type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search catalog..." className="w-full pl-12 pr-6 py-4 sf-surface-alt rounded-2xl outline-none sf-ink" />
                                     </div>
                                 </div>
                                 <div className="p-6 space-y-4">
                                     {searchQuery && filteredProducts.map(p => (
-                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black text-gray-900">{p.name}</p><p className="text-sm font-black text-emerald-600">{s.currency}{Number(p.price).toLocaleString()}</p></div></button>
+                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 sf-surface p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black sf-ink">{p.name}</p><p className="text-sm font-black sf-accent-text">{s.currency}{Number(p.price).toLocaleString()}</p></div></button>
                                     ))}
                                 </div>
                             </div>
                         )}
                         {screen === "cart" && (
-                            <div className="w-full flex flex-col min-h-screen bg-white" style={{ backgroundColor: bgColor }}>
-                                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header p-6 flex items-center gap-4">
-                                    <button onClick={() => changeScreen("home")} className="text-gray-900"><ChevronLeft size={24} /></button>
-                                    <h2 className="text-xl font-black text-gray-900">Your Bag</h2>
+                            <div className="w-full flex flex-col min-h-screen sf-surface" style={{ backgroundColor: bgColor }}>
+                                <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex items-center gap-4">
+                                    <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
+                                    <h2 className="text-xl font-black sf-ink">Your Bag</h2>
                                 </div>
                                 <div className="p-6 flex-1">
-                                    {cartItemCount === 0 ? <p className="text-center text-gray-400 py-20 font-black uppercase tracking-widest">Bag is empty</p> : (
+                                    {cartItemCount === 0 ? <p className="text-center sf-muted py-20 font-black uppercase tracking-widest">Bag is empty</p> : (
                                         <div className="space-y-4">
                                             {Object.entries(cart).map(([id, q]) => {
                                                 const p = s.products.find(x => x.id === Number(id));
                                                 if (!p || q <= 0) return null;
-                                                return <div key={id} className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-sm font-black text-gray-900">{p.name}<br /><span className="text-emerald-600">{s.currency}{(p.price * q).toLocaleString()}</span></div><div className="flex items-center gap-3 text-gray-900"><button onClick={() => updateCart(p.id, -1)}><Minus size={14}/></button><span>{q}</span><button onClick={() => updateCart(p.id, 1)}><Plus size={14}/></button></div></div>
+                                                return <div key={id} className="sf-surface p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-sm font-black sf-ink">{p.name}<br /><span className="sf-accent-text">{s.currency}{(p.price * q).toLocaleString()}</span></div><div className="flex items-center gap-3 sf-ink"><button onClick={() => updateCart(p.id, -1)}><Minus size={14}/></button><span>{q}</span><button onClick={() => updateCart(p.id, 1)}><Plus size={14}/></button></div></div>
                                             })}
                                             <div className="pt-10 space-y-4">
-                                                <div className="flex justify-between font-black text-gray-900"><span>Total</span><span className="text-xl text-emerald-600">{s.currency}{totalPrice.toLocaleString()}</span></div>
-                                                <button onClick={handleOrder} className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black shadow-xl">CHECKOUT ON WHATSAPP</button>
+                                                <div className="flex justify-between font-black sf-ink"><span>Total</span><span className="text-xl sf-accent-text">{s.currency}{totalPrice.toLocaleString()}</span></div>
+                                                <button onClick={handleOrder} className="w-full py-5 sf-inverse text-white rounded-2xl font-black shadow-xl">CHECKOUT ON WHATSAPP</button>
                                             </div>
                                         </div>
                                     )}
@@ -1178,16 +1112,16 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen bg-white pb-24" style={{ backgroundColor: bgColor }}>
-                                <div className="bg-white/90 backdrop-blur-md border-b border-black/[0.06] w-full storefront-header p-6 flex justify-between items-center gap-4">
+                            <div className="w-full flex flex-col min-h-screen sf-surface pb-24" style={{ backgroundColor: bgColor }}>
+                                <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex justify-between items-center gap-4">
                                     <div className="flex items-center gap-4">
-                                        <button onClick={() => changeScreen("home")} className="text-gray-900"><ChevronLeft size={24} /></button>
-                                        <h2 className="text-xl font-black text-gray-900">Reviews</h2>
+                                        <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
+                                        <h2 className="text-xl font-black sf-ink">Reviews</h2>
                                     </div>
                                     {!isStoreOwner && (
                                         <button 
                                             onClick={() => setShowReviewForm(!showReviewForm)}
-                                            className="px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
+                                            className="px-4 py-2 sf-inverse text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
                                         >
                                             {showReviewForm ? "Cancel" : "Write Review"}
                                         </button>
@@ -1237,7 +1171,7 @@ export function CustomerStorefront({
                                                 <button 
                                                     onClick={submitReview}
                                                     disabled={!newReview.message.trim()}
-                                                    className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95"
+                                                    className="px-6 py-2.5 sf-accent-bg hover:bg-emerald-400 disabled:opacity-40 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95"
                                                 >
                                                     Post Review
                                                 </button>
@@ -1245,18 +1179,18 @@ export function CustomerStorefront({
                                         </div>
                                     )}
 
-                                    {reviews.length === 0 ? <p className="text-center text-gray-400 py-20 font-black uppercase tracking-widest">No reviews yet</p> : (
+                                    {reviews.length === 0 ? <p className="text-center sf-muted py-20 font-black uppercase tracking-widest">No reviews yet</p> : (
                                         <div className="space-y-6">
                                             {reviews.map(r => (
-                                                <div key={r.id} className="bg-white dark:bg-zinc-950 p-6 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4">
+                                                <div key={r.id} className="sf-surface dark:bg-zinc-950 p-6 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4">
                                                     <div className="flex justify-between items-start">
                                                         <div className="flex items-center gap-3">
                                                             {/* Reviewer avatar with verification badge */}
-                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 flex items-center justify-center text-gray-500 relative shrink-0 overflow-visible">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 flex items-center justify-center sf-muted relative shrink-0 overflow-visible">
                                                                 {r.author_avatar && r.author_avatar.startsWith("http") ? (
                                                                     <img src={r.author_avatar} className="w-full h-full rounded-full object-cover" alt="" />
                                                                 ) : (
-                                                                    <span className="w-full h-full flex items-center justify-center text-sm font-black uppercase text-gray-400 bg-slate-100 dark:bg-zinc-800 rounded-full">{(r.author_name || "G").substring(0, 2)}</span>
+                                                                    <span className="w-full h-full flex items-center justify-center text-sm font-black uppercase sf-muted bg-slate-100 dark:bg-zinc-800 rounded-full">{(r.author_name || "G").substring(0, 2)}</span>
                                                                 )}
                                                                 {r.author_is_verified && (
                                                                     <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 shadow-md border-2 border-white dark:border-zinc-950 flex items-center justify-center" style={{width:16,height:16}}>
@@ -1266,12 +1200,12 @@ export function CustomerStorefront({
                                                             </div>
                                                             <div>
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <span className="font-black text-sm text-gray-900 dark:text-white leading-none">{r.author_name}</span>
+                                                                    <span className="font-black text-sm sf-ink dark:text-white leading-none">{r.author_name}</span>
                                                                     {r.author_is_verified && (
                                                                         <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[7px] font-black uppercase tracking-widest rounded-full border border-blue-500/20">Verified</span>
                                                                     )}
                                                                 </div>
-                                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5 block">{new Date(r.created_at).toLocaleDateString()}</span>
+                                                                <span className="text-[8px] font-bold sf-muted uppercase tracking-widest mt-0.5 block">{new Date(r.created_at).toLocaleDateString()}</span>
                                                             </div>
                                                         </div>
                                                         <div className="flex gap-0.5">{Array.from({length:5}).map((_,i) => <Star key={i} size={13} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 dark:text-zinc-700"}/>)}</div>
@@ -1284,8 +1218,8 @@ export function CustomerStorefront({
                                                         <div className="pl-4 border-l-2 border-slate-100 dark:border-zinc-800 space-y-2 mt-4">
                                                             {(comments[r.id] || []).map(c => (
                                                                 <div key={c.id} className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl">
-                                                                    <p className="text-[10px] font-black text-gray-900 dark:text-white">{c.author_name}</p>
-                                                                    <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium mt-0.5">{c.message}</p>
+                                                                    <p className="text-[10px] font-black sf-ink dark:text-white">{c.author_name}</p>
+                                                                    <p className="text-xs sf-muted dark:text-zinc-400 font-medium mt-0.5">{c.message}</p>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1316,11 +1250,11 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "success" && (
-                            <div className="w-full flex flex-col items-center justify-center p-10 text-center min-h-screen bg-white">
-                                <CheckCircle2 size={64} className="text-emerald-500 mb-6" />
-                                <h2 className="text-3xl font-black text-gray-900 italic uppercase">Order Sent!</h2>
-                                <p className="text-gray-400 font-medium mt-4">We&apos;ve forwarded your request to the store on WhatsApp.</p>
-                                <button onClick={() => changeScreen("home")} className="mt-10 px-10 py-4 bg-gray-900 text-white rounded-full font-black shadow-xl">BACK TO STORE</button>
+                            <div className="w-full flex flex-col items-center justify-center p-10 text-center min-h-screen sf-surface">
+                                <CheckCircle2 size={64} className="sf-accent-text mb-6" />
+                                <h2 className="text-3xl font-black sf-ink italic uppercase">Order Sent!</h2>
+                                <p className="sf-muted font-medium mt-4">We&apos;ve forwarded your request to the store on WhatsApp.</p>
+                                <button onClick={() => changeScreen("home")} className="mt-10 px-10 py-4 sf-inverse text-white rounded-full font-black shadow-xl">BACK TO STORE</button>
                             </div>
                         )}
                     </motion.div>
@@ -1337,10 +1271,10 @@ export function CustomerStorefront({
               { id: "community", icon: MessageCircle, label: "Reviews" },
               { id: "cart", icon: ShoppingCart, label: "Cart", badge: cartItemCount },
             ].map(({ id, icon: Icon, label, badge }) => (
-              <button key={id} onClick={() => goTab(id as any)} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "text-gray-900" : "text-gray-300 hover:text-gray-400"}`}>
+              <button key={id} onClick={() => goTab(id as any)} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "sf-ink" : "text-gray-300 hover:text-gray-400"}`}>
                 <div className="relative">
                   <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" style={{ color: activeTab === id ? textColor : undefined }} strokeWidth={activeTab === id ? 2.5 : 1.5} />
-                  {badge != null && badge > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 bg-emerald-500 text-white text-[7px] font-black rounded-full flex items-center justify-center">{badge}</span>}
+                  {badge != null && badge > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 sf-accent-bg text-white text-[7px] font-black rounded-full flex items-center justify-center">{badge}</span>}
                 </div>
                 <span className={`text-[8px] font-black uppercase tracking-widest`} style={{ color: activeTab === id ? textColor : undefined }}>{label}</span>
               </button>

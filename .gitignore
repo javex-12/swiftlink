@@ -4,3 +4,11 @@ node_modules/
 brag-output/
 .freebuff/
 .qodo/
+
+# Environment files — may hold the service-role key. Keep the template only.
+.env
+.env.*
+!.env.example
+
+# Build artefacts
+*.tsbuildinfo

@@ -1,116 +1,33 @@
-"use client";
-
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase-client";
+import { permanentRedirect } from "next/navigation";
+import { getStoreHandleById } from "@/lib/store-lookup";
 import { normalizeStoreUsername } from "@/lib/utils";
-import { CustomerStorefront } from "@/components/CustomerStorefront";
-import { Loader2 } from "lucide-react";
 
-function StoreNotFound({ slug, error }: { slug: string, error?: string }) {
-  const isPermissionError = error?.toLowerCase().includes("permission") || error?.toLowerCase().includes("access");
-  
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 px-6">
-      <div className="max-w-md w-full text-center">
-        <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight italic uppercase">
-          {isPermissionError ? "Database Access Denied" : "Store not found"}
-        </div>
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
-          {isPermissionError 
-            ? "Your Supabase RLS Rules are blocking public access. Please set your rules to allow public reads on the 'stores' table."
-            : `We couldn't find a SwiftLink store with the handle "${slug}".`}
-        </p>
-        <div className="flex flex-col gap-3 mt-8">
-            <Link
-            href="/"
-            className="inline-flex items-center justify-center rounded-2xl px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-[11px] uppercase tracking-widest shadow-xl"
-            >
-            Back to SwiftLink
-            </Link>
-        </div>
-      </div>
-    </main>
-  );
-}
+/**
+ * Legacy storefront URL → canonical.
+ *
+ * `/store/<handle>?shop=<id>` was the shared URL before the canonical `/<handle>`
+ * shape landed. It is 308-redirected here rather than served, so search engines
+ * consolidate on one address per store (docs/05-IMPROVEMENT-PLAN.md R-07).
+ *
+ * When the legacy link carries `?shop=<id>` we resolve the store's *current*
+ * handle from the id — that is what makes an old link survive a handle rename,
+ * which the bare slug could not.
+ */
+export default async function LegacyStoreRedirect({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ shop?: string }>;
+}) {
+  const { slug } = await params;
+  const { shop } = await searchParams;
 
-function StoreResolving() {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
-      <div className="flex flex-col items-center gap-4">
-         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-         <div className="text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-[0.3em]">Resolving Handle…</div>
-      </div>
-    </main>
-  );
-}
+  if (shop) {
+    const handle = await getStoreHandleById(shop);
+    if (handle) permanentRedirect(`/${handle}`);
+  }
 
-export default function StoreByHandlePage() {
-  const router = useRouter();
-  const params = useParams<{ slug: string }>();
-  const searchParams = useSearchParams();
-
-  const shopFromQuery = searchParams.get("shop");
-  const slug = useMemo(
-    () => normalizeStoreUsername(String(params?.slug || "")),
-    [params?.slug],
-  );
-
-  const [status, setStatus] = useState<"idle" | "resolving" | "not_found">(
-    shopFromQuery ? "idle" : "resolving",
-  );
-  const [errorMsg, setErrorMsg] = useState<string>("");
-
-  useEffect(() => {
-    if (shopFromQuery) {
-        setStatus("idle");
-        return;
-    }
-    
-    if (!slug) {
-      setStatus("not_found");
-      return;
-    }
-
-    let cancelled = false;
-    setStatus("resolving");
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('store_username', slug)
-          .single();
-
-        if (cancelled) return;
-
-        if (data?.id) {
-          router.replace(`/store/${slug}?shop=${encodeURIComponent(data.id)}`);
-          return;
-        }
-        
-        if (error && error.code !== 'PGRST116') { 
-           console.error("Supabase Error:", error);
-           setErrorMsg(error.message);
-        }
-        
-        setStatus("not_found");
-      } catch (err: any) {
-        console.error("Slug Resolution Error:", err);
-        if (!cancelled) {
-            setStatus("not_found");
-            setErrorMsg(err.message || "Access Denied");
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, shopFromQuery, slug]);
-
-  if (shopFromQuery) return <CustomerStorefront shopId={shopFromQuery} />;
-  if (status === "not_found") return <StoreNotFound slug={slug || "unknown"} error={errorMsg} />;
-  return <StoreResolving />;
+  const handle = normalizeStoreUsername(slug);
+  permanentRedirect(handle ? `/${handle}` : "/");
 }

@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             <h1 className="text-4xl md:text-6xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">
               Privacy &amp; <br/><span className="text-emerald-500">Cookies</span>
             </h1>
-            <p className="mt-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Effective April 11, 2026</p>
+            <p className="mt-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Effective October 8, 2026</p>
           </header>
           
           <div className="space-y-12 selection:bg-emerald-200">
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
                 <h2 className="text-xl font-black italic uppercase tracking-tight">Information We Collect</h2>
               </div>
               <p className="text-slate-500 leading-relaxed font-medium md:pl-14">
-                We collect essential business information necessary to operate your WhatsApp storefront, including store name, account email, WhatsApp contact number, catalog items, pricing, and order dispatch status.
+                We collect essential business information necessary to operate your WhatsApp storefront, including store name, account email, WhatsApp contact number, catalog items and pricing. We also store the orders and customer records your storefront creates, so you can see who ordered what.
               </p>
             </section>
 
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
                 <h2 className="text-xl font-black italic uppercase tracking-tight">Cookies &amp; Local Storage</h2>
               </div>
               <p className="text-slate-500 leading-relaxed font-medium md:pl-14">
-                SwiftLink uses functional cookies and browser local storage to maintain session state, preserve cart contents, remember UI preferences (such as Dark/Light mode), and enable offline Progressive Web App (PWA) functionality.
+                SwiftLink uses functional cookies and browser local storage to maintain session state, preserve cart contents, remember UI preferences (such as Dark/Light mode), and enable offline Progressive Web App (PWA) functionality. When you edit your store, an autosaved copy of your unfinished changes is kept in your browser and, once saved to your account, on our servers — your customers never see it until you publish. Your browser also remembers details you have already typed (such as your store handle and WhatsApp number) so you do not have to re-enter them; these stay on your device and can be cleared at any time by clearing your browser storage.
               </p>
             </section>
 
@@ -72,9 +72,24 @@ export default function PrivacyPage() {
                 <div className="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center font-black group-hover:bg-emerald-500 group-hover:text-white transition-all">04</div>
                 <h2 className="text-xl font-black italic uppercase tracking-tight">Data Security &amp; Rights</h2>
               </div>
-              <p className="text-slate-500 leading-relaxed font-medium md:pl-14">
-                We implement industry-standard encryption and security protocols to safeguard account data. You reserve the right to modify, export, or request deletion of your store account and associated catalog data at any time.
-              </p>
+              <div className="text-slate-500 leading-relaxed font-medium md:pl-14 space-y-4">
+                <p>
+                  Data is transmitted over TLS and stored with our database provider with encryption
+                  at rest. Access to your account data is restricted by row-level security, so your
+                  store data is only readable by you (and, for published storefronts, the catalog you
+                  have chosen to display publicly).
+                </p>
+                <p>
+                  You can edit your catalog and store data at any time from the dashboard. To request
+                  an export or the deletion of your account and its associated catalog and customer
+                  records, contact us at{" "}
+                  <a href="mailto:support@swiftlink.pro" className="font-semibold text-emerald-600 hover:underline">
+                    support@swiftlink.pro
+                  </a>{" "}
+                  and we will action it within a reasonable period, subject to records we are required
+                  to retain.
+                </p>
+              </div>
             </section>
           </div>
           

@@ -6,23 +6,33 @@ import Link from "next/link";
 import { ProSidebar } from "./ProSidebar";
 import { OnboardingModal } from "./OnboardingModal";
 import { Logo } from "./Logo";
-import { LayoutGrid, MessageSquare, Store, LineChart, Settings } from "lucide-react";
+import { LayoutGrid, MessageSquare, Store, LineChart, Settings, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { StoreSwitcher } from "./StoreSwitcher";
+import { effectiveStoreLimitFor } from "@/lib/plans";
 
 export function ProLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { isAdmin, state } = useSwiftLink();
+  const canHaveMultipleStores = effectiveStoreLimitFor(state.plan) > 1;
 
   // Close sidebar drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Admins get a sixth tab so the console is reachable from a phone too; every
+  // other account sees the original five (docs/05-IMPROVEMENT-PLAN.md R-01).
   const mobileNavItems = [
     { href: "/pro", label: "Home", icon: LayoutGrid, matchExact: true },
     { href: "/pro/inquiries", label: "Inquiries", icon: MessageSquare, matchExact: false },
     { href: "/business", label: "Store", icon: Store, matchExact: false },
     { href: "/pro/analytics", label: "Stats", icon: LineChart, matchExact: false },
+    ...(isAdmin
+      ? [{ href: "/pro/admin", label: "Admin", icon: ShieldCheck, matchExact: false }]
+      : []),
     { href: "/account", label: "Settings", icon: Settings, matchExact: false },
   ];
 
@@ -45,10 +55,16 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area: Padding bottom accounts for bottom bar height + safe area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         {/* Mobile Header (<768px) with shared Logo */}
-        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#1E2D27] bg-[#111C18]/95 px-4 backdrop-blur-md">
-          <Link href="/pro" className="flex items-center gap-2">
+        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#1E2D27] bg-[#111C18]/95 px-4 backdrop-blur-md">
+          <Link href="/pro" className="flex shrink-0 items-center gap-2">
             <Logo size="sm" showWordmark={true} />
           </Link>
+          {/* Multi-store switching was unreachable from a phone. */}
+          {canHaveMultipleStores && (
+            <div className="min-w-0">
+              <StoreSwitcher />
+            </div>
+          )}
         </header>
 
         <main className="flex-1 flex flex-col">

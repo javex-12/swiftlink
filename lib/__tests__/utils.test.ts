@@ -74,10 +74,12 @@ describe("getPublicStoreSlug", () => {
 });
 
 describe("getShopPath", () => {
-  it("returns a slug + shop id path for a live store", () => {
+  it("returns the canonical /<handle> path for a live store", () => {
+    // `/<handle>` replaced `/store/<handle>?shop=<id>`; the legacy shape now
+    // only exists as a 308 in middleware.ts.
     expect(
       getShopPath({ id: "abc", storeUsername: "ada", bizName: "Ada's Kitchen" }),
-    ).toBe("/store/ada?shop=abc");
+    ).toBe("/ada");
   });
 
   it("routes through the home page when no store id exists yet", () => {

@@ -12,8 +12,11 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StoreSwitcher } from "@/components/StoreSwitcher";
+import { effectiveStoreLimitFor } from "@/lib/plans";
 
 // Plan and billing remains hidden behind feature flag
 const FEATURE_FLAG_BILLING = false;
@@ -33,13 +36,24 @@ export function ProSidebar({
   setMobileOpen: (open: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { handleSignOut, state, startTour } = useSwiftLink();
+  const { handleSignOut, state, startTour, isAdmin } = useSwiftLink();
 
+  /*
+   * The admin console was previously unreachable by design oversight: the route
+   * existed and `/pro/admin` was gated server-side, but nothing in the console
+   * ever linked to it, so an admin had to guess the URL
+   * (docs/05-IMPROVEMENT-PLAN.md R-01). The entry is rendered only for a
+   * server-verified admin, and the route stays gated independently — hiding a
+   * link is not a security control, it is a usability fix.
+   */
   const navItems: NavItem[] = [
     { href: "/pro", label: "Overview", icon: LayoutGrid },
     { href: "/pro/inquiries", label: "Inquiries", icon: MessageSquare },
     { href: "/business", label: "Store editor", icon: Store },
     { href: "/pro/analytics", label: "Analytics", icon: LineChart },
+    ...(isAdmin
+      ? [{ href: "/pro/admin", label: "Admin", icon: ShieldCheck } satisfies NavItem]
+      : []),
     { href: "/account", label: "Settings", icon: Settings },
     { href: "#help", label: "Help", icon: HelpCircle, isHelp: true },
   ];
@@ -50,6 +64,14 @@ export function ProSidebar({
   };
 
   const storeInitials = (state.bizName || "S").slice(0, 1).toUpperCase();
+
+  /*
+   * Multi-store was a plan feature with no way in: `StoreSwitcher` existed but
+   * was only mounted inside the older BusinessView editor, so a Pro/Business
+   * owner sitting in the console had no control to create or switch a store
+   * (docs/05-IMPROVEMENT-PLAN.md 3.2). It belongs in the shell, not the editor.
+   */
+  const canHaveMultipleStores = effectiveStoreLimitFor(state.plan) > 1;
 
   return (
     <>
@@ -80,6 +102,13 @@ export function ProSidebar({
             <Logo size="md" showWordmark={true} />
           </Link>
         </div>
+
+        {/* Store switcher — quiet, above the nav, only when the plan allows it */}
+        {canHaveMultipleStores && (
+          <div className="shrink-0 border-b border-[#1E2D27] px-3 py-3">
+            <StoreSwitcher />
+          </div>
+        )}
 
         {/* Primary Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Dashboard navigation">

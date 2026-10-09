@@ -8,6 +8,13 @@ import { cn } from "@/lib/utils";
 import { formatMajorMoney } from "@/lib/currency";
 import { normalizePhoneNumber } from "@/lib/phone";
 import { websiteTemplates, websiteTemplateById, WebsiteTemplateId } from "@/lib/theme/templates";
+import {
+  effectiveProductLimitFor,
+  hiddenProductCount,
+  isProductVisible,
+  productLimitBlockedMessage,
+  visibleProductCount,
+} from "@/lib/plans";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { DEFAULT_WA_TEMPLATE, renderWhatsAppOrderMessage, ALLOWED_TEMPLATE_VARIABLES, validateWhatsAppTemplate } from "@/lib/whatsapp-template";
 import { TemplateFrame } from "@/components/storefront/template-frames";
@@ -16,6 +23,12 @@ import { TemplateSite } from "@/components/storefront/template-sites";
 import { CountrySelector } from "@/components/CountrySelector";
 import { compressImageBeforeUpload } from "@/lib/image-compress";
 import { STOCK_PRODUCT_IDEAS, type StockProductIdea } from "@/lib/stock-ideas";
+import { describeDraftAge, hasDraftChanges, readEditorDraft } from "@/lib/draft-store";
+import { pickNewestDraft, storeDraftKey } from "@/lib/store-drafts";
+
+/** Idle time before the draft autosaves. Short enough to feel instant, long
+ *  enough that typing a product name doesn't fire a write per keystroke. */
+const AUTOSAVE_DELAY_MS = 1800;
 import {
   Store,
   Plus,
@@ -41,6 +54,9 @@ import {
   Image as ImageIcon,
   ArrowLeft,
   RotateCcw,
+  EyeOff,
+  Pause,
+  Play,
 } from "lucide-react";
 
 interface OptionRow {
@@ -49,7 +65,7 @@ interface OptionRow {
 }
 
 export function StoreEditorV2() {
-  const { state: globalState, saveFullState, addToast, user } = useSwiftLink();
+  const { state: globalState, saveFullState, saveDraft, discardDraft, drafts, addToast, user } = useSwiftLink();
 
   // Local working copy of store state
   const [localState, setLocalState] = useState<ShopState>(() => JSON.parse(JSON.stringify(globalState)));
@@ -62,6 +78,10 @@ export function StoreEditorV2() {
 
   // Quick populate 4 stock ideas for instant zero-to-one store launch
   const handlePopulateStockIdeas = () => {
+    if (visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)) {
+      addToast(productLimitBlockedMessage(localState.plan), "error");
+      return;
+    }
     const isNgn = localState.currency === "NGN";
     const mult = isNgn ? 1 : 0.001;
     const initialProducts: Product[] = STOCK_PRODUCT_IDEAS.slice(0, 4).map((idea, idx) => ({
@@ -126,6 +146,58 @@ export function StoreEditorV2() {
     setLocalState((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  // ─── Autosave (item 5.2) ──────────────────────────────────────────────────
+  // The draft is the merchant's working copy. It is written to this device and
+  // (when possible) to their private `store_drafts` row — never to the live
+  // store, so customers never see unpublished work.
+  const storeKey = useMemo(() => storeDraftKey(localState), [localState.id, localState.ownerId]);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [draftSynced, setDraftSynced] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
+  const restoreAppliedRef = useRef(false);
+  const [, setDraftClock] = useState(0);
+
+  // Offer back whatever unsaved work survived the last visit. Auto-applied — the
+  // whole point is that nothing is lost — with a visible banner and a Discard.
+  //
+  // Deliberately re-runs while nothing has been applied: the local copy is read
+  // synchronously, but the server copy only arrives with the context's store
+  // fetch, and the case we care about most (edited on another device, or after
+  // clearing browser storage) is exactly the one with no local copy. The guard
+  // is `isDirty`, not a "ran once" flag, so typing always wins over a late draft.
+  useEffect(() => {
+    if (restoreAppliedRef.current || isDirty) return;
+    const candidate = pickNewestDraft(readEditorDraft(storeKey), storeKey ? drafts[storeKey] : null);
+    if (!candidate || !hasDraftChanges(candidate, globalState)) return;
+    restoreAppliedRef.current = true;
+    setLocalState(JSON.parse(JSON.stringify(candidate.state)));
+    // `initialSerialized` keeps tracking the *live* store, so the restore shows
+    // up as unsaved work and the Save button stays armed.
+    setRestoredFrom(candidate.savedAt);
+  }, [storeKey, drafts, isDirty, globalState]);
+
+  useEffect(() => {
+    if (!isDirty || isSaving) return;
+    const timer = setTimeout(async () => {
+      setDraftSaving(true);
+      const result = await saveDraft(localState);
+      setDraftSaving(false);
+      if (result.savedAt) {
+        setDraftSavedAt(result.savedAt);
+        setDraftSynced(result.synced);
+      }
+    }, AUTOSAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [localState, isDirty, isSaving, saveDraft]);
+
+  // Keep the "saved N min ago" label honest without re-rendering on every edit.
+  useEffect(() => {
+    if (!draftSavedAt || !isDirty) return;
+    const interval = setInterval(() => setDraftClock((n) => n + 1), 30000);
+    return () => clearInterval(interval);
+  }, [draftSavedAt, isDirty]);
+
   // Save changes handler
   const handleSave = useCallback(async () => {
     if (isSaving) return;
@@ -133,6 +205,10 @@ export function StoreEditorV2() {
     try {
       await saveFullState(localState);
       initialSerialized.current = JSON.stringify(localState);
+      // The draft is dropped by `persistState` only once the live write actually
+      // succeeds, so a failed publish leaves the safety net in place.
+      setDraftSavedAt(null);
+      setRestoredFrom(null);
       addToast("Store changes saved successfully.", "success");
     } catch (err: any) {
       addToast(`Failed to save: ${err?.message || "Please try again."}`, "error");
@@ -140,6 +216,15 @@ export function StoreEditorV2() {
       setIsSaving(false);
     }
   }, [isSaving, localState, saveFullState, addToast]);
+
+  const handleDiscardDraft = useCallback(async () => {
+    await discardDraft(storeKey);
+    setLocalState(JSON.parse(JSON.stringify(globalState)));
+    initialSerialized.current = JSON.stringify(globalState);
+    setRestoredFrom(null);
+    setDraftSavedAt(null);
+    addToast("Unsaved changes discarded. Showing your live store.", "info");
+  }, [discardDraft, storeKey, globalState, addToast]);
 
   // Keyboard shortcut Cmd/Ctrl + S
   useEffect(() => {
@@ -203,6 +288,12 @@ export function StoreEditorV2() {
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const openAddProductModal = () => {
+    // Only *visible* products count against the plan, so hidden ones left by a
+    // downgrade never block an upgrade back into the catalogue (lib/plans.ts).
+    if (visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)) {
+      addToast(productLimitBlockedMessage(localState.plan), "error");
+      return;
+    }
     setEditingProductId(null);
     setProductModalOpen(true);
   };
@@ -223,6 +314,28 @@ export function StoreEditorV2() {
     updateField(
       "products",
       localState.products.map((p) => (p.id === id ? { ...p, outOfStock: !p.outOfStock } : p))
+    );
+  };
+
+  /**
+   * Show/hide a product without deleting it. This is the "vendor chooses which
+   * products stay visible" half of the downgrade policy: nothing is ever
+   * removed, and re-showing is only blocked when the plan's visible cap is full.
+   */
+  const handleToggleVisibility = (id: number) => {
+    const product = localState.products.find((p) => p.id === id);
+    if (!product) return;
+    const turningVisible = !isProductVisible(product);
+    if (
+      turningVisible &&
+      visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)
+    ) {
+      addToast(productLimitBlockedMessage(localState.plan), "error");
+      return;
+    }
+    updateField(
+      "products",
+      localState.products.map((p) => (p.id === id ? { ...p, visible: turningVisible } : p))
     );
   };
 
@@ -300,15 +413,54 @@ export function StoreEditorV2() {
                     />
                     {localState.isLive ? "Live" : "Draft"}
                   </span>
+
+                  {/*
+                    Stop / go live. `isLive` gates checkout (`sendWhatsAppOrder`
+                    refuses when it is false), so this is the merchant's "close
+                    the shop" switch — it was previously only reachable by
+                    finishing onboarding, which meant nobody who already had a
+                    store could ever find it.
+                  */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !localState.isLive;
+                      setLocalState((prev) => ({ ...prev, isLive: next }));
+                      addToast(
+                        next
+                          ? "Store is live. Press Save to publish it."
+                          : "Store paused — customers can no longer order. Press Save to publish it.",
+                        "info",
+                      );
+                    }}
+                    title={
+                      localState.isLive
+                        ? "Stop this store from accepting new orders"
+                        : "Open this store to customers"
+                    }
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold transition",
+                      localState.isLive
+                        ? "border-[#24382F] bg-[#0A1210] text-[#9DB3A8] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
+                        : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
+                    )}
+                  >
+                    {localState.isLive ? (
+                      <Pause className="h-2.5 w-2.5" />
+                    ) : (
+                      <Play className="h-2.5 w-2.5" />
+                    )}
+                    {localState.isLive ? "Stop store" : "Go live"}
+                  </button>
                 </div>
                 {localState.storeUsername && (
                   <a
-                    href={`/store/${localState.storeUsername}`}
+                    href={`/${localState.storeUsername}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-0.5 inline-flex items-center gap-1 text-[11px] sm:text-xs text-[#9DB3A8] hover:text-[#19C37D] truncate max-w-[160px] sm:max-w-none"
                   >
-                    <span className="truncate">swiftlink.pro/store/{localState.storeUsername}</span>
+                    <span className="truncate">swiftlink.pro/{localState.storeUsername}</span>
                     <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
                 )}
@@ -364,8 +516,29 @@ export function StoreEditorV2() {
               </button>
             </div>
 
-            {/* Right Action: Save changes */}
+            {/* Right Action: autosave status + Save changes */}
             <div className="flex shrink-0 items-center gap-2">
+              {isDirty && (
+                <span
+                  className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-[#9DB3A8]"
+                  aria-live="polite"
+                >
+                  {(draftSaving || !draftSavedAt) && !restoredFrom ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Autosaving…</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-3 w-3 text-[#19C37D]" />
+                      <span>
+                        {draftSynced ? "Draft saved" : "Draft saved on this device"}
+                        {draftSavedAt ? ` · ${describeDraftAge(draftSavedAt)}` : ""}
+                      </span>
+                    </>
+                  )}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleSave}
@@ -397,6 +570,26 @@ export function StoreEditorV2() {
               </button>
             </div>
           </div>
+
+          {/* Restored unsaved work — visible, reversible, never live */}
+          {restoredFrom && (
+            <div className="mt-2.5 flex flex-col gap-2 rounded-xl border border-[#24382F] bg-[#141C18] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-start gap-2 text-[11px] text-[#9DB3A8] sm:items-center">
+                <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#19C37D] sm:mt-0" />
+                <span>
+                  Restored unsaved changes from {describeDraftAge(restoredFrom)}. Your customers still
+                  see the live store until you press Save.
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="min-h-[32px] shrink-0 self-start rounded-lg border border-[#24382F] bg-[#0A1210] px-3 py-1 text-[11px] font-medium text-[#E8F1EC] transition hover:border-[#5C7C6D] sm:self-auto"
+              >
+                Discard draft
+              </button>
+            </div>
+          )}
 
           {/* Mobile Tabs: Full-width responsive 3-column tabs */}
           <div className="mt-2.5 flex sm:hidden rounded-xl border border-[#1E2D27] bg-[#111C18] p-1">
@@ -582,7 +775,7 @@ export function StoreEditorV2() {
                     <div>
                       <label className="block text-xs font-medium text-[#E8F1EC]">Store Link Handle</label>
                       <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
-                        <span className="select-none text-xs text-[#9DB3A8]">swiftlink.pro/store/</span>
+                        <span className="select-none text-xs text-[#9DB3A8]">swiftlink.pro/</span>
                         <input
                           type="text"
                           value={localState.storeUsername || ""}
@@ -858,7 +1051,8 @@ export function StoreEditorV2() {
                     Products
                   </h2>
                   <p className="mt-1 text-xs text-[#9DB3A8]">
-                    {localState.products.length} {localState.products.length === 1 ? "item" : "items"} in your store
+                    {visibleProductCount(localState.products)} visible · {localState.products.length}{" "}
+                    {localState.products.length === 1 ? "item" : "items"} in your store
                   </p>
                 </div>
 
@@ -882,6 +1076,23 @@ export function StoreEditorV2() {
                   </button>
                 </div>
               </div>
+
+              {hiddenProductCount(localState.products) > 0 && (
+                <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4">
+                  <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-[#E8B93A]" />
+                  <div className="text-xs text-[#E8F1EC]">
+                    <p className="font-semibold">
+                      {hiddenProductCount(localState.products)} hidden{" "}
+                      {hiddenProductCount(localState.products) === 1 ? "product" : "products"}
+                    </p>
+                    <p className="mt-0.5 text-[#9DB3A8]">
+                      Hidden products are kept — nothing is deleted — but they do not appear on your
+                      storefront. Show a hidden product to bring it back (your plan allows up to{" "}
+                      {effectiveProductLimitFor(localState.plan)} visible products).
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Products Table / Cards */}
               <div className="mt-6">
@@ -920,7 +1131,10 @@ export function StoreEditorV2() {
                       return (
                         <div
                           key={product.id}
-                          className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between transition hover:bg-[#14231D]/40 rounded-xl px-2"
+                          className={cn(
+                            "flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between transition hover:bg-[#14231D]/40 rounded-xl px-2",
+                            !isProductVisible(product) && "opacity-55"
+                          )}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             {/* Product Cover Thumbnail */}
@@ -943,6 +1157,11 @@ export function StoreEditorV2() {
                                 {product.category && (
                                   <span className="shrink-0 rounded-md bg-[#14231D] px-2 py-0.5 text-[10px] font-medium text-[#9DB3A8]">
                                     {product.category}
+                                  </span>
+                                )}
+                                {!isProductVisible(product) && (
+                                  <span className="shrink-0 rounded-md bg-[#E8B93A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#E8B93A]">
+                                    Hidden
                                   </span>
                                 )}
                               </div>
@@ -971,6 +1190,20 @@ export function StoreEditorV2() {
                                 )}
                               />
                               <span>{product.outOfStock ? "Sold out" : "In stock"}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibility(product.id)}
+                              title={isProductVisible(product) ? "Hide from storefront" : "Show on storefront"}
+                              aria-label={isProductVisible(product) ? "Hide from storefront" : "Show on storefront"}
+                              className="flex min-h-[36px] items-center rounded-lg border border-[#24382F] bg-[#14231D] p-2 text-[#9DB3A8] transition hover:text-[#E8F1EC]"
+                            >
+                              {isProductVisible(product) ? (
+                                <Eye className="h-4 w-4" />
+                              ) : (
+                                <EyeOff className="h-4 w-4" />
+                              )}
                             </button>
 
                             <button
@@ -1044,8 +1277,8 @@ export function StoreEditorV2() {
                           />
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-[#E8F1EC]">{template.name}</h3>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <h3 className="min-w-0 truncate text-sm font-semibold text-[#E8F1EC]">{template.name}</h3>
                           {isSelected && (
                             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#19C37D] text-[#04140D]">
                               <Check className="h-3 w-3 stroke-[3]" />
@@ -1058,7 +1291,7 @@ export function StoreEditorV2() {
                         </p>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between border-t border-[#1E2D27] pt-3">
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-[#1E2D27] pt-3">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1284,7 +1517,7 @@ export function StoreEditorV2() {
 
                 {localState.storeUsername && (
                   <a
-                    href={`/store/${localState.storeUsername}`}
+                    href={`/${localState.storeUsername}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex lg:hidden shrink-0 items-center gap-1 rounded-xl border border-[#24382F] bg-[#14231D] px-2.5 py-1.5 text-[11px] font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
@@ -1365,7 +1598,7 @@ export function StoreEditorV2() {
                 {/* Open in new tab (desktop) */}
                 {localState.storeUsername && (
                   <a
-                    href={`/store/${localState.storeUsername}`}
+                    href={`/${localState.storeUsername}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hidden lg:flex items-center gap-1.5 rounded-xl border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-[11px] font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
@@ -1743,9 +1976,24 @@ function ProductEditModal({
     });
   }, [bizName, currency, name, price, sampleOptionsString, waTemplateMessage]);
 
+  /*
+   * Save is a deliberate act, so it only lights up when there is something to
+   * save: a new product needs a name, an existing one needs an actual change.
+   * A permanently-green button that does nothing is worse than a grey one that
+   * explains itself, and "did that stick?" is the question the colour answers.
+   */
+  const formSignature = useMemo(
+    () => JSON.stringify({ name, description, price, category, outOfStock, images, options, waTemplateMessage }),
+    [name, description, price, category, outOfStock, images, options, waTemplateMessage],
+  );
+  const initialSignature = useRef(formSignature);
+  const isDirty = formSignature !== initialSignature.current;
+  const canSave = existing ? isDirty : Boolean(name.trim());
+
   // Form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSave) return;
     if (!name.trim()) {
       alert("Please provide a product name.");
       return;
@@ -1770,6 +2018,9 @@ function ProductEditModal({
       outOfStock,
       category: category || undefined,
       attributes: attributes.length > 0 ? attributes : undefined,
+      // Preserve hiding across an edit — otherwise opening a hidden product
+      // and saving would silently publish it again.
+      visible: existing?.visible,
     };
 
     onSave(updated, waTemplateMessage);
@@ -1780,7 +2031,11 @@ function ProductEditModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md overscroll-contain"
+      // z-[1200], not z-50: the console's mobile bottom tab bar is `fixed z-50`
+      // and later in the DOM, so at equal z-index it painted *over* this modal's
+      // Save/Cancel footer on a phone — the buttons existed but sat underneath
+      // the tab bar, which is why they could not be seen or tapped.
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md overscroll-contain"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -2294,10 +2549,23 @@ function ProductEditModal({
             </button>
             <button
               type="submit"
-              className="flex-1 sm:flex-initial flex items-center justify-center min-h-[44px] gap-2 rounded-xl bg-[#19C37D] px-6 py-2.5 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] active:scale-95 shadow-md shadow-[#19C37D]/25"
+              disabled={!canSave}
+              title={
+                canSave
+                  ? undefined
+                  : existing
+                  ? "No changes yet"
+                  : "Add a product name to save"
+              }
+              className={cn(
+                "flex-1 sm:flex-initial flex items-center justify-center min-h-[44px] gap-2 rounded-xl px-6 py-2.5 text-xs font-bold transition active:scale-95",
+                canSave
+                  ? "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070] shadow-md shadow-[#19C37D]/25"
+                  : "cursor-not-allowed border border-[#1E2D27] bg-[#14231D] text-[#5C7C6D]"
+              )}
             >
               <Check className="h-4 w-4" />
-              <span>{existing ? "Save changes" : "Add product"}</span>
+              <span>{existing ? (isDirty ? "Save changes" : "Saved") : "Add product"}</span>
             </button>
           </div>
         </form>

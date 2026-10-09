@@ -10,9 +10,13 @@ export interface InquiryRecord {
   store_id: string;
   product_id: number;
   product_name: string;
-  product_price_naira: number;
+  /** ISO-4217 code, e.g. "NGN". Stored alongside the amount, never implied. */
+  currency: string;
+  /** Integer minor units (kobo/cents/pence) — matches `product_price_minor`. */
+  product_price_minor: number;
   selected_option?: string | null;
-  final_amount_naira?: number | null;
+  /** Integer minor units — matches `final_amount_minor`. */
+  final_amount_minor?: number | null;
   sold_at?: string | null;
   buyer_name?: string | null;
   buyer_phone?: string | null;
@@ -35,6 +39,34 @@ export interface CustomerRecord {
   last_chat_at: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Where the anonymous visitor id is kept. Contains no personal data. */
+export const DEVICE_HASH_STORAGE_KEY = "swiftlink_device_hash";
+
+/**
+ * A stable, anonymous per-browser id used only to collapse repeat taps on the
+ * same product into one inquiry (see `create_or_update_inquiry`). It is a random
+ * value with no link to a person, so it is safe to keep in localStorage.
+ * Returns a constant in non-browser contexts rather than throwing.
+ */
+export function getDeviceHash(): string {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.localStorage.getItem(DEVICE_HASH_STORAGE_KEY);
+    if (existing) return existing;
+
+    const generated =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID().replace(/-/g, "")
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    window.localStorage.setItem(DEVICE_HASH_STORAGE_KEY, generated);
+    return generated;
+  } catch {
+    // Private browsing / storage disabled: dedupe degrades, tracking still works.
+    return "anonymous";
+  }
 }
 
 /**

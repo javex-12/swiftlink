@@ -21,6 +21,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { prefillMerchantInput, readRememberedInput, rememberMerchantInput } from "@/lib/remembered-input";
 
 export function OnboardingModal() {
   const { user, state, setStateMerge, saveFullState, addToast } = useSwiftLink();
@@ -45,6 +46,18 @@ export function OnboardingModal() {
   const [instagram, setInstagram] = useState(state.socials?.instagram || "");
   const [tiktok, setTiktok] = useState(state.socials?.tiktok || "");
   const [twitter, setTwitter] = useState(state.socials?.twitter || "");
+
+  // Remember my info: prefill anything the merchant already typed on this
+  // device. Only fills blanks — a value already on the store always wins.
+  useEffect(() => {
+    const prefill = prefillMerchantInput(readRememberedInput(), state);
+    if (prefill.state.bizName) setBizName((v) => v || prefill.state.bizName!);
+    if (prefill.state.storeUsername) setStoreUsername((v) => v || prefill.state.storeUsername!);
+    if (prefill.state.phone) setPhone((v) => v || prefill.state.phone!);
+    if (prefill.countryCode) setCountryCode((v) => v || prefill.countryCode!);
+    // Mount only: this is a one-time convenience fill.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync state if already partially filled
   useEffect(() => {
@@ -100,6 +113,7 @@ export function OnboardingModal() {
       return;
     }
 
+    rememberMerchantInput({ bizName: bizName.trim(), storeUsername: res.normalized });
     setStateMerge({
       bizName: bizName.trim(),
       storeUsername: res.normalized,
@@ -119,6 +133,7 @@ export function OnboardingModal() {
     const matchedCountry = SUPPORTED_COUNTRIES.find((c) => c.code === countryCode);
     const currency = matchedCountry?.defaultCurrency || "NGN";
 
+    rememberMerchantInput({ phone: res.normalized, countryCode, currency });
     setStateMerge({
       phone: res.normalized,
       currency,
@@ -368,7 +383,7 @@ export function OnboardingModal() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {websiteTemplates.map((tmpl) => {
                   const isSelected = selectedTemplate === tmpl.id;
                   return (
@@ -517,10 +532,10 @@ export function OnboardingModal() {
                 <p className="text-[11px] font-semibold text-[#9DB3A8]">YOUR PUBLIC STORE LINK</p>
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-[#19C37D]">
-                    https://swiftlink.pro/store/{storeUsername}
+                    https://swiftlink.pro/{storeUsername}
                   </span>
                   <a
-                    href={`/store/${storeUsername}`}
+                    href={`/${storeUsername}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex min-h-[36px] items-center gap-1 rounded-[8px] bg-[#14231D] px-3 py-1 text-xs font-semibold text-[#E8F1EC] hover:bg-[#19C37D] hover:text-[#04140D]"

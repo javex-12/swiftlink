@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportError } from "@/lib/error-report";
 
 export default function ErrorBoundary({
   error,
@@ -10,7 +11,13 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
+    // A console line is invisible in production; this is the boundary's only
+    // report path out of the browser.
     console.error("[swiftlink] unhandled route error:", error);
+    reportError(error, {
+      source: "react-error-boundary",
+      digest: error.digest ?? null,
+    });
   }, [error]);
 
   return (

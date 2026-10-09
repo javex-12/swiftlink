@@ -17,6 +17,9 @@ export function isDarkColor(colorHex: string | undefined): boolean {
   return yiq < 128;
 }
 
+// First path segments that can never be a store handle. Every top-level app
+// route must be listed here: the canonical storefront lives at `/<handle>`, so
+// anything not reserved is treated as a store handle (and 404s if unknown).
 const RESERVED_FIRST_SEGMENTS = new Set([
   "dispatch",
   "business",
@@ -27,7 +30,23 @@ const RESERVED_FIRST_SEGMENTS = new Set([
   "terms",
   "_next",
   "api",
+  "account",
+  "banned",
+  "cart",
+  "privacy",
+  "reset-password",
+  "dev",
+  "offline",
 ]);
+
+/**
+ * True when a first path segment can never be a store handle. Shared with
+ * `middleware.ts`, which uses it to decide when a first segment is a candidate
+ * canonical storefront (`/<handle>`) worth validating.
+ */
+export function isReservedFirstSegment(segment: string): boolean {
+  return RESERVED_FIRST_SEGMENTS.has(String(segment || "").toLowerCase());
+}
 
 export function slugifyStoreName(name: string): string {
   const s = String(name || "")
@@ -73,11 +92,15 @@ export function getPublicStoreSlug(
 }
 
 /**
- * Public path for a store.
+ * Public, canonical path for a store.
  *
- * Always returns a reachable route: when a store has no handle yet we route
- * through the home page's `?shop=` entry point instead of the non-existent
- * `/store/visit` route (docs/00-AUDIT.md F-09).
+ * The canonical storefront URL is the bare handle (`/<handle>`), which is what
+ * a merchant shares and what crawlers index. The old `/store/<handle>?shop=<id>`
+ * shape still resolves — it 308-redirects here — because it is the URL already
+ * in the wild.
+ *
+ * Always returns a reachable route: a store with no handle yet routes through
+ * the home page's `?shop=` entry point (docs/00-AUDIT.md F-09).
  */
 export function getShopPath(
   state: Pick<ShopState, "id" | "bizName" | "storeUsername">,
@@ -87,7 +110,7 @@ export function getShopPath(
   // here would silently send handle-less stores to the generic "store" slug,
   // where two such stores would collide (docs/00-AUDIT.md F-09).
   const handle = normalizeStoreUsername(state.storeUsername || "");
-  if (handle) return `/store/${handle}?shop=${state.id}`;
+  if (handle) return `/${handle}`;
   return `/?shop=${state.id}`;
 }
 
@@ -114,8 +137,13 @@ export function parseShopFromPathname(pathname: string): ParsedShopPath | null {
     if (shopId && shopId.length >= 20)
       return { kind: "uid", shopId, storeSlug: parts[0] };
   }
-  if (parts.length === 1 && parts[0].length >= 20)
-    return { kind: "uid", shopId: parts[0], storeSlug: null };
+  if (parts.length === 1) {
+    // A long single segment is treated as a raw store id (the legacy
+    // `/<shopId>` shape). Anything else is the canonical `/<handle>`.
+    if (parts[0].length >= 20) return { kind: "uid", shopId: parts[0], storeSlug: null };
+    const slug = normalizeStoreUsername(parts[0]);
+    if (slug) return { kind: "slug", slug };
+  }
   return null;
 }
 

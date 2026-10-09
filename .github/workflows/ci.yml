@@ -11,24 +11,38 @@ concurrency:
 
 jobs:
   verify:
-    name: typecheck · lint · test
+    name: typecheck · lint · test · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      # The repo's lockfile is `bun.lock`; there is no `package-lock.json`.
+      # The previous `npm ci` therefore failed on every run — `npm ci` requires
+      # a lockfile it can read, and it refuses to fall back to `npm install`.
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: Unit tests
-        run: npm run test
+        run: bun run test
+
+      # `next build` is the strongest gate in this repo: it enforces `tsc` and
+      # `eslint` (both configured to fail the build), and it catches
+      # build-only failures the other steps cannot see — e.g. a page that
+      # reads `useSearchParams` without a Suspense boundary, which passes
+      # typecheck and tests and only fails here.
+      #
+      # Deliberately no Supabase env: the build is verified to succeed without
+      # it, and inventing placeholder credentials would exercise different
+      # branches than the real one.
+      - name: Production build
+        run: bun run build

@@ -12,14 +12,20 @@ import {
   Layout,
   Menu,
   MessageSquare,
+  Moon,
   Package,
+  Sun,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { TemplateFrame } from "@/components/storefront/template-frames";
-import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
+import {
+  featuredWebsiteTemplates,
+  websiteTemplates,
+  type WebsiteTemplateId,
+} from "@/lib/theme/templates";
 import { Logo } from "@/components/Logo";
 import { FEATURE_FLAGS, isFeatureEnabled } from "@/lib/flags";
 
@@ -95,6 +101,10 @@ const NAV_LINKS = [
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // `/` is the landing page for signed-in owners too, so the call to action has
+  // to know about the session — otherwise a merchant sees "Log in" on their own
+  // logged-in site.
+  const { user } = useSwiftLink();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 12);
@@ -128,18 +138,29 @@ function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/signup"
-            className="rounded-[10px] border border-[#1E2D27] bg-[#111C18]/60 px-4 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup?mode=signup"
-            className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
-          >
-            Get started
-          </Link>
+          {user ? (
+            <Link
+              href="/pro"
+              className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
+            >
+              Open dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                className="rounded-[10px] border border-[#1E2D27] bg-[#111C18]/60 px-4 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup?mode=signup"
+                className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -177,20 +198,32 @@ function Navbar() {
               ))}
             </div>
             <div className="mt-3 flex flex-col gap-2 border-t border-app-border pt-4">
-              <Link
-                href="/signup"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-lg border border-app-border px-4 py-3 text-center text-sm font-medium text-app-text"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/signup?mode=signup"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-lg bg-app-accent px-4 py-3 text-center text-sm font-semibold text-app-accent-fg"
-              >
-                Get started
-              </Link>
+              {user ? (
+                <Link
+                  href="/pro"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-lg bg-app-accent px-4 py-3 text-center text-sm font-semibold text-app-accent-fg"
+                >
+                  Open dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/signup"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-lg border border-app-border px-4 py-3 text-center text-sm font-medium text-app-text"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup?mode=signup"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-lg bg-app-accent px-4 py-3 text-center text-sm font-semibold text-app-accent-fg"
+                  >
+                    Get started
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
@@ -501,7 +534,7 @@ function Features() {
   );
 }
 
-// ─── Storefront Templates (Dynamic, no hard-coded counts) ─────────────────────
+// ─── Storefront Templates (three examples, light + dark) ──────────────────────
 function Templates() {
   const currency = useCurrency();
   const [appearance, setAppearance] = useState<"light" | "dark">("light");
@@ -509,7 +542,7 @@ function Templates() {
   return (
     <section id="templates" className="scroll-mt-20 border-t border-app-border px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-5">
           <InView className="max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
               Storefront Templates
@@ -518,35 +551,62 @@ function Templates() {
               Pick a look that fits your brand.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-app-text-muted sm:text-base">
-              You choose a whole website, not a pile of sections. The same brand stays readable in both appearances.
+              You choose a whole website, not a pile of sections. Showing {" "}
+              {featuredWebsiteTemplates.length} of our {websiteTemplates.length} looks — every one of
+              them ships in light and dark.
             </p>
+          </InView>
+
+          {/* Light / dark — the same template, not a different one. */}
+          <InView delay={0.1}>
+            <div
+              role="group"
+              aria-label="Template appearance"
+              className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-surface p-1"
+            >
+              {([
+                { value: "light" as const, label: "Light", Icon: Sun },
+                { value: "dark" as const, label: "Dark", Icon: Moon },
+              ]).map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={appearance === value}
+                  onClick={() => setAppearance(value)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+                    appearance === value
+                      ? "bg-app-accent text-app-accent-fg"
+                      : "text-app-text-muted hover:text-app-text"
+                  )}
+                >
+                  <Icon width={14} height={14} aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
+            </div>
           </InView>
         </div>
 
-        {/* Gallery: Responsive grid when <= 3, horizontally scrollable gallery when > 3 */}
-        <div
-          className={cn(
-            "mt-10",
-            websiteTemplates.length > 3
-              ? "flex gap-5 overflow-x-auto pb-6 pt-2 snap-x snap-mandatory scrollbar-thin"
-              : "grid gap-5 md:grid-cols-2 lg:grid-cols-3"
-          )}
-        >
-          {websiteTemplates.map((template, index) => (
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {featuredWebsiteTemplates.map((template, index) => (
             <InView
               key={template.id}
               delay={index * 0.08}
-              className={cn(
-                "overflow-hidden rounded-2xl border border-app-border bg-app-surface",
-                websiteTemplates.length > 3 && "min-w-[300px] sm:min-w-[340px] flex-shrink-0 snap-start"
-              )}
+              className="overflow-hidden rounded-2xl border border-app-border bg-app-surface"
             >
-              <TemplateFrame id={template.id} appearance={appearance} currency={currency} size="card" />
+              <TemplateFrame
+                key={`${template.id}-${appearance}`}
+                id={template.id}
+                appearance={appearance}
+                currency={currency}
+                size="card"
+              />
               <div className="border-t border-app-border p-5">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-base font-semibold text-app-text">{template.name}</h3>
                   <span className="rounded-full bg-app-accent-subtle px-2 py-0.5 text-[10px] font-semibold text-app-accent-text uppercase">
-                    Ready
+                    {appearance === "dark" ? "Dark" : "Light"}
                   </span>
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-app-text-muted">{template.description}</p>
@@ -554,6 +614,10 @@ function Templates() {
             </InView>
           ))}
         </div>
+
+        <p className="mt-6 text-xs text-app-text-muted">
+          Every template is included on every plan — switch whenever you like, and your products stay put.
+        </p>
       </div>
     </section>
   );

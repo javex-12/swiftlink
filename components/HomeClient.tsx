@@ -1,37 +1,32 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { CustomerStorefront } from "@/components/CustomerStorefront";
-import { LauncherView } from "@/components/LauncherView";
 import LandingPage from "@/components/landing/LandingPage";
-import { useSwiftLink } from "@/context/SwiftLinkContext";
 
-export function HomeClient({ defaultView = "launcher" }: { defaultView?: "launcher" | "landing" }) {
+/**
+ * Root view router.
+ *
+ * `/` is the marketing landing page **for everyone**, signed in or not.
+ *
+ * It used to branch on session state: a signed-in owner was served the merchant
+ * dashboard and then bounced to `/pro` by an effect, so the landing page had no
+ * reachable URL — the only way back was the undocumented `?v=landing` hatch.
+ * That is also what made the PWA launch confusing: `start_url` is `/`, so
+ * launching the installed app dropped straight into the console.
+ *
+ * The landing page now carries the session-aware call to action itself (a
+ * "Dashboard" button replaces "Log in / Get started" in the navbar), which is
+ * the same pattern as every other product with a marketing root.
+ *
+ * The one exception is `?shop=<id>`, the entry point for a store that has no
+ * handle yet (`getShopPath` in `lib/utils.ts`) — that still has to render the
+ * storefront.
+ */
+export function HomeClient() {
   const searchParams = useSearchParams();
   const shop = searchParams.get("shop");
-  const viewParam = searchParams.get("v");
-  const forceLanding = viewParam === "landing";
-
-  const { isOwner, user } = useSwiftLink();
-  const router = useRouter();
-
-  // Determine if we should show the landing page.
-  // We show it if:
-  // 1. Specifically requested via ?v=landing
-  // 2. We are on the landing route and there is NO active user session
-  const showLanding = forceLanding || (defaultView === "landing" && !user);
-
-  useEffect(() => {
-    // If we have a user and we AREN'T forcing the landing page,
-    // and we aren't viewing a specific shop, go to /pro
-    if (user?.id && isOwner && !shop && !forceLanding && defaultView === "landing") {
-      router.replace("/pro");
-    }
-  }, [user?.id, isOwner, shop, router, forceLanding, defaultView]);
 
   if (shop) return <CustomerStorefront shopId={shop} />;
-
-  // If showLanding is true, show LandingPage. Otherwise, show the Dashboard (LauncherView).
-  return showLanding ? <LandingPage /> : <LauncherView />;
+  return <LandingPage />;
 }

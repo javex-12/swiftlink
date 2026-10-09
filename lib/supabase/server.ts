@@ -102,6 +102,6 @@ export async function isServerAdmin(userId: string): Promise<boolean> {
 export async function requireAdmin(): Promise<User | null> {
   const user = await requireUser();
   if (!user) return null; // demo mode
-  if (!(await isServerAdmin(user.id))) redirect("/pro");
+  if (!(await isServerAdmin(user.id))) redirect("/pro?denied=admin");
   return user;
 }

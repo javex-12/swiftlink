@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { CustomerStorefrontPage } from "@/components/CustomerStorefrontPage";
+import { normalizeStoreUsername } from "@/lib/utils";
 
 // Server-side Supabase — read-only, uses public anon key
 function getSupabase() {
@@ -43,7 +44,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ storeSlug: string; shopId: string }>;
 }): Promise<Metadata> {
-  const { shopId } = await params;
+  const { storeSlug, shopId } = await params;
   const data = await getStoreData(shopId);
   const site = "https://swiftlinkpro.vercel.app";
 
@@ -64,11 +65,16 @@ export async function generateMetadata({
     resolveOgImage(state?.products?.[0]?.image) ||
     `${site}/logo.png`;
 
-  const url = `${site}/s/${shopId}`;
+  // Canonical address is the bare handle; `/s/<id>` never existed as a route,
+  // so the old metadata advertised a 404 (docs/05-IMPROVEMENT-PLAN.md R-07).
+  const handle = normalizeStoreUsername(String(state?.storeUsername || ""));
+  const canonicalPath = handle ? `/${handle}` : `/${storeSlug}/${shopId}`;
+  const url = `${site}${canonicalPath}`;
 
   return {
     title: seoTitle,
     description: ogDescription,
+    alternates: { canonical: canonicalPath },
     openGraph: {
       type: "website",
       title: seoTitle,

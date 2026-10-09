@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { Product, ShopState } from "@/lib/schema";
 import { websiteTemplateById, type WebsiteTemplate } from "@/lib/theme/templates";
 import { cn } from "@/lib/utils";
+import { LoadMoreButton, useCatalogWindow } from "@/components/storefront/catalog-window";
 import {
   ShoppingBag,
   Search,
@@ -15,7 +16,6 @@ import {
   ArrowRight,
   MapPin,
   Phone,
-  CheckCircle2,
   Clock,
   ChevronDown,
   X,
@@ -83,7 +83,15 @@ function ProductMedia({ product, className }: { product: Product; className?: st
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element -- merchant-uploaded product photo
-    <img src={src} alt={product.name} className={cn("h-full w-full object-cover", className)} />
+    <img
+      src={src}
+      alt={product.name}
+      // Product photos are the heaviest thing on a storefront and most cards are
+      // offscreen on load; `lazy` keeps them off the critical path.
+      loading="lazy"
+      decoding="async"
+      className={cn("h-full w-full object-cover", className)}
+    />
   );
 }
 
@@ -262,7 +270,7 @@ export function StoreFeedbackModal({
 
         {isSubmitted ? (
           <div className="py-8 text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 sf-accent-text">
               <Check className="h-6 w-6" />
             </div>
             <h4 className="font-t-display text-lg font-bold">Thank You!</h4>
@@ -274,7 +282,7 @@ export function StoreFeedbackModal({
                 <button
                   type="button"
                   onClick={handleWhatsAppSend}
-                  className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20"
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold sf-accent-text transition hover:bg-emerald-500/20"
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span>Also Send on WhatsApp</span>
@@ -352,7 +360,7 @@ export function StoreFeedbackModal({
                 <button
                   type="button"
                   onClick={handleWhatsAppSend}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold sf-accent-text transition hover:bg-emerald-500/20"
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span>Send on WhatsApp</span>
@@ -374,35 +382,25 @@ export function StoreFeedbackModal({
   );
 }
 
+/**
+ * Real reviews only.
+ *
+ * This section used to ship three invented, five-star reviews ("Tunde A.",
+ * "Chioma K.", "Daniel M.") and a fabricated "4.9 / 5.0 (verified ratings)"
+ * aggregate, presented as the merchant's own customers. That is a false claim
+ * about a real business, so it is gone: the section renders the merchant's own
+ * reviews and nothing else, and shows no rating figure it cannot compute.
+ */
 function TestimonialsSection({
   bizName,
-  storePhone,
+  testimonials,
   onLeaveFeedback,
 }: {
   bizName: string;
-  storePhone?: string;
+  testimonials?: { id: string; quote: string; author: string; avatar?: string }[];
   onLeaveFeedback?: () => void;
 }) {
-  const reviews = [
-    {
-      name: "Tunde A.",
-      location: "Lagos",
-      text: "The delivery arrived the exact next day, impeccably packaged. Exactly as pictured on the store.",
-      rating: 5,
-    },
-    {
-      name: "Chioma K.",
-      location: "Abuja",
-      text: "Ordering via WhatsApp was so smooth. Got my confirmation in 2 minutes and updates until delivery.",
-      rating: 5,
-    },
-    {
-      name: "Daniel M.",
-      location: "Port Harcourt",
-      text: "High-grade materials and perfect fit. Will definitely be ordering from this collection again.",
-      rating: 5,
-    },
-  ];
+  const reviews = (testimonials || []).filter((entry) => entry && entry.quote && entry.author);
 
   return (
     <section className="border-t border-t-border bg-t-surface/30 py-16 sm:py-20">
@@ -413,18 +411,12 @@ function TestimonialsSection({
               Customer Reviews
             </span>
             <h3 className="mt-2 font-t-display text-2xl font-bold sm:text-3xl text-t-text">
-              What customers say about {bizName}
+              {reviews.length > 0
+                ? `What customers say about ${bizName}`
+                : `Be the first to review ${bizName}`}
             </h3>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-t-accent">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span>4.9 / 5.0 (verified ratings)</span>
-            </div>
             {onLeaveFeedback && (
               <button
                 type="button"
@@ -441,29 +433,39 @@ function TestimonialsSection({
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-          {reviews.map((r, i) => (
-            <div
-              key={i}
-              className="flex flex-col justify-between rounded-2xl border border-t-border bg-t-surface p-6 shadow-xs"
-            >
-              <div>
-                <div className="flex text-amber-400 mb-3">
-                  {[...Array(r.rating)].map((_, idx) => (
-                    <Star key={idx} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  ))}
+        {reviews.length === 0 ? (
+          <p className="mt-6 max-w-xl text-sm leading-relaxed text-t-text-muted">
+            No reviews yet. Share your experience after your order and it will appear here.
+          </p>
+        ) : (
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+            {reviews.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col justify-between rounded-2xl border border-t-border bg-t-surface p-6 shadow-xs"
+              >
+                <div>
+                  {r.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.avatar}
+                      alt={r.author}
+                      className="mb-3 h-9 w-9 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-t-accent-subtle text-xs font-bold text-t-accent-text">
+                      {r.author.trim().charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <p className="text-sm leading-relaxed text-t-text">{r.quote}</p>
                 </div>
-                <p className="text-sm leading-relaxed text-t-text">{r.text}</p>
+                <div className="mt-6 border-t border-t-border/50 pt-4 text-xs text-t-text-muted">
+                  <span className="font-semibold text-t-text">{r.author}</span>
+                </div>
               </div>
-              <div className="mt-6 flex items-center justify-between border-t border-t-border/50 pt-4 text-xs text-t-text-muted">
-                <span className="font-semibold text-t-text">{r.name}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-500 font-medium">
-                  <CheckCircle2 className="h-3 w-3" /> {r.location}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -471,18 +473,22 @@ function TestimonialsSection({
 
 function FaqSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  // Deliberately generic. These answers used to promise specific policies the
+  // merchant never agreed to ("same-day shipping", "bank transfer, USSD, cards"),
+  // which is the same fabrication problem as the old testimonials — a shopper
+  // would hold the vendor to promises the template invented.
   const faqs = [
     {
       q: "How does ordering on WhatsApp work?",
-      a: "Simply browse our catalog, select your items, and tap Order on WhatsApp. Your selected products, quantities, and delivery details are automatically formatted into a message sent directly to our WhatsApp line for instant confirmation.",
+      a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store, which confirms availability and next steps with you directly.",
     },
     {
-      q: "What payment methods are supported?",
-      a: "We support direct bank transfer, USSD, and secure online cards. Payment details are sent immediately upon order confirmation on WhatsApp.",
+      q: "How do I arrange payment and delivery?",
+      a: "Payment and delivery are agreed directly with the store on WhatsApp, so the options and timing you are offered come from the merchant rather than from a template.",
     },
     {
-      q: "When will my order arrive?",
-      a: "Orders confirmed before 2:00 PM are prepared and shipped same-day. Nationwide delivery typically arrives in 24 to 48 hours with door-to-door tracking.",
+      q: "Can I ask about an item before ordering?",
+      a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition and you will get a reply from the merchant.",
     },
   ];
 
@@ -585,6 +591,13 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
     });
   }, [products, activeCategory, searchFilter]);
 
+  // Catalog windowing: render one page of cards at a time instead of mounting
+  // the entire catalog (see components/storefront/catalog-window.tsx).
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
   const handleFeedbackClick = () => {
     if (props.onLeaveFeedback) {
       props.onLeaveFeedback();
@@ -655,7 +668,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
                 href={`https://wa.me/${state.phone.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn("hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20", focusRing)}
+                className={cn("hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold sf-accent-text transition hover:bg-emerald-500/20", focusRing)}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 <span>WhatsApp</span>
@@ -791,7 +804,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             </div>
           ) : (
             <div className="mt-8 grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
-              {filtered.map((product) => (
+              {filtered.slice(0, shown).map((product) => (
                 <div
                   key={product.id}
                   onClick={() => props.onProduct(product)}
@@ -814,7 +827,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
                       )}
                       {product.outOfStock && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs">
-                          <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase text-black">
+                          <span className="rounded-full sf-surface px-3 py-1 text-[10px] font-bold uppercase text-black">
                             Sold Out
                           </span>
                         </div>
@@ -864,6 +877,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
               ))}
             </div>
           )}
+          {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
         </div>
       </section>
 
@@ -905,7 +919,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
       {/* Customer Testimonials */}
       <TestimonialsSection
         bizName={state.bizName || template.name}
-        storePhone={state.phone}
+        testimonials={state.testimonials}
         onLeaveFeedback={handleFeedbackClick}
       />
 
@@ -982,6 +996,13 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
       return matchesCat && matchesSearch;
     });
   }, [products, activeCategory, searchFilter]);
+
+  // Catalog windowing: render one page of cards at a time instead of mounting
+  // the entire catalog (see components/storefront/catalog-window.tsx).
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
 
   const handleFeedbackClick = () => {
     if (props.onLeaveFeedback) {
@@ -1086,7 +1107,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                     focusRing
                   )}
                 >
-                  <MessageCircle className="h-4 w-4 text-emerald-500" />
+                  <MessageCircle className="h-4 w-4 sf-accent-text" />
                   <span>Inquire via WhatsApp</span>
                 </a>
               )}
@@ -1164,7 +1185,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
             <EmptyCatalog />
           ) : (
             <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
-              {filtered.map((product) => (
+              {filtered.slice(0, shown).map((product) => (
                 <div
                   key={product.id}
                   onClick={() => props.onProduct(product)}
@@ -1183,7 +1204,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                       )}
                       {product.outOfStock && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs">
-                          <span className="rounded-full bg-white px-2.5 py-0.5 text-[9px] font-bold uppercase text-black">
+                          <span className="rounded-full sf-surface px-2.5 py-0.5 text-[9px] font-bold uppercase text-black">
                             Sold Out
                           </span>
                         </div>
@@ -1224,6 +1245,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
               ))}
             </div>
           )}
+          {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
         </div>
       </section>
 
@@ -1246,7 +1268,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
 
       <TestimonialsSection
         bizName={state.bizName || template.name}
-        storePhone={state.phone}
+        testimonials={state.testimonials}
         onLeaveFeedback={handleFeedbackClick}
       />
       <FaqSection />
@@ -1291,6 +1313,13 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       return matchesCat && matchesSearch;
     });
   }, [products, activeCategory, searchFilter]);
+
+  // Catalog windowing: render one page of cards at a time instead of mounting
+  // the entire catalog (see components/storefront/catalog-window.tsx).
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
 
   const handleFeedbackClick = () => {
     if (props.onLeaveFeedback) {
@@ -1447,7 +1476,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             </div>
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-px bg-t-border min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {filtered.map((product, index) => (
+              {filtered.slice(0, shown).map((product, index) => (
                 <div
                   key={product.id}
                   onClick={() => props.onProduct(product)}
@@ -1502,6 +1531,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               ))}
             </div>
           )}
+          {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
         </div>
       </section>
 
@@ -1519,7 +1549,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
       <TestimonialsSection
         bizName={state.bizName || template.name}
-        storePhone={state.phone}
+        testimonials={state.testimonials}
         onLeaveFeedback={handleFeedbackClick}
       />
       <FaqSection />
@@ -1548,7 +1578,14 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 export function TemplateSite(props: TemplateSiteProps) {
   const template = websiteTemplateById(props.state.websiteTemplateId);
   if (!template) return null;
-  if (template.id === "boutique") return <BoutiqueSite {...props} template={template} />;
-  if (template.id === "bold") return <BoldSite {...props} template={template} />;
+
+  // Route by the template's navigation shape so each member of the family lands
+  // on the layout that matches how it behaves. The three original templates map
+  // exactly as they always did (boutique=drawer, bold=bottom, editorial=top);
+  // the newer ones reuse those engines while their palette, type pairing,
+  // radius, density and image ratio make each look distinct.
+  const nav = template.light.nav;
+  if (nav === "drawer") return <BoutiqueSite {...props} template={template} />;
+  if (nav === "bottom") return <BoldSite {...props} template={template} />;
   return <EditorialSite {...props} template={template} />;
 }

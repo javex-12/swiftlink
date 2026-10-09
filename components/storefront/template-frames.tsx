@@ -53,6 +53,76 @@ const MOCK: Record<
       { name: "Court sock", ngn: "6,500", usd: "12" },
     ],
   },
+  studio: {
+    name: "Studio Form",
+    host: "studio.swiftlink.store",
+    items: [
+      { name: "Poster set", ngn: "21,000", usd: "40" },
+      { name: "Ceramic vase", ngn: "33,000", usd: "64" },
+      { name: "Art print", ngn: "17,500", usd: "34" },
+      { name: "Notebook", ngn: "6,000", usd: "12" },
+    ],
+  },
+  market: {
+    name: "Corner Market",
+    host: "market.swiftlink.store",
+    items: [
+      { name: "Rice 5kg", ngn: "11,500", usd: "22" },
+      { name: "Cooking oil", ngn: "8,200", usd: "16" },
+      { name: "Tomato crate", ngn: "5,400", usd: "11" },
+      { name: "Fresh eggs", ngn: "3,600", usd: "7" },
+    ],
+  },
+  noir: {
+    name: "Maison Noir",
+    host: "noir.swiftlink.store",
+    items: [
+      { name: "Gold timepiece", ngn: "420,000", usd: "800" },
+      { name: "Leather case", ngn: "96,000", usd: "185" },
+      { name: "Silk tie", ngn: "34,000", usd: "66" },
+      { name: "Cufflinks", ngn: "52,000", usd: "100" },
+    ],
+  },
+  bloom: {
+    name: "Bloom & Co",
+    host: "bloom.swiftlink.store",
+    items: [
+      { name: "Peony bouquet", ngn: "24,000", usd: "46" },
+      { name: "Rose box", ngn: "31,000", usd: "60" },
+      { name: "Shea set", ngn: "12,800", usd: "25" },
+      { name: "Scented candle", ngn: "8,900", usd: "17" },
+    ],
+  },
+  forge: {
+    name: "Forge Supply",
+    host: "forge.swiftlink.store",
+    items: [
+      { name: "Impact drill", ngn: "88,000", usd: "170" },
+      { name: "Tool set", ngn: "54,000", usd: "104" },
+      { name: "Work gloves", ngn: "7,500", usd: "14" },
+      { name: "Steel tape", ngn: "4,200", usd: "8" },
+    ],
+  },
+  coast: {
+    name: "Coast Supply",
+    host: "coast.swiftlink.store",
+    items: [
+      { name: "Linen towel", ngn: "14,500", usd: "28" },
+      { name: "Beach tote", ngn: "22,000", usd: "42" },
+      { name: "Sea salt soap", ngn: "5,800", usd: "11" },
+      { name: "Sun hat", ngn: "18,600", usd: "36" },
+    ],
+  },
+  oasis: {
+    name: "Oasis Home",
+    host: "oasis.swiftlink.store",
+    items: [
+      { name: "Terracotta pot", ngn: "16,400", usd: "31" },
+      { name: "Woven basket", ngn: "23,000", usd: "44" },
+      { name: "Cotton throw", ngn: "39,000", usd: "75" },
+      { name: "Clay mug", ngn: "6,900", usd: "13" },
+    ],
+  },
 };
 
 function money(currency: string, item: Item) {
@@ -251,10 +321,15 @@ export function TemplateFrame({
   const theme = appearance === "dark" ? template.dark : template.light;
   const vars = themeToCssVars(theme) as CSSProperties;
 
+  // Pick the thumbnail by the template's own navigation shape rather than by id,
+  // so every template in the family gets a preview that matches how it behaves.
+  // (The original three map exactly as before: boutique=drawer, bold=bottom,
+  // editorial=top.)
+  const nav = template.light.nav;
   const site =
-    id === "boutique" ? (
+    nav === "drawer" ? (
       <BoutiqueMini size={size} currency={currency} />
-    ) : id === "bold" ? (
+    ) : nav === "bottom" ? (
       <BoldMini size={size} currency={currency} />
     ) : (
       <EditorialMini size={size} currency={currency} />
@@ -276,7 +351,9 @@ export function TemplateFrame({
         <span className="h-2 w-2 rounded-full bg-app-border-strong" />
         <span className="h-2 w-2 rounded-full bg-app-border-strong" />
         <span className="h-2 w-2 rounded-full bg-app-border-strong" />
-        <span className="ml-2 truncate font-mono text-[11px] text-app-text-subtle">{MOCK[id].host}</span>
+        <span className="ml-2 truncate font-mono text-[11px] text-app-text-subtle">
+          {MOCK[id]?.host ?? "swiftlink.store"}
+        </span>
       </div>
       {framed}
     </div>

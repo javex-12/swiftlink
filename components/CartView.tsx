@@ -36,8 +36,8 @@ export function CartView() {
   const total = cartLines.reduce((acc, p) => acc + p.price * p.quantity, 0);
 
   const returnUrl = useMemo(() => {
-    if (shopId) return `/store/default?shop=${shopId}`;
-    if (state.id) return `/store/default?shop=${state.id}`;
+    if (shopId) return `/?shop=${shopId}`;
+    if (state.id) return `/?shop=${state.id}`;
     return "/";
   }, [shopId, state.id]);
 

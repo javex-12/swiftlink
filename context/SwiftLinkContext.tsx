@@ -19,6 +19,11 @@ import {
   normalizeStoreUsername,
 } from "@/lib/utils";
 import { defaultShopState, loadStateLocal, normalizeShopState, type ShopState, type AppNotification } from "@/lib/types";
+import { effectiveProductLimitFor, productLimitBlockedMessage, visibleProductCount } from "@/lib/plans";
+import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draft-store";
+import { deleteStoreDraft, storeDraftKey, writeStoreDraft } from "@/lib/store-drafts";
+import { recordOrderIntent, toMinorUnits, type OrderIntentItem } from "@/lib/inquiry-write";
+import { buildCartOrderMessage, type CartOrderLine } from "@/lib/order-message";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
@@ -59,6 +64,12 @@ type SwiftLinkContextValue = {
   updateState: (field: keyof ShopState, value: unknown) => void;
   setStateMerge: (partial: Partial<ShopState>) => void;
   saveFullState: (next: ShopState) => void;
+  /** Autosaved drafts keyed by store id. Never live until `saveFullState`. */
+  drafts: Record<string, EditorDraft>;
+  /** Autosave the merchant's working copy (local + server). Publishes nothing. */
+  saveDraft: (next: ShopState) => Promise<{ savedAt: string | null; synced: boolean }>;
+  /** Drop a draft once it has been published or the merchant discards it. */
+  discardDraft: (storeKey?: string | null) => Promise<void>;
   copyShopLink: () => void;
   handleSignOut: () => void;
   authSignOut: () => Promise<void>;
@@ -110,6 +121,7 @@ export function SwiftLinkProvider({
 
   const [state, setState] = useState<ShopState>(defaultShopState());
   const [stores, setStores] = useState<ShopState[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, EditorDraft>>({});
   const [cart, setCart] = useState<CartMap>({});
   const [user, setUser] = useState<User | null>(null);
 
@@ -117,14 +129,41 @@ export function SwiftLinkProvider({
     try {
       if (!isSupabaseConfigured()) return [];
       // Select plan and account_status columns alongside state_json
-      const { data } = await supabase.from('stores').select('id, owner_id, plan, account_status, state_json').eq('owner_id', userId);
+      const { data } = await supabase.from('stores').select('id, owner_id, plan, account_status, plan_grace_until, plan_lapsed_at, state_json').eq('owner_id', userId);
       if (data) {
           const loadedStores = data.map((s: any) => {
             // DB plan column is authoritative; mirror it into state_json
             const planFromDB = s.plan || (s.state_json as any)?.plan || 'free';
-            return normalizeShopState({ ...(s.state_json as Partial<ShopState>), id: s.id, ownerId: s.owner_id, plan: planFromDB });
+            return normalizeShopState({
+              ...(s.state_json as Partial<ShopState>),
+              id: s.id,
+              ownerId: s.owner_id,
+              plan: planFromDB,
+              planGraceUntil: s.plan_grace_until ?? null,
+              planLapsedAt: s.plan_lapsed_at ?? null,
+            });
           });
           setStores(loadedStores);
+
+          // Autosaved drafts. They live in their own owner-scoped table, never on
+          // the world-readable `stores` row, so unpublished work cannot leak to
+          // the storefront. A missing table (older backend) just means no draft.
+          const draftMap: Record<string, EditorDraft> = {};
+          const storeIds = loadedStores.map((s) => s.id).filter(Boolean) as string[];
+          if (storeIds.length) {
+            const { data: draftRows } = await supabase
+              .from('store_drafts')
+              .select('store_id, draft_json, updated_at')
+              .in('store_id', storeIds);
+            (draftRows || []).forEach((row: any) => {
+              if (!row?.draft_json) return;
+              draftMap[row.store_id] = {
+                savedAt: row.updated_at || new Date().toISOString(),
+                state: normalizeShopState(row.draft_json as Partial<ShopState>),
+              };
+            });
+          }
+          setDrafts(draftMap);
 
           // Check if the primary store is banned
           const primaryStore = data[0];
@@ -321,12 +360,19 @@ export function SwiftLinkProvider({
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shopFromQuery = searchParams.get("shop");
+  // `?src=` lets a merchant tag a shared link (whatsapp/instagram/tiktok) so a
+  // recorded inquiry can be attributed to the channel that produced it.
+  const inquirySrc = searchParams.get("src");
   const pathShop = parseShopFromPathname(pathname);
   const shopQ = shopFromQuery;
 
   const pathShopId = pathShop?.kind === "uid" ? pathShop.shopId : null;
+  // A bare `/<handle>` is also a customer view: the store identity is in the
+  // path, so the context must switch into customer mode for the same reasons it
+  // does for `?shop=` (see the canonical route in app/[storeSlug]/page.tsx).
+  const pathShopSlug = pathShop?.kind === "slug" ? pathShop.slug : null;
   const customerShopId = shopFromQuery || pathShopId || null;
-  const isCustomerMode = Boolean(customerShopId);
+  const isCustomerMode = Boolean(customerShopId) || Boolean(pathShopSlug);
   const isOwner = !isCustomerMode;
   const isProtectedRoute = PROTECTED_PATHS.some(
     (protectedPath) =>
@@ -355,7 +401,10 @@ export function SwiftLinkProvider({
       
       syncTimeoutRef.current = setTimeout(async () => {
           if (!isSupabaseConfigured()) {
+            // Demo mode: the local write is the only store there is, so the
+            // working copy has effectively been published.
             setIsSyncing(false);
+            clearEditorDraft(storeDraftKey(next));
             return;
           }
           if (isOwnerRef.current && userRef.current?.id) {
@@ -378,6 +427,18 @@ export function SwiftLinkProvider({
 
             if (error) {
               console.error("Supabase Sync Error:", error);
+            } else {
+              // Publishing makes the live store the newest truth, so the draft
+              // for it is stale. Dropping it here — and only after a confirmed
+              // write — means a failed save never costs the merchant their work.
+              clearEditorDraft(storeDraftKey(stateToSave));
+              void deleteStoreDraft(storeId);
+              setDrafts((prev) => {
+                if (!(storeId in prev)) return prev;
+                const nextDrafts = { ...prev };
+                delete nextDrafts[storeId];
+                return nextDrafts;
+              });
             }
           }
           setIsSyncing(false);
@@ -393,6 +454,42 @@ export function SwiftLinkProvider({
     },
     [persistState],
   );
+
+  // --- Autosave (draft) ----------------------------------------------------
+  // Autosave records work in progress; it never touches the live store. The
+  // local write happens first and unconditionally, so an offline merchant (or a
+  // backend without the drafts table) still keeps their edits across a reload.
+  const saveDraft = useCallback(
+    async (next: ShopState): Promise<{ savedAt: string | null; synced: boolean }> => {
+      const storeKey = storeDraftKey(next);
+      const localSavedAt = writeEditorDraft(storeKey, next);
+
+      const ownerId = userRef.current?.id || null;
+      const storeId = typeof next.id === "string" && next.id ? next.id : ownerId;
+      let serverSavedAt: string | null = null;
+      if (isOwnerRef.current && ownerId && storeId) {
+        serverSavedAt = await writeStoreDraft(storeId, ownerId, next);
+        if (serverSavedAt) {
+          setDrafts((prev) => ({ ...prev, [storeId]: { savedAt: serverSavedAt as string, state: next } }));
+        }
+      }
+      return { savedAt: serverSavedAt || localSavedAt, synced: Boolean(serverSavedAt) };
+    },
+    [],
+  );
+
+  const discardDraft = useCallback(async (storeKey?: string | null) => {
+    const key = storeDraftKey({ id: storeKey ?? null, ownerId: userRef.current?.id });
+    if (!key) return;
+    clearEditorDraft(key);
+    await deleteStoreDraft(key);
+    setDrafts((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
   const setStateMerge = useCallback(
     (partial: Partial<ShopState>) => {
@@ -586,7 +683,10 @@ export function SwiftLinkProvider({
                 }
             });
         } else {
-            setState(defaultShopState());
+            // Never reset the workspace while viewing a customer storefront: the
+            // storefront's own state is loaded above and must not be clobbered
+            // by a signed-out auth event (canonical `/<handle>` route).
+            if (isOwnerRef.current) setState(defaultShopState());
             setIsAdmin(false);
             if (typeof window !== "undefined") {
               localStorage.removeItem("swiftlink_state");
@@ -599,24 +699,46 @@ export function SwiftLinkProvider({
     void initAuth();
 
     // Listen for shop changes if viewing a customer shop
-    const sid = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
+    const directId = shopQ || (pathShop?.kind === "uid" ? pathShop.shopId : null);
+    const slugPath = pathShop?.kind === "slug" ? pathShop.slug : null;
     let channel: any = null;
 
-    if (sid && isSupabaseConfigured()) {
-       supabase.from('stores').select('state_json').eq('id', sid).single().then(({ data }) => {
-           if (data?.state_json) {
-               setState(prev => normalizeShopState({ ...prev, ...(data.state_json as Partial<ShopState>), id: sid }));
-           }
-       });
+    if ((directId || slugPath) && isSupabaseConfigured()) {
+       const applyStoreState = (sid: string, raw: any) => {
+         if (raw) {
+           setState(prev => normalizeShopState({ ...prev, ...(raw as Partial<ShopState>), id: sid }));
+         }
+       };
 
-       channel = supabase
-         .channel('store-updates')
-         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores', filter: `id=eq.${sid}` }, payload => {
-            if (payload.new?.state_json) {
-                setState(prev => normalizeShopState({ ...prev, ...(payload.new.state_json as Partial<ShopState>), id: sid }));
-            }
-         })
-         .subscribe();
+       const openStoreChannel = (sid: string) => {
+         channel = supabase
+           .channel('store-updates')
+           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores', filter: `id=eq.${sid}` }, payload => {
+              applyStoreState(sid, payload.new?.state_json);
+           })
+           .subscribe();
+       };
+
+       if (directId) {
+         supabase.from('stores').select('state_json').eq('id', directId).single().then(({ data }) => {
+             applyStoreState(directId, data?.state_json);
+         });
+         openStoreChannel(directId);
+       } else if (slugPath) {
+         // Canonical `/<handle>`: resolve the handle to its id first. The order
+         // flow reads phone/products from the context state, so without this the
+         // WhatsApp order would be built from the wrong store.
+         supabase
+           .from('stores')
+           .select('id, state_json')
+           .eq('store_username', slugPath)
+           .maybeSingle()
+           .then(({ data }) => {
+             if (!data?.id) return;
+             applyStoreState(data.id, data.state_json);
+             openStoreChannel(data.id);
+           });
+       }
     }
 
     return () => {
@@ -911,9 +1033,8 @@ export function SwiftLinkProvider({
 
   const addProduct = useCallback(() => {
     setState((prev) => {
-      const isPro = prev.plan === "pro" || prev.plan === "business";
-      if (!isPro && prev.products.length >= 6) {
-        addToast("Starter plan limit reached (6 products). Upgrade to Pro for unlimited items!", "error");
+      if (visibleProductCount(prev.products) >= effectiveProductLimitFor(prev.plan)) {
+        addToast(productLimitBlockedMessage(prev.plan), "error");
         return prev;
       }
 
@@ -1150,20 +1271,54 @@ export function SwiftLinkProvider({
       return;
     }
     const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
-    let msg = `*NEW ORDER ${ref}*\n━━━━━━━━━━\n\n`;
-    let total = 0;
+    const lines: CartOrderLine[] = [];
+    const intents: OrderIntentItem[] = [];
     Object.entries(cart).forEach(([id, q]) => {
       const p = state.products.find((x) => x.id === Number(id));
       if (!p) return;
-      total += p.price * q;
-      msg += `📦 *${p.name}* (${q})\n   ${state.currency}${Number(p.price * q).toLocaleString()}\n\n`;
+      lines.push({
+        productId: p.id,
+        name: p.name,
+        quantity: q,
+        unitPrice: p.price,
+        // `image` is the thumbnail and is kept in sync with the first gallery
+        // image; fall back to the gallery for older products. The message sends
+        // the photo as a URL, which is the only way a click-to-chat link can
+        // carry a picture — WhatsApp previews the first one it finds.
+        imageUrl: p.image || p.images?.[0] || null,
+      });
+      intents.push({
+        productId: p.id,
+        productName: p.name,
+        unitPriceMinor: toMinorUnits(p.price),
+        quantity: q,
+      });
     });
-    const totalStr = `${state.currency}${total.toLocaleString()}`;
-    msg += `━━━━━━━━━━\n💰 *Total: ${totalStr}*\n\n_Store: ${state.bizName}_`;
+
+    const msg = buildCartOrderMessage({
+      reference: ref,
+      currency: state.currency,
+      storeName: state.bizName,
+      lines,
+    });
+
+    // Open the chat first and synchronously: `window.open` inside a click
+    // handler is what keeps popup blockers from eating the order.
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
     );
-  }, [cart, state, addToast]);
+
+    // Then record the intent, deliberately not awaited — the inquiries screen
+    // and the daily stats rollup are fed from here, and a tracking failure must
+    // never interfere with the sale that just happened
+    // (docs/05-IMPROVEMENT-PLAN.md R-05/R-06).
+    void recordOrderIntent({
+      storeId: state.id,
+      currency: state.currency,
+      srcParam: inquirySrc,
+      items: intents,
+    });
+  }, [cart, state, addToast, inquirySrc]);
 
   const cartItemCount = useMemo(
     () => Object.values(cart).reduce((a, b) => a + b, 0),
@@ -1201,6 +1356,9 @@ export function SwiftLinkProvider({
     updateState,
     setStateMerge,
     saveFullState,
+    drafts,
+    saveDraft,
+    discardDraft,
     copyShopLink,
     handleSignOut,
     authSignOut,

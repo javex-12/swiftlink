@@ -17,6 +17,13 @@ import { StoreSwitcher } from "./StoreSwitcher";
 import { CustomerStorefrontPreview } from "./CustomerStorefront";
 import { CountrySelector } from "./CountrySelector";
 import { WebsiteTemplatePicker } from "./WebsiteTemplatePicker";
+import {
+    effectiveProductLimitFor,
+    effectiveStoreLimitFor,
+    productLimitBlockedMessage,
+    storeLimitMessage,
+    visibleProductCount,
+} from "@/lib/plans";
 
 // ... rest of StableInput and StableTextarea ...
 
@@ -188,10 +195,10 @@ export function BusinessView() {
   const handleCreateNew = async () => {
     if (!user) return;
     
-    const isPremium = globalState.plan === "business" || globalState.plan === "pro";
-
-    if (!isPremium && stores.length >= 1) {
-        addSystemNotification("Pro Feature", "Free accounts are limited to 1 store. Upgrade to PRO to create multiple brands.", "feedback");
+    // Multi-store is the Business differentiator; free and pro are single-store
+    // (lib/plans.ts owns the numbers).
+    if (stores.length >= effectiveStoreLimitFor(globalState.plan)) {
+        addSystemNotification("Business Feature", storeLimitMessage(globalState.plan, stores.length), "feedback");
         return;
     }
     const name = await (window as any).customPrompt("New Store", "Enter brand name:");
@@ -718,7 +725,7 @@ export function BusinessView() {
                                 </div>
                                 <div className="mt-2 pt-2 border-t border-white/5">
                                     <button onClick={handleCreateNew} className="w-full flex items-center justify-center gap-2 p-3.5 bg-[#00c885] text-[#07110d] rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#00b377] transition-all">
-                                        <Plus size={14} /> Create New Brand {!isProUser && stores.length >= 1 && <Lock size={11} className="ml-1 shrink-0" />}
+                                        <Plus size={14} /> Create New Brand {stores.length >= effectiveStoreLimitFor(localState.plan) && <Lock size={11} className="ml-1 shrink-0" />}
                                     </button>
                                 </div>
                             </motion.div>
@@ -895,10 +902,9 @@ export function BusinessView() {
                             <input type="file" multiple accept="image/*" className="hidden" disabled={isUploading} onChange={async (e) => {
                                 if (!e.target.files?.length) return;
                                 const files = Array.from(e.target.files);
-                                const currentPlan = globalState.plan || "free";
-                                const maxProducts = (currentPlan === "business" || currentPlan === "pro") ? Infinity : 5;
-                                if (localState.products.length + files.length > maxProducts) {
-                                    addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
+                                const productLimit = effectiveProductLimitFor(globalState.plan);
+                                if (visibleProductCount(localState.products) + files.length > productLimit) {
+                                    addSystemNotification("Plan Limit Reached", productLimitBlockedMessage(globalState.plan), "feedback");
                                     return;
                                 }
                                 setIsUploading(true);
@@ -928,10 +934,9 @@ export function BusinessView() {
                         </label>
                         <button
                             onClick={() => {
-                                const currentPlan = globalState.plan || "free";
-                                const maxProducts = (currentPlan === "business" || currentPlan === "pro") ? Infinity : 5;
-                                if (localState.products.length >= maxProducts) {
-                                    addSystemNotification("Plan Limit Reached", `Your ${currentPlan.toUpperCase()} plan allows a maximum of ${maxProducts} products. Upgrade to add more!`, "feedback");
+                                const productLimit = effectiveProductLimitFor(globalState.plan);
+                                if (visibleProductCount(localState.products) >= productLimit) {
+                                    addSystemNotification("Plan Limit Reached", productLimitBlockedMessage(globalState.plan), "feedback");
                                     return;
                                 }
                                 const newP: Product = { id: Date.now(), name: "New Product", price: 0, description: "", image: "", images: [], outOfStock: false };

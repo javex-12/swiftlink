@@ -9,12 +9,9 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug, cn } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
-import { TemplateFrame } from "@/components/storefront/template-frames";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Logo } from "@/components/Logo";
-import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
 
 /**
  * Sign in / sign up.
@@ -356,8 +353,12 @@ function AuthPage() {
         </header>
 
         <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8">
-          <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-14">
-          <div className="mx-auto w-full max-w-[420px] lg:mx-0 lg:max-w-none">
+          {/* One calm, centred column — the design decision recorded in
+              docs/03-DECISIONS.md D12. A template-preview rail used to sit
+              beside the form; it pushed the sign-in action sideways on every
+              width and advertised "Editorial, Boutique and Bold" long after
+              the template set grew to ten. */}
+          <div className="mx-auto w-full max-w-[420px]">
             <AnimatePresence mode="wait">
               {step === "form" ? (
                 <motion.div
@@ -584,8 +585,6 @@ function AuthPage() {
               </Link>
             </p>
           </div>
-          <DesignRail />
-          </div>
         </main>
 
         <footer className="px-5 pb-6 pt-2 sm:px-8">
@@ -604,60 +603,6 @@ function AuthPage() {
         </footer>
       </div>
     </div>
-  );
-}
-
-/**
- * The three websites, shown beside the form on wide screens only.
- * Phones stay a single column so the sign-in action is never pushed below the fold.
- */
-function DesignRail() {
-  const { theme } = useSwiftLink();
-  const appearance = theme === "dark" ? "dark" : "light";
-  const [active, setActive] = useState<WebsiteTemplateId>("editorial");
-
-  return (
-    <aside className="hidden min-w-0 lg:block" aria-label="Website previews">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-app-text-subtle">
-        Three websites
-      </p>
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-app-text">
-        Pick a look after you sign in.
-      </h2>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-app-text-muted">
-        Editorial, Boutique, and Bold are complete shops, each in light and dark. Your customers order on WhatsApp.
-      </p>
-      <div className="mt-5 flex gap-2" role="group" aria-label="Preview a website">
-        {websiteTemplates.map((template) => {
-          const selected = active === template.id;
-          return (
-            <button
-              key={template.id}
-              type="button"
-              onClick={() => setActive(template.id)}
-              aria-pressed={selected}
-              className={cn(
-                "rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
-                selected
-                  ? "border-app-accent bg-app-accent-subtle text-app-text"
-                  : "border-app-border bg-app-surface text-app-text-muted hover:text-app-text",
-              )}
-            >
-              {template.name}
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-4">
-        <TemplateFrame
-          id={active}
-          appearance={appearance}
-          size="card"
-          className="rounded-2xl border border-app-border shadow-lg"
-        />
-      </div>
-    </aside>
   );
 }
 

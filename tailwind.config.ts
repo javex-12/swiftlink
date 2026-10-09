@@ -70,6 +70,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      /**
+       * `xs` was referenced all over the UI (`xs:inline`, `xs:max-w-[200px]`,
+       * `xs:hidden`) but never defined here — so those classes compiled to
+       * nothing and the code only looked responsive. The worst case was the
+       * preview modal's action button: `hidden xs:inline` on its label and
+       * `xs:hidden` on its fallback meant the intended label never rendered.
+       * 480px is the intended meaning (large phone / small tablet).
+       */
+      screens: {
+        xs: "480px",
+      },
+
       colors: { app, t: storefront },
 
       /* Radii resolve to tokens so a theme's `radius` setting moves every

@@ -181,7 +181,7 @@ export default function AccountPage() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-[#9DB3A8]">Store Handle (Custom Link)</label>
                     <div className="flex items-center gap-2 bg-[#14231D] px-3.5 py-2.5 rounded-[12px] border border-[#24382F] focus-within:border-[#19C37D]">
-                      <span className="text-xs font-medium text-[#9DB3A8]">/store/</span>
+                      <span className="text-xs font-medium text-[#9DB3A8]">/</span>
                       <input 
                         type="text" 
                         value={state.storeUsername || ""} 

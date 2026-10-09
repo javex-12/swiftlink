@@ -146,13 +146,26 @@ SELECT
     'seoTitle', state_json->'seoTitle',
     'ogDescription', state_json->'ogDescription',
     'ogImage', state_json->'ogImage'
-  ) AS state_json,
-  created_at
+  ) AS state_json
 FROM public.stores
 WHERE onboarding_step >= 5;
 
--- Secure public.stores: Revoke direct anon select on table, grant only on public_stores view
-REVOKE SELECT ON public.stores FROM anon;
+-- NOTE (recon 04): this view originally also projected `stores.created_at`, which
+-- does not exist on the live table (`stores` has id, biz_name, store_username,
+-- phone, state_json, updated_at, owner_id, sections, plan, account_status), so the
+-- whole migration aborted on `column "created_at" does not exist`. Add the column
+-- deliberately before projecting it, rather than inventing timestamps here.
+
+-- The projection above is additive. The revoke that used to sit here is NOT:
+--
+--   REVOKE SELECT ON public.stores FROM anon;   -- <-- deliberately removed
+--
+-- The app still reads `stores` directly with the anon key (the customer storefront
+-- has no server data layer yet), so revoking SELECT from `anon` in this migration
+-- would take every live storefront offline before the read path moves to the view.
+-- The revoke must land in the same change that switches the storefront to
+-- `public_stores`, so there is no deploy window where neither is readable
+-- (docs/05-IMPROVEMENT-PLAN.md R-09 / §3.3). Granting the view now is harmless.
 GRANT SELECT ON public.public_stores TO anon, authenticated;
 
 -- 4. Inquiries Table (Integer Minor Units for Money)
@@ -386,6 +399,38 @@ CREATE TABLE IF NOT EXISTS public.product_daily_stats (
 
 CREATE INDEX IF NOT EXISTS idx_store_daily_stats_lookup ON public.store_daily_stats (store_id, day DESC);
 CREATE INDEX IF NOT EXISTS idx_product_daily_stats_lookup ON public.product_daily_stats (store_id, day DESC);
+
+-- 7b. Analytics rollup writer.
+-- Without this, the two daily-stat tables above are never written by anything and
+-- every analytics screen is structurally stuck at zero (docs/05-IMPROVEMENT-PLAN.md
+-- R-05). A recorded inquiry IS the product-tap signal: one buyer tapping "Order on
+-- WhatsApp" for a product increments that product's taps for the day, and the
+-- store's taps for the same day and channel. Defined as SECURITY DEFINER because
+-- section 10 revokes INSERT on both stat tables from authenticated and anon.
+CREATE OR REPLACE FUNCTION public.rollup_inquiry_into_daily_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.store_daily_stats (store_id, day, source, product_taps)
+  VALUES (NEW.store_id, (NEW.created_at AT TIME ZONE 'UTC')::date, NEW.source, 1)
+  ON CONFLICT (store_id, day, source) DO UPDATE SET
+    product_taps = public.store_daily_stats.product_taps + 1,
+    updated_at = timezone('utc'::text, now());
+
+  INSERT INTO public.product_daily_stats (store_id, product_id, day, taps)
+  VALUES (NEW.store_id, NEW.product_id, (NEW.created_at AT TIME ZONE 'UTC')::date, 1)
+  ON CONFLICT (store_id, product_id, day) DO UPDATE SET
+    taps = public.product_daily_stats.taps + 1,
+    updated_at = timezone('utc'::text, now());
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_inquiry_rollup_daily_stats ON public.inquiries;
+CREATE TRIGGER trg_inquiry_rollup_daily_stats
+  AFTER INSERT ON public.inquiries
+  FOR EACH ROW
+  EXECUTE FUNCTION public.rollup_inquiry_into_daily_stats();
 
 -- 8. Enable Row Level Security
 ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;

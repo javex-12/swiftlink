@@ -10,6 +10,8 @@ import {
 import { AppChrome } from "@/components/AppChrome";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { ErrorMonitor } from "@/components/ErrorMonitor";
 import "@/styles/tokens.css";
 import "./globals.css";
 
@@ -99,7 +101,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  icons: [{ rel: "icon", url: "/logo.png" }],
+  // Real, correctly-sized assets. `app/manifest.ts` carries the PWA icon set;
+  // these are the tab/favicon and iOS home-screen variants.
+  icons: [
+    { rel: "icon", url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+    { rel: "icon", url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    { rel: "apple-touch-icon", url: "/icons/apple-touch-icon.png", sizes: "180x180" },
+  ],
   robots: {
     index: true,
     follow: true,
@@ -172,10 +180,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
         />
-        {/* Fonts are self-hosted by next/font — no third-party stylesheet here. */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0A1210" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        {/* Fonts are self-hosted by next/font — no third-party stylesheet here.
+            The manifest <link> is injected automatically from app/manifest.ts. */}
+        <meta name="theme-color" content="#0a1210" />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
@@ -183,6 +190,8 @@ export default function RootLayout({
             <AppChrome>{children}</AppChrome>
           </SwiftLinkProvider>
           <PWAInstallPrompt />
+          <ServiceWorkerRegister />
+          <ErrorMonitor />
         </Suspense>
       </body>
     </html>

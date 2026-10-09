@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/types";
-import { Minus, Plus, Trash2, ArrowRight, CreditCard } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, CreditCard, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 export function CartDrawer({
@@ -102,7 +102,7 @@ export function CartDrawer({
             onClick={() => onToggle(false)}
             className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"
           >
-            <i className="fas fa-times" />
+            <X size={18} />
           </button>
         </div>
         <div className="overflow-y-auto p-8 space-y-4 flex-1">
@@ -141,7 +141,7 @@ export function CartDrawer({
                     boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
                   }}
                 >
-                  <i className="fab fa-whatsapp text-2xl" />
+                  <MessageCircle size={22} className="shrink-0" />
                   <span>
                     {storeAcceptingOrders ? "WhatsApp Order" : "Orders paused"}
                   </span>

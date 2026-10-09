@@ -44,7 +44,7 @@ export function WebsiteTemplatePicker() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {websiteTemplates.map((template) => {
             const isSelected = selected === template.id;
             return (
@@ -71,7 +71,7 @@ export function WebsiteTemplatePicker() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-[#E8F1EC]">{template.name}</span>
+                    <span className="min-w-0 truncate text-sm font-semibold text-[#E8F1EC]">{template.name}</span>
                     {isSelected ? (
                       <Badge tone="accent">
                         <Icon icon={Check} size="xs" /> Selected
@@ -81,7 +81,7 @@ export function WebsiteTemplatePicker() {
                   <p className="text-xs text-[#9DB3A8]">{template.description}</p>
                 </div>
 
-                <div className="mt-4 flex items-center gap-2 pt-2 border-t border-[#1E2D27]">
+                <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-[#1E2D27]">
                   <button
                     type="button"
                     onClick={() => applyTemplate(template.id)}

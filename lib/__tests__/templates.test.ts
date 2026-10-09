@@ -5,6 +5,7 @@ import { themeSchema } from "@/lib/theme/theme-schema";
 import {
   DEFAULT_WEBSITE_TEMPLATE_ID,
   WEBSITE_TEMPLATE_IDS,
+  featuredWebsiteTemplates,
   isWebsiteTemplateId,
   themeForTemplate,
   websiteTemplateById,
@@ -14,13 +15,13 @@ import {
 /**
  * The template audit.
  *
- * Three complete websites, each shipped in light and dark. This is the promise from
- * `docs/03-DECISIONS.md` D11 as a test: every one of the six variants is derived and
+ * A whole family of complete websites, each shipped in light and dark. This is the
+ * promise from `docs/03-DECISIONS.md` D11 as a test: every variant is derived and
  * checked for AA, so a template can never ship unreadable in either appearance.
  */
 
 describe("website templates", () => {
-  it("ships exactly the three advertised templates", () => {
+  it("ships every advertised template, in the declared order", () => {
     expect(websiteTemplates.map((template) => template.id)).toEqual([...WEBSITE_TEMPLATE_IDS]);
   });
 
@@ -85,5 +86,40 @@ describe("website templates", () => {
     expect(websiteTemplateById(null)).toBeNull();
     expect(isWebsiteTemplateId("bold")).toBe(true);
     expect(isWebsiteTemplateId("nope")).toBe(false);
+  });
+});
+
+/**
+ * The marketing page shows three examples, not all ten (a wall of ten reads as
+ * noise). These assertions keep that sample honest: they must be real templates,
+ * they must cover the three navigation engines so the selection shows range
+ * rather than three colourways of one layout, and the landing copy derives its
+ * "3 of 10" numbers from these arrays rather than hard-coding them.
+ */
+describe("featured templates", () => {
+  it("shows three real templates with no duplicates", () => {
+    expect(featuredWebsiteTemplates).toHaveLength(3);
+    expect(new Set(featuredWebsiteTemplates.map((template) => template.id)).size).toBe(3);
+    featuredWebsiteTemplates.forEach((template) => {
+      expect(websiteTemplates.map((candidate) => candidate.id)).toContain(template.id);
+      expect(template.name).toBeTruthy();
+    });
+  });
+
+  it("covers all three navigation engines", () => {
+    const navs = featuredWebsiteTemplates.map((template) => template.light.nav).sort();
+    expect(navs).toEqual(["bottom", "drawer", "top"]);
+  });
+
+  it("ships each featured template in a distinct light and dark palette", () => {
+    featuredWebsiteTemplates.forEach((template) => {
+      expect(template.light.brandColor).not.toBe(template.dark.brandColor);
+      expect(template.light.background).toBe("light");
+      expect(template.dark.background).toBe("dark");
+    });
+  });
+
+  it("is a real subset of the family, so the marketing count stays true", () => {
+    expect(featuredWebsiteTemplates.length).toBeLessThan(websiteTemplates.length);
   });
 });

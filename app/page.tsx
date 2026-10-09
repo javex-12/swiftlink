@@ -4,7 +4,7 @@ import { HomeClient } from "@/components/HomeClient";
 export default function HomePage() {
   return (
     <Suspense fallback={null}>
-      <HomeClient defaultView="landing" />
+      <HomeClient />
     </Suspense>
   );
 }

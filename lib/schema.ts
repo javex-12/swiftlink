@@ -19,6 +19,13 @@ export type Product = {
   category?: string;
   attributes?: ProductAttribute[]; // e.g. [{label: "Size", value: "XL"}, {label: "Material", value: "Cotton"}]
   badge?: "hot" | "new" | "sale" | string;
+
+  /**
+   * Downgrade hiding. Never delete anything: when a plan drops below the
+   * catalogue limit, the products the vendor did not keep visible stay in state
+   * with `visible: false`. Absent means visible (see `lib/plans.ts`).
+   */
+  visible?: boolean;
 };
 
 export type SectionType = 
@@ -96,6 +103,15 @@ export type ShopState = {
   isLive?: boolean;
   onboarding_step?: number;
   ask_buyer_details?: boolean;
+
+  /**
+   * Billing lifecycle, mirrored from the `stores` row. `planGraceUntil` is set
+   * when a card payment fails; the plan is untouched until it passes.
+   * `planLapsedAt` is set once the plan was actually reduced, and permanently
+   * opts the store out of inactivity cleanup (`lib/plans.ts`).
+   */
+  planGraceUntil?: string | null;
+  planLapsedAt?: string | null;
 
   /** The chosen website template — three complete designs, each light + dark. */
   websiteTemplateId?: WebsiteTemplateId;

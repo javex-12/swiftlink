@@ -125,6 +125,70 @@
 }
 
 /*
+ * Storefront theme classes (replaces the `!important` override bridge).
+ *
+ * The storefront subtree is scoped by `data-theme-scope="storefront"` (set in
+ * `components/CustomerStorefront.tsx`), which carries the merchant's template
+ * tokens as `--t-*` and the legacy inline vars (`--surface-color`, `--bg-color`,
+ * …) as fallbacks — so these classes work for a store with no template set.
+ *
+ * Previously a `<style>` block re-painted Tailwind palette classes
+ * (`bg-emerald-500`, `text-gray-900`, `bg-white`, …) with `!important`, which
+ * meant the markup lied about its colours and every component inherited a
+ * global override. These classes say what they are instead.
+ *
+ * They are declared outside any `@layer` on purpose: an unlayered rule wins
+ * over layered utilities, so one of these on an element reliably decides its
+ * colour without `!important` — the same guarantee the bridge provided.
+ */
+[data-theme-scope="storefront"] .sf-surface {
+  background-color: var(--t-surface, var(--surface-color, #ffffff));
+}
+
+[data-theme-scope="storefront"] .sf-surface-alt {
+  background-color: var(
+    --t-surface-alt,
+    color-mix(in srgb, var(--surface-color, #ffffff) 95%, var(--text-color, #111827))
+  );
+}
+
+[data-theme-scope="storefront"] .sf-ink {
+  color: var(--t-text, var(--text-color, #111827));
+}
+
+[data-theme-scope="storefront"] .sf-muted {
+  color: var(--t-text-muted, color-mix(in srgb, var(--text-color, #111827) 60%, transparent));
+}
+
+[data-theme-scope="storefront"] .sf-inverse {
+  background-color: var(--t-text, var(--text-color, #111827));
+  color: var(--t-bg, var(--bg-color, #f2f2f7));
+}
+
+[data-theme-scope="storefront"] .sf-accent-bg {
+  background-color: var(--t-accent, var(--btn-color));
+  color: var(--t-accent-fg, var(--btn-text-color));
+}
+
+[data-theme-scope="storefront"] .sf-accent-text {
+  color: var(--t-accent-text, var(--theme-color));
+}
+
+[data-theme-scope="storefront"] .sf-accent-border {
+  border-color: var(--t-accent, var(--theme-color));
+}
+
+/* Overlay screen headers blend with the page, matching the old bridge rule. */
+[data-theme-scope="storefront"] .sf-header {
+  background-color: var(--t-bg, var(--bg-color));
+}
+
+/* Storefront scrollbars follow the store's text colour, not the console's. */
+[data-theme-scope="storefront"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-color, #111827) 20%, transparent);
+}
+
+/*
  * Transitional. These two faces exist only in the merchant console
  * (`BusinessView`, `LauncherView`) and are scheduled for deletion when those
  * screens move onto the UI kit in P1/P3 — see docs/01-DESIGN-SYSTEM.md §5.
