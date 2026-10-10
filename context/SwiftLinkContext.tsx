@@ -19,7 +19,13 @@ import {
   normalizeStoreUsername,
 } from "@/lib/utils";
 import { defaultShopState, loadStateLocal, normalizeShopState, type ShopState, type AppNotification } from "@/lib/types";
-import { effectiveProductLimitFor, productLimitBlockedMessage, visibleProductCount } from "@/lib/plans";
+import {
+  accountPlanFor,
+  effectiveProductLimitFor,
+  productLimitBlockedMessage,
+  reconcileAccountPlan,
+  visibleProductCount,
+} from "@/lib/plans";
 import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draft-store";
 import { deleteStoreDraft, storeDraftKey, writeStoreDraft } from "@/lib/store-drafts";
 import { recordOrderIntent, toMinorUnits, type OrderIntentItem } from "@/lib/inquiry-write";
@@ -131,19 +137,41 @@ export function SwiftLinkProvider({
       // Select plan and account_status columns alongside state_json
       const { data } = await supabase.from('stores').select('id, owner_id, plan, account_status, plan_grace_until, plan_lapsed_at, state_json').eq('owner_id', userId);
       if (data) {
+          /*
+           * Entitlements are per *account*, not per row: every store this user
+           * owns belongs to the same subscription, so the account's plan is the
+           * most privileged plan among them (`accountPlanFor`). Reading `s.plan`
+           * one row at a time instead let a single stale or free row cap a
+           * paying Business account at the free tier's 6 products — the store
+           * created by `createNewStore` used to be inserted as `plan: 'free'`,
+           * and this load treats the column as authoritative.
+           */
+          const { accountPlan, staleIds } = reconcileAccountPlan(data as any[]);
+
           const loadedStores = data.map((s: any) => {
-            // DB plan column is authoritative; mirror it into state_json
-            const planFromDB = s.plan || (s.state_json as any)?.plan || 'free';
             return normalizeShopState({
               ...(s.state_json as Partial<ShopState>),
               id: s.id,
               ownerId: s.owner_id,
-              plan: planFromDB,
+              plan: accountPlan,
               planGraceUntil: s.plan_grace_until ?? null,
               planLapsedAt: s.plan_lapsed_at ?? null,
             });
           });
           setStores(loadedStores);
+
+          // Repair any row whose `plan` column disagrees with the account's, so
+          // the mismatch cannot reappear on the next load. Best-effort: a failed
+          // repair must never stop the console from opening.
+          if (staleIds.length) {
+            void (async () => {
+              const { error: repairError } = await supabase
+                .from('stores')
+                .update({ plan: accountPlan })
+                .in('id', staleIds);
+              if (repairError) console.warn("Store plan reconciliation failed:", repairError);
+            })();
+          }
 
           // Autosaved drafts. They live in their own owner-scoped table, never on
           // the world-readable `stores` row, so unpublished work cannot leak to
@@ -259,7 +287,14 @@ export function SwiftLinkProvider({
   const createNewStore = useCallback(async (name: string) => {
     if (!user) return;
     const newId = crypto.randomUUID();
-    // Plan is always 'free' by default; admin can promote via dashboard
+    /*
+     * A new store joins the *account's* existing plan instead of being forced
+     * to 'free'. Hard-coding 'free' demoted a paying Business merchant the
+     * moment they added a store — the DB `plan` column is authoritative on the
+     * next load, so the whole account dropped to the free tier (6 products, no
+     * multi-store switching).
+     */
+    const accountPlan = accountPlanFor(stores.length ? stores : [state]);
     const baseHandle = name.toLowerCase().replace(/[^a-z0-9]/g, "");
     const cleanHandle = baseHandle || `store-${Math.random().toString(36).substring(2, 7)}`;
     
@@ -270,7 +305,7 @@ export function SwiftLinkProvider({
         phone: state.phone || "",
         currency: state.currency || "₦",
         bizName: name, 
-        plan: "free",
+        plan: accountPlan,
         storeUsername: cleanHandle 
     });
     
@@ -280,7 +315,7 @@ export function SwiftLinkProvider({
         biz_name: name,
         store_username: cleanHandle,
         phone: newState.phone,
-        plan: 'free',
+        plan: accountPlan,
         account_status: 'active',
         state_json: newState
     });
@@ -296,7 +331,7 @@ export function SwiftLinkProvider({
     localStorage.setItem("swiftlink_state", JSON.stringify(newState));
     addToast(`"${name}" store created!`, "success");
     void fetchStores(user.id);
-  }, [user, addToast, fetchStores]);
+  }, [user, addToast, fetchStores, stores, state]);
 
   const switchStore = useCallback(async (id: string) => {
     const target = stores.find(s => s.id === id);

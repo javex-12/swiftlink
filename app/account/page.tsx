@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase-client";
 import { ProLayout } from "@/components/ProLayout";
 import { 
   User, Package, Globe, Smartphone,
-  CheckCircle2, AlertCircle, Camera, ArrowLeft
+  CheckCircle2, AlertCircle, Camera, ArrowLeft, Pause, Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -138,6 +138,48 @@ export default function AccountPage() {
 
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
+            {/*
+              Store visibility — the open/closed switch, in Settings so it is
+              reachable by every user from the console and not only from inside
+              the store editor.
+            */}
+            <div className="bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
+                  {state.isLive ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                </div>
+                <h3 className="font-semibold text-sm text-[#E8F1EC]">Store visibility</h3>
+              </div>
+              <p className="text-xs text-[#9DB3A8] leading-relaxed">
+                {state.isLive
+                  ? "Your storefront is live and customers can send orders to WhatsApp."
+                  : "Your store is paused. The page still loads, but customers cannot check out."}
+              </p>
+              <button
+                type="button"
+                aria-pressed={!state.isLive}
+                onClick={() => {
+                  const next = !state.isLive;
+                  updateState("isLive", next);
+                  addToast(
+                    next
+                      ? "Store is live — customers can order again."
+                      : "Store paused — customers can no longer check out.",
+                    next ? "success" : "info",
+                  );
+                }}
+                className={cn(
+                  "mt-4 flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-2 rounded-[12px] border px-4 text-xs font-semibold transition",
+                  state.isLive
+                    ? "border-[#24382F] bg-[#14231D] text-[#E8F1EC] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
+                    : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
+                )}
+              >
+                {state.isLive ? <Pause size={15} /> : <Play size={15} />}
+                {state.isLive ? "Stop store" : "Go live"}
+              </button>
+            </div>
+
             {/* Identity Settings */}
             <div className="bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm">
               <div className="flex items-center gap-3 mb-6">

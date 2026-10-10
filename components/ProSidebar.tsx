@@ -36,7 +36,7 @@ export function ProSidebar({
   setMobileOpen: (open: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { handleSignOut, state, startTour, isAdmin } = useSwiftLink();
+  const { handleSignOut, state, startTour, isAdmin, stores } = useSwiftLink();
 
   /*
    * The admin console was previously unreachable by design oversight: the route
@@ -71,7 +71,11 @@ export function ProSidebar({
    * owner sitting in the console had no control to create or switch a store
    * (docs/05-IMPROVEMENT-PLAN.md 3.2). It belongs in the shell, not the editor.
    */
-  const canHaveMultipleStores = effectiveStoreLimitFor(state.plan) > 1;
+  // Show it when the plan allows more stores *or* the account already has more
+  // than one: a merchant whose rows disagreed about the plan must still be able
+  // to reach their other stores.
+  const canHaveMultipleStores =
+    stores.length > 1 || effectiveStoreLimitFor(state.plan) > 1;
 
   return (
     <>

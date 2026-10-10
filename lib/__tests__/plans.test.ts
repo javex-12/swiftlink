@@ -4,6 +4,7 @@ import {
   GRACE_PERIOD_DAYS,
   MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
+  accountPlanFor,
   applyProductVisibility,
   clampProductVisibility,
   effectiveProductLimitFor,
@@ -21,6 +22,7 @@ import {
   productLimitBlockedMessage,
   productLimitFor,
   productLimitMessage,
+  reconcileAccountPlan,
   selectPublishedStoreIds,
   storeLimitFor,
   storeLimitMessage,
@@ -55,6 +57,75 @@ describe("plan limits — single source of truth", () => {
     expect(isUnlimited(storeLimitFor("business"))).toBe(true);
     expect(storeLimitMessage("pro", 1)).not.toBe("");
     expect(storeLimitMessage("business", 5)).toBe("");
+  });
+
+  /*
+   * Entitlements are per account, not per store row. This pins the fix for a
+   * live bug: `createNewStore` inserted `plan: 'free'`, and `fetchStores`
+   * treated the DB column as authoritative, so a paying Business merchant who
+   * added a second store silently demoted their whole account to the free
+   * tier's 6 products with multi-store switching hidden.
+   */
+  describe("accountPlanFor — the account's plan is the best plan it owns", () => {
+    it("keeps a paying account paid when one store row says free", () => {
+      const plan = accountPlanFor([{ plan: "business" }, { plan: "free" }]);
+      expect(plan).toBe("business");
+      expect(effectiveProductLimitFor(plan)).toBe(MAX_PRODUCTS_PER_STORE);
+      expect(effectiveStoreLimitFor(plan)).toBe(MAX_STORES_PER_USER);
+    });
+
+    it("does not promote an all-free account", () => {
+      expect(accountPlanFor([{ plan: "free" }, { plan: "free" }])).toBe("free");
+    });
+
+    it("takes pro over free but business over pro", () => {
+      expect(accountPlanFor([{ plan: "free" }, { plan: "pro" }])).toBe("pro");
+      expect(accountPlanFor([{ plan: "pro" }, { plan: "business" }])).toBe("business");
+    });
+
+    it("is free for an empty account and ignores unrecognised values", () => {
+      expect(accountPlanFor([])).toBe("free");
+      expect(accountPlanFor([{ plan: undefined }, { plan: "enterprise" }])).toBe("free");
+    });
+
+    it("a lapsed (downgraded to free) account no longer reads as business", () => {
+      // A downgrade writes every row, so no stale paid row survives it.
+      expect(accountPlanFor([{ plan: "free" }, { plan: "free" }])).toBe("free");
+    });
+  });
+
+  describe("reconcileAccountPlan — what the console loads on boot", () => {
+    it("keeps a business account business and names the row to repair", () => {
+      const { accountPlan, staleIds } = reconcileAccountPlan([
+        { id: "paid", plan: "business" },
+        { id: "second", plan: "free" },
+      ]);
+      expect(accountPlan).toBe("business");
+      expect(staleIds).toEqual(["second"]);
+    });
+
+    it("reads the state mirror when the column is absent", () => {
+      const { accountPlan, staleIds } = reconcileAccountPlan([
+        { id: "a", state_json: { plan: "business" } },
+        { id: "b", plan: "free" },
+      ]);
+      expect(accountPlan).toBe("business");
+      expect(staleIds).toEqual(["b"]);
+    });
+
+    it("reports nothing to repair when every row agrees", () => {
+      const { accountPlan, staleIds } = reconcileAccountPlan([
+        { id: "a", plan: "free" },
+        { id: "b", state_json: { plan: "free" } },
+      ]);
+      expect(accountPlan).toBe("free");
+      expect(staleIds).toEqual([]);
+    });
+
+    it("ignores an id-less row when listing repairs (nothing to update)", () => {
+      const { staleIds } = reconcileAccountPlan([{ plan: "business" }, { plan: "free" }]);
+      expect(staleIds).toEqual([]);
+    });
   });
 
   it("never grants a paid tier for unknown or missing input", () => {

@@ -387,8 +387,10 @@ export function StoreEditorV2() {
         <div className="mx-auto max-w-6xl px-3.5 py-2.5 sm:px-6 sm:py-3">
           {/* Top Row: Store info on left, Save on right, desktop center tabs */}
           <div className="flex items-center justify-between gap-3">
-            {/* Store status and link */}
-            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            {/* Store status and link. Wraps, so the status badge and the
+                Stop / Go live button drop below the store name on a narrow
+                phone instead of being squeezed off the row. */}
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 sm:gap-3">
               <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-[#1E2D27] bg-[#14231D] text-[#19C37D]">
                 <Store className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
@@ -439,7 +441,7 @@ export function StoreEditorV2() {
                         : "Open this store to customers"
                     }
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold transition",
+                      "inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition",
                       localState.isLive
                         ? "border-[#24382F] bg-[#0A1210] text-[#9DB3A8] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
                         : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",

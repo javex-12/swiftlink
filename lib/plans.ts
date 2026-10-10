@@ -54,6 +54,70 @@ export function normalizePlan(value: unknown): Plan {
   return value === "pro" || value === "business" ? value : "free";
 }
 
+const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, business: 2 };
+
+/**
+ * The plan an *account* holds, given the stores it owns.
+ *
+ * `plan` is stored on each store row, but billing is per account: every store a
+ * merchant owns belongs to the same subscription. So the account's entitlement
+ * is the **most privileged** plan among its stores.
+ *
+ * This exists because the two disagreeing was a live bug: `createNewStore`
+ * inserted `plan: 'free'` for a new store, and `fetchStores` treats the DB
+ * column as authoritative, so a paying Business merchant who added a second
+ * store silently demoted themselves — capped at the free tier's 6 products with
+ * multi-store switching hidden. Reading entitlements from the account instead
+ * of from one arbitrary row makes that unrecoverable state impossible.
+ *
+ * Taking the maximum is also the safe direction for a *stale* row: a downgrade
+ * is an explicit server-side action that writes every row, whereas silently
+ * taking away a plan that was paid for is not recoverable by the merchant.
+ */
+export function accountPlanFor(stores: readonly { plan?: unknown }[]): Plan {
+  return stores.reduce<Plan>((best, store) => {
+    const candidate = normalizePlan(store.plan);
+    return PLAN_RANK[candidate] > PLAN_RANK[best] ? candidate : best;
+  }, "free");
+}
+
+/** A store row as far as entitlements are concerned. */
+export type AccountPlanRow = {
+  id?: string;
+  /** The DB column. */
+  plan?: unknown;
+  /** The mirrored copy in the storefront payload. */
+  state_json?: { plan?: unknown } | null;
+};
+
+export type AccountPlanReconciliation = {
+  /** The plan the whole account is entitled to. */
+  accountPlan: Plan;
+  /** Ids of rows whose `plan` disagrees with it and should be rewritten. */
+  staleIds: string[];
+};
+
+/**
+ * Resolve an account's plan from its raw store rows, and report which rows
+ * disagree with it so a caller can repair them.
+ *
+ * The DB column is read first, falling back to the state mirror, so a row that
+ * predates the column still counts. The stale list is what stops the mismatch
+ * from reappearing on the next load — without it a merchant is capped every
+ * time the console opens, not just once.
+ */
+export function reconcileAccountPlan(
+  rows: readonly AccountPlanRow[],
+): AccountPlanReconciliation {
+  const declared = (row: AccountPlanRow) => row.plan ?? row.state_json?.plan;
+  const accountPlan = accountPlanFor(rows.map((row) => ({ plan: declared(row) })));
+  const staleIds = rows
+    .filter((row) => normalizePlan(declared(row)) !== accountPlan)
+    .map((row) => row.id)
+    .filter((id): id is string => Boolean(id));
+  return { accountPlan, staleIds };
+}
+
 /** Maximum number of products a plan may hold, before the fair-use ceiling. */
 export function productLimitFor(plan: unknown): number {
   return normalizePlan(plan) === "free" ? FREE_PRODUCT_LIMIT : UNLIMITED;

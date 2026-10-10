@@ -509,7 +509,7 @@ export function AdminView() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-[#111C18] p-10 md:p-14 rounded-[3rem] border border-[#1E2D27] shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
+          className="bg-[#111C18] p-5 sm:p-10 md:p-14 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-red-500" />
           
@@ -534,7 +534,7 @@ export function AdminView() {
           <div className="flex gap-4 justify-center">
             <Link
               href="/pro"
-              className="flex-1 py-4 px-6 rounded-2xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-4 sm:px-6 rounded-2xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
               Go to Storefront Dashboard
             </Link>
@@ -548,7 +548,7 @@ export function AdminView() {
     <div className="space-y-8 max-w-7xl mx-auto w-full pb-16 transition-colors duration-300">
       
       {/* Admin Title Card */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111C18] p-8 rounded-[2.5rem] border border-[#1E2D27] shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111C18] p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -574,7 +574,7 @@ export function AdminView() {
 
       {/* Overview Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400">
               <Users size={20} />
@@ -587,7 +587,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
               <Store size={20} />
@@ -600,7 +600,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 dark:bg-purple-500/10 text-purple-500 dark:text-purple-400">
               <Activity size={20} />
@@ -613,7 +613,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400">
               <MessageSquare size={20} />
@@ -626,7 +626,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400">
               <AlertCircle size={20} />
@@ -658,7 +658,7 @@ export function AdminView() {
             key={tab.id}
             onClick={() => { setActiveTab(tab.id as any); setGlobalSearch(""); if (tab.id === "admins") fetchAdmins(); }}
             className={cn(
-              "py-4 px-6 border-b-2 font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2",
+              "py-4 px-4 sm:px-6 border-b-2 font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2",
               activeTab === tab.id
                 ? "border-emerald-500 text-emerald-500 bg-emerald-50/20 dark:bg-emerald-500/5"
                 : "border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-white hover:border-slate-200"
@@ -673,7 +673,7 @@ export function AdminView() {
       {/* Interactive Content Windows */}
       <div className="min-h-[500px]">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-[#111C18] border border-[#1E2D27] rounded-[2.5rem]">
+          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-[#111C18] border border-[#1E2D27] rounded-2xl sm:rounded-[2.5rem]">
             <div className="animate-spin text-emerald-500 w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-3" />
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Syncing database registers...</p>
           </div>
@@ -742,16 +742,16 @@ export function AdminView() {
             {activeTab === "overview" && (
               <div className="space-y-8">
                 {/* Graphics Dashboard Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
                   {/* TRAFFIC & CONVERSION CHART */}
-                  <div className="lg:col-span-2 bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
+                  <div className="lg:col-span-2 bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-8">
                       <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Conversion and Traffic Funnel</h3>
                       <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Global view to WhatsApp checkout ratio</p>
                     </div>
 
                     <div className="flex-1 flex flex-col justify-end min-h-[220px] pt-4 border-b border-[#1E2D27] pb-2">
-                      <div className="grid grid-cols-3 gap-8 items-end max-w-lg mx-auto w-full">
+                      <div className="grid grid-cols-3 gap-4 sm:gap-8 items-end max-w-lg mx-auto w-full">
                         {/* VIEWS */}
                         <div className="flex flex-col items-center gap-3">
                           <span className="text-xs font-black text-blue-500 font-mono">{(globalStats.totalViews || 120).toLocaleString()}</span>
@@ -799,7 +799,7 @@ export function AdminView() {
                   </div>
 
                   {/* ACTIVE STORE LEADERBOARD */}
-                  <div className="bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
+                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-6">
                       <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Leaderboard</h3>
                       <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Top converting storefront platforms</p>
@@ -825,7 +825,7 @@ export function AdminView() {
                       ))}
                       
                       {globalStats.storeConversions.length === 0 && (
-                        <div className="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No telemetry view events received yet</div>
+                        <div className="p-4 sm:p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No telemetry view events received yet</div>
                       )}
                     </div>
 
@@ -839,9 +839,9 @@ export function AdminView() {
                 </div>
 
                 {/* Logistics & Alerts section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
                   {/* RECENT CRITICAL USER FEEDBACK FEED */}
-                  <div className="bg-[#111C18] p-8 rounded-[3rem] border border-[#1E2D27] shadow-sm lg:col-span-3 flex flex-col">
+                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm lg:col-span-3 flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                       <div>
                         <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Pending Bug Reports</h3>
@@ -902,7 +902,7 @@ export function AdminView() {
 
             {/* TAB CONTENT: TIMELINE LOG */}
             {activeTab === "timeline" && (
-              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden p-6 md:p-8">
+              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden p-6 md:p-8">
                 <div className="space-y-6">
                   {filteredEvents.slice(0, 100).map((e) => {
                     const storeObj = stores.find(s => s.id === e.store_id);
@@ -959,16 +959,16 @@ export function AdminView() {
 
             {/* TAB CONTENT: MERCHANTS DIRECTORY */}
             {activeTab === "merchants" && (
-              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#1E2D27] bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
-                        <th className="py-5 px-6">Merchant Profile</th>
-                        <th className="py-5 px-6">Username Slug</th>
-                        <th className="py-5 px-6">Bio Details</th>
-                        <th className="py-5 px-6 text-center">Verified Status</th>
-                        <th className="py-5 px-6 text-right">Actions</th>
+                        <th className="py-5 px-4 sm:px-6">Merchant Profile</th>
+                        <th className="py-5 px-4 sm:px-6">Username Slug</th>
+                        <th className="py-5 px-4 sm:px-6">Bio Details</th>
+                        <th className="py-5 px-4 sm:px-6 text-center">Verified Status</th>
+                        <th className="py-5 px-4 sm:px-6 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -976,7 +976,7 @@ export function AdminView() {
                         const storesCount = stores.filter(s => s.owner_id === p.id).length;
                         return (
                           <tr key={p.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
-                            <td className="py-5 px-6">
+                            <td className="py-5 px-4 sm:px-6">
                               <div className="flex items-center gap-3">
                                 <img src={p.avatar_url} className="w-10 h-10 rounded-xl object-cover border border-[#1E2D27]" alt="" />
                                 <div>
@@ -985,9 +985,9 @@ export function AdminView() {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-5 px-6 text-[10px] font-bold text-slate-500 font-mono">@{p.username}</td>
-                            <td className="py-5 px-6 text-[10px] font-medium text-slate-400 max-w-xs truncate">{p.bio || "No biography provided."}</td>
-                            <td className="py-5 px-6 text-center">
+                            <td className="py-5 px-4 sm:px-6 text-[10px] font-bold text-slate-500 font-mono">@{p.username}</td>
+                            <td className="py-5 px-4 sm:px-6 text-[10px] font-medium text-slate-400 max-w-xs truncate">{p.bio || "No biography provided."}</td>
+                            <td className="py-5 px-4 sm:px-6 text-center">
                               <button 
                                 onClick={() => toggleVerification(p.id, p.is_verified)}
                                 className={cn(
@@ -1001,7 +1001,7 @@ export function AdminView() {
                                 <Check size={14} strokeWidth={3} />
                               </button>
                             </td>
-                            <td className="py-5 px-6 text-right">
+                            <td className="py-5 px-4 sm:px-6 text-right">
                               <button 
                                 onClick={() => setSelectedMerchantId(p.id)}
                                 className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 hover:scale-105 active:scale-95 text-[9px] font-black uppercase tracking-widest transition-all"
@@ -1026,16 +1026,16 @@ export function AdminView() {
 
             {/* TAB CONTENT: STORES DIRECTORY */}
             {activeTab === "stores" && (
-              <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[#1E2D27] bg-slate-50/50 dark:bg-[#0c0e12] text-[9px] font-black uppercase tracking-widest text-slate-400">
-                        <th className="py-5 px-6">Store Platform</th>
-                        <th className="py-5 px-6">Username Route</th>
-                        <th className="py-5 px-6">Merchant Owner</th>
-                        <th className="py-5 px-6">Phone Contact</th>
-                        <th className="py-5 px-6 text-right">Actions</th>
+                        <th className="py-5 px-4 sm:px-6">Store Platform</th>
+                        <th className="py-5 px-4 sm:px-6">Username Route</th>
+                        <th className="py-5 px-4 sm:px-6">Merchant Owner</th>
+                        <th className="py-5 px-4 sm:px-6">Phone Contact</th>
+                        <th className="py-5 px-4 sm:px-6 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1043,14 +1043,14 @@ export function AdminView() {
                         const ownerObj = profiles.find(p => p.id === s.owner_id);
                         return (
                           <tr key={s.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
-                            <td className="py-5 px-6">
+                            <td className="py-5 px-4 sm:px-6">
                               <div>
                                 <span className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider block">{s.biz_name}</span>
                                 <span className="text-[8px] font-bold text-slate-400 block font-mono mt-0.5">{s.id}</span>
                               </div>
                             </td>
-                            <td className="py-5 px-6 text-[10px] font-bold text-emerald-500 font-mono">/{s.store_username}</td>
-                            <td className="py-5 px-6">
+                            <td className="py-5 px-4 sm:px-6 text-[10px] font-bold text-emerald-500 font-mono">/{s.store_username}</td>
+                            <td className="py-5 px-4 sm:px-6">
                               {ownerObj ? (
                                 <button 
                                   onClick={() => setSelectedMerchantId(ownerObj.id)}
@@ -1063,8 +1063,8 @@ export function AdminView() {
                                 <span className="text-[10px] font-bold text-slate-400 font-mono">{s.owner_id}</span>
                               )}
                             </td>
-                            <td className="py-5 px-6 text-[10px] font-bold text-slate-500 font-mono">{s.phone}</td>
-                            <td className="py-5 px-6 text-right flex justify-end items-center gap-3">
+                            <td className="py-5 px-4 sm:px-6 text-[10px] font-bold text-slate-500 font-mono">{s.phone}</td>
+                            <td className="py-5 px-4 sm:px-6 text-right flex justify-end items-center gap-3">
                               {/* Plan selector */}
                               <div className="flex items-center gap-1.5">
                                 <select
@@ -1230,7 +1230,7 @@ export function AdminView() {
                 })}
 
                 {filteredFeedbacks.length === 0 && (
-                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-[#1E2D27] rounded-[2.5rem]">
+                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-[#1E2D27] rounded-2xl sm:rounded-[2.5rem]">
                     No feedbacks logged matching selected status filter
                   </div>
                 )}
@@ -1256,7 +1256,7 @@ export function AdminView() {
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="bg-[#111C18] w-full max-w-4xl h-[85vh] rounded-[3rem] border border-[#1E2D27] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
+              className="bg-[#111C18] w-full max-w-4xl h-[85vh] rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
             >
               
               {/* Header profile banner */}
@@ -1330,7 +1330,7 @@ export function AdminView() {
                     ))}
 
                     {merchantDrillDown.stores.length === 0 && (
-                      <div className="col-span-2 p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">
+                      <div className="col-span-2 p-4 sm:p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">
                         This user profile does not currently own any configured stores.
                       </div>
                     )}
@@ -1450,7 +1450,7 @@ export function AdminView() {
               <div className="p-6 bg-slate-50 dark:bg-[#0c0e12] border-t border-[#1E2D27] text-right shrink-0">
                 <button 
                   onClick={() => setSelectedMerchantId(null)}
-                  className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 text-[10px] font-black uppercase tracking-widest transition-all"
+                  className="px-4 sm:px-6 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 text-[10px] font-black uppercase tracking-widest transition-all"
                 >
                   Close Drill-Down
                 </button>
@@ -1469,7 +1469,7 @@ export function AdminView() {
           className="space-y-6"
         >
           {/* Add new admin */}
-          <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm p-8">
+          <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm p-4 sm:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                 <UserPlus size={20} />
@@ -1505,8 +1505,8 @@ export function AdminView() {
           </div>
 
           {/* Current admins list */}
-          <div className="bg-[#111C18] rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-[#1E2D27]">
+          <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-8 border-b border-[#1E2D27]">
               <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Current Administrators</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{adminsList.length} admin{adminsList.length !== 1 ? "s" : ""} registered</p>
             </div>

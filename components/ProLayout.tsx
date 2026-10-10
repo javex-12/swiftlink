@@ -15,8 +15,10 @@ import { effectiveStoreLimitFor } from "@/lib/plans";
 export function ProLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { isAdmin, state } = useSwiftLink();
-  const canHaveMultipleStores = effectiveStoreLimitFor(state.plan) > 1;
+  const { isAdmin, state, stores } = useSwiftLink();
+  // Plan-allows-more *or* account-actually-has-more (see ProSidebar).
+  const canHaveMultipleStores =
+    stores.length > 1 || effectiveStoreLimitFor(state.plan) > 1;
 
   // Close sidebar drawer on route change
   useEffect(() => {

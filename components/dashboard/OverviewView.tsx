@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { formatMoney } from "@/lib/currency";
-import { getSmartFirstName } from "@/lib/utils";
+import { cn, getSmartFirstName } from "@/lib/utils";
 import { isInGrace } from "@/lib/plans";
 import {
   SHARE_CHANNELS,
@@ -28,10 +28,12 @@ import {
   CheckCircle2,
   Circle,
   ShieldAlert,
+  Pause,
+  Play,
 } from "lucide-react";
 
 export function OverviewView() {
-  const { state, user, addToast } = useSwiftLink();
+  const { state, user, addToast, updateState } = useSwiftLink();
   // Set by middleware/requireAdmin when an authenticated non-admin opens an
   // ADMIN_PREFIXES route. Previously that redirect was silent, which made the
   // console look like a missing page rather than a permission boundary
@@ -196,15 +198,46 @@ export function OverviewView() {
               </span>
             )}
           </div>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <span
-              className={`h-2 w-2 rounded-full ${
+              className={`h-2 w-2 shrink-0 rounded-full ${
                 state.isLive ? "bg-[#19C37D]" : "bg-[#E8B93A]"
               }`}
             />
             <span className="text-xs text-[#9DB3A8]">
-              {state.isLive ? "Store is live & receiving orders" : "Store setup in progress"}
+              {state.isLive ? "Store is live & receiving orders" : "Store paused — checkout is closed"}
             </span>
+
+            {/*
+              Stop / go live, on the console home rather than only inside the
+              store editor: it is the switch every merchant needs (it is what
+              `sendWhatsAppOrder` checks before taking an order), and it used to
+              be reachable only by finishing onboarding, so nobody who already
+              had a store could find it.
+            */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !state.isLive;
+                updateState("isLive", next);
+                addToast(
+                  next
+                    ? "Store is live — customers can order again."
+                    : "Store paused — customers can no longer check out.",
+                  next ? "success" : "info",
+                );
+              }}
+              aria-pressed={!state.isLive}
+              className={cn(
+                "inline-flex min-h-[32px] items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition",
+                state.isLive
+                  ? "border-[#24382F] bg-[#111C18] text-[#9DB3A8] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
+                  : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
+              )}
+            >
+              {state.isLive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+              {state.isLive ? "Stop store" : "Go live"}
+            </button>
           </div>
         </div>
 
