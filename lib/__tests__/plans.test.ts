@@ -4,12 +4,17 @@ import {
   GRACE_PERIOD_DAYS,
   MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
+  PLANS,
+  PLAN_DETAILS,
   accountPlanFor,
   applyProductVisibility,
+  canCreateStore,
+  canSwitchStore,
   clampProductVisibility,
   effectiveProductLimitFor,
   effectiveStoreLimitFor,
   formatLimit,
+  formatUsage,
   graceDeadline,
   hiddenProductCount,
   isCleanupEligible,
@@ -24,6 +29,7 @@ import {
   productLimitMessage,
   reconcileAccountPlan,
   selectPublishedStoreIds,
+  storeActionBlockedMessage,
   storeLimitFor,
   storeLimitMessage,
   visibleProductCount,
@@ -91,6 +97,56 @@ describe("plan limits — single source of truth", () => {
     it("a lapsed (downgraded to free) account no longer reads as business", () => {
       // A downgrade writes every row, so no stale paid row survives it.
       expect(accountPlanFor([{ plan: "free" }, { plan: "free" }])).toBe("free");
+    });
+  });
+
+  /*
+   * The store rules had no enforcement outside one screen, and the live
+   * database showed the cost: an owner on the free tier holding three stores.
+   * These pin the predicates the context now refuses on.
+   */
+  describe("store actions the plan gates", () => {
+    it("free and pro may not create a second store; business can, up to the account cap", () => {
+      expect(canCreateStore("free", 0)).toBe(true);
+      expect(canCreateStore("free", 1)).toBe(false);
+      expect(canCreateStore("pro", 1)).toBe(false);
+      expect(canCreateStore("business", 1)).toBe(true);
+      expect(canCreateStore("business", MAX_STORES_PER_USER - 1)).toBe(true);
+      expect(canCreateStore("business", MAX_STORES_PER_USER)).toBe(false);
+    });
+
+    it("only business may move between stores it owns", () => {
+      expect(canSwitchStore("free")).toBe(false);
+      expect(canSwitchStore("pro")).toBe(false);
+      expect(canSwitchStore("business")).toBe(true);
+    });
+
+    it("explains the refusal in terms of the upgrade, and says nothing when allowed", () => {
+      expect(storeActionBlockedMessage("free", 1)).toContain("Business");
+      expect(storeActionBlockedMessage("free", 3)).toContain("Business");
+      expect(storeActionBlockedMessage("business", 9)).toBe("");
+    });
+  });
+
+  describe("plan presentation — one description per tier", () => {
+    it("covers every plan exactly once", () => {
+      for (const id of PLANS) {
+        expect(PLAN_DETAILS[id].id).toBe(id);
+        expect(PLAN_DETAILS[id].name).not.toBe("");
+        expect(PLAN_DETAILS[id].price).not.toBe("");
+        expect(PLAN_DETAILS[id].features.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("describes the real entitlements, not aspirational ones", () => {
+      expect(PLAN_DETAILS.free.features.join(" ")).toContain(String(FREE_PRODUCT_LIMIT));
+      expect(PLAN_DETAILS.pro.features.join(" ")).toContain("Unlimited products");
+      expect(PLAN_DETAILS.business.features.join(" ")).toContain(String(MAX_STORES_PER_USER));
+    });
+
+    it("formats usage against the enforced cap", () => {
+      expect(formatUsage(4, productLimitFor("free"))).toBe("4 of 6");
+      expect(formatUsage(4, productLimitFor("business"))).toBe("4 of unlimited");
     });
   });
 

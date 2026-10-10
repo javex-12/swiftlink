@@ -75,14 +75,23 @@ describe("Store switcher — shown whenever the account really has more stores",
   it("names the store limit instead of failing silently at the cap", () => {
     expect(switcher).toContain("effectiveStoreLimitFor(state.plan)");
     expect(switcher).toContain("formatLimit(storeLimit)");
-    expect(switcher).toContain("storeLimitMessage(state.plan, allStores.length)");
+    // The rule itself lives in lib/plans; the switcher only explains it.
+    expect(switcher).toContain("storeActionBlockedMessage(state.plan, allStores.length)");
+    expect(switcher).toContain("canCreateStore(state.plan, allStores.length)");
+    expect(switcher).toContain("canSwitchStore(state.plan)");
   });
 });
 
 describe("Plan inheritance — a new store cannot demote the account", () => {
   it("inserts the account's plan, not a hard-coded free tier", () => {
     expect(context).toMatch(/plan: accountPlan,\s+account_status: 'active',/);
-    expect(context).toContain("const accountPlan = accountPlanFor(stores.length ? stores : [state])");
+    expect(context).toContain("const currentPlan = accountPlanFor(stores.length ? stores : [state])");
+  });
+
+  it("refuses to create or switch stores beyond the plan, in the context itself", () => {
+    // Not only in a screen: the live database had a free account with 3 stores.
+    expect(context).toContain("if (!canCreateStore(currentPlan, stores.length))");
+    expect(context).toContain("if (!canSwitchStore(currentPlan))");
   });
 
   it("resolves entitlements per account and repairs disagreeing rows", () => {

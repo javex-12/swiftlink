@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Plus, Store } from "lucide-react";
+import { ChevronDown, Lock, Plus, Store } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import {
-  MAX_STORES_PER_USER,
+  canCreateStore,
+  canSwitchStore,
   effectiveStoreLimitFor,
   formatLimit,
-  storeLimitMessage,
+  storeActionBlockedMessage,
 } from "@/lib/plans";
 import { PromptDialog } from "@/components/ui/dialog";
 
@@ -22,16 +23,22 @@ import { PromptDialog } from "@/components/ui/dialog";
  * store limit instead of failing silently at the cap.
  */
 export function StoreSwitcher() {
-  const { state, stores, switchStore, createNewStore } = useSwiftLink();
+  const { state, stores, switchStore, createNewStore, addToast } = useSwiftLink();
   const [open, setOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const allStores = stores.length > 0 ? stores : [state];
-  // Entitlements are per account; `state.plan` is already the account's plan.
+  /*
+   * Entitlements are per account, and `state.plan` is already the account plan
+   * (see `reconcileAccountPlan`). Both rules below are decided by `lib/plans`
+   * and enforced again inside the context — the UI only explains them, so a
+   * screen that forgets to render a lock cannot grant the entitlement.
+   */
   const storeLimit = effectiveStoreLimitFor(state.plan);
-  const atLimit = allStores.length >= storeLimit;
-  const limitMessage = storeLimitMessage(state.plan, allStores.length);
+  const atLimit = !canCreateStore(state.plan, allStores.length);
+  const canSwitch = canSwitchStore(state.plan);
+  const limitMessage = storeActionBlockedMessage(state.plan, allStores.length);
 
   const handleCreate = async (name: string) => {
     setCreating(true);
@@ -84,6 +91,11 @@ export function StoreSwitcher() {
                   type="button"
                   role="menuitem"
                   onClick={() => {
+                    const locked = !canSwitch && store.id !== state.id;
+                    if (locked) {
+                      addToast(limitMessage, "error");
+                      return;
+                    }
                     if (store.id && store.id !== state.id) void switchStore(store.id);
                     setOpen(false);
                   }}
@@ -107,11 +119,18 @@ export function StoreSwitcher() {
                       {store.currency || "NGN"} • {store.storeUsername ? `@${store.storeUsername}` : "Workspace"}
                     </p>
                   </div>
-                  {store.id === state.id && (
+                  {store.id === state.id ? (
                     <span className="shrink-0 rounded-full bg-[#19C37D]/15 px-2 py-0.5 text-[10px] font-semibold text-[#19C37D]">
                       Current
                     </span>
-                  )}
+                  ) : !canSwitch ? (
+                    <span
+                      className="flex shrink-0 items-center gap-1 rounded-full border border-[#24382F] px-2 py-0.5 text-[10px] font-semibold text-[#9DB3A8]"
+                      title={limitMessage}
+                    >
+                      <Lock size={10} /> Business
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -136,11 +155,7 @@ export function StoreSwitcher() {
             </button>
 
             {atLimit && (
-              <p className="px-1 pt-2 text-[10px] leading-relaxed text-[#9DB3A8]">
-                {storeLimit === MAX_STORES_PER_USER
-                  ? `You have reached the ${MAX_STORES_PER_USER}-store limit for one account.`
-                  : limitMessage}
-              </p>
+              <p className="px-1 pt-2 text-[10px] leading-relaxed text-[#9DB3A8]">{limitMessage}</p>
             )}
           </div>
         </>

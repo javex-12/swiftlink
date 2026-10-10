@@ -145,6 +145,97 @@ export function isUnlimited(limit: number): boolean {
   return !Number.isFinite(limit);
 }
 
+/**
+ * Whether the account may create another store. This is the rule, not a UI
+ * hint: it is checked in `createNewStore` itself, because the limit used to
+ * live only in whichever screen rendered a button. The live database showed
+ * what that costs — an owner on the free tier holding three stores.
+ */
+export function canCreateStore(plan: unknown, storeCount: number): boolean {
+  return storeCount < effectiveStoreLimitFor(plan);
+}
+
+/**
+ * Whether the account may move between stores it already owns.
+ *
+ * Single-store plans keep every row they own (nothing is ever deleted), but may
+ * only *run* one store. Extra rows are data, not entitlement, so they stay
+ * readable and exportable and come back the moment the account upgrades.
+ */
+export function canSwitchStore(plan: unknown): boolean {
+  return effectiveStoreLimitFor(plan) > 1;
+}
+
+/** Refusal copy for a store action the plan does not entitle, or "" when allowed. */
+export function storeActionBlockedMessage(plan: unknown, storeCount: number): string {
+  return canCreateStore(plan, storeCount)
+    ? ""
+    : storeLimitMessage(plan, storeCount) ||
+        "Multiple stores are a Business feature. Upgrade to Business to run more than one brand.";
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tier presentation                                                           */
+/* -------------------------------------------------------------------------- */
+
+export type PlanDetail = {
+  id: Plan;
+  name: string;
+  price: string;
+  /** Short line for a badge or a plan card. */
+  summary: string;
+  /** Card features, in the order they matter to a merchant. */
+  features: readonly string[];
+};
+
+/**
+ * What each tier actually is, in one place, so the marketing page and the
+ * console's plan panel cannot describe the same plan differently.
+ */
+export const PLAN_DETAILS: Record<Plan, PlanDetail> = {
+  free: {
+    id: "free",
+    name: "Free",
+    price: "₦0",
+    summary: "Run one store with a full storefront.",
+    features: [
+      `Up to ${FREE_PRODUCT_LIMIT} products`,
+      "1 store",
+      "WhatsApp checkout",
+      "All storefront templates",
+    ],
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    price: "₦5,000 / month",
+    summary: "One store with an unlimited catalogue.",
+    features: [
+      "Unlimited products",
+      "1 store",
+      "WhatsApp checkout",
+      "All storefront templates",
+    ],
+  },
+  business: {
+    id: "business",
+    name: "Business",
+    price: "₦12,000 / month",
+    summary: "Several brands, one account.",
+    features: [
+      "Unlimited products",
+      `Up to ${MAX_STORES_PER_USER} stores`,
+      "Switch stores without signing out",
+      "All storefront templates",
+    ],
+  },
+};
+
+/** Human-readable usage for a plan card: "4 of 6" or "4 of unlimited". */
+export function formatUsage(used: number, limit: number): string {
+  return `${used} of ${formatLimit(limit)}`;
+}
+
 /** Human-readable limit, for toasts and upgrade prompts: "6" or "unlimited". */
 export function formatLimit(limit: number): string {
   return isUnlimited(limit) ? "unlimited" : String(limit);

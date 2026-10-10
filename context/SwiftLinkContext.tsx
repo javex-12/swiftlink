@@ -21,9 +21,12 @@ import {
 import { defaultShopState, loadStateLocal, normalizeShopState, type ShopState, type AppNotification } from "@/lib/types";
 import {
   accountPlanFor,
+  canCreateStore,
+  canSwitchStore,
   effectiveProductLimitFor,
   productLimitBlockedMessage,
   reconcileAccountPlan,
+  storeActionBlockedMessage,
   visibleProductCount,
 } from "@/lib/plans";
 import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draft-store";
@@ -286,6 +289,20 @@ export function SwiftLinkProvider({
 
   const createNewStore = useCallback(async (name: string) => {
     if (!user) return;
+
+    /*
+     * Enforced here, in the one function that can create a store, rather than in
+     * whichever screen happens to render a button. The limit previously lived in
+     * `BusinessView` alone, so every other path — including the store switcher —
+     * created stores on any plan. The live database showed the result: a free
+     * account holding three stores.
+     */
+    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    if (!canCreateStore(currentPlan, stores.length)) {
+      addToast(storeActionBlockedMessage(currentPlan, stores.length), "error");
+      return;
+    }
+
     const newId = crypto.randomUUID();
     /*
      * A new store joins the *account's* existing plan instead of being forced
@@ -294,7 +311,7 @@ export function SwiftLinkProvider({
      * next load, so the whole account dropped to the free tier (6 products, no
      * multi-store switching).
      */
-    const accountPlan = accountPlanFor(stores.length ? stores : [state]);
+    const accountPlan = currentPlan;
     const baseHandle = name.toLowerCase().replace(/[^a-z0-9]/g, "");
     const cleanHandle = baseHandle || `store-${Math.random().toString(36).substring(2, 7)}`;
     
@@ -335,11 +352,24 @@ export function SwiftLinkProvider({
 
   const switchStore = useCallback(async (id: string) => {
     const target = stores.find(s => s.id === id);
-    if (target) {
-        setState(target);
-        addToast(`Switched to ${target.bizName}`, "success");
+    if (!target) return;
+    if (target.id === state.id) return;
+
+    /*
+     * Running more than one brand is a Business entitlement, so the switch is
+     * refused here as well as hidden in the UI. A single-store account that
+     * already owns extra rows keeps them — the data is never deleted — and gets
+     * them back on upgrade.
+     */
+    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    if (!canSwitchStore(currentPlan)) {
+      addToast(storeActionBlockedMessage(currentPlan, stores.length), "error");
+      return;
     }
-  }, [stores, addToast]);
+
+    setState(target);
+    addToast(`Switched to ${target.bizName}`, "success");
+  }, [stores, addToast, state]);
 
   const transferStore = useCallback(async (targetEmail: string) => {
     if (!user || !state.id) return false;

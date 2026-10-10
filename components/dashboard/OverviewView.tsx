@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState } from "react";import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { formatMoney } from "@/lib/currency";
 import { cn, getSmartFirstName } from "@/lib/utils";
-import { isInGrace } from "@/lib/plans";
+import {
+  PLAN_DETAILS,
+  effectiveProductLimitFor,
+  effectiveStoreLimitFor,
+  formatUsage,
+  isInGrace,
+  normalizePlan,
+} from "@/lib/plans";
 import {
   SHARE_CHANNELS,
   buildShareUrl,
@@ -33,7 +39,7 @@ import {
 } from "lucide-react";
 
 export function OverviewView() {
-  const { state, user, addToast, updateState } = useSwiftLink();
+  const { state, user, addToast, updateState, stores } = useSwiftLink();
   // Set by middleware/requireAdmin when an authenticated non-admin opens an
   // ADMIN_PREFIXES route. Previously that redirect was silent, which made the
   // console look like a missing page rather than a permission boundary
@@ -161,8 +167,16 @@ export function OverviewView() {
   const completedCount = checklistItems.filter((i) => i.completed).length;
   const allCompleted = completedCount === checklistItems.length;
 
-  // Real plan display only if non-empty and present
-  const planName = state.plan && state.plan !== "free" ? `${state.plan.charAt(0).toUpperCase() + state.plan.slice(1)} Plan` : null;
+  /*
+   * The plan badge is shown for *every* account, including Free. It used to be
+   * hidden unless the plan was paid (`state.plan !== "free"`), so the merchants
+   * most affected by the limits were the only ones never told which plan they
+   * were on.
+   */
+  const plan = normalizePlan(state.plan);
+  const planDetail = PLAN_DETAILS[plan];
+  const productLimit = effectiveProductLimitFor(plan);
+  const storeLimit = effectiveStoreLimitFor(plan);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 pb-12 sm:px-6 sm:py-8 sm:pb-16">
@@ -192,11 +206,25 @@ export function OverviewView() {
             <h1 className="text-2xl font-bold tracking-tight text-[#E8F1EC]">
               Good day, {firstName}
             </h1>
-            {planName && (
-              <span className="rounded-full border border-[#24382F] bg-[#14231D] px-2.5 py-0.5 text-[11px] font-medium text-[#19C37D]">
-                {planName}
+            {/* Plan badge — always present, and it links to where the plan can
+                actually be changed. */}
+            <Link
+              href="/account#plans"
+              title={`${planDetail.name} plan — ${planDetail.summary}`}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition",
+                plan === "free"
+                  ? "border-[#24382F] bg-[#14231D] text-[#9DB3A8] hover:border-[#19C37D] hover:text-[#E8F1EC]"
+                  : "border-[#19C37D]/30 bg-[#19C37D]/10 text-[#19C37D] hover:border-[#19C37D]",
+              )}
+            >
+              <BadgeCheck className="h-3 w-3" />
+              {planDetail.name} plan
+              <span className="text-[10px] font-normal opacity-80">·
+                {formatUsage(state.products.length, productLimit)} products ·
+                {formatUsage(stores.length, storeLimit)} stores
               </span>
-            )}
+            </Link>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <span

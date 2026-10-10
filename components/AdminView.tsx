@@ -525,12 +525,12 @@ export function AdminView() {
           <div className="bg-[#14231D] p-6 rounded-2xl border border-[#1E2D27] mb-8 text-left">
             <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Security Rules:</p>
             {/*
-              This used to name `admin@swiftlink.pro` as the only authorized
-              account, which stopped being true once `system_admins` could hold
-              more than one row — and it is actively misleading to a
-              newly-promoted admin reading the very screen that refused them, in
-              the panel whose job is promoting people. The list is the source of
-              truth, so it is described as one.
+              No address is named here on purpose. The screen used to hard-code
+              a single "official" admin email, which stopped being true once the
+              administrators list could hold more than one row — and it is
+              actively misleading to a newly-promoted admin reading the very
+              screen that refused them, in the panel whose job is promoting
+              people. The list is the source of truth, so it is described as one.
             */}
             <ul className="text-[10px] font-bold text-slate-400 space-y-2 list-disc list-inside">
               <li>User must be signed in with an account listed in <code className="text-emerald-500">system_admins</code></li>
