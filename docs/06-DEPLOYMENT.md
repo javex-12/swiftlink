@@ -68,35 +68,72 @@ traffic switch.
 outcome you want at a fraction of the operational cost, and it is the only option
 that needs no new infrastructure.
 
+### What this project actually does (checked against the live project, 2026-10-10)
+
+Project `swiftlinkpro`, team `dosunmumichael26-9505s-projects`.
+
+- **Production branch is `main`, so a push to `main` builds *and auto-promotes*.**
+  Every deployment in the project's history is `readyState: PROMOTED`. There is
+  no idle "green" environment unless you push a **branch**, which builds a
+  preview. Blue-green here means: branch → verify → merge to `main` → verify
+  production; the safety net is rollback, not a staged promote.
+- **Deployment Protection is on** (`ssoProtection.deploymentType:
+  "all_except_custom_domains"`), so every preview and per-deployment URL answers
+  `302 → Protected by Vercel Authentication`. Only the production alias
+  (`swiftlinkpro.vercel.app`) is publicly reachable. An unauthenticated smoke run
+  against a candidate will therefore report **302s, not the app** — which looks
+  exactly like a broken deploy. Fix: Project Settings → Deployment Protection →
+  **Protection Bypass for Automation** (this is dashboard-only; the REST API does
+  not expose it), then export the secret. Vercel also injects it into builds as
+  `VERCEL_AUTOMATION_BYPASS_SECRET`, and `scripts/smoke.mjs` sends it as
+  `x-vercel-protection-bypass` on every request when that or
+  `SMOKE_PROTECTION_BYPASS` is set.
+- **Preview deployments only have Supabase access because the public vars were
+  extended to the `preview` target** on 2026-10-10 (`SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY` and the three
+  `NEXT_PUBLIC_*` mirrors). The anon key ships in the browser bundle anyway. The
+  service-role key, `SUPABASE_JWT_SECRET` and every `POSTGRES_*` value are still
+  **production-only on purpose** — a preview URL must not hold the credentials
+  that bypass RLS.
+- **This team's API token makes the CLI's user-scoped commands fail** with
+  `Error: User not found.` (`whoami`, `link`, `domains ls`): the token is
+  team-scoped and the CLI resolves the user first. The REST API works fine with
+  `?teamId=team_n7Li58dgZQmoXyRPDg1LyUcS`. `vercel login` in a browser is what
+  makes the CLI usable.
+
 ### Promotion checklist (Option A)
 
 ```bash
-# 0. One-time, per machine: authenticate and link this directory.
-#    Both are interactive — `vercel whoami` hangs forever when it has never
-#    been logged in, which is how this repo sat undeployed. Use a VERCEL_TOKEN
-#    instead if you are driving it from CI.
+# 0. One-time, per machine: authenticate and link this directory. Both are
+#    interactive — `vercel whoami` hangs forever when the CLI has never been
+#    logged in, which is how this repo sat undeployed. In CI, use VERCEL_TOKEN.
 npx vercel login
 npx vercel link
 
-# 1. Build the candidate (the "green" environment) without touching
-#    production: a plain `vercel` deploy is a *preview* URL.
-npx vercel --yes                 # prints https://<project>-<hash>.vercel.app
+# 1. Build the candidate (the "green" environment) without touching production.
+#    Push a branch: `main` is the production branch, so any *other* branch is a
+#    preview build.
+git push origin HEAD:refs/heads/bluegreen-gate
 
-# 2. Verify the candidate BEFORE promoting it.
-curl -sf https://<preview-url>/api/health | tee /dev/stderr | grep -q '"status":"ok"'
+# 2. Verify the candidate BEFORE promoting it. Needs a Protection Bypass secret
+#    (see above), otherwise every request 302s to the Vercel SSO.
+SMOKE_BASE_URL=https://<preview-url> SMOKE_STORE_HANDLE=cyder \
+  SMOKE_PROTECTION_BYPASS=<bypass-secret> npm run smoke
 
-SMOKE_BASE_URL=https://<preview-url> SMOKE_STORE_HANDLE=cyder npm run smoke
+# 3. Switch traffic: merging to `main` is the atomic switch here.
+git checkout main && git merge --ff-only <branch> && git push origin main
 
-# 3. Switch traffic atomically: promote that exact deployment to production.
-npx vercel promote https://<preview-url>
+# 4. Re-run the gate against the public production alias.
+SMOKE_BASE_URL=https://swiftlinkpro.vercel.app SMOKE_STORE_HANDLE=cyder npm run smoke
 
-# 4. Re-run the gate against production.
-SMOKE_BASE_URL=https://<production-url> SMOKE_STORE_HANDLE=cyder npm run smoke
+# If step 4 fails, go back instead of forward: the previous deployment is
+# retained and rollback is seconds, not a rebuild.
+npx vercel rollback            # or: npx vercel promote <previous-deployment-url>
 ```
 
-A promotion without step 2 is a guess, not a release. Step 3 also works from the
-dashboard ("Promote to Production"), and the previous deployment is retained —
-rollback is `npx vercel rollback`, seconds rather than a rebuild.
+A promotion without step 2 is a guess, not a release. Step 2 is also the step
+most likely to be skipped by accident, because a protected candidate fails the
+smoke gate in a way that reads like an outage.
 
 `next.config.ts` sets `output: "standalone"` for the self-hosted path in §5.
 That is not a Vercel problem (Vercel builds the app its own way), so it does not

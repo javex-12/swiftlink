@@ -17,11 +17,27 @@
  *
  * Set `SMOKE_STORE_HANDLE=cyder` to also assert a known live store. Without it,
  * the store-specific checks are skipped rather than guessed.
+ *
+ * On Vercel with Deployment Protection on, every preview and per-deployment URL
+ * answers 302 to the Vercel SSO instead of the app — so a gate against the idle
+ * ("green") environment cannot work unauthenticated. Vercel's answer is a
+ * Protection Bypass for Automation secret (Project Settings → Deployment
+ * Protection), which it also injects into builds as
+ * `VERCEL_AUTOMATION_BYPASS_SECRET`; when either that or
+ * `SMOKE_PROTECTION_BYPASS` is set, it is sent on every request here. Without
+ * one, this script still verifies the public production alias.
  */
 
 const base = (process.argv[2] || process.env.SMOKE_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 const handle = process.env.SMOKE_STORE_HANDLE || "";
 const unknownHandle = `definitely-not-a-store-${Date.now().toString(36)}`;
+const bypass = process.env.SMOKE_PROTECTION_BYPASS || process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
+
+/** Protection bypass goes on every request, including the ones that pass their own headers. */
+function withBypass(headers) {
+  if (!bypass) return headers;
+  return { ...(headers || {}), "x-vercel-protection-bypass": bypass };
+}
 
 let failures = 0;
 let passes = 0;
@@ -40,7 +56,7 @@ async function check(path, { expect, label, headers, parse } = {}) {
   const url = `${base}${path}`;
   let response;
   try {
-    response = await fetch(url, { redirect: "manual", headers });
+    response = await fetch(url, { redirect: "manual", headers: withBypass(headers) });
   } catch (error) {
     record(false, label || path, `request failed: ${error.message}`);
     return null;
@@ -113,4 +129,12 @@ if (handle) {
 }
 
 console.log(`\n${passes} passed, ${failures} failed\n`);
-process.exit(failures === 0 ? 0 : 1);
+
+/*
+ * `process.exitCode`, not `process.exit()`. Node's global fetch keeps a
+ * keep-alive socket open, and exiting while it is closing trips a libuv
+ * assertion on Windows (`!(handle->flags & UV_HANDLE_CLOSING)`), which prints a
+ * crash trace after a green run. The exit status is what the pipeline reads, so
+ * setting it lets the loop drain and the script still fail the gate correctly.
+ */
+process.exitCode = failures === 0 ? 0 : 1;
