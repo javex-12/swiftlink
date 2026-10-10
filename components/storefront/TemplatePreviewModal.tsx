@@ -1,18 +1,24 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { X, Smartphone, Tablet, Monitor, Check, Moon, Sun } from "lucide-react";
-import type { Product, ShopState } from "@/lib/schema";
+import type { ShopState } from "@/lib/schema";
 import { getSampleShopState } from "@/lib/sample-store";
 import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn } from "@/lib/utils";
 
-// Lazy-load the real TemplateSite component so preview code only loads on demand
-const TemplateSite = dynamic(
-  () => import("@/components/storefront/template-sites").then((mod) => mod.TemplateSite),
+/**
+ * The preview renders the *real* storefront, lazily, so the template markup and
+ * the shopper screens (product page, reviews, bag, footer) only load when a
+ * merchant actually opens a preview. Anything hand-built here would eventually
+ * disagree with the live site, which is exactly the bug this replaces.
+ */
+const CustomerStorefront = dynamic(
+  () => import("@/components/CustomerStorefront").then((mod) => mod.CustomerStorefront),
   {
+    ssr: false,
     loading: () => (
       <div className="flex min-h-[500px] items-center justify-center text-sm text-[#9DB3A8]">
         Loading template preview…
@@ -57,7 +63,6 @@ export function TemplatePreviewModal({
   const hasVendorProducts = (vendorState.products?.length || 0) > 0;
   const [device, setDevice] = useState<Device>("desktop");
   const [useSampleData, setUseSampleData] = useState<boolean>(!hasVendorProducts);
-  const [activeCategory, setActiveCategory] = useState<string>("All");
   const [appearance, setAppearance] = useState<Appearance>("light");
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 
@@ -91,21 +96,6 @@ export function TemplatePreviewModal({
     };
   }, [useSampleData, hasVendorProducts, templateId, vendorState, appearance]);
 
-  const activeProducts = useMemo<Product[]>(() => activeState.products || [], [activeState.products]);
-
-  const categories = useMemo<string[]>(() => {
-    const list = ["All"];
-    for (const p of activeProducts) {
-      if (p.category && !list.includes(p.category)) list.push(p.category);
-    }
-    return list;
-  }, [activeProducts]);
-
-  const filteredProducts = useMemo<Product[]>(() => {
-    if (activeCategory === "All") return activeProducts;
-    return activeProducts.filter((p) => p.category === activeCategory);
-  }, [activeProducts, activeCategory]);
-
   const themeVars = useMemo(
     () => themeToCssVars(themeForTemplate(template, appearance)) as React.CSSProperties,
     [template, appearance],
@@ -113,19 +103,15 @@ export function TemplatePreviewModal({
 
   if (!isOpen || !template) return null;
 
+  /**
+   * The preview *is* the storefront: the same component the live store renders,
+   * pointed at the template being tried on. `preview` keeps it inert (no
+   * history entries, no analytics, no writes) while leaving it fully navigable —
+   * product pages, reviews, the bag and the footer all behave as they will once
+   * the template is applied.
+   */
   const storefront = (
-    <TemplateSite
-      state={activeState}
-      products={filteredProducts}
-      categories={categories}
-      activeCategory={activeCategory}
-      cartCount={0}
-      onCategory={setActiveCategory}
-      onProduct={() => {}}
-      onSearch={() => {}}
-      onCart={() => {}}
-      onReviews={() => {}}
-    />
+    <CustomerStorefront preview overrideState={activeState} />
   );
 
   const sourceLabel = useSampleData
@@ -209,22 +195,35 @@ export function TemplatePreviewModal({
         </div>
       </header>
 
-      {/* Preview area */}
-      <main className="flex-1 overflow-auto bg-[#0A1210] p-0 sm:p-5">
+      {/*
+        Preview area.
+
+        Every frame is its own scroll container with a definite height, and it
+        carries a `transform`. The transform is load-bearing, not decoration: it
+        makes the frame the containing block for the storefront's `position:
+        fixed` bottom navigation bar and screen overlays, so the bag bar pins to
+        the bottom of the *device* instead of the bottom of the browser window.
+        Without it a phone preview would show the nav floating outside the phone.
+      */}
+      <main className="flex-1 overflow-hidden bg-[#0A1210] p-0 sm:p-5">
         {isNarrowViewport ? (
           // A phone shows the page, not a picture of a phone.
-          <div data-theme-scope="storefront" style={themeVars} className="min-h-full w-full">
+          <div
+            data-theme-scope="storefront"
+            style={{ ...themeVars, transform: "translateZ(0)" }}
+            className="h-full w-full overflow-y-auto overscroll-contain"
+          >
             {storefront}
           </div>
         ) : device === "phone" ? (
-          <div className="mx-auto my-4 w-full max-w-[390px] overflow-hidden rounded-[40px] border-[8px] border-[#1E2D27] bg-[#111C18] shadow-2xl">
-            <div className="flex h-5 w-full items-center justify-center bg-[#111C18]">
+          <div className="mx-auto flex h-full w-full max-w-[390px] flex-col overflow-hidden rounded-[40px] border-[8px] border-[#1E2D27] bg-[#111C18] shadow-2xl">
+            <div className="flex h-5 w-full shrink-0 items-center justify-center bg-[#111C18]">
               <div className="h-1 w-16 rounded-full bg-[#1E2D27]" />
             </div>
             <div
               data-theme-scope="storefront"
-              style={themeVars}
-              className="max-h-[750px] overflow-y-auto overscroll-contain"
+              style={{ ...themeVars, transform: "translateZ(0)" }}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
             >
               {storefront}
             </div>
@@ -232,8 +231,8 @@ export function TemplatePreviewModal({
         ) : device === "tablet" ? (
           <div
             data-theme-scope="storefront"
-            style={themeVars}
-            className="mx-auto min-h-full w-full max-w-[768px] overflow-hidden rounded-2xl border-4 border-[#1E2D27] shadow-2xl"
+            style={{ ...themeVars, transform: "translateZ(0)" }}
+            className="mx-auto h-full w-full max-w-[768px] overflow-y-auto overscroll-contain rounded-2xl border-4 border-[#1E2D27] shadow-2xl"
           >
             {storefront}
           </div>
@@ -241,8 +240,8 @@ export function TemplatePreviewModal({
           // Full modal width on purpose: this is what a desktop visitor sees.
           <div
             data-theme-scope="storefront"
-            style={themeVars}
-            className="mx-auto min-h-full w-full overflow-hidden rounded-xl shadow-2xl"
+            style={{ ...themeVars, transform: "translateZ(0)" }}
+            className="mx-auto h-full w-full overflow-y-auto overscroll-contain rounded-xl shadow-2xl"
           >
             {storefront}
           </div>

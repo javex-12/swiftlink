@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { 
   Search, 
   ShoppingCart, 
@@ -653,25 +653,45 @@ export function CustomerStorefront({
   shopId,
   isEditable = false,
   selectedSectionId,
-  onSectionAction
+  onSectionAction,
+  overrideState = null,
+  preview = false,
 }: {
   shopId?: string;
   isEditable?: boolean;
   selectedSectionId?: string | null;
   onSectionAction?: (id: string, action: string) => void;
+  /**
+   * Render a state that is not the signed-in account's own store. The template
+   * preview uses this so the preview *is* the storefront — same component, same
+   * footer, same product page — instead of a hand-built approximation that
+   * drifts from what a shopper actually sees.
+   */
+  overrideState?: ShopState | null;
+  /**
+   * Preview mode: no browser-history entries, no analytics, no writes. A preview
+   * is a look at a site, not a visit to it.
+   */
+  preview?: boolean;
 }) {
   const { 
       state, 
-      cart, 
-      updateCart, 
-      cartItemCount,
+      cart: liveCart, 
+      updateCart: liveUpdateCart, 
+      cartItemCount: liveCartItemCount,
       sendWhatsAppOrder,
       logEvent,
+      addToast,
       user
   } = useSwiftLink();
 
   const [publicState, setPublicState] = useState<ShopState | null>(null);
-  const effectiveState = shopId ? publicState : state;
+  /**
+   * A preview mounts this component inside the console, so it has to render a
+   * state that is not the account's active store — otherwise the preview would
+   * show the merchant's own live store while they are choosing a template.
+   */
+  const effectiveState = overrideState ?? (shopId ? publicState : state);
   
   const isStoreOwner = isEditable || (user && effectiveState && effectiveState.ownerId === user.id);
   
@@ -681,6 +701,29 @@ export function CustomerStorefront({
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  /**
+   * The bag is the one piece of shopper state a preview must not touch: adding
+   * to the cart while trying on a template would change the real storefront's
+   * bag. The preview keeps its own, and the rest of the screen reads the same
+   * variable either way.
+   */
+  const [previewCart, setPreviewCart] = useState<Record<string, number>>({});
+  const previewUpdateCart = useCallback((id: number, delta: number) => {
+    setPreviewCart(prev => {
+      const updated = Math.max(0, (prev[id] || 0) + delta);
+      const next: Record<string, number> = { ...prev };
+      if (updated === 0) delete next[id];
+      else next[id] = updated;
+      return next;
+    });
+  }, []);
+
+  const cart = preview ? previewCart : liveCart;
+  const updateCart = preview ? previewUpdateCart : liveUpdateCart;
+  const cartItemCount = preview
+    ? Object.values(previewCart).reduce((sum, qty) => sum + qty, 0)
+    : liveCartItemCount;
   
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -691,9 +734,43 @@ export function CustomerStorefront({
   const scrollPositionRef = useRef<number>(0);
   const homeScrollContainerRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Where "back" has to return to depends on where the storefront is mounted:
+   * the window on the live site, the home container when that is what scrolls,
+   * or the preview's device frame. Rather than guess, walk up from the home
+   * container and capture the first ancestor that actually scrolls right now.
+   */
+  const readScroll = () => {
+    let node = homeScrollContainerRef.current?.parentElement ?? null;
+    while (node) {
+      const overflowY = window.getComputedStyle(node).overflowY;
+      const scrolls = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
+      if (scrolls && node.scrollHeight > node.clientHeight + 1) return node.scrollTop;
+      node = node.parentElement;
+    }
+    return typeof window === "undefined" ? 0 : window.scrollY;
+  };
+
+  const writeScroll = (top: number) => {
+    let node = homeScrollContainerRef.current?.parentElement ?? null;
+    while (node) {
+      const overflowY = window.getComputedStyle(node).overflowY;
+      const scrolls = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
+      if (scrolls && node.scrollHeight > node.clientHeight + 1) {
+        node.scrollTop = top;
+        return;
+      }
+      node = node.parentElement;
+    }
+    window.scrollTo(0, top);
+  };
+
   // ─── BROWSER HISTORY LOGIC ───
+  // Skipped in preview: pushing screens onto the console's history would make
+  // the browser's back button leave the editor instead of the product page, and
+  // `replaceState` would rewrite the entry the console itself pushed.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (preview || typeof window === "undefined") return;
     window.history.replaceState({ screen: "home" }, "");
 
     const handlePopState = (e: PopStateEvent) => {
@@ -701,25 +778,24 @@ export function CustomerStorefront({
       setScreen(s);
       if (s === "home") {
           setActiveTab("home");
-          requestAnimationFrame(() => {
-              if (homeScrollContainerRef.current) {
-                  homeScrollContainerRef.current.scrollTop = scrollPositionRef.current;
-              }
-          });
+          requestAnimationFrame(() => writeScroll(scrollPositionRef.current));
       }
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [preview]);
 
   const changeScreen = (next: typeof screen) => {
     if (next !== screen) {
-      if (screen === "home" && homeScrollContainerRef.current) {
-          scrollPositionRef.current = homeScrollContainerRef.current.scrollTop;
-      }
-      window.history.pushState({ screen: next }, "");
+      // Remember where the shopper was, so the back arrow returns them to it.
+      // The home screen is `display: none` while an overlay is open, which
+      // collapses its height and resets the scroller to the top — the position
+      // has to be captured before the switch and written back after it.
+      if (screen === "home") scrollPositionRef.current = readScroll();
+      if (!preview) window.history.pushState({ screen: next }, "");
       setScreen(next);
+      if (next === "home") requestAnimationFrame(() => writeScroll(scrollPositionRef.current));
     }
   };
 
@@ -807,7 +883,7 @@ export function CustomerStorefront({
 
   const submitComment = async (reviewId: string) => {
       const msg = newCommentMessage[reviewId]?.trim();
-      if (!msg || !effectiveState?.id) return;
+      if (preview || !msg || !effectiveState?.id) return;
 
       const commenterName = isStoreOwner ? (effectiveState.bizName || "Store Owner") : (user?.email?.split('@')[0] || "Buyer");
 
@@ -829,7 +905,7 @@ export function CustomerStorefront({
   };
 
   const submitReview = async () => {
-      if (!newReview.message || !effectiveState?.id) return;
+      if (preview || !newReview.message || !effectiveState?.id) return;
       if (isStoreOwner) return;
 
       let resolvedName = "Guest Buyer";
@@ -898,8 +974,8 @@ export function CustomerStorefront({
   }, [shopId]);
 
   useEffect(() => {
-    if (effectiveState?.id) { logEvent("view", { shopId: effectiveState.id }); }
-  }, [effectiveState?.id, logEvent]);
+    if (!preview && effectiveState?.id) { logEvent("view", { shopId: effectiveState.id }); }
+  }, [preview, effectiveState?.id, logEvent]);
 
   const categories: string[] = useMemo(() => {
       if (!effectiveState) return ["All"];
@@ -930,6 +1006,10 @@ export function CustomerStorefront({
   }, [cart, effectiveState]);
 
   const handleOrder = () => {
+    if (preview) {
+      addToast("This is a preview — checkout is disabled until you publish.", "info");
+      return;
+    }
     logEvent("whatsapp_checkout", { total: totalPrice, items: Object.keys(cart).length });
     sendWhatsAppOrder();
     changeScreen("success");
@@ -1118,7 +1198,7 @@ export function CustomerStorefront({
                                         <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
                                         <h2 className="text-xl font-black sf-ink">Reviews</h2>
                                     </div>
-                                    {!isStoreOwner && (
+                                    {!isStoreOwner && !preview && (
                                         <button 
                                             onClick={() => setShowReviewForm(!showReviewForm)}
                                             className="px-4 py-2 sf-inverse text-white rounded-xl text-[10px] font-black uppercase tracking-wider"

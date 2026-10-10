@@ -35,6 +35,7 @@ const sidebar = read("components/ProSidebar.tsx");
 const layout = read("components/ProLayout.tsx");
 const tailwind = read("tailwind.config.ts");
 const preview = read("components/storefront/TemplatePreviewModal.tsx");
+const storefront = read("components/CustomerStorefront.tsx");
 
 describe("Stop store / Go live — a control every user can reach", () => {
   it("is on the console home, wired to the persisted isLive field", () => {
@@ -117,6 +118,27 @@ describe("Template preview — dark mode, exact render, phone-is-just-a-page", (
     expect(preview).toContain('window.matchMedia("(max-width: 639px)")');
     expect(preview).toContain("isNarrowViewport ? (");
     expect(preview).toContain("{!isNarrowViewport && deviceToggle(device, setDevice)}");
+  });
+
+  it("mounts the real storefront, so the preview cannot drift from the live site", () => {
+    // The preview used to render the bare template with dead callbacks, which is
+    // why opening a product in it did nothing and "back" dropped the merchant at
+    // the top of the page. It now renders `CustomerStorefront` itself.
+    expect(preview).toContain('<CustomerStorefront preview overrideState={activeState} />');
+    expect(preview).not.toContain("onProduct={() => {}}");
+  });
+
+  it("keeps a preview out of the browser's history", () => {
+    // Otherwise the merchant's back button leaves the console instead of the
+    // product page they opened.
+    expect(storefront).toContain('if (preview || typeof window === "undefined") return;');
+    expect(storefront).toContain("if (!preview) window.history.pushState({ screen: next }, \"\");");
+  });
+
+  it("leaves the shopper's real bag and analytics untouched while previewing", () => {
+    expect(storefront).toContain("const cart = preview ? previewCart : liveCart;");
+    expect(storefront).toContain('if (!preview && effectiveState?.id) { logEvent("view"');
+    expect(storefront).toContain("This is a preview — checkout is disabled until you publish.");
   });
 });
 
