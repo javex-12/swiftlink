@@ -545,7 +545,13 @@ function MobileStickyCartBar({ count, onCart }: { count: number; onCart: () => v
   return (
     <aside
       aria-label="Active shopping bag"
-      className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
+      /*
+       * Cleared of the storefront's own bottom navigation, which is 75px tall
+       * and `z-[100]`. At `bottom-4` this bar rendered 59px *behind* that nav —
+       * i.e. completely invisible — so the only way to reach the bag on a phone
+       * was the nav icon, not the bar advertising it.
+       */
+      className="fixed bottom-[87px] left-4 right-4 z-40 md:hidden"
     >
       <button
         type="button"

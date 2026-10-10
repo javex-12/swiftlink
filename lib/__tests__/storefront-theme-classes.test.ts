@@ -109,6 +109,29 @@ describe("sf-* theme classes", () => {
   });
 });
 
+describe("the shopper chrome follows the template", () => {
+  it("paints the bottom nav from the template's background token", () => {
+    // Live proof this was wrong: a store on a dark template (#1c1f2e) rendered a
+    // white nav, because the bar was painted with the legacy `bgColor` field.
+    expect(CUSTOMER_STOREFRONT).toContain(
+      'backgroundColor: "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)"',
+    );
+    expect(CUSTOMER_STOREFRONT).not.toContain("backgroundColor: `${bgColor}f2`");
+  });
+
+  it("keeps the legacy palette from overpainting the shopper screens", () => {
+    // `style={{ backgroundColor: bgColor }}` beat the `sf-surface` class, so the
+    // search and reviews screens were the merchant's old colour, not the
+    // template's (measured: #ffffff instead of #272737).
+    expect(overlayRegion(CUSTOMER_STOREFRONT)).not.toContain("backgroundColor: bgColor");
+  });
+
+  it("keeps the mobile sticky cart bar clear of the bottom nav", () => {
+    // It sat 59px behind the 75px nav, i.e. entirely hidden.
+    expect(TEMPLATE_SITES).toContain('className="fixed bottom-[87px] left-4 right-4 z-40 md:hidden"');
+  });
+});
+
 describe("the retired override bridge", () => {
   it("is gone from the customer storefront", () => {
     expect(CUSTOMER_STOREFRONT).not.toContain("!important");

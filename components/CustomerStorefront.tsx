@@ -1120,7 +1120,8 @@ export function CustomerStorefront({
                                         return (
                                             <>
                                                 <img src={imgs[idx]} alt={selectedProduct.name} className="w-full h-[400px] md:h-full object-cover" />
-                                                <button onClick={() => changeScreen("home")} className="absolute top-5 left-5 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg sf-ink"><ChevronLeft size={20} /></button>
+                                                {/* Ring + solid blur so the way back stays visible over a pale photo, which is the only thing between it and the merchant's image. */}
+                                                <button aria-label="Back to storefront" onClick={() => changeScreen("home")} className="absolute top-5 left-5 z-20 w-10 h-10 bg-white/95 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg ring-1 ring-black/10 sf-ink"><ChevronLeft size={20} /></button>
                                                 {imgs.length > 1 && (
                                                     <div className="absolute bottom-12 left-0 right-0 flex gap-2 px-4 overflow-x-auto no-scrollbar z-20">
                                                         {imgs.map((img, i) => (
@@ -1153,7 +1154,7 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "search" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface" style={{ backgroundColor: bgColor }}>
+                            <div className="w-full flex flex-col min-h-screen sf-surface">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6">
                                     <button onClick={() => changeScreen("home")} className="mb-4 sf-ink"><ChevronLeft size={24} /></button>
                                     <div className="relative">
@@ -1169,7 +1170,7 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "cart" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface" style={{ backgroundColor: bgColor }}>
+                            <div className="w-full flex flex-col min-h-screen sf-surface">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex items-center gap-4">
                                     <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
                                     <h2 className="text-xl font-black sf-ink">Your Bag</h2>
@@ -1192,7 +1193,7 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface pb-24" style={{ backgroundColor: bgColor }}>
+                            <div className="w-full flex flex-col min-h-screen sf-surface pb-24">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex justify-between items-center gap-4">
                                     <div className="flex items-center gap-4">
                                         <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
@@ -1342,8 +1343,19 @@ export function CustomerStorefront({
             </AnimatePresence>
         </div>
 
-        {/* BOTTOM NAVIGATION BAR */}
-        <div className="fixed bottom-0 left-0 right-0 z-[100] backdrop-blur-md border-t border-black/[0.04] md:border-none flex items-center justify-center px-4 md:px-0 md:pb-8" style={{ height: 75, backgroundColor: `${bgColor}f2` }}>
+        {/*
+          BOTTOM NAVIGATION BAR
+
+          Colours come from the template's own tokens rather than the legacy
+          `bgColor`/`textColor` fields. Those fields are the merchant's palette,
+          not the chosen template's, so a store on a dark template used to get a
+          white bar pasted across the bottom of it.
+        */}
+        <nav
+          aria-label="Storefront navigation"
+          className="fixed bottom-0 left-0 right-0 z-[100] flex items-center justify-center border-t border-t-border px-4 backdrop-blur-md md:border-none md:px-0 md:pb-8"
+          style={{ height: 75, backgroundColor: "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)" }}
+        >
           <div className="flex items-center w-full max-w-screen-lg mx-auto md:px-8 md:py-2 md:w-fit md:gap-12">
             {[
               { id: "home", icon: Home, label: "Store" },
@@ -1351,16 +1363,16 @@ export function CustomerStorefront({
               { id: "community", icon: MessageCircle, label: "Reviews" },
               { id: "cart", icon: ShoppingCart, label: "Cart", badge: cartItemCount },
             ].map(({ id, icon: Icon, label, badge }) => (
-              <button key={id} onClick={() => goTab(id as any)} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "sf-ink" : "text-gray-300 hover:text-gray-400"}`}>
+              <button key={id} onClick={() => goTab(id as any)} aria-current={activeTab === id ? "page" : undefined} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "sf-ink" : "sf-muted opacity-70 hover:opacity-100"}`}>
                 <div className="relative">
-                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" style={{ color: activeTab === id ? textColor : undefined }} strokeWidth={activeTab === id ? 2.5 : 1.5} />
+                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" strokeWidth={activeTab === id ? 2.5 : 1.5} />
                   {badge != null && badge > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 sf-accent-bg text-white text-[7px] font-black rounded-full flex items-center justify-center">{badge}</span>}
                 </div>
-                <span className={`text-[8px] font-black uppercase tracking-widest`} style={{ color: activeTab === id ? textColor : undefined }}>{label}</span>
+                <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
               </button>
             ))}
           </div>
-        </div>
+        </nav>
       </div>
     </div>
   );
