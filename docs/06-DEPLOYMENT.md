@@ -71,17 +71,36 @@ that needs no new infrastructure.
 ### Promotion checklist (Option A)
 
 ```bash
-# 1. Verify the candidate BEFORE promoting it.
+# 0. One-time, per machine: authenticate and link this directory.
+#    Both are interactive — `vercel whoami` hangs forever when it has never
+#    been logged in, which is how this repo sat undeployed. Use a VERCEL_TOKEN
+#    instead if you are driving it from CI.
+npx vercel login
+npx vercel link
+
+# 1. Build the candidate (the "green" environment) without touching
+#    production: a plain `vercel` deploy is a *preview* URL.
+npx vercel --yes                 # prints https://<project>-<hash>.vercel.app
+
+# 2. Verify the candidate BEFORE promoting it.
 curl -sf https://<preview-url>/api/health | tee /dev/stderr | grep -q '"status":"ok"'
 
 SMOKE_BASE_URL=https://<preview-url> SMOKE_STORE_HANDLE=cyder npm run smoke
 
-# 2. Promote (dashboard: "Promote to production", or via CLI).
-# 3. Re-run the gate against production.
+# 3. Switch traffic atomically: promote that exact deployment to production.
+npx vercel promote https://<preview-url>
+
+# 4. Re-run the gate against production.
 SMOKE_BASE_URL=https://<production-url> SMOKE_STORE_HANDLE=cyder npm run smoke
 ```
 
-A promotion without step 1 is a guess, not a release.
+A promotion without step 2 is a guess, not a release. Step 3 also works from the
+dashboard ("Promote to Production"), and the previous deployment is retained —
+rollback is `npx vercel rollback`, seconds rather than a rebuild.
+
+`next.config.ts` sets `output: "standalone"` for the self-hosted path in §5.
+That is not a Vercel problem (Vercel builds the app its own way), so it does not
+need to change before deploying here.
 
 ---
 
