@@ -24,15 +24,13 @@ import {
   Check,
 } from "lucide-react";
 
-/**
- * High-resolution aesthetic fallback imagery when merchant has not uploaded a photo yet.
+/*
+ * The three stock-photo hero fallbacks (`unsplash.com/photo-...`) that used to
+ * live here are gone: every template's banner is now built from its own type and
+ * colour, so there is no "merchant has not uploaded a photo yet" hole to fill.
+ * The constants were removed rather than left unused, so nothing can quietly
+ * start showing stock imagery again.
  */
-const EDITORIAL_FALLBACK_HERO =
-  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80";
-const BOUTIQUE_FALLBACK_HERO =
-  "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1200&q=80";
-const BOLD_FALLBACK_HERO =
-  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80";
 
 export type TemplateSiteProps = {
   state: ShopState;
@@ -574,8 +572,6 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
   const { state, products, categories, activeCategory, cartCount, template } = props;
   const title = state.heroTitle || state.bizName || template.name;
   const subtitle = state.heroSubtitle || state.tagline || template.tagline;
-  const heroImage = state.heroImage || state.bizImage || products[0]?.image;
-  const displayHeroImage = heroImage || EDITORIAL_FALLBACK_HERO;
   const story = storyOf(state, template);
   const [searchFilter, setSearchFilter] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -720,18 +716,33 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
           </div>
         </div>
 
+        {/*
+          No hero photograph. The banner is carried by the template's own type
+          and colour: a stock shot made every template look like the same site
+          with a different picture, and merchants' real photos were usually a
+          logo or a blurry phone snap that cheapened the page. The panel keeps
+          the two-column rhythm with facts instead.
+        */}
         <div className="md:col-span-5">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-t-border bg-t-surface-alt shadow-xl group">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={displayHeroImage}
-              alt={title}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
-              <p className="font-t-display text-xl font-bold text-white">{state.bizName || template.name}</p>
-              <p className="text-xs text-white/80 mt-1">Curated collection with direct WhatsApp ordering</p>
+          <div className="flex h-full flex-col justify-between gap-6 rounded-2xl border border-t-border bg-t-surface-alt p-6 shadow-sm">
+            <div>
+              <p className="font-t-display text-2xl font-bold text-t-text break-words">
+                {state.bizName || template.name}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-t-text-muted">
+                {state.tagline || template.tagline}
+              </p>
             </div>
+            <dl className="grid grid-cols-2 gap-4 border-t border-t-border pt-5">
+              <div>
+                <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Items</dt>
+                <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">{products.length}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Order via</dt>
+                <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">WhatsApp</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </section>
@@ -980,7 +991,6 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
   const { state, products, categories, activeCategory, cartCount, template } = props;
   const title = state.heroTitle || state.bizName || template.name;
   const subtitle = state.heroSubtitle || state.tagline || template.tagline;
-  const heroImage = state.heroImage || state.bizImage || products[0]?.image || BOUTIQUE_FALLBACK_HERO;
   const story = storyOf(state, template);
   const mark = state.bizImage;
   const [searchFilter, setSearchFilter] = useState("");
@@ -1113,22 +1123,30 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
               )}
             </div>
           </div>
+          {/* Same reason as the editorial banner: no hero photograph. */}
           <div className="md:col-span-5">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-t-border bg-t-surface shadow-md group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={heroImage}
-                alt={title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">
-                  Curated Selection
+            <div className="flex h-full flex-col justify-between gap-6 rounded-2xl border border-t-border bg-t-surface p-6 shadow-sm">
+              <div>
+                <span className="inline-block rounded-full bg-t-accent-subtle px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-t-accent-text">
+                  Hand-selected
                 </span>
-                <p className="text-xs text-white/80 mt-0.5">
-                  Hand-selected items with personal WhatsApp checkout
+                <p className="mt-3 font-t-display text-xl font-bold text-t-text break-words">
+                  {state.bizName || template.name}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-t-text-muted">
+                  Personal WhatsApp checkout, one customer at a time.
                 </p>
               </div>
+              <dl className="grid grid-cols-2 gap-4 border-t border-t-border pt-5">
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Items</dt>
+                  <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">{products.length}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Reply time</dt>
+                  <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">Minutes</dd>
+                </div>
+              </dl>
             </div>
           </div>
         </div>
@@ -1412,13 +1430,8 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               </button>
             ))}
             {products.length === 0 && (
-              <div className="col-span-2 aspect-[16/9] overflow-hidden rounded-xl border border-white/20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={BOLD_FALLBACK_HERO}
-                  alt={title}
-                  className="h-full w-full object-cover"
-                />
+              <div className="col-span-2 flex aspect-[16/9] items-center justify-center rounded-xl border border-white/20 text-[11px] font-black uppercase tracking-[0.24em] opacity-70">
+                Catalog coming soon
               </div>
             )}
           </div>
