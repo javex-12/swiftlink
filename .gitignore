@@ -12,3 +12,8 @@ brag-output/
 
 # Build artefacts
 *.tsbuildinfo
+
+# Generated promo media (48 MB of WAV/MP4/PNG from the video build scripts).
+# It is produced locally, never imported by the app, and it made every clone
+# carry it — keep the generator scripts, drop the output.
+promo-video/
