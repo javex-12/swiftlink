@@ -495,7 +495,7 @@ export function AdminView() {
 
   if (checkingAuth) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-12 min-h-[60vh] bg-slate-50 dark:bg-[#020617]">
+      <div className="flex-1 flex flex-col items-center justify-center p-12 min-h-[60vh] bg-[#0A1210]">
         <div className="animate-spin text-emerald-500 w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mb-4" />
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Verifying Admin Credentials...</p>
       </div>
@@ -505,15 +505,15 @@ export function AdminView() {
   // ACCESS DENIED SCREEN
   if (!isAdmin) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6 min-h-[75vh] bg-slate-50 dark:bg-[#020617] transition-colors">
+      <div className="flex-1 flex items-center justify-center p-6 min-h-[75vh] bg-[#0A1210] transition-colors">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-[#111C18] p-5 sm:p-10 md:p-14 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
+          className="bg-[#111C18] p-5 sm:p-10 md:p-14 rounded-2xl border border-[#1E2D27] shadow-2xl max-w-lg w-full text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-red-500" />
           
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-rose-100 dark:border-rose-500/20">
+          <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
             <Lock size={36} />
           </div>
 
@@ -534,7 +534,7 @@ export function AdminView() {
           <div className="flex gap-4 justify-center">
             <Link
               href="/pro"
-              className="flex-1 py-4 px-4 sm:px-6 rounded-2xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-4 sm:px-6 rounded-2xl bg-[#14231D] border border-[#24382F] text-[#E8F1EC] hover:border-[#19C37D] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
               Go to Storefront Dashboard
             </Link>
@@ -545,10 +545,10 @@ export function AdminView() {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto w-full pb-16 transition-colors duration-300">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 pb-12 transition-colors duration-300 sm:space-y-8 sm:px-6 sm:py-8 sm:pb-16">
       
       {/* Admin Title Card */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111C18] p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111C18] p-4 sm:p-8 rounded-2xl border border-[#1E2D27] shadow-sm">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -574,7 +574,7 @@ export function AdminView() {
 
       {/* Overview Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400">
               <Users size={20} />
@@ -587,7 +587,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
               <Store size={20} />
@@ -600,7 +600,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 dark:bg-purple-500/10 text-purple-500 dark:text-purple-400">
               <Activity size={20} />
@@ -613,7 +613,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400">
               <MessageSquare size={20} />
@@ -626,7 +626,7 @@ export function AdminView() {
           </div>
         </div>
 
-        <div className="bg-[#111C18] p-6 rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
+        <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400">
               <AlertCircle size={20} />
@@ -673,7 +673,7 @@ export function AdminView() {
       {/* Interactive Content Windows */}
       <div className="min-h-[500px]">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-[#111C18] border border-[#1E2D27] rounded-2xl sm:rounded-[2.5rem]">
+          <div className="flex flex-col items-center justify-center p-20 min-h-[300px] bg-[#111C18] border border-[#1E2D27] rounded-2xl">
             <div className="animate-spin text-emerald-500 w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-3" />
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Syncing database registers...</p>
           </div>
@@ -699,7 +699,7 @@ export function AdminView() {
                 </div>
 
                 {activeTab === "feedback" && (
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex flex-wrap gap-2">
                     {["all", "bug", "feature", "pending", "resolved"].map((f) => (
                       <button
                         key={f}
@@ -718,7 +718,7 @@ export function AdminView() {
                 )}
 
                 {activeTab === "timeline" && (
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex flex-wrap gap-2">
                     {["all", "view", "product_click", "whatsapp_checkout", "store_transferred"].map((f) => (
                       <button
                         key={f}
@@ -744,7 +744,7 @@ export function AdminView() {
                 {/* Graphics Dashboard Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
                   {/* TRAFFIC & CONVERSION CHART */}
-                  <div className="lg:col-span-2 bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
+                  <div className="lg:col-span-2 bg-[#111C18] p-4 sm:p-8 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-8">
                       <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Conversion and Traffic Funnel</h3>
                       <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Global view to WhatsApp checkout ratio</p>
@@ -799,7 +799,7 @@ export function AdminView() {
                   </div>
 
                   {/* ACTIVE STORE LEADERBOARD */}
-                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm flex flex-col">
+                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col">
                     <div className="mb-6">
                       <h3 className="text-lg font-black text-[#E8F1EC] italic tracking-tight uppercase">Leaderboard</h3>
                       <p className="text-[9px] font-black text-[#9DB3A8] uppercase tracking-widest mt-1">Top converting storefront platforms</p>
@@ -841,7 +841,7 @@ export function AdminView() {
                 {/* Logistics & Alerts section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
                   {/* RECENT CRITICAL USER FEEDBACK FEED */}
-                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-sm lg:col-span-3 flex flex-col">
+                  <div className="bg-[#111C18] p-4 sm:p-8 rounded-2xl border border-[#1E2D27] shadow-sm lg:col-span-3 flex flex-col">
                     <div className="mb-6 flex justify-between items-center">
                       <div>
                         <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Pending Bug Reports</h3>
@@ -902,7 +902,7 @@ export function AdminView() {
 
             {/* TAB CONTENT: TIMELINE LOG */}
             {activeTab === "timeline" && (
-              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden p-6 md:p-8">
+              <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm overflow-hidden p-6 md:p-8">
                 <div className="space-y-6">
                   {filteredEvents.slice(0, 100).map((e) => {
                     const storeObj = stores.find(s => s.id === e.store_id);
@@ -959,7 +959,7 @@ export function AdminView() {
 
             {/* TAB CONTENT: MERCHANTS DIRECTORY */}
             {activeTab === "merchants" && (
-              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1026,7 +1026,7 @@ export function AdminView() {
 
             {/* TAB CONTENT: STORES DIRECTORY */}
             {activeTab === "stores" && (
-              <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+              <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1230,7 +1230,7 @@ export function AdminView() {
                 })}
 
                 {filteredFeedbacks.length === 0 && (
-                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-[#1E2D27] rounded-2xl sm:rounded-[2.5rem]">
+                  <div className="col-span-2 p-16 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-[#1E2D27] rounded-2xl">
                     No feedbacks logged matching selected status filter
                   </div>
                 )}
@@ -1256,7 +1256,7 @@ export function AdminView() {
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="bg-[#111C18] w-full max-w-4xl h-[85vh] rounded-3xl sm:rounded-[3rem] border border-[#1E2D27] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
+              className="bg-[#111C18] w-full max-w-4xl h-[85vh] rounded-2xl border border-[#1E2D27] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative z-10"
             >
               
               {/* Header profile banner */}
@@ -1469,7 +1469,7 @@ export function AdminView() {
           className="space-y-6"
         >
           {/* Add new admin */}
-          <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm p-4 sm:p-8">
+          <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm p-4 sm:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                 <UserPlus size={20} />
@@ -1505,7 +1505,7 @@ export function AdminView() {
           </div>
 
           {/* Current admins list */}
-          <div className="bg-[#111C18] rounded-2xl sm:rounded-[2.5rem] border border-[#1E2D27] shadow-sm overflow-hidden">
+          <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm overflow-hidden">
             <div className="p-4 sm:p-8 border-b border-[#1E2D27]">
               <h3 className="text-sm font-black text-[#E8F1EC] uppercase italic tracking-tight">Current Administrators</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{adminsList.length} admin{adminsList.length !== 1 ? "s" : ""} registered</p>
