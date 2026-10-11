@@ -1406,13 +1406,13 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-2 text-xs font-black uppercase tracking-[0.25em] text-t-accent-fg">
         <div className="flex whitespace-nowrap animate-pulse">
           <span className="mx-4">⚡ NEW DROP LIVE</span>
-          <span className="mx-4">///</span>
+          <span className="mx-4">{"///"}</span>
           <span className="mx-4">NATIONWIDE EXPRESS DISPATCH</span>
-          <span className="mx-4">///</span>
+          <span className="mx-4">{"///"}</span>
           <span className="mx-4">DIRECT WHATSAPP CHECKOUT</span>
-          <span className="mx-4">///</span>
+          <span className="mx-4">{"///"}</span>
           <span className="mx-4">100% VERIFIED AUTHENTIC</span>
-          <span className="mx-4">///</span>
+          <span className="mx-4">{"///"}</span>
           <span className="mx-4">SECURE TRANSACTIONS</span>
         </div>
       </div>
@@ -1675,7 +1675,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <section id="story" className="border-t-2 border-t-border px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl border-2 border-t-border bg-t-surface p-8 sm:p-12 shadow-[5px_5px_0px_0px_var(--t-accent)]">
           <span className="text-xs font-black uppercase tracking-[0.28em] text-t-accent">
-            // OUR MANIFESTO
+            {"// OUR MANIFESTO"}
           </span>
           <p className="mt-3 max-w-3xl text-2xl sm:text-4xl font-black uppercase leading-tight tracking-tight text-t-text">
             {story}
