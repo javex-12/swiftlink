@@ -249,3 +249,23 @@ export function cleanPastedNationalNumber(
 
   return { nationalNumber: digitsOnly };
 }
+
+/**
+ * Returns digits-only phone string suitable for wa.me links (without leading '+').
+ * Resolves local Nigerian numbers (e.g. 080... or 80...) to 23480...
+ */
+export function getCleanWhatsAppDigits(phone: string, defaultCountry: CountryCode = "NG"): string {
+  if (!phone) return "";
+  const norm = normalizePhoneNumber(phone, defaultCountry);
+  if (norm.isValid) {
+    return norm.normalized.replace(/\D/g, "");
+  }
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 11) {
+    return `234${digits.slice(1)}`;
+  }
+  if (!digits.startsWith("234") && digits.length === 10 && /^[789]/.test(digits)) {
+    return `234${digits}`;
+  }
+  return digits;
+}

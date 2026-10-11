@@ -133,7 +133,7 @@ export function CartDrawer({
              {(state.orderMethod === "whatsapp" || state.orderMethod === "both" || !state.orderMethod) && (
                 <button
                   type="button"
-                  onClick={sendWhatsAppOrder}
+                  onClick={() => sendWhatsAppOrder()}
                   disabled={!storeAcceptingOrders}
                   className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   style={{

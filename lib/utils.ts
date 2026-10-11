@@ -37,6 +37,7 @@ const RESERVED_FIRST_SEGMENTS = new Set([
   "reset-password",
   "dev",
   "offline",
+  "stores",
 ]);
 
 /**

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getLiveStoresForSitemap } from "@/lib/store-lookup";
+import { SEO_SITE } from "@/lib/seo";
 
-const site = "https://swiftlinkpro.vercel.app";
+const site = SEO_SITE;
 
 /** Storefronts change on save; the sitemap does not need to be live. */
 export const revalidate = 3600;
@@ -24,6 +25,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      // The directory is how a shopper or a crawler finds a store by name; it
+      // has to be in the sitemap for that to mean anything.
+      url: `${site}/stores`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
     },
     {
       url: `${site}/terms`,

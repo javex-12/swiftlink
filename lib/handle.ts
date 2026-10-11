@@ -25,6 +25,7 @@ export const RESERVED_HANDLES = new Set([
   "inquiries",
   "customers",
   "checkout",
+  "stores",
   "pay",
   "app",
   "auth",

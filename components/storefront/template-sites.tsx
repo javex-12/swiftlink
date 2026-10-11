@@ -22,7 +22,14 @@ import {
   MessageSquare,
   Send,
   Check,
+  Sparkles,
+  Flame,
+  Zap,
+  Plus,
+  Tag,
+  Quote,
 } from "lucide-react";
+import { getCleanWhatsAppDigits } from "@/lib/phone";
 
 /*
  * The three stock-photo hero fallbacks (`unsplash.com/photo-...`) that used to
@@ -223,7 +230,7 @@ export function StoreFeedbackModal({
     setIsSubmitted(true);
   };
 
-  const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
+  const cleanPhone = phone ? getCleanWhatsAppDigits(phone) : "";
   const handleWhatsAppSend = () => {
     if (!cleanPhone) return;
     const reviewName = name.trim() || "Store Visitor";
@@ -469,13 +476,9 @@ function TestimonialsSection({
   );
 }
 
-function FaqSection() {
+function FaqSection({ faqs }: { faqs?: { q: string; a: string }[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
-  // Deliberately generic. These answers used to promise specific policies the
-  // merchant never agreed to ("same-day shipping", "bank transfer, USSD, cards"),
-  // which is the same fabrication problem as the old testimonials — a shopper
-  // would hold the vendor to promises the template invented.
-  const faqs = [
+  const defaultFaqs = [
     {
       q: "How does ordering on WhatsApp work?",
       a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store, which confirms availability and next steps with you directly.",
@@ -489,6 +492,8 @@ function FaqSection() {
       a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition and you will get a reply from the merchant.",
     },
   ];
+
+  const items = faqs && faqs.length > 0 ? faqs : defaultFaqs;
 
   return (
     <section className="border-t border-t-border py-16">
@@ -506,7 +511,7 @@ function FaqSection() {
         </div>
 
         <div className="mt-8 space-y-3">
-          {faqs.map((faq, i) => {
+          {items.map((faq, i) => {
             const isOpen = openIdx === i;
             return (
               <div
@@ -667,7 +672,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
 
             {state.phone && (
               <a
-                href={`https://wa.me/${state.phone.replace(/\D/g, "")}`}
+                href={`https://wa.me/${getCleanWhatsAppDigits(state.phone)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn("hidden md:flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold sf-accent-text transition hover:bg-emerald-500/20", focusRing)}
@@ -941,7 +946,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
       />
 
       {/* FAQ Section */}
-      <FaqSection />
+      <FaqSection faqs={state.faqItems} />
 
       {/* Store Footer */}
       <footer className="border-t border-t-border bg-t-surface py-12">
@@ -991,7 +996,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
 }
 
 // =============================================================================
-// 2. BOUTIQUE SITE
+// 2. BOUTIQUE SITE (Pinterest / Luxury Curated Boutique)
 // =============================================================================
 function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const { state, products, categories, activeCategory, cartCount, template } = props;
@@ -1001,6 +1006,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
   const mark = state.bizImage;
   const [searchFilter, setSearchFilter] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -1013,8 +1019,6 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
     });
   }, [products, activeCategory, searchFilter]);
 
-  // Catalog windowing: render one page of cards at a time instead of mounting
-  // the entire catalog (see components/storefront/catalog-window.tsx).
   const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
     filtered.length,
     `${activeCategory}|${searchFilter}`,
@@ -1029,159 +1033,195 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
   };
 
   return (
-    <div className="min-h-screen bg-t-bg pb-24 font-t-body text-t-text">
-      {/* Top Banner */}
-      <div className="bg-t-accent-subtle px-4 py-2 text-center text-xs font-semibold text-t-accent-text border-b border-t-border">
-        {state.tagline || template.tagline || "Artisanal Boutique"} · Fast Nationwide Tracked Delivery
+    <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
+      {/* Top Ambient Ribbon */}
+      <div className="bg-t-accent-subtle/80 px-4 py-2.5 text-center text-xs font-medium text-t-accent-text border-b border-t-border backdrop-blur-sm">
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-t-accent inline" />
+          <span>{state.tagline || template.tagline || "Curated Artisanal Studio"}</span>
+          <span className="opacity-40">·</span>
+          <span>Fast Nationwide Doorstep Delivery</span>
+        </span>
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3.5 py-3 sm:px-6 sm:py-3.5 md:px-8">
+      {/* Boutique Header */}
+      <header className="sticky top-0 z-sticky border-b border-t-border/70 bg-t-bg/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={props.onSearch}
-            className={cn("flex shrink-0 items-center gap-1 rounded-full border border-t-border bg-t-surface p-2 sm:px-3 sm:py-1.5 text-xs text-t-text transition hover:border-t-accent", focusRing)}
-            aria-label="Search"
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-full border border-t-border bg-t-surface px-3 py-1.5 text-xs text-t-text shadow-2xs transition hover:border-t-accent",
+              focusRing
+            )}
+            aria-label="Search collection"
           >
-            <Search className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Search</span>
+            <Search className="h-3.5 w-3.5 text-t-text-muted" />
+            <span className="hidden sm:inline font-medium">Search Pins</span>
           </button>
 
-          <button type="button" onClick={shopNow} className={cn("flex min-w-0 items-center gap-1.5 sm:gap-2", focusRing)}>
-            <span className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-t-accent-subtle shadow-xs">
+          <button type="button" onClick={shopNow} className={cn("flex min-w-0 items-center gap-2.5", focusRing)}>
+            <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-t-accent/20 bg-t-accent-subtle shadow-xs">
               {mark ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={mark} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-xs sm:text-sm font-bold text-t-accent-text">
+                <span className="font-t-display text-sm sm:text-base font-bold text-t-accent">
                   {(state.bizName || template.name).slice(0, 1)}
                 </span>
               )}
             </span>
-            <span className="truncate max-w-[130px] xs:max-w-[180px] sm:max-w-xs font-t-display text-sm sm:text-lg font-bold text-t-text">
-              {state.bizName || template.name}
-            </span>
+            <div className="text-left">
+              <span className="block truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs font-t-display text-base sm:text-xl font-bold tracking-tight text-t-text">
+                {state.bizName || template.name}
+              </span>
+              <span className="hidden sm:block text-[10px] uppercase tracking-widest text-t-text-muted">
+                Curated Boutique
+              </span>
+            </div>
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={handleFeedbackClick}
-              className={cn("hidden sm:flex items-center gap-1 rounded-full border border-t-border bg-t-surface px-3 py-1.5 text-xs font-medium text-t-text transition hover:border-t-accent", focusRing)}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 rounded-full border border-t-border bg-t-surface px-3.5 py-1.5 text-xs font-medium text-t-text transition hover:border-t-accent",
+                focusRing
+              )}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              <MessageSquare className="h-3.5 w-3.5 text-t-accent" />
               <span>Reviews</span>
             </button>
 
             <button
               type="button"
               onClick={props.onCart}
-              className={cn("flex shrink-0 items-center gap-1.5 rounded-full bg-t-accent px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold text-t-accent-fg shadow-xs transition hover:opacity-95 active:scale-95", focusRing)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full bg-t-accent px-3.5 py-2 text-xs font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
+                focusRing
+              )}
               aria-label="Cart"
             >
-              <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Cart</span>
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Bag</span>
               <CartMark count={cartCount} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Boutique Hero: Warm, 2-column artisanal storefront banner */}
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-8 md:py-16">
-        <div className="grid items-center gap-8 rounded-3xl border border-t-border bg-t-surface-alt/70 p-6 sm:p-10 md:grid-cols-12 md:gap-12 md:p-12 shadow-sm">
-          <div className="md:col-span-7 space-y-4">
-            <span className="inline-block rounded-full bg-t-accent-subtle px-3.5 py-1 text-xs font-bold text-t-accent-text">
-              Artisanal Boutique Collection
-            </span>
-            <h1 className="font-t-display text-3xl font-bold leading-tight sm:text-5xl md:text-6xl text-t-text break-words">
-              {title}
-            </h1>
-            <p className="max-w-lg text-sm sm:text-base leading-relaxed text-t-text-muted">
-              {subtitle}
-            </p>
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={shopNow}
-                className={cn(
-                  "flex items-center gap-2 rounded-full bg-t-accent px-6 py-3 text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
-                  focusRing
-                )}
-              >
-                <span>{state.heroButtonText || "Browse Collection"}</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              {state.phone && (
-                <a
-                  href={`https://wa.me/${state.phone.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+      {/* Pinterest-Inspired Hero Banner */}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-8 md:py-14">
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-t-border bg-gradient-to-br from-t-surface via-t-surface-alt to-t-surface p-6 sm:p-10 md:p-14 shadow-lg">
+          <div className="relative z-10 grid items-center gap-8 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-7 space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-t-border/60 bg-t-bg/80 px-4 py-1.5 text-xs font-semibold text-t-accent shadow-xs backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Handcrafted & Curated Collection</span>
+              </div>
+              <h1 className="font-t-display text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-t-text leading-[1.1] break-words">
+                {title}
+              </h1>
+              <p className="max-w-lg text-sm sm:text-base leading-relaxed text-t-text-muted">
+                {subtitle}
+              </p>
+              <div className="pt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={shopNow}
                   className={cn(
-                    "flex items-center gap-2 rounded-full border border-t-border bg-t-surface px-5 py-3 text-sm font-semibold text-t-text transition hover:border-t-accent",
+                    "flex items-center gap-2 rounded-full bg-t-accent px-6 py-3.5 text-xs sm:text-sm font-bold text-t-accent-fg shadow-lg shadow-t-accent/20 transition hover:opacity-95 active:scale-95",
                     focusRing
                   )}
                 >
-                  <MessageCircle className="h-4 w-4 sf-accent-text" />
-                  <span>Inquire via WhatsApp</span>
-                </a>
-              )}
-            </div>
-          </div>
-          {/* Same reason as the editorial banner: no hero photograph. */}
-          <div className="md:col-span-5">
-            <div className="flex h-full flex-col justify-between gap-6 rounded-2xl border border-t-border bg-t-surface p-6 shadow-sm">
-              <div>
-                <span className="inline-block rounded-full bg-t-accent-subtle px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-t-accent-text">
-                  Hand-selected
-                </span>
-                <p className="mt-3 font-t-display text-xl font-bold text-t-text break-words">
-                  {state.bizName || template.name}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-t-text-muted">
-                  Personal WhatsApp checkout, one customer at a time.
-                </p>
+                  <span>{state.heroButtonText || "Explore Pinboard"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {waDigits && (
+                  <a
+                    href={`https://wa.me/${waDigits}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border border-t-border bg-t-bg/90 px-5 py-3.5 text-xs sm:text-sm font-semibold text-t-text shadow-xs transition hover:border-t-accent hover:text-t-accent",
+                      focusRing
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4 text-emerald-500" />
+                    <span>Chat with Merchant</span>
+                  </a>
+                )}
               </div>
-              <dl className="grid grid-cols-2 gap-4 border-t border-t-border pt-5">
-                <div>
-                  <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Items</dt>
-                  <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">{products.length}</dd>
-                </div>
-                <div>
-                  <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Reply time</dt>
-                  <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">Minutes</dd>
-                </div>
-              </dl>
+            </div>
+
+            {/* Pinterest-style Staggered Pins Collage */}
+            <div className="md:col-span-5 relative">
+              <div className="relative mx-auto flex max-w-sm justify-center items-center">
+                {products.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 w-full">
+                    {products.slice(0, 2).map((product, idx) => (
+                      <div
+                        key={product.id}
+                        onClick={() => props.onProduct(product)}
+                        className={cn(
+                          "cursor-pointer rounded-2xl border border-t-border bg-t-bg p-2.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl",
+                          idx === 1 ? "mt-6" : ""
+                        )}
+                      >
+                        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-t-surface-alt">
+                          <ProductMedia product={product} />
+                          <span className="absolute bottom-2 left-2 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                            {formatPrice(state.currency, product.price)}
+                          </span>
+                        </div>
+                        <p className="mt-2 truncate text-xs font-semibold text-t-text">
+                          {product.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full rounded-2xl border border-dashed border-t-border bg-t-bg/70 p-6 text-center shadow-xs">
+                    <Sparkles className="mx-auto h-8 w-8 text-t-accent/60" />
+                    <p className="mt-2 text-xs font-semibold text-t-text">New Arrivals Coming Soon</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Strip */}
+      {/* Trust Badges */}
       <TrustFeaturesStrip template={template} />
 
-      {/* Catalog */}
-      <section id="catalog" className="scroll-mt-24 py-12 sm:py-16">
+      {/* Pinterest-Style Curated Catalog */}
+      <section id="catalog" className="scroll-mt-16 py-12 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4">
-            <h2 className="font-t-display text-2xl sm:text-3xl font-bold text-t-text">
-              Store Catalog
-            </h2>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t-text-muted" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-t-border pb-5">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-t-accent">
+                Curated Showcase
+              </span>
+              <h2 className="mt-1 font-t-display text-2xl sm:text-3xl font-bold text-t-text">
+                All Pinned Items ({products.length})
+              </h2>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t-text-muted" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search products…"
-                className="w-full rounded-full border border-t-border bg-t-surface py-2 pl-9 pr-3 text-xs text-t-text placeholder-t-text-muted outline-none focus:border-t-accent"
+                placeholder="Search collection…"
+                className="w-full rounded-full border border-t-border bg-t-surface py-2 pl-9 pr-4 text-xs text-t-text outline-none focus:border-t-accent shadow-2xs"
               />
             </div>
           </div>
 
-          {/* Categories */}
-          <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-none" role="tablist" aria-label="Categories">
+          {/* Category Pills */}
+          <div className="flex gap-2 overflow-x-auto py-4 scrollbar-none" role="tablist">
             {categories.map((category) => {
               const selected = category === activeCategory;
               return (
@@ -1192,11 +1232,11 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                   aria-selected={selected}
                   onClick={() => props.onCategory(category)}
                   className={cn(
-                    "shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition",
+                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition shadow-2xs",
                     focusRing,
                     selected
-                      ? "bg-t-accent text-t-accent-fg shadow-xs"
-                      : "bg-t-surface border border-t-border text-t-text hover:border-t-accent/50",
+                      ? "bg-t-accent text-t-accent-fg font-bold shadow-xs"
+                      : "border border-t-border bg-t-surface text-t-text hover:border-t-accent"
                   )}
                 >
                   {category}
@@ -1206,39 +1246,38 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyCatalog />
+            <div className="py-12">
+              <EmptyCatalog />
+            </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
               {filtered.slice(0, shown).map((product) => (
                 <div
                   key={product.id}
                   onClick={() => props.onProduct(product)}
                   className={cn(
-                    "group flex flex-col justify-between overflow-hidden rounded-2xl bg-t-surface border border-t-border p-3 sm:p-4 text-left shadow-xs transition hover:shadow-lg cursor-pointer",
-                    focusRing,
+                    "group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-t-border/80 bg-t-surface p-3 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer",
+                    focusRing
                   )}
                 >
                   <div>
-                    <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-t-surface-alt">
+                    <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-t-surface-alt">
                       <ProductMedia product={product} className="transition-transform duration-500 group-hover:scale-105" />
-                      {product.badge && (
-                        <span className="absolute left-2.5 top-2.5 rounded-full bg-t-accent px-2 py-0.5 text-[9px] font-bold text-t-accent-fg">
-                          {product.badge}
+                      {product.category && (
+                        <span className="absolute top-2.5 left-2.5 rounded-full bg-t-bg/90 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-semibold text-t-text shadow-2xs">
+                          {product.category}
                         </span>
                       )}
                       {product.outOfStock && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs">
-                          <span className="rounded-full sf-surface px-2.5 py-0.5 text-[9px] font-bold uppercase text-black">
+                          <span className="rounded-full bg-black/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
                             Sold Out
                           </span>
                         </div>
                       )}
                     </div>
-                    <div className="mt-3">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-t-accent">
-                        {product.category || "Item"}
-                      </span>
-                      <h3 className="mt-0.5 text-sm sm:text-base font-bold text-t-text line-clamp-1 group-hover:text-t-accent transition">
+                    <div className="mt-3 px-1">
+                      <h3 className="font-t-display text-sm sm:text-base font-bold text-t-text line-clamp-1 group-hover:text-t-accent transition">
                         {product.name}
                       </h3>
                       {product.description && (
@@ -1249,8 +1288,8 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-t-border/50 pt-3">
-                    <span className="text-sm font-bold tabular-nums text-t-text">
+                  <div className="mt-4 flex items-center justify-between border-t border-t-border/50 pt-3 px-1">
+                    <span className="font-t-display text-sm sm:text-base font-bold tabular-nums text-t-text">
                       {formatPrice(state.currency, product.price)}
                     </span>
                     <button
@@ -1260,7 +1299,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                         e.stopPropagation();
                         props.onProduct(product);
                       }}
-                      className="rounded-full bg-t-accent-subtle px-3 py-1 text-xs font-bold text-t-accent-text hover:bg-t-accent hover:text-t-accent-fg transition"
+                      className="rounded-full bg-t-accent-subtle px-3 py-1.5 text-xs font-bold text-t-accent-text hover:bg-t-accent hover:text-t-accent-fg transition shadow-2xs"
                     >
                       Order
                     </button>
@@ -1273,19 +1312,22 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
         </div>
       </section>
 
-      {/* Story */}
+      {/* Curated Story & Founder's Note */}
       <section id="story" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 md:px-8">
-        <div className="rounded-3xl bg-t-accent-subtle border border-t-border px-6 py-10 sm:px-12 sm:py-14">
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-t-accent-text">
-            Our Story
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-t-border bg-t-accent-subtle/50 px-6 py-10 sm:px-12 sm:py-14 shadow-sm">
+          <Quote className="h-10 w-10 text-t-accent/30 mb-3" />
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-t-accent-text">
+            Founder&apos;s Note
           </span>
           <p className="mt-3 max-w-2xl font-t-display text-2xl sm:text-3xl leading-snug text-t-text">
             {story}
           </p>
-          <div className="mt-6 flex items-center gap-4 text-xs font-semibold text-t-accent-text">
-            <span>Artisanal Boutique</span>
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-t-accent-text">
+            <span>{state.bizName || template.name}</span>
             <span>·</span>
-            <span>Fast Nationwide Delivery</span>
+            <span>Artisanal Studio</span>
+            <span>·</span>
+            <span>Personal WhatsApp Service</span>
           </div>
         </div>
       </section>
@@ -1295,13 +1337,19 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
         testimonials={state.testimonials}
         onLeaveFeedback={handleFeedbackClick}
       />
-      <FaqSection />
 
-      {/* Footer */}
-      <footer className="border-t border-t-border px-4 py-10 text-center text-xs text-t-text-muted">
-        <p className="text-base font-bold text-t-text">{state.bizName || template.name}</p>
-        <p className="mt-2">{state.phone || "Message us on WhatsApp to order"}</p>
-        <p className="mt-1">{state.deliveryAreas || state.location || ""}</p>
+      <FaqSection faqs={state.faqItems} />
+
+      {/* Boutique Footer */}
+      <footer className="border-t border-t-border bg-t-surface/40 px-4 py-12 text-center text-xs text-t-text-muted">
+        <div className="mx-auto max-w-6xl">
+          <p className="font-t-display text-lg font-bold text-t-text">{state.bizName || template.name}</p>
+          <p className="mt-2 text-sm">{state.phone || "Message us on WhatsApp to order"}</p>
+          <p className="mt-1">{state.deliveryAreas || state.location || "Nationwide Delivery"}</p>
+          <p className="mt-8 text-[11px] opacity-70">
+            &copy; {new Date().getFullYear()} {state.bizName || template.name} · Powered by SwiftLink
+          </p>
+        </div>
       </footer>
 
       <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
@@ -1317,7 +1365,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
 }
 
 // =============================================================================
-// 3. BOLD SITE
+// 3. BOLD SITE (Dribbble Streetwear / High-Energy Brutalist Drop)
 // =============================================================================
 function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const { state, products, categories, activeCategory, cartCount, template } = props;
@@ -1326,6 +1374,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const story = storyOf(state, template);
   const [searchFilter, setSearchFilter] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -1338,8 +1387,6 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
     });
   }, [products, activeCategory, searchFilter]);
 
-  // Catalog windowing: render one page of cards at a time instead of mounting
-  // the entire catalog (see components/storefront/catalog-window.tsx).
   const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
     filtered.length,
     `${activeCategory}|${searchFilter}`,
@@ -1354,25 +1401,44 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   };
 
   return (
-    <div className="min-h-screen bg-t-bg pb-24 font-t-body text-t-text">
-      <div className="h-2 bg-t-accent" />
+    <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text selection:bg-t-accent selection:text-t-accent-fg">
+      {/* High-Energy Running Ticker Tape */}
+      <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-2 text-xs font-black uppercase tracking-[0.25em] text-t-accent-fg">
+        <div className="flex whitespace-nowrap animate-pulse">
+          <span className="mx-4">⚡ NEW DROP LIVE</span>
+          <span className="mx-4">///</span>
+          <span className="mx-4">NATIONWIDE EXPRESS DISPATCH</span>
+          <span className="mx-4">///</span>
+          <span className="mx-4">DIRECT WHATSAPP CHECKOUT</span>
+          <span className="mx-4">///</span>
+          <span className="mx-4">100% VERIFIED AUTHENTIC</span>
+          <span className="mx-4">///</span>
+          <span className="mx-4">SECURE TRANSACTIONS</span>
+        </div>
+      </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-3 sm:px-6">
+      {/* Brutalist Header */}
+      <header className="sticky top-0 z-sticky border-b-2 border-t-border bg-t-bg/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={shopNow}
-            className={cn("truncate min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none text-left text-sm sm:text-lg font-black uppercase tracking-[0.14em]", focusRing)}
+            className={cn(
+              "truncate min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none text-left text-base sm:text-2xl font-black uppercase tracking-wider",
+              focusRing
+            )}
           >
             {state.bizName || template.name}
           </button>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={handleFeedbackClick}
-              className={cn("hidden sm:flex items-center gap-1 border border-t-border px-3 py-2 text-xs font-bold uppercase tracking-wider text-t-text hover:bg-t-surface", focusRing)}
+              className={cn(
+                "hidden sm:flex items-center gap-1 border-2 border-t-border bg-t-surface px-3 py-1.5 text-xs font-black uppercase tracking-wider text-t-text hover:bg-t-accent hover:text-t-accent-fg transition",
+                focusRing
+              )}
             >
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Reviews</span>
@@ -1381,65 +1447,106 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             <button
               type="button"
               onClick={props.onSearch}
-              className={cn("flex items-center gap-1 border border-t-border p-2 sm:px-3 sm:py-2 text-xs font-bold uppercase tracking-wider", focusRing)}
+              className={cn(
+                "flex items-center gap-1 border-2 border-t-border bg-t-surface p-2 sm:px-3 sm:py-1.5 text-xs font-black uppercase tracking-wider",
+                focusRing
+              )}
               aria-label="Search"
             >
               <Search className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Search</span>
             </button>
+
             <button
               type="button"
               onClick={props.onCart}
-              className={cn("flex items-center gap-1.5 bg-t-accent px-3 py-2 sm:px-4 sm:py-2 text-xs font-bold uppercase tracking-wider text-t-accent-fg shadow-sm transition active:scale-95", focusRing)}
+              className={cn(
+                "flex items-center gap-1.5 border-2 border-t-border bg-t-accent px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-black uppercase tracking-wider text-t-accent-fg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all",
+                focusRing
+              )}
               aria-label="Cart"
             >
               <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Cart</span>
+              <span className="hidden sm:inline">Bag</span>
               <CartMark count={cartCount} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="bg-t-accent text-t-accent-fg">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-12 md:py-20">
-          <div className="md:col-span-7">
-            <span className="text-xs font-black uppercase tracking-[0.28em] opacity-80">
-              Official Storefront
-            </span>
-            <h1 className="mt-3 text-4xl sm:text-6xl md:text-7xl font-black uppercase leading-[0.88] tracking-tight break-words">
-              {title}
-            </h1>
-            <p className="mt-5 max-w-sm text-sm sm:text-base leading-relaxed opacity-90">
-              {subtitle}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={shopNow}
-                className={cn("bg-t-bg px-6 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-t-text shadow-md transition active:scale-95", focusRing)}
-              >
-                {state.heroButtonText || "Shop Collection"} →
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 md:col-span-5">
-            {(products.length > 0 ? products.slice(0, 2) : []).map((product) => (
-              <button
-                key={product.id}
-                type="button"
-                onClick={() => props.onProduct(product)}
-                className={cn("aspect-square overflow-hidden bg-t-bg border border-t-border", focusRing)}
-              >
-                <ProductMedia product={product} />
-              </button>
-            ))}
-            {products.length === 0 && (
-              <div className="col-span-2 flex aspect-[16/9] items-center justify-center rounded-xl border border-white/20 text-[11px] font-black uppercase tracking-[0.24em] opacity-70">
-                Catalog coming soon
+      {/* Streetwear Poster Hero */}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12">
+        <div className="border-2 border-t-border bg-t-surface p-6 sm:p-10 md:p-12 shadow-[6px_6px_0px_0px_var(--t-accent)]">
+          <div className="grid items-center gap-8 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-7">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="border-2 border-current bg-t-accent px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-t-accent-fg">
+                  DROP ACTIVE
+                </span>
+                <span className="border border-t-border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-t-text-muted">
+                  NATIONWIDE DISPATCH
+                </span>
               </div>
-            )}
+              <h1 className="mt-4 text-4xl sm:text-6xl md:text-7xl font-black uppercase leading-[0.88] tracking-tight break-words">
+                {title}
+              </h1>
+              <p className="mt-4 max-w-md text-sm sm:text-base font-bold leading-relaxed opacity-85">
+                {subtitle}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={shopNow}
+                  className={cn(
+                    "border-2 border-t-border bg-t-accent px-6 py-3.5 text-xs font-black uppercase tracking-[0.18em] text-t-accent-fg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all",
+                    focusRing
+                  )}
+                >
+                  {state.heroButtonText || "GRAB THE DROP"} →
+                </button>
+                {waDigits && (
+                  <a
+                    href={`https://wa.me/${waDigits}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2 border-2 border-t-border bg-t-bg px-5 py-3.5 text-xs font-black uppercase tracking-[0.14em] text-t-text shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-t-surface active:translate-x-1 active:translate-y-1 active:shadow-none transition-all",
+                      focusRing
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4 text-emerald-500" />
+                    <span>WHATSAPP VIP CHAT</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 md:col-span-5">
+              {(products.length > 0 ? products.slice(0, 2) : []).map((product, idx) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => props.onProduct(product)}
+                  className={cn(
+                    "relative aspect-square overflow-hidden border-2 border-t-border bg-t-bg text-left group transition hover:scale-[1.02]",
+                    focusRing
+                  )}
+                >
+                  <ProductMedia product={product} />
+                  <span className="absolute top-2 left-2 border border-black bg-black px-1.5 py-0.5 text-[9px] font-black text-white">
+                    #{String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <span className="absolute bottom-2 left-2 right-2 truncate bg-black/80 px-2 py-1 text-[10px] font-black text-white">
+                    {formatPrice(state.currency, product.price)}
+                  </span>
+                </button>
+              ))}
+              {products.length === 0 && (
+                <div className="col-span-2 flex aspect-[16/9] items-center justify-center border-2 border-dashed border-t-border p-6 text-xs font-black uppercase tracking-widest text-t-text-muted">
+                  NEXT DROP PREPARING
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -1447,26 +1554,31 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       {/* Trust Strip */}
       <TrustFeaturesStrip template={template} />
 
-      {/* Catalog */}
+      {/* Brutalist Catalog */}
       <section id="catalog" className="scroll-mt-16 py-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-t-border pb-4">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-t-text">
-              All Items ({products.length})
-            </h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b-2 border-t-border pb-4">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-t-accent">
+                OFFICIAL INVENTORY
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-t-text">
+                FULL CATALOG ({products.length})
+              </h2>
+            </div>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t-text-muted" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search catalog…"
-                className="w-full border border-t-border bg-t-surface py-2 pl-9 pr-3 text-xs uppercase tracking-wider text-t-text outline-none focus:border-t-accent"
+                placeholder="SEARCH CATALOG…"
+                className="w-full border-2 border-t-border bg-t-surface py-2 pl-9 pr-3 text-xs font-bold uppercase tracking-wider text-t-text outline-none focus:border-t-accent"
               />
             </div>
           </div>
 
-          {/* Categories */}
+          {/* Brutalist Category Switcher */}
           <div className="flex gap-2 overflow-x-auto py-3 border-b border-t-border scrollbar-none" role="tablist">
             {categories.map((category) => {
               const selected = category === activeCategory;
@@ -1478,9 +1590,11 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   aria-selected={selected}
                   onClick={() => props.onCategory(category)}
                   className={cn(
-                    "shrink-0 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] transition",
+                    "shrink-0 border-2 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.16em] transition",
                     focusRing,
-                    selected ? "bg-t-accent text-t-accent-fg" : "text-t-text-muted hover:text-t-text"
+                    selected
+                      ? "border-t-border bg-t-accent text-t-accent-fg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                      : "border-t-border/50 text-t-text-muted hover:border-t-border hover:text-t-text"
                   )}
                 >
                   {category}
@@ -1490,26 +1604,29 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="py-10">
+            <div className="py-12">
               <EmptyCatalog />
             </div>
           ) : (
-            <div className="mt-6 grid grid-cols-1 gap-px bg-t-border min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 min-[460px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {filtered.slice(0, shown).map((product, index) => (
                 <div
                   key={product.id}
                   onClick={() => props.onProduct(product)}
-                  className={cn("bg-t-bg p-4 flex flex-col justify-between group cursor-pointer transition hover:bg-t-surface", focusRing)}
+                  className={cn(
+                    "border-2 border-t-border bg-t-surface p-3.5 flex flex-col justify-between group cursor-pointer transition hover:-translate-y-1 hover:shadow-[5px_5px_0px_0px_var(--t-accent)]",
+                    focusRing
+                  )}
                 >
                   <div>
-                    <div className="relative aspect-square overflow-hidden bg-t-surface-alt">
+                    <div className="relative aspect-square overflow-hidden border border-t-border bg-t-bg">
                       <ProductMedia product={product} className="transition-transform duration-500 group-hover:scale-105" />
-                      <span className="absolute left-2 top-2 bg-black/70 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-white">
-                        {String(index + 1).padStart(2, "0")}
+                      <span className="absolute left-2 top-2 border border-black bg-black px-1.5 py-0.5 text-[9px] font-black tabular-nums text-white">
+                        #{String(index + 1).padStart(3, "0")}
                       </span>
                       {product.outOfStock && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                          <span className="border-2 border-white px-2 py-1 text-[10px] font-black uppercase text-white">
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/85">
+                          <span className="border-2 border-white px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white">
                             SOLD OUT
                           </span>
                         </div>
@@ -1517,7 +1634,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                     </div>
                     <div className="mt-3">
                       <span className="text-[9px] font-black uppercase tracking-widest text-t-accent">
-                        {product.category || "Item"}
+                        {product.category || "DROP ITEM"}
                       </span>
                       <h3 className="mt-1 text-sm font-black uppercase tracking-wider text-t-text line-clamp-1">
                         {product.name}
@@ -1530,8 +1647,8 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-t-border pt-3">
-                    <span className="text-sm font-black tabular-nums text-t-text">
+                  <div className="mt-4 flex items-center justify-between border-t-2 border-t-border pt-3">
+                    <span className="text-base font-black tabular-nums text-t-text">
                       {formatPrice(state.currency, product.price)}
                     </span>
                     <button
@@ -1541,9 +1658,9 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                         e.stopPropagation();
                         props.onProduct(product);
                       }}
-                      className="bg-t-accent px-3 py-1 text-[11px] font-black uppercase tracking-wider text-t-accent-fg hover:opacity-90"
+                      className="border-2 border-current bg-t-accent px-3.5 py-1 text-xs font-black uppercase tracking-wider text-t-accent-fg hover:opacity-90 active:scale-95"
                     >
-                      Order
+                      GET IT
                     </button>
                   </div>
                 </div>
@@ -1554,15 +1671,22 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         </div>
       </section>
 
-      {/* Story */}
-      <section id="story" className="border-t border-t-border px-4 py-16 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <span className="text-xs font-black uppercase tracking-[0.24em] text-t-accent">
-            Manifesto
+      {/* Manifesto */}
+      <section id="story" className="border-t-2 border-t-border px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-6xl border-2 border-t-border bg-t-surface p-8 sm:p-12 shadow-[5px_5px_0px_0px_var(--t-accent)]">
+          <span className="text-xs font-black uppercase tracking-[0.28em] text-t-accent">
+            // OUR MANIFESTO
           </span>
-          <p className="mt-3 max-w-3xl text-2xl sm:text-3xl font-black uppercase leading-tight tracking-tight text-t-text">
+          <p className="mt-3 max-w-3xl text-2xl sm:text-4xl font-black uppercase leading-tight tracking-tight text-t-text">
             {story}
           </p>
+          <div className="mt-6 flex flex-wrap gap-4 text-xs font-black uppercase tracking-wider text-t-text-muted">
+            <span>DIRECT DISPATCH</span>
+            <span>·</span>
+            <span>VERIFIED QUALITY</span>
+            <span>·</span>
+            <span>WHATSAPP SUPPORT</span>
+          </div>
         </div>
       </section>
 
@@ -1571,14 +1695,15 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         testimonials={state.testimonials}
         onLeaveFeedback={handleFeedbackClick}
       />
-      <FaqSection />
 
-      {/* Footer */}
-      <footer className="border-t border-t-border px-4 py-8 text-[11px] font-bold uppercase tracking-[0.16em] text-t-text-muted sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 md:flex-row md:justify-between">
-          <span>{state.bizName || template.name}</span>
-          <span>{state.phone || "Order on WhatsApp"}</span>
-          <span>{state.deliveryAreas || state.location || "Nationwide Delivery"}</span>
+      <FaqSection faqs={state.faqItems} />
+
+      {/* Brutalist Footer */}
+      <footer className="border-t-2 border-t-border bg-t-surface px-4 py-8 text-xs font-black uppercase tracking-[0.16em] text-t-text-muted sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:justify-between md:items-center">
+          <span className="text-sm font-black text-t-text">{state.bizName || template.name}</span>
+          <span>{state.phone || "ORDERS VIA WHATSAPP"}</span>
+          <span>{state.deliveryAreas || state.location || "NATIONWIDE TRACKED DISPATCH"}</span>
         </div>
       </footer>
 
@@ -1594,17 +1719,617 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   );
 }
 
+// =============================================================================
+// 4. MARKETPLACE SITE (Uniland / High-Density Dynamic Marketplace)
+// =============================================================================
+function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const title = state.heroTitle || state.bizName || template.name;
+  const subtitle = state.heroSubtitle || state.tagline || template.tagline;
+  const story = storyOf(state, template);
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
+      {/* Top Flash Deals Bar */}
+      <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center text-xs font-bold tracking-wide shadow-2xs">
+        <span className="inline-flex items-center gap-1.5">
+          <Flame className="h-3.5 w-3.5 fill-amber-950 inline" />
+          <span>Flash Marketplace Deals: Order direct to WhatsApp for fastest dispatch!</span>
+        </span>
+      </div>
+
+      {/* Marketplace Header */}
+      <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <button type="button" onClick={shopNow} className={cn("flex min-w-0 items-center gap-2", focusRing)}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-t-accent text-t-accent-fg font-black text-sm shadow-xs">
+              {(state.bizName || template.name).slice(0, 2).toUpperCase()}
+            </div>
+            <div className="text-left">
+              <span className="block truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs font-black text-base sm:text-lg tracking-tight text-t-text">
+                {state.bizName || template.name}
+              </span>
+              <span className="hidden sm:block text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                ● Verified Merchant
+              </span>
+            </div>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 rounded-xl border border-t-border bg-t-surface px-3 py-1.5 text-xs font-semibold text-t-text hover:border-t-accent",
+                focusRing
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-t-accent" />
+              <span>Reviews</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn(
+                "flex items-center gap-1 rounded-xl border border-t-border bg-t-surface p-2 sm:px-3 sm:py-1.5 text-xs font-semibold",
+                focusRing
+              )}
+              aria-label="Search"
+            >
+              <Search className="h-3.5 w-3.5 text-t-text-muted" />
+              <span className="hidden sm:inline">Search</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn(
+                "flex items-center gap-1.5 rounded-xl bg-t-accent px-3.5 py-2 text-xs font-bold text-t-accent-fg shadow-sm transition hover:opacity-95 active:scale-95",
+                focusRing
+              )}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden sm:inline">Cart</span>
+              <CartMark count={cartCount} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Vibrant Marketplace Billboard Hero */}
+      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-10">
+        <div className="rounded-3xl border border-t-border bg-gradient-to-r from-t-surface via-t-surface-alt to-t-surface p-6 sm:p-10 shadow-sm">
+          <div className="grid items-center gap-6 md:grid-cols-12 md:gap-8">
+            <div className="md:col-span-7 space-y-3.5">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Verified Direct Storefront</span>
+              </span>
+              <h1 className="font-t-display text-2xl sm:text-4xl md:text-5xl font-black text-t-text leading-tight break-words">
+                {title}
+              </h1>
+              <p className="max-w-md text-xs sm:text-sm leading-relaxed text-t-text-muted">
+                {subtitle}
+              </p>
+              <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={shopNow}
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl bg-t-accent px-5 py-3 text-xs sm:text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
+                    focusRing
+                  )}
+                >
+                  <span>{state.heroButtonText || "Shop All Products"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {waDigits && (
+                  <a
+                    href={`https://wa.me/${waDigits}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border border-t-border bg-t-surface px-4 py-3 text-xs sm:text-sm font-bold text-t-text hover:border-t-accent",
+                      focusRing
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4 text-emerald-500" />
+                    <span>WhatsApp Inquiry</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Featured Flash Deals strip */}
+            <div className="md:col-span-5">
+              <div className="rounded-2xl border border-t-border bg-t-bg p-4 shadow-2xs">
+                <div className="flex items-center justify-between pb-3 border-b border-t-border">
+                  <span className="text-xs font-bold text-t-text flex items-center gap-1">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" /> Featured Picks
+                  </span>
+                  <span className="text-[10px] font-semibold text-t-accent">Fast Delivery</span>
+                </div>
+                <div className="mt-3 space-y-2.5">
+                  {(products.length > 0 ? products.slice(0, 2) : []).map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => props.onProduct(product)}
+                      className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-t-surface-alt transition cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-t-border bg-t-surface-alt">
+                          <ProductMedia product={product} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-bold text-t-text">{product.name}</p>
+                          <p className="text-[11px] font-bold text-t-accent tabular-nums">
+                            {formatPrice(state.currency, product.price)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          props.onProduct(product);
+                        }}
+                        className="shrink-0 rounded-lg bg-t-accent-subtle px-2.5 py-1 text-[11px] font-bold text-t-accent-text hover:bg-t-accent hover:text-t-accent-fg transition"
+                      >
+                        Order
+                      </button>
+                    </div>
+                  ))}
+                  {products.length === 0 && (
+                    <p className="text-center py-4 text-xs text-t-text-muted">No featured items yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Bar */}
+      <TrustFeaturesStrip template={template} />
+
+      {/* High-Density Catalog Grid */}
+      <section id="catalog" className="scroll-mt-16 py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-t-border pb-4">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-t-accent">
+                Superstore Inventory
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-t-text">
+                Browse Marketplace ({products.length})
+              </h2>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-t-text-muted" />
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="Search products…"
+                className="w-full rounded-xl border border-t-border bg-t-surface py-2 pl-9 pr-3 text-xs text-t-text outline-none focus:border-t-accent"
+              />
+            </div>
+          </div>
+
+          {/* Category Chips Carousel */}
+          <div className="flex gap-2 overflow-x-auto py-3 scrollbar-none" role="tablist">
+            {categories.map((category) => {
+              const selected = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => props.onCategory(category)}
+                  className={cn(
+                    "shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-2xs",
+                    focusRing,
+                    selected
+                      ? "bg-t-accent text-t-accent-fg shadow-xs"
+                      : "border border-t-border bg-t-surface text-t-text-muted hover:text-t-text"
+                  )}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="py-12">
+              <EmptyCatalog />
+            </div>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
+              {filtered.slice(0, shown).map((product) => (
+                <div
+                  key={product.id}
+                  onClick={() => props.onProduct(product)}
+                  className={cn(
+                    "group flex flex-col justify-between rounded-2xl border border-t-border bg-t-surface p-2.5 sm:p-3 shadow-2xs transition-all duration-200 hover:shadow-md cursor-pointer",
+                    focusRing
+                  )}
+                >
+                  <div>
+                    <div className="relative aspect-square overflow-hidden rounded-xl bg-t-surface-alt">
+                      <ProductMedia product={product} className="transition-transform duration-300 group-hover:scale-105" />
+                      {product.outOfStock && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                          <span className="rounded-md bg-black/90 px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+                            Out of stock
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between text-[10px] text-t-text-muted">
+                        <span>{product.category || "Item"}</span>
+                        <span className="flex items-center text-amber-500 font-bold">
+                          <Star className="h-2.5 w-2.5 fill-amber-500 mr-0.5" /> 5.0
+                        </span>
+                      </div>
+                      <h3 className="mt-1 text-xs sm:text-sm font-bold text-t-text line-clamp-1 group-hover:text-t-accent transition">
+                        {product.name}
+                      </h3>
+                      {product.description && (
+                        <p className="mt-0.5 text-[11px] text-t-text-muted line-clamp-1">
+                          {product.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-t-border/60 pt-2.5">
+                    <span className="text-xs sm:text-sm font-bold tabular-nums text-t-text">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={product.outOfStock}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onProduct(product);
+                      }}
+                      className="rounded-lg bg-t-accent px-2.5 py-1 text-[11px] font-bold text-t-accent-fg hover:opacity-90 transition shadow-2xs"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
+        </div>
+      </section>
+
+      {/* Story */}
+      <section id="story" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="rounded-2xl border border-t-border bg-t-surface p-6 sm:p-10">
+          <span className="text-xs font-bold uppercase tracking-wider text-t-accent">
+            About Our Store
+          </span>
+          <p className="mt-2 max-w-3xl text-lg sm:text-xl font-bold leading-relaxed text-t-text">
+            {story}
+          </p>
+        </div>
+      </section>
+
+      <TestimonialsSection
+        bizName={state.bizName || template.name}
+        testimonials={state.testimonials}
+        onLeaveFeedback={handleFeedbackClick}
+      />
+
+      <FaqSection faqs={state.faqItems} />
+
+      {/* Footer */}
+      <footer className="border-t border-t-border bg-t-surface px-4 py-8 text-center text-xs text-t-text-muted">
+        <p className="font-bold text-t-text">{state.bizName || template.name}</p>
+        <p className="mt-1">{state.phone || "Order direct on WhatsApp"}</p>
+        <p className="mt-0.5">{state.deliveryAreas || state.location || "Nationwide Delivery"}</p>
+      </footer>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// 5. STUDIO SITE (Minimalist Contemporary Lookbook / Design Gallery)
+// =============================================================================
+function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const title = state.heroTitle || state.bizName || template.name;
+  const subtitle = state.heroSubtitle || state.tagline || template.tagline;
+  const story = storyOf(state, template);
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
+      {/* Studio Header */}
+      <header className="sticky top-0 z-sticky border-b border-t-border/50 bg-t-bg/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
+          <button
+            type="button"
+            onClick={shopNow}
+            className={cn("text-left text-sm sm:text-base font-semibold tracking-widest uppercase", focusRing)}
+          >
+            {state.bizName || template.name}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn("hidden sm:block text-xs uppercase tracking-wider text-t-text-muted hover:text-t-text", focusRing)}
+            >
+              Reviews
+            </button>
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn("p-2 text-t-text hover:text-t-accent", focusRing)}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn(
+                "flex items-center gap-1.5 border border-t-border px-3.5 py-1.5 text-xs uppercase tracking-wider text-t-text hover:border-t-accent transition",
+                focusRing
+              )}
+              aria-label="Bag"
+            >
+              <span>Bag</span>
+              <CartMark count={cartCount} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Lookbook Hero */}
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-8 md:py-24 text-center">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-t-text-muted">
+          Edition 01 / Selected Works
+        </span>
+        <h1 className="mt-4 font-t-display text-4xl sm:text-6xl md:text-7xl font-light tracking-tight text-t-text max-w-3xl mx-auto break-words leading-tight">
+          {title}
+        </h1>
+        <p className="mt-4 max-w-lg mx-auto text-sm text-t-text-muted leading-relaxed font-light">
+          {subtitle}
+        </p>
+        <div className="mt-8 flex justify-center items-center gap-4">
+          <button
+            type="button"
+            onClick={shopNow}
+            className={cn(
+              "border-b border-t-text pb-1 text-xs uppercase tracking-widest text-t-text hover:text-t-accent hover:border-t-accent transition",
+              focusRing
+            )}
+          >
+            {state.heroButtonText || "View Works"} ↓
+          </button>
+          {waDigits && (
+            <a
+              href={`https://wa.me/${waDigits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "border-b border-transparent pb-1 text-xs uppercase tracking-widest text-t-text-muted hover:text-t-text transition",
+                focusRing
+              )}
+            >
+              Inquire Online
+            </a>
+          )}
+        </div>
+      </section>
+
+      {/* Lookbook Catalog Grid */}
+      <section id="catalog" className="scroll-mt-16 py-12">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-t-border/50 pb-4">
+            <span className="text-xs uppercase tracking-widest text-t-text-muted">
+              Catalog ({products.length} works)
+            </span>
+            <div className="flex gap-4 overflow-x-auto scrollbar-none" role="tablist">
+              {categories.map((category) => {
+                const selected = category === activeCategory;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => props.onCategory(category)}
+                    className={cn(
+                      "shrink-0 text-xs uppercase tracking-widest transition",
+                      focusRing,
+                      selected ? "text-t-text font-bold underline underline-offset-8" : "text-t-text-muted hover:text-t-text"
+                    )}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="py-16">
+              <EmptyCatalog />
+            </div>
+          ) : (
+            <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
+              {filtered.slice(0, shown).map((product) => (
+                <div
+                  key={product.id}
+                  onClick={() => props.onProduct(product)}
+                  className="group cursor-pointer flex flex-col justify-between"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden bg-t-surface-alt">
+                    <ProductMedia product={product} className="transition-transform duration-700 group-hover:scale-105" />
+                    {product.outOfStock && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <span className="text-xs uppercase tracking-widest text-white">
+                          Archived
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex items-baseline justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium tracking-wide text-t-text group-hover:text-t-accent transition">
+                        {product.name}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-t-text-muted font-light">{product.category}</p>
+                    </div>
+                    <span className="text-xs font-semibold tabular-nums text-t-text">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
+        </div>
+      </section>
+
+      {/* Studio Philosophy */}
+      <section id="story" className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-8">
+        <span className="text-[11px] uppercase tracking-[0.25em] text-t-text-muted">Studio Philosophy</span>
+        <p className="mt-4 font-t-display text-2xl sm:text-3xl leading-relaxed font-light text-t-text">
+          {story}
+        </p>
+      </section>
+
+      <TestimonialsSection
+        bizName={state.bizName || template.name}
+        testimonials={state.testimonials}
+        onLeaveFeedback={handleFeedbackClick}
+      />
+
+      <FaqSection faqs={state.faqItems} />
+
+      {/* Studio Footer */}
+      <footer className="border-t border-t-border/50 px-4 py-12 text-center text-xs uppercase tracking-widest text-t-text-muted">
+        <p>{state.bizName || template.name}</p>
+        <p className="mt-2 text-[11px] opacity-70">
+          &copy; {new Date().getFullYear()} · Nationwide Service
+        </p>
+      </footer>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// ROUTER: TEMPLATE SITE
+// =============================================================================
 export function TemplateSite(props: TemplateSiteProps) {
   const template = websiteTemplateById(props.state.websiteTemplateId);
   if (!template) return null;
 
-  // Route by the template's navigation shape so each member of the family lands
-  // on the layout that matches how it behaves. The three original templates map
-  // exactly as they always did (boutique=drawer, bold=bottom, editorial=top);
-  // the newer ones reuse those engines while their palette, type pairing,
-  // radius, density and image ratio make each look distinct.
-  const nav = template.light.nav;
-  if (nav === "drawer") return <BoutiqueSite {...props} template={template} />;
-  if (nav === "bottom") return <BoldSite {...props} template={template} />;
+  // Route each template to its dedicated visual experience
+  const id = props.state.websiteTemplateId || template.id;
+
+  if (id === "market") {
+    return <MarketplaceSite {...props} template={template} />;
+  }
+
+  if (id === "studio" || id === "noir" || id === "coast") {
+    return <StudioSite {...props} template={template} />;
+  }
+
+  if (id === "bold" || id === "forge" || template.light.nav === "bottom") {
+    return <BoldSite {...props} template={template} />;
+  }
+
+  if (id === "boutique" || id === "bloom" || id === "oasis" || template.light.nav === "drawer") {
+    return <BoutiqueSite {...props} template={template} />;
+  }
+
+  // Baseline classic editorial layout preserved as requested
   return <EditorialSite {...props} template={template} />;
 }
+

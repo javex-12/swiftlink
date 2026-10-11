@@ -13,6 +13,8 @@ SwiftLink Pro is a **storefront builder for small businesses** — a merchant cr
 | [`docs/02-BUILDER-ARCHITECTURE.md`](docs/02-BUILDER-ARCHITECTURE.md) | The customization engine (themes → templates → sections → blocks), data model, routing, stack decisions, P0–P6 roadmap |
 | [`docs/03-DECISIONS.md`](docs/03-DECISIONS.md) | Locked decisions, phase progress, and the reasoning behind both |
 | [`docs/04-SUPABASE-WORKFLOW.md`](docs/04-SUPABASE-WORKFLOW.md) | Migration workflow, environment setup, and where each RLS finding stands |
+| [`docs/06-DEPLOYMENT.md`](docs/06-DEPLOYMENT.md) | Release procedure: blue-green, verification gates, rollback, safe migrations |
+| [`docs/07-HOW-EVERYTHING-WORKS.md`](docs/07-HOW-EVERYTHING-WORKS.md) | Orientation: request lifecycle, store data, storefront rendering, SEO/discovery, deployment checklist |
 
 ## Quick start
 

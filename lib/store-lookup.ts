@@ -101,6 +101,83 @@ export async function getStoreHandleById(id: string): Promise<string | null> {
   }
 }
 
+export type DirectoryStore = {
+  handle: string;
+  bizName: string;
+  tagline: string;
+  description: string;
+  image: string | null;
+  location: string | null;
+  categories: string[];
+  productCount: number;
+  updatedAt: string | null;
+};
+
+/**
+ * Public storefront rows for the `/stores` directory.
+ *
+ * This is the one page that lets a visitor (and a crawler) find a store by the
+ * name they know: store pages themselves are reachable only if you already have
+ * the handle or the link. The same visibility rules as the sitemap apply — no
+ * banned stores, no stores left unpublished by a downgrade.
+ *
+ * `query` filters on business name, handle, tagline and location, so
+ * `/stores?q=cyd` is a real, shareable, crawlable URL rather than a client-only
+ * filter.
+ */
+export async function getPublicStoresForDirectory(query = ""): Promise<DirectoryStore[]> {
+  const supabase = publicClient();
+  if (!supabase) return [];
+
+  const needle = query.trim().toLowerCase();
+
+  try {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("store_username, biz_name, state_json, updated_at, account_status")
+      .not("store_username", "is", null)
+      .limit(500);
+
+    if (error || !data) return [];
+
+    return data
+      .filter((row: any) => row.account_status !== "banned")
+      .filter((row: any) => (row.state_json?.isLive ?? true) !== false)
+      .map((row: any): DirectoryStore => {
+        const state = (row.state_json ?? {}) as Partial<ShopState>;
+        const bizName = (state.bizName || row.biz_name || "SwiftLink Store") as string;
+        return {
+          handle: normalizeStoreUsername(String(row.store_username)),
+          bizName,
+          tagline: String(state.tagline || ""),
+          description: String(state.bio || state.aboutUs || "").slice(0, 200),
+          // Base64 uploads render fine in a browser but are meaningless to a
+          // crawler or an OG card, so they are dropped here.
+          image:
+            state.bizImage && !String(state.bizImage).startsWith("data:")
+              ? String(state.bizImage)
+              : null,
+          location: state.location ? String(state.location) : null,
+          categories: (state.categories || []).slice(0, 6).map(String),
+          productCount: (state.products || []).filter((p) => p?.visible !== false).length,
+          updatedAt: (row.updated_at as string) ?? null,
+        };
+      })
+      .filter((store) => Boolean(store.handle))
+      .filter((store) => {
+        if (!needle) return true;
+        const haystack = [store.bizName, store.handle, store.tagline, store.location]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(needle);
+      })
+      .sort((a, b) => a.bizName.localeCompare(b.bizName));
+  } catch {
+    return [];
+  }
+}
+
 export type SitemapStore = { handle: string; updatedAt: string | null };
 
 /**

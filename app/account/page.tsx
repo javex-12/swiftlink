@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase } from "@/lib/supabase-client";
 import { ProLayout } from "@/components/ProLayout";import {
@@ -12,16 +12,73 @@ import { cn } from "@/lib/utils";
 import {
   PLANS,
   PLAN_DETAILS,
+  applyProductVisibility,
   effectiveProductLimitFor,
   effectiveStoreLimitFor,
+  formatLimit,
   formatUsage,
   isUnlimited,
   normalizePlan,
 } from "@/lib/plans";
 
 export default function AccountPage() {
-  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores } =
+  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores, chooseStore } =
     useSwiftLink();
+
+  const [actionLoading, setActionLoading] = useState<"deactivate" | "delete" | null>(null);
+
+  const handleDeactivate = async () => {
+    if (!window.confirm("Deactivate your store? Your storefront will be paused and hidden from visitors. You can reactivate anytime by logging back in.")) {
+      return;
+    }
+    setActionLoading("deactivate");
+    try {
+      if (user?.id) {
+        await supabase
+          .from("stores")
+          .update({ is_live: false, state_json: { ...state, isLive: false } })
+          .eq("owner_id", user.id);
+      }
+      addToast("Account deactivated and store paused.", "info");
+      await authSignOut();
+    } catch (e: any) {
+      addToast("Could not deactivate account: " + (e.message || "Unknown error"), "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete your account?\n\nYour store will immediately be taken offline. All your products and store data will be permanently wiped after a 30-day grace period.\n\nPress OK to confirm account deletion."
+      )
+    ) {
+      return;
+    }
+    setActionLoading("delete");
+    try {
+      if (user?.id) {
+        await supabase
+          .from("stores")
+          .update({
+            is_live: false,
+            state_json: {
+              ...state,
+              isLive: false,
+              deletion_requested_at: new Date().toISOString(),
+            },
+          })
+          .eq("owner_id", user.id);
+      }
+      addToast("Account scheduled for deletion. Data will be completely wiped in 30 days.", "info");
+      await authSignOut();
+    } catch (e: any) {
+      addToast("Could not request account deletion: " + (e.message || "Unknown error"), "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   /*
    * Plan panel data. Everything comes from `lib/plans` so this screen, the
@@ -44,6 +101,33 @@ export default function AccountPage() {
     { label: "Stores", used: stores.length, limit: storeLimit, icon: Store },
   ];
   const atLimit = usage.some((u) => !isUnlimited(u.limit) && u.used >= u.limit);
+
+  /*
+   * "Choose what stays live". Products are pre-selected from what the
+   * storefront currently shows, so saving without touching anything is a no-op;
+   * the choice is only sent when the merchant actually changes it.
+   */
+  const hiddenProducts = state.products.filter((product) => product.visible === false);
+  const visibleProductIds = state.products
+    .filter((product) => product.visible !== false)
+    .map((product) => product.id);
+  const [pickedIds, setPickedIds] = useState<number[]>(visibleProductIds);
+  useEffect(() => {
+    setPickedIds(
+      state.products.filter((product) => product.visible !== false).map((product) => product.id),
+    );
+    // Re-seed when the merchant moves to a different store; not on every save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.id]);
+  const togglePicked = (id: number) =>
+    setPickedIds((prev) => {
+      if (prev.includes(id)) return prev.filter((value) => value !== id);
+      if (prev.length >= productLimit) return prev;
+      return [...prev, id];
+    });
+  const needsChoice =
+    (!isUnlimited(productLimit) && hiddenProducts.length > 0) || stores.length > storeLimit;
+  const formatPrice = (value: number) => `${state.currency || "₦"}${Number(value).toLocaleString()}`;
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -287,6 +371,125 @@ export default function AccountPage() {
                   {plan === "business" ? "Ask about your plan" : "Request an upgrade"}
                 </button>
               </div>
+
+              {/*
+                Choosing, for accounts that were already over their plan.
+
+                Existing accounts are not asked to delete anything: products
+                beyond the cap are hidden and extra stores are paused, and this
+                is where the merchant says *which* ones they want. Before this,
+                the rules blocked new additions while the rows already there kept
+                running, so the limit read as a suggestion.
+              */}
+              {needsChoice && (
+                <div className="mt-6 rounded-[14px] border border-[#E8B93A]/40 bg-[#E8B93A]/5 p-4 sm:p-5">
+                  <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#E8B93A]">
+                    <AlertCircle size={14} /> Choose what stays live
+                  </h4>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-[#9DB3A8]">
+                    The {planDetail.name} plan includes {formatLimit(productLimit)} and{" "}
+                    {formatLimit(storeLimit)} store. {hiddenProducts.length > 0 && `${hiddenProducts.length} hidden from your storefront. `}
+                    Nothing has been deleted — pick again here any time, or upgrade for more.
+                  </p>
+
+                  {hiddenProducts.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[11px] font-semibold text-[#E8F1EC]">
+                        Products shown on your storefront: {pickedIds.length} of {Math.min(productLimit, state.products.length)}
+                      </p>
+                      <div className="mt-2 max-h-60 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
+                        {state.products.map((product) => {
+                          const picked = pickedIds.includes(product.id);
+                          const full = !picked && pickedIds.length >= productLimit;
+                          return (
+                            <button
+                              key={product.id}
+                              type="button"
+                              aria-pressed={picked}
+                              disabled={full}
+                              onClick={() => togglePicked(product.id)}
+                              className={cn(
+                                "flex w-full items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition",
+                                picked ? "border-[#19C37D]/50 bg-[#19C37D]/10" : "border-[#1E2D27] bg-[#0E1714]",
+                                full && "opacity-40",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                                  picked ? "border-[#19C37D] bg-[#19C37D] text-[#04140D]" : "border-[#24382F]",
+                                )}
+                              >
+                                {picked && <CheckCircle2 size={11} />}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[#E8F1EC]">
+                                {product.name || `Product ${product.id}`}
+                              </span>
+                              <span className="shrink-0 text-[11px] tabular-nums text-[#9DB3A8]">
+                                {formatPrice(product.price)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={pickedIds.length === 0}
+                        onClick={() => {
+                          updateState("products", applyProductVisibility(state.products, pickedIds));
+                          addToast(
+                            `${pickedIds.length} product${pickedIds.length === 1 ? "" : "s"} will show on your storefront.`,
+                            "success",
+                          );
+                        }}
+                        className="mt-3 flex min-h-[40px] items-center justify-center gap-2 rounded-[12px] bg-[#19C37D] px-4 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] disabled:opacity-40"
+                      >
+                        Save my {Math.min(productLimit, state.products.length)} products
+                      </button>
+                    </div>
+                  )}
+
+                  {stores.length > storeLimit && (
+                    <div className="mt-5 border-t border-[#E8B93A]/20 pt-4">
+                      <p className="text-[11px] font-semibold text-[#E8F1EC]">
+                        Store you run: {state.bizName || "Untitled"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                        One store can be live on {planDetail.name}. Picking another pauses the rest.
+                      </p>
+                      <div className="mt-2 space-y-1.5">
+                        {stores.map((store) => {
+                          const running = store.id === state.id;
+                          return (
+                            <div
+                              key={store.id}
+                              className="flex items-center justify-between gap-3 rounded-[10px] border border-[#1E2D27] bg-[#0E1714] px-3 py-2"
+                            >
+                              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[#E8F1EC]">
+                                {store.bizName || "Untitled store"}
+                                {running ? (
+                                  <span className="ml-2 text-[10px] font-semibold text-[#19C37D]">running</span>
+                                ) : (
+                                  <span className="ml-2 text-[10px] font-semibold text-[#9DB3A8]">paused</span>
+                                )}
+                              </span>
+                              {!running && (
+                                <button
+                                  type="button"
+                                  onClick={() => void chooseStore(store.id as string)}
+                                  className="shrink-0 rounded-lg border border-[#24382F] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#E8F1EC] transition hover:border-[#19C37D]/50 hover:text-[#19C37D]"
+                                >
+                                  Run this store
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             {/*
@@ -401,12 +604,15 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Session Actions */}
+            {/* Account & Data Actions */}
             <div className="bg-[#111C18] rounded-[18px] border border-[#1E2D27] p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertCircle className="text-[#E8B93A]" size={18} />
-                <h3 className="font-semibold text-sm text-[#E8F1EC]">Account Session</h3>
+              <div className="flex items-center gap-3 mb-2">
+                <Lock className="text-[#19C37D]" size={18} />
+                <h3 className="font-semibold text-sm text-[#E8F1EC]">Account & Data Safety</h3>
               </div>
+              <p className="text-xs text-[#9DB3A8] leading-relaxed mb-5">
+                Manage your session or schedule account removal. Deleted accounts enter a 30-day grace period before data is permanently wiped.
+              </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
@@ -417,10 +623,19 @@ export default function AccountPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleSignOut}
-                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#2a1414] border border-[#FF8A8A]/30 text-[#FF8A8A] rounded-[12px] text-xs font-semibold hover:bg-[#3d1818] transition"
+                  disabled={actionLoading !== null}
+                  onClick={handleDeactivate}
+                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#14231D] border border-[#E8B93A]/30 text-[#E8B93A] rounded-[12px] text-xs font-semibold hover:bg-[#E8B93A]/10 transition disabled:opacity-50"
                 >
-                  Reset Local Workspace
+                  {actionLoading === "deactivate" ? "Deactivating…" : "Deactivate Account"}
+                </button>
+                <button
+                  type="button"
+                  disabled={actionLoading !== null}
+                  onClick={handleDelete}
+                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#2a1414] border border-[#FF8A8A]/30 text-[#FF8A8A] rounded-[12px] text-xs font-semibold hover:bg-[#3d1818] transition disabled:opacity-50"
+                >
+                  {actionLoading === "delete" ? "Scheduling…" : "Delete Account (30 Days)"}
                 </button>
               </div>
             </div>

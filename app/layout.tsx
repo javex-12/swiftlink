@@ -8,6 +8,7 @@ import {
   Bricolage_Grotesque,
 } from "next/font/google";
 import { AppChrome } from "@/components/AppChrome";
+import { buildSiteJsonLd } from "@/lib/seo";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
@@ -68,11 +69,18 @@ const cinzel = Cinzel({
   variable: "--font-cinzel",
 });
 
-const site = "https://swiftlinkpro.vercel.app";
-const siteName = "SwiftLink Pro";
-const title = "SwiftLink Pro | The High-Fidelity WhatsApp Commerce Workspace";
+const site =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://swiftlink.vercel.app");
+const siteName = "SwiftLink";
+const title = "SwiftLink | Create a Free Online Store That Orders on WhatsApp";
 const description =
-  "Build a storefront for your business in minutes. Publish a fast, mobile-first product catalog, manage your products and branding, and take orders straight to WhatsApp with SwiftLink Pro.";
+  "SwiftLink is the fastest free online store builder for modern merchants. Launch a high-converting mobile storefront on your own link in minutes, list products, and take every order straight to WhatsApp — with zero coding, zero commissions, and instant setup.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),
@@ -83,20 +91,27 @@ export const metadata: Metadata = {
   },
   description,
   keywords: [
+    "online store builder",
+    "free online store",
+    "create an online store",
+    "online store for small business",
+    "WhatsApp store link",
+    "WhatsApp order store",
+    "sell on WhatsApp",
+    "product catalog online",
+    "ecommerce store Nigeria",
+    "no-code storefront builder",
     "WhatsApp e-commerce",
-    "Global WhatsApp Storefront",
-    "WhatsApp Catalog Builder",
-    "Multi-store management software",
-    "Custom storefront builder",
-    "WhatsApp catalog builder pro",
-    "SwiftLink Pro Workspace",
-    "Premium WhatsApp storefront",
-    "No-code ecommerce for vendors",
-    "Global business automation",
+    "SwiftLink",
+    "SwiftLink store",
+    "free WhatsApp shop",
+    "social commerce store builder",
+    "instant storefront",
+    "store directory",
   ],
-  authors: [{ name: "SwiftLink Pro" }],
-  creator: "SwiftLink Pro",
-  publisher: "SwiftLink Pro",
+  authors: [{ name: "SwiftLink" }],
+  creator: "SwiftLink",
+  publisher: "SwiftLink",
   category: "Business Software",
   alternates: {
     canonical: "/",
@@ -159,11 +174,16 @@ const softwareJsonLd = {
   },
   featureList: [
     "WhatsApp storefront builder",
+    "Free online store on your own link",
     "Product catalog management",
     "Customer cart and WhatsApp ordering",
     "Storefront visual editor",
+    "Public store directory",
   ],
 };
+
+/** `WebSite` + `Organization`: powers the sitelinks search box and brand card. */
+const siteJsonLd = buildSiteJsonLd(siteName, description);
 
 export default function RootLayout({
   children,
@@ -179,6 +199,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
         {/* Fonts are self-hosted by next/font — no third-party stylesheet here.
             The manifest <link> is injected automatically from app/manifest.ts. */}

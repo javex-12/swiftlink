@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
+import { SEO_SITE } from "@/lib/seo";
 
-const site = "https://swiftlinkpro.vercel.app";
+const site = SEO_SITE;
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/terms", "/store/"],
+        allow: ["/", "/stores", "/terms", "/store/"],
         disallow: [
           "/account",
           "/business",

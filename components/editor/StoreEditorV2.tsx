@@ -6,7 +6,7 @@ import { ShopState, Product, ProductAttribute } from "@/lib/schema";
 import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 import { formatMajorMoney } from "@/lib/currency";
-import { normalizePhoneNumber } from "@/lib/phone";
+import { normalizePhoneNumber, splitPhoneNumber, cleanPastedNationalNumber } from "@/lib/phone";
 import { websiteTemplates, websiteTemplateById, WebsiteTemplateId } from "@/lib/theme/templates";
 import {
   effectiveProductLimitFor,
@@ -57,6 +57,9 @@ import {
   EyeOff,
   Pause,
   Play,
+  Sun,
+  Moon,
+  Sparkles,
 } from "lucide-react";
 
 interface OptionRow {
@@ -69,11 +72,11 @@ export function StoreEditorV2() {
 
   // Local working copy of store state
   const [localState, setLocalState] = useState<ShopState>(() => JSON.parse(JSON.stringify(globalState)));
-  const [activeTab, setActiveTab] = useState<"products" | "design" | "preview">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "design">("products");
   const [isSaving, setIsSaving] = useState(false);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [designViewport, setDesignViewport] = useState<"mobile" | "tablet" | "desktop">("desktop");
-  const [previewMode, setPreviewMode] = useState<"light" | "dark">("dark");
+  const [previewMode, setPreviewMode] = useState<"light" | "dark">(() => (globalState.storefrontTheme?.background === "light" ? "light" : "dark"));
   const [previewCartCount, setPreviewCartCount] = useState<number>(1);
 
   // Quick populate 4 stock ideas for instant zero-to-one store launch
@@ -108,12 +111,20 @@ export function StoreEditorV2() {
 
   const previewThemeVars = useMemo(() => {
     if (!currentTemplate) return {};
-    const tenantTheme =
+    const baseTheme =
       previewMode === "dark"
         ? currentTemplate.dark || currentTemplate.light
         : currentTemplate.light || currentTemplate.dark;
-    return themeToCssVars(tenantTheme) as React.CSSProperties;
-  }, [currentTemplate, previewMode]);
+    const tenantTheme = localState.accentColor
+      ? { ...baseTheme, brandColor: localState.accentColor }
+      : baseTheme;
+    const rawVars = themeToCssVars(tenantTheme) as Record<string, string>;
+    if (localState.accentColor) {
+      rawVars["--t-accent"] = localState.accentColor;
+      rawVars["--theme-color"] = localState.accentColor;
+    }
+    return rawVars as React.CSSProperties;
+  }, [currentTemplate, previewMode, localState.accentColor]);
 
   // Dirty state tracking
   const initialSerialized = useRef<string>(JSON.stringify(globalState));
@@ -258,6 +269,79 @@ export function StoreEditorV2() {
     } finally {
       setIsUploadingLogo(false);
     }
+  };
+
+  // Social share / OG image upload
+  const [isUploadingOg, setIsUploadingOg] = useState(false);
+  const handleOgImageUpload = async (file: File) => {
+    if (!user) {
+      addToast("Please sign in to upload images.", "error");
+      return;
+    }
+    setIsUploadingOg(true);
+    try {
+      const { file: compressedFile } = await compressImageBeforeUpload(file, 1200, 0.85);
+      const path = `${user.id}/branding/og_${Date.now()}_${compressedFile.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const { error } = await supabase.storage.from("branding").upload(path, compressedFile);
+      if (error) throw error;
+      const { data } = supabase.storage.from("branding").getPublicUrl(path);
+      updateField("ogImage", data.publicUrl);
+      addToast("Social share image updated.", "success");
+    } catch (err: any) {
+      addToast(`Upload failed: ${err.message}`, "error");
+    } finally {
+      setIsUploadingOg(false);
+    }
+  };
+
+  // FAQ management
+  const [newFaqQuestion, setNewFaqQuestion] = useState("");
+  const [newFaqAnswer, setNewFaqAnswer] = useState("");
+  const [isAddingFaq, setIsAddingFaq] = useState(false);
+
+  const handleAddFaq = () => {
+    if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) {
+      addToast("Both question and answer are required.", "error");
+      return;
+    }
+    const currentFaqs = localState.faqItems || [
+      {
+        q: "How does ordering on WhatsApp work?",
+        a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store.",
+      },
+      {
+        q: "How do I arrange payment and delivery?",
+        a: "Payment and delivery are agreed directly with the store on WhatsApp.",
+      },
+      {
+        q: "Can I ask about an item before ordering?",
+        a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition.",
+      },
+    ];
+    updateField("faqItems", [...currentFaqs, { q: newFaqQuestion.trim(), a: newFaqAnswer.trim() }]);
+    setNewFaqQuestion("");
+    setNewFaqAnswer("");
+    setIsAddingFaq(false);
+    addToast("FAQ added.", "success");
+  };
+
+  const handleRemoveFaq = (index: number) => {
+    const currentFaqs = localState.faqItems || [
+      {
+        q: "How does ordering on WhatsApp work?",
+        a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store.",
+      },
+      {
+        q: "How do I arrange payment and delivery?",
+        a: "Payment and delivery are agreed directly with the store on WhatsApp.",
+      },
+      {
+        q: "Can I ask about an item before ordering?",
+        a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition.",
+      },
+    ];
+    updateField("faqItems", currentFaqs.filter((_, i) => i !== index));
+    addToast("FAQ removed.", "info");
   };
 
   // Categories management
@@ -505,16 +589,11 @@ export function StoreEditorV2() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("preview")}
-                className={cn(
-                  "flex min-h-[36px] items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition",
-                  activeTab === "preview"
-                    ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
-                    : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                )}
+                onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
+                className="flex min-h-[36px] items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-[#19C37D] hover:bg-[#19C37D]/10 transition"
               >
                 <Eye className="h-3.5 w-3.5" />
-                <span>Live Preview</span>
+                <span>Template Preview</span>
               </button>
             </div>
 
@@ -629,13 +708,8 @@ export function StoreEditorV2() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("preview")}
-              className={cn(
-                "flex flex-1 min-h-[36px] items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition",
-                activeTab === "preview"
-                  ? "bg-[#19C37D] text-[#04140D] font-semibold shadow-xs"
-                  : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-              )}
+              onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
+              className="flex flex-1 min-h-[36px] items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
             >
               <Eye className="h-3.5 w-3.5" />
               <span>Preview</span>
@@ -754,24 +828,37 @@ export function StoreEditorV2() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-medium text-[#E8F1EC]">WhatsApp Number</label>
-                      <div className="mt-1.5 flex gap-2">
-                        <CountrySelector
-                          value="NG"
-                          onChange={(code) => {
-                            // Update country prefix if needed
-                          }}
-                        />
-                        <input
-                          type="tel"
-                          value={localState.phone || ""}
-                          onChange={(e) => updateField("phone", e.target.value)}
-                          placeholder="+234 808 123 4567"
-                          className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                        />
-                      </div>
-                      <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                        Where customer order messages arrive on WhatsApp.
-                      </p>
+                      {(() => {
+                        const parsed = splitPhoneNumber(localState.phone || "");
+                        const callingCode = parsed.callingCode || "+234";
+                        const nationalNum = parsed.nationalNumber || "";
+                        return (
+                          <>
+                            <div className="mt-1.5 flex gap-2">
+                              <CountrySelector
+                                value={parsed.countryCode || "NG"}
+                                onChange={(newCallingCode) => {
+                                  const rawDigits = nationalNum.replace(/^0+/, "");
+                                  updateField("phone", `${newCallingCode}${rawDigits}`);
+                                }}
+                              />
+                              <input
+                                type="tel"
+                                value={nationalNum}
+                                onChange={(e) => {
+                                  const cleaned = cleanPastedNationalNumber(e.target.value, callingCode);
+                                  updateField("phone", `${callingCode}${cleaned.nationalNumber}`);
+                                }}
+                                placeholder="808 123 4567"
+                                className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                              />
+                            </div>
+                            <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                              Where customer orders arrive on WhatsApp. {localState.phone ? `Format: ${localState.phone}` : "e.g. +234 808 123 4567"}
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     <div>
@@ -896,6 +983,200 @@ export function StoreEditorV2() {
                     placeholder="Lagos and nationwide delivery"
                     className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
                   />
+                </div>
+              </div>
+            </section>
+
+            {/* Section: Frequently Asked Questions (FAQ) */}
+            <section
+              aria-labelledby="faq-heading"
+              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
+                <div>
+                  <h2 id="faq-heading" className="text-base font-semibold text-[#E8F1EC]">
+                    Frequently Asked Questions (FAQ)
+                  </h2>
+                  <p className="mt-1 text-xs text-[#9DB3A8]">
+                    Customize assistance questions customers see on your storefront.
+                  </p>
+                </div>
+                {!isAddingFaq && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingFaq(true)}
+                    className="flex min-h-[36px] items-center gap-1.5 rounded-xl border border-[#19C37D]/30 bg-[#14231D] px-3.5 py-1.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Question</span>
+                  </button>
+                )}
+              </div>
+
+              {/* FAQ items list */}
+              <div className="mt-6 space-y-3">
+                {((localState.faqItems && localState.faqItems.length > 0)
+                  ? localState.faqItems
+                  : [
+                      {
+                        q: "How does ordering on WhatsApp work?",
+                        a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store.",
+                      },
+                      {
+                        q: "How do I arrange payment and delivery?",
+                        a: "Payment and delivery are agreed directly with the store on WhatsApp.",
+                      },
+                      {
+                        q: "Can I ask about an item before ordering?",
+                        a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition.",
+                      },
+                    ]
+                ).map((faq, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start justify-between gap-3 rounded-xl border border-[#24382F] bg-[#0A1210] p-3.5 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-semibold text-[#E8F1EC]">{faq.q}</p>
+                      <p className="mt-1 text-xs text-[#9DB3A8] leading-relaxed">{faq.a}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFaq(index)}
+                      className="text-[#9DB3A8] hover:text-[#FF8A8A] p-1 transition"
+                      title="Remove question"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add new FAQ card */}
+                {isAddingFaq && (
+                  <div className="mt-4 rounded-xl border border-[#19C37D]/40 bg-[#14231D]/40 p-4 space-y-3">
+                    <p className="text-xs font-semibold text-[#19C37D]">New FAQ Question</p>
+                    <input
+                      type="text"
+                      value={newFaqQuestion}
+                      onChange={(e) => setNewFaqQuestion(e.target.value)}
+                      placeholder="e.g. Do you ship outside Lagos?"
+                      className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                    <textarea
+                      rows={2}
+                      value={newFaqAnswer}
+                      onChange={(e) => setNewFaqAnswer(e.target.value)}
+                      placeholder="e.g. Yes, we deliver nationwide within 2-4 business days."
+                      className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                    <div className="flex items-center gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingFaq(false);
+                          setNewFaqQuestion("");
+                          setNewFaqAnswer("");
+                        }}
+                        className="rounded-xl border border-[#24382F] bg-[#0A1210] px-3 py-1.5 text-xs font-medium text-[#9DB3A8] hover:text-[#E8F1EC]"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddFaq}
+                        className="rounded-xl bg-[#19C37D] px-4 py-1.5 text-xs font-semibold text-[#04140D] hover:bg-[#16B070]"
+                      >
+                        Save FAQ
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Section: Social Share & SEO (Link Preview) */}
+            <section
+              aria-labelledby="seo-og-heading"
+              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+            >
+              <div className="border-b border-[#1E2D27] pb-4">
+                <h2 id="seo-og-heading" className="text-base font-semibold text-[#E8F1EC]">
+                  Social Share & Link Preview
+                </h2>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Control what image and description appear when you share your store link on WhatsApp, X, or iMessage.
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-medium text-[#E8F1EC]">Store Share Description</label>
+                    <span className="text-[11px] text-[#9DB3A8]">
+                      {(localState.ogDescription || "").length}/160 chars
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    maxLength={160}
+                    value={localState.ogDescription || ""}
+                    onChange={(e) => updateField("ogDescription", e.target.value)}
+                    placeholder={localState.tagline || "Discover handcrafted fashion and lifestyle products. Shop and order directly on WhatsApp."}
+                    className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                  />
+                  <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                    Recommended length: 50–160 characters. Appears as the snippet under your store link.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#E8F1EC]">Social Preview Image (OG Image)</label>
+                  <p className="mt-0.5 text-[11px] text-[#9DB3A8]">
+                    Displayed on social card previews. Recommended size: 1200 × 630px.
+                  </p>
+                  <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="relative h-24 w-40 shrink-0 overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210] flex items-center justify-center">
+                      {(localState.ogImage || localState.bizImage) ? (
+                        <img
+                          src={localState.ogImage || localState.bizImage}
+                          alt="Social preview"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[10px] text-[#9DB3A8]">No preview image</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="cursor-pointer inline-flex min-h-[38px] items-center gap-2 rounded-xl border border-[#19C37D]/30 bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20">
+                        {isUploadingOg ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        <span>{isUploadingOg ? "Uploading…" : "Upload Social Image"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={isUploadingOg}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleOgImageUpload(file);
+                          }}
+                        />
+                      </label>
+                      {localState.ogImage && (
+                        <button
+                          type="button"
+                          onClick={() => updateField("ogImage", undefined)}
+                          className="text-left text-[11px] text-[#FF8A8A] hover:underline"
+                        >
+                          Reset to store logo
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -1062,11 +1343,11 @@ export function StoreEditorV2() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("preview")}
+                    onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
                     className="flex min-h-[44px] items-center gap-2 rounded-xl border border-[#19C37D]/40 bg-[#19C37D]/10 px-4 py-2.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20 active:scale-98"
                   >
                     <Eye className="h-4 w-4" />
-                    <span>Live preview</span>
+                    <span>Template preview</span>
                   </button>
                   <button
                     type="button"
@@ -1320,177 +1601,166 @@ export function StoreEditorV2() {
               </div>
             </section>
 
-            {/* Section 2: Accent color */}
+            {/* Section 2: Appearance & Colors */}
             <section
               aria-labelledby="accent-color-heading"
               className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
             >
               <div className="border-b border-[#1E2D27] pb-4">
                 <h2 id="accent-color-heading" className="text-base font-semibold text-[#E8F1EC]">
-                  Accent color
+                  Appearance & colors
                 </h2>
                 <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Used on primary buttons, price highlights, and order triggers.
+                  Choose your store theme mode and primary brand accent color.
                 </p>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                {[
-                  { name: "Emerald", hex: "#19C37D" },
-                  { name: "Forest", hex: "#15803d" },
-                  { name: "Crimson", hex: "#be123c" },
-                  { name: "Coral", hex: "#f43f5e" },
-                  { name: "Amber", hex: "#f59e0b" },
-                  { name: "Blue", hex: "#2563eb" },
-                  { name: "Violet", hex: "#7c3aed" },
-                  { name: "Charcoal", hex: "#111827" },
-                ].map((color) => {
-                  const isActive = (localState.accentColor || "#19C37D").toLowerCase() === color.hex.toLowerCase();
-                  return (
-                    <button
-                      key={color.hex}
-                      type="button"
-                      onClick={() => updateField("accentColor", color.hex)}
-                      className={cn(
-                        "flex min-h-[44px] items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-medium transition",
-                        isActive
-                          ? "border-[#19C37D] bg-[#14231D] text-[#E8F1EC]"
-                          : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
-                      )}
-                    >
-                      <span
-                        className="h-4 w-4 rounded-full border border-white/20 shrink-0"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      <span>{color.name}</span>
-                      {isActive && <Check className="h-3.5 w-3.5 text-[#19C37D]" />}
-                    </button>
-                  );
-                })}
+              {/* Light / Dark Mode selector */}
+              <div className="mt-6 border-b border-[#1E2D27] pb-6">
+                <label className="block text-xs font-medium text-[#E8F1EC]">Storefront Theme Mode</label>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewMode("light");
+                      updateField("storefrontTheme", {
+                        ...(localState.storefrontTheme || {}),
+                        background: "light",
+                      });
+                    }}
+                    className={cn(
+                      "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
+                      (localState.storefrontTheme?.background === "light" || previewMode === "light")
+                        ? "border-[#19C37D] bg-[#14231D] text-[#19C37D] shadow-xs"
+                        : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
+                    )}
+                  >
+                    <Sun className="h-4 w-4" />
+                    <span>Light Mode</span>
+                    {(localState.storefrontTheme?.background === "light" || previewMode === "light") && (
+                      <Check className="h-3.5 w-3.5 text-[#19C37D]" />
+                    )}
+                  </button>
 
-                {/* Custom Hex Input */}
-                <div className="flex items-center gap-2 rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-1.5">
-                  <span className="text-xs text-[#9DB3A8]">#</span>
-                  <input
-                    type="text"
-                    value={(localState.accentColor || "19C37D").replace(/^#/, "")}
-                    onChange={(e) => updateField("accentColor", `#${e.target.value.replace(/[^a-fA-F0-9]/g, "").slice(0, 6)}`)}
-                    className="w-20 bg-transparent text-xs font-mono uppercase text-[#E8F1EC] outline-none"
-                    placeholder="19C37D"
-                  />
-                  <input
-                    type="color"
-                    value={localState.accentColor || "#19C37D"}
-                    onChange={(e) => updateField("accentColor", e.target.value)}
-                    className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Section 3: Live Storefront Preview */}
-            <section
-              aria-labelledby="storefront-preview-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
-                <div>
-                  <h2 id="storefront-preview-heading" className="text-base font-semibold text-[#E8F1EC]">
-                    Live storefront preview
-                  </h2>
-                  <p className="mt-1 text-xs text-[#9DB3A8]">
-                    This is how your storefront looks right now with your draft products and settings.
-                  </p>
-                </div>
-
-                {/* Viewport switch and Light/Dark toggle */}
-                <div className="flex items-center gap-3">
-                  <div className="flex rounded-lg border border-[#1E2D27] bg-[#0A1210] p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode("dark")}
-                      className={cn(
-                        "rounded px-2.5 py-1 text-xs font-medium transition",
-                        previewMode === "dark" ? "bg-[#14231D] text-[#19C37D]" : "text-[#9DB3A8]"
-                      )}
-                    >
-                      Dark
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode("light")}
-                      className={cn(
-                        "rounded px-2.5 py-1 text-xs font-medium transition",
-                        previewMode === "light" ? "bg-[#14231D] text-[#19C37D]" : "text-[#9DB3A8]"
-                      )}
-                    >
-                      Light
-                    </button>
-                  </div>
-
-                  <div className="flex rounded-lg border border-[#1E2D27] bg-[#0A1210] p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setDesignViewport("desktop")}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition",
-                        designViewport === "desktop"
-                          ? "bg-[#14231D] text-[#19C37D]"
-                          : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                      )}
-                    >
-                      <Monitor className="h-3.5 w-3.5" />
-                      <span>Desktop</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDesignViewport("mobile")}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition",
-                        designViewport === "mobile"
-                          ? "bg-[#14231D] text-[#19C37D]"
-                          : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                      )}
-                    >
-                      <Smartphone className="h-3.5 w-3.5" />
-                      <span>Mobile</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewMode("dark");
+                      updateField("storefrontTheme", {
+                        ...(localState.storefrontTheme || {}),
+                        background: "dark",
+                      });
+                    }}
+                    className={cn(
+                      "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
+                      (localState.storefrontTheme?.background === "dark" || (!localState.storefrontTheme?.background && previewMode === "dark"))
+                        ? "border-[#19C37D] bg-[#14231D] text-[#19C37D] shadow-xs"
+                        : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
+                    )}
+                  >
+                    <Moon className="h-4 w-4" />
+                    <span>Dark Mode</span>
+                    {(localState.storefrontTheme?.background === "dark" || (!localState.storefrontTheme?.background && previewMode === "dark")) && (
+                      <Check className="h-3.5 w-3.5 text-[#19C37D]" />
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Rendered Live Storefront */}
-              <div className="mt-6 flex justify-center overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4 sm:p-8">
-                <div
-                  className={cn(
-                    "overflow-hidden rounded-xl border border-[#1E2D27] shadow-2xl transition-all duration-300",
-                    designViewport === "mobile" ? "w-[375px]" : "w-full max-w-4xl"
-                  )}
-                >
-                  <div data-theme-scope="storefront" style={previewThemeVars} className="w-full">
-                    <TemplateSite
-                      state={localState}
-                      products={localState.products}
-                      categories={localState.categories || ["All"]}
-                      activeCategory="All"
-                      cartCount={0}
-                      onProduct={() => {}}
-                      onCategory={() => {}}
-                      onSearch={() => {}}
-                      onCart={() => {}}
-                      onReviews={() => {}}
+              {/* Accent Color */}
+              <div className="mt-6">
+                <label className="block text-xs font-medium text-[#E8F1EC]">Primary Accent Color</label>
+                <p className="mt-0.5 text-[11px] text-[#9DB3A8]">
+                  Used for buttons, badges, price highlights, and order triggers across your storefront.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  {[
+                    { name: "Emerald", hex: "#19C37D" },
+                    { name: "Forest", hex: "#15803d" },
+                    { name: "Crimson", hex: "#be123c" },
+                    { name: "Coral", hex: "#f43f5e" },
+                    { name: "Amber", hex: "#f59e0b" },
+                    { name: "Blue", hex: "#2563eb" },
+                    { name: "Violet", hex: "#7c3aed" },
+                    { name: "Charcoal", hex: "#111827" },
+                  ].map((color) => {
+                    const isActive = (localState.accentColor || "#19C37D").toLowerCase() === color.hex.toLowerCase();
+                    return (
+                      <button
+                        key={color.hex}
+                        type="button"
+                        onClick={() => updateField("accentColor", color.hex)}
+                        className={cn(
+                          "flex min-h-[44px] items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-medium transition",
+                          isActive
+                            ? "border-[#19C37D] bg-[#14231D] text-[#E8F1EC]"
+                            : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
+                        )}
+                      >
+                        <span
+                          className="h-4 w-4 rounded-full border border-white/20 shrink-0"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span>{color.name}</span>
+                        {isActive && <Check className="h-3.5 w-3.5 text-[#19C37D]" />}
+                      </button>
+                    );
+                  })}
+
+                  {/* Custom Hex Input */}
+                  <div className="flex items-center gap-2 rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-1.5">
+                    <span className="text-xs text-[#9DB3A8]">#</span>
+                    <input
+                      type="text"
+                      value={(localState.accentColor || "19C37D").replace(/^#/, "")}
+                      onChange={(e) => updateField("accentColor", `#${e.target.value.replace(/[^a-fA-F0-9]/g, "").slice(0, 6)}`)}
+                      className="w-20 bg-transparent text-xs font-mono uppercase text-[#E8F1EC] outline-none"
+                      placeholder="19C37D"
+                    />
+                    <input
+                      type="color"
+                      value={localState.accentColor || "#19C37D"}
+                      onChange={(e) => updateField("accentColor", e.target.value)}
+                      className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent"
                     />
                   </div>
                 </div>
               </div>
             </section>
+
+            {/* Section 3: Live Storefront Simulator Card */}
+            <section
+              aria-labelledby="storefront-preview-heading"
+              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-[#19C37D]" />
+                    <h2 id="storefront-preview-heading" className="text-base font-semibold text-[#E8F1EC]">
+                      Interactive Store Simulator
+                    </h2>
+                  </div>
+                  <p className="mt-1 text-xs text-[#9DB3A8] max-w-xl">
+                    Experience your live storefront in our full-screen device simulator. Test Phone, Tablet, and Desktop viewports, light and dark modes, and WhatsApp order messages in real time.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
+                  className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[#19C37D] px-5 py-2.5 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20 active:scale-98"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>Launch Template Preview</span>
+                </button>
+              </div>
+            </section>
           </div>
         )}
 
-        {/* ============================================================== */}
-        {/* TAB 3: LIVE PREVIEW TAB (1-TAP AWAY)                          */}
-        {/* ============================================================== */}
-        {activeTab === "preview" && (
+        {/* Tab 3 Live Preview is retired in favor of the full device simulator modal */}
+        {false && (
           <div className="space-y-6 pb-16">
             {/* Live Preview Controls Header */}
             <div className="flex flex-col gap-3 rounded-2xl border border-[#1E2D27] bg-[#111C18] p-3.5 sm:p-5 lg:flex-row lg:items-center lg:justify-between shadow-xs">

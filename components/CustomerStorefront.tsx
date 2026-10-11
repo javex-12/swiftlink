@@ -655,12 +655,21 @@ export function CustomerStorefront({
   selectedSectionId,
   onSectionAction,
   overrideState = null,
+  initialState = null,
   preview = false,
 }: {
   shopId?: string;
   isEditable?: boolean;
   selectedSectionId?: string | null;
   onSectionAction?: (id: string, action: string) => void;
+  /**
+   * The store row, already resolved on the server. Seeding `publicState` with it
+   * makes the storefront render its real content on the server, so crawlers see
+   * the business name, tagline and products in the HTML instead of the loading
+   * spinner they used to get while the browser fetched the row itself. The
+   * client fetch below still runs and keeps the page live.
+   */
+  initialState?: ShopState | null;
   /**
    * Render a state that is not the signed-in account's own store. The template
    * preview uses this so the preview *is* the storefront — same component, same
@@ -685,7 +694,7 @@ export function CustomerStorefront({
       user
   } = useSwiftLink();
 
-  const [publicState, setPublicState] = useState<ShopState | null>(null);
+  const [publicState, setPublicState] = useState<ShopState | null>(initialState);
   /**
    * A preview mounts this component inside the console, so it has to render a
    * state that is not the account's active store — otherwise the preview would
@@ -1011,7 +1020,7 @@ export function CustomerStorefront({
       return;
     }
     logEvent("whatsapp_checkout", { total: totalPrice, items: Object.keys(cart).length });
-    sendWhatsAppOrder();
+    sendWhatsAppOrder(effectiveState || undefined);
     changeScreen("success");
     setTimeout(() => { changeScreen("home"); setActiveTab("home"); }, 3000);
   };
@@ -1033,11 +1042,21 @@ export function CustomerStorefront({
   const template =
     websiteTemplateById(rawState.websiteTemplateId) ?? websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!;
   const backgroundIntent = rawState.storefrontTheme?.background === "dark" ? "dark" : "light";
-  const templateTheme = template ? themeForTemplate(template, backgroundIntent) : null;
-  const themeVars = templateTheme ? themeToCssVars(templateTheme) : null;
-  const s: ShopState = templateTheme
-    ? { ...rawState, accentColor: templateTheme.brandColor, buttonColor: templateTheme.brandColor }
-    : rawState;
+  const baseTheme = template ? themeForTemplate(template, backgroundIntent) : null;
+  const effectiveTheme = baseTheme && rawState.accentColor
+    ? { ...baseTheme, brandColor: rawState.accentColor }
+    : baseTheme;
+  const rawThemeVars = effectiveTheme ? (themeToCssVars(effectiveTheme) as Record<string, string>) : null;
+  if (rawThemeVars && rawState.accentColor) {
+    rawThemeVars["--t-accent"] = rawState.accentColor;
+    rawThemeVars["--theme-color"] = rawState.accentColor;
+  }
+  const themeVars = rawThemeVars as React.CSSProperties | null;
+  const s: ShopState = {
+    ...rawState,
+    accentColor: rawState.accentColor || baseTheme?.brandColor || "#10b981",
+    buttonColor: rawState.buttonColor || rawState.accentColor || baseTheme?.brandColor || "#10b981",
+  };
   const pageAnim = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -1055,7 +1074,10 @@ export function CustomerStorefront({
   return (
     <div
       data-theme-scope="storefront"
-      className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-hidden"
+      // `overflow-x-clip`: contains horizontal overflow without turning this into
+      // a scroll container, which would break the templates' `sticky top-0`
+      // headers (see the note on `body` in app/globals.css).
+      className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-clip"
          style={{ 
             ...(themeVars ? (themeVars as React.CSSProperties) : { backgroundColor: bgColor }),
             "--theme-color": accentColor, 
@@ -1066,14 +1088,19 @@ export function CustomerStorefront({
             "--btn-text-color": isDarkColor(buttonColor) ? "#ffffff" : "#000000"
          } as React.CSSProperties}>
       
-      <div className="w-full min-h-screen flex flex-col relative overflow-x-hidden">
+      <div className="w-full min-h-screen flex flex-col relative overflow-x-clip">
         <div className="flex-1 flex flex-col relative">
             
             {/* HOME SCREEN - PERSISTENT TO PRESERVE SCROLL */}
             <div 
               ref={homeScrollContainerRef}
               className={cn(
-                "flex-1 flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar transition-all duration-300", 
+                // No `overflow-y-auto` here. The page scrolls the window, so this
+                // box never scrolled — but being a scroll container was enough to
+                // trap the templates' `sticky top-0` headers, which stuck to a box
+                // that never moves and therefore scrolled away like a static
+                // header (measured: headerTop -867px at scrollY 900).
+                "flex-1 flex flex-col overflow-x-clip custom-scrollbar transition-all duration-300", 
                 screen !== "home" && "opacity-0 pointer-events-none hidden"
               )}
             >

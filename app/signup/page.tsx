@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, ArrowRight, Eye, EyeOff, Mail } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug, cn } from "@/lib/utils";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
@@ -49,69 +48,67 @@ function GoogleLogo() {
   );
 }
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-
 /**
- * Google button.
+ * Google button — Supabase OAuth redirect.
  *
- * Without a client id we render a disabled-looking button rather than the old
- * behaviour, which was to silently enter "demo mode" — i.e. pretend to sign in
- * with no session at all. Demo mode is reachable explicitly from the
- * "Supabase not configured" notice; a Google button must not fake a login.
+ * Replaces the previous @react-oauth/google iframe-overlay approach. That
+ * technique rendered an invisible GoogleLogin iframe on top of a styled button;
+ * on desktop the iframe's click region misaligned with the visible button,
+ * making it unpressable. On mobile the smaller viewport happened to align them.
  *
- * Google renders its own iframe, so we lay it — transparent, clipped and
- * non-scaling — over our styled button. The old version scaled it 1.5×, which
- * pushed the invisible hit area past the form column and made phones scroll
- * sideways.
+ * `signInWithOAuth` initiates a proper OAuth redirect: Google opens in the same
+ * tab, the user authenticates, and Supabase redirects back to `redirectTo` —
+ * which honours the Site URL configured in the Supabase dashboard
+ * (swiftlink.vercel.app), so the branding in the consent screen is unchanged.
+ * No NEXT_PUBLIC_GOOGLE_CLIENT_ID env var is needed here; the client ID lives
+ * only in the Supabase dashboard under Authentication → Providers → Google.
  */
 function GoogleButton({
-  onSuccess,
-  onError,
   label,
+  nextPath,
+  onError,
   loading,
+  setLoading,
 }: {
-  onSuccess: (credential: string) => void;
-  onError: () => void;
   label: string;
+  nextPath: string;
+  onError: (msg: string) => void;
   loading: boolean;
+  setLoading: (v: "google" | null) => void;
 }) {
-  if (!GOOGLE_CLIENT_ID) {
-    return (
-      <Button type="button" variant="outline" block disabled aria-disabled="true">
-        <GoogleLogo />
-        <span>Google sign-in not configured</span>
-      </Button>
-    );
-  }
+  const handleClick = async () => {
+    if (!isSupabaseConfigured()) return;
+    setLoading("google");
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${nextPath.startsWith("/") ? nextPath : "/pro"}`
+        : "/pro";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo },
+    });
+    if (error) {
+      onError(error.message || "Google sign-in failed.");
+      setLoading(null);
+    }
+    // On success the browser navigates away — no further state update needed.
+  };
+
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="relative w-full overflow-hidden rounded-lg">
-        <Button type="button" variant="outline" block loading={loading}>
-          {loading ? null : <GoogleLogo />}
-          <span>{label}</span>
-        </Button>
-        {/* Interactive GoogleLogin iframe, transparent over the styled button. */}
-        <div
-          aria-hidden="true"
-          className={cn(
-            "absolute inset-0 z-10 flex items-center justify-center opacity-0",
-            loading && "pointer-events-none",
-          )}
-        >
-          <GoogleLogin
-            onSuccess={(res) => {
-              if (res.credential) onSuccess(res.credential);
-            }}
-            onError={onError}
-            width="400"
-            shape="pill"
-            text="continue_with"
-          />
-        </div>
-      </div>
-    </GoogleOAuthProvider>
+    <Button
+      type="button"
+      variant="outline"
+      block
+      loading={loading}
+      onClick={handleClick}
+      disabled={!isSupabaseConfigured() || loading}
+    >
+      {loading ? null : <GoogleLogo />}
+      <span>{label}</span>
+    </Button>
   );
 }
+
 
 /** Segmented switch between the two forms. */
 function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
@@ -263,28 +260,6 @@ function AuthPage() {
     [searchParams],
   );
 
-  const handleGoogleSuccess = async (credential: string) => {
-    setLoading("google");
-    setError(null);
-    try {
-      if (!isSupabaseConfigured()) {
-        router.push("/pro");
-        return;
-      }
-      const { data, error: authError } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: credential,
-      });
-      if (authError) throw authError;
-      if (data.user) {
-        await saveUserStore(data.user.id, data.user.email);
-        router.push(nextPath);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Google sign-in failed.");
-      setLoading(null);
-    }
-  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -301,7 +276,18 @@ function AuthPage() {
           email: form.email,
           password: form.password,
         });
-        if (authError) throw authError;
+        if (authError) {
+          // Surface a helpful hint when the user signed up via Google and has no
+          // password set — Supabase returns "Invalid login credentials" for both
+          // wrong passwords and social-only accounts.
+          if (authError.message.toLowerCase().includes("invalid login credentials")) {
+            throw new Error(
+              "Incorrect email or password. If you signed up with Google, use \"Sign in with Google\" above — or click Forgot password? to set an email password.",
+            );
+          }
+          throw authError;
+        }
+
         if (data.user) {
           await saveUserStore(data.user.id, data.user.email);
           router.push(nextPath);
@@ -530,13 +516,14 @@ function AuthPage() {
 
                   <div className="mt-6">
                     <GoogleButton
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => {
-                        setError("Google sign-in was cancelled.");
+                      label={isSignup ? "Sign up with Google" : "Sign in with Google"}
+                      nextPath={nextPath}
+                      loading={loading === "google"}
+                      setLoading={setLoading}
+                      onError={(msg) => {
+                        setError(msg);
                         setLoading(null);
                       }}
-                      label={isSignup ? "Sign up with Google" : "Sign in with Google"}
-                      loading={loading === "google"}
                     />
                   </div>
 

@@ -155,6 +155,7 @@ export type ShopState = {
   categories: string[];
   notifications: AppNotification[];
   testimonials?: { id: string; quote: string; author: string; avatar?: string }[];
+  faqItems?: { q: string; a: string }[];
   storefrontTheme?: Partial<StorefrontTheme>;
   
   // Content overrides for templates

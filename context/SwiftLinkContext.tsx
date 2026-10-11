@@ -24,18 +24,40 @@ import {
   canCreateStore,
   canSwitchStore,
   effectiveProductLimitFor,
+  effectiveStoreLimitFor,
+  isUnlimited,
+  PLAN_DETAILS,
   productLimitBlockedMessage,
   reconcileAccountPlan,
   storeActionBlockedMessage,
   visibleProductCount,
 } from "@/lib/plans";
+import { repairAccountToPlan, repairNotice, repairWrites } from "@/lib/plan-enforcement";
 import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draft-store";
 import { deleteStoreDraft, storeDraftKey, writeStoreDraft } from "@/lib/store-drafts";
 import { recordOrderIntent, toMinorUnits, type OrderIntentItem } from "@/lib/inquiry-write";
 import { buildCartOrderMessage, type CartOrderLine } from "@/lib/order-message";
+import { getCleanWhatsAppDigits } from "@/lib/phone";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
+
+/**
+ * The store id the console was last opened on, read straight from the local
+ * mirror. Used so plan enforcement leaves the store the merchant is actually
+ * working in published, instead of whichever row the database returns first.
+ */
+function readPersistedActiveStoreId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("swiftlink_state");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { id?: unknown };
+    return typeof parsed?.id === "string" ? parsed.id : null;
+  } catch {
+    return null;
+  }
+}
 
 type TourStepView = "launcher" | "business";
 
@@ -50,6 +72,12 @@ type SwiftLinkContextValue = {
   state: ShopState;
   stores: ShopState[];
   switchStore: (id: string) => Promise<void>;
+  /**
+   * Pick which single store the account runs when it owns more than its plan
+   * allows. The chosen store is published and the others are paused — never
+   * deleted, and automatically usable again on Business.
+   */
+  chooseStore: (id: string) => Promise<boolean>;
   createNewStore: (name: string) => Promise<void>;
   transferStore: (targetEmail: string) => Promise<boolean>;
   cart: CartMap;
@@ -97,7 +125,7 @@ type SwiftLinkContextValue = {
   setPrimaryImage: (productId: number, index: number) => void;
   updateCart: (id: number, delta: number) => void;
   toggleCartDrawer: (open: boolean) => void;
-  sendWhatsAppOrder: () => void;
+  sendWhatsAppOrder: (overrideStoreState?: ShopState | unknown) => void;
   cartItemCount: number;
   isSyncing: boolean;
   toasts: any[];
@@ -209,6 +237,28 @@ export function SwiftLinkProvider({
     }
     return [];
   }, [router]);
+
+  /**
+   * Write repaired rows back to their own store rows.
+   *
+   * Best-effort by design: enforcement that cannot reach the database must not
+   * stop the console from opening, and the in-memory state is already corrected
+   * either way. Never deletes — a repair only sets `visible` / `isLive` inside
+   * `state_json`.
+   */
+  const persistRepairedRows = useCallback(
+    async (writes: Array<{ id: string; store: ShopState }>) => {
+      if (!writes.length || !isSupabaseConfigured()) return;
+      for (const write of writes) {
+        const { error } = await supabase
+          .from('stores')
+          .update({ state_json: write.store, updated_at: new Date().toISOString() })
+          .eq('id', write.id);
+        if (error) console.warn("Plan enforcement write failed:", error);
+      }
+    },
+    [],
+  );
 
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -370,6 +420,50 @@ export function SwiftLinkProvider({
     setState(target);
     addToast(`Switched to ${target.bizName}`, "success");
   }, [stores, addToast, state]);
+
+  /**
+   * Pick the one store this account runs, when it owns more than its plan
+   * allows.
+   *
+   * `switchStore` refuses a single-store plan outright, which is correct for
+   * *switching* but left a merchant with three stores no way to say which one
+   * they actually wanted — the account was stuck on whichever row the database
+   * happened to return first. Choosing is not switching: the chosen store is
+   * published, the rest are paused, every row is kept, and the choice can be made
+   * again at any time. Multi-store plans fall through to the ordinary switch.
+   */
+  const chooseStore = useCallback(async (id: string) => {
+    const target = stores.find(s => s.id === id);
+    if (!target) return false;
+
+    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    if (isUnlimited(effectiveStoreLimitFor(currentPlan))) {
+      await switchStore(id);
+      return true;
+    }
+
+    const nextStores = stores.map(s => ({ ...s, isLive: s.id === id }));
+    const chosenStore = nextStores.find(s => s.id === id)!;
+    const paused = Math.max(0, nextStores.length - 1);
+
+    setStores(nextStores);
+    setState(chosenStore);
+    localStorage.setItem("swiftlink_state", JSON.stringify(chosenStore));
+    void persistRepairedRows(
+      nextStores
+        .map((store, index) => ({ store, index }))
+        .filter(({ store, index }) => store !== stores[index] && store.id)
+        .map(({ store }) => ({ id: store.id as string, store })),
+    );
+
+    addToast(
+      paused > 0
+        ? `Now running ${chosenStore.bizName}. ${paused} other ${paused === 1 ? "store is" : "stores are"} paused — nothing was deleted, and they come back on Business.`
+        : `Now running ${chosenStore.bizName}.`,
+      "success",
+    );
+    return true;
+  }, [stores, state, switchStore, persistRepairedRows, addToast]);
 
   const transferStore = useCallback(async (targetEmail: string) => {
     if (!user || !state.id) return false;
@@ -737,8 +831,42 @@ export function SwiftLinkProvider({
             void fetchStores(u.id).then((storesList) => {
                 if (isOwnerRef.current) {
                     if (storesList && storesList.length > 0) {
-                        // Plan comes from DB via fetchStores — no hardcoded override
-                        const nextState = normalizeShopState(storesList[0]);
+                        /*
+                         * Bring an existing account inside the plan it is on.
+                         *
+                         * The caps only ever stopped a merchant from *adding*
+                         * past their plan, so accounts that pre-date them keep
+                         * catalogues and store rows the plan does not entitle —
+                         * the live database had a free owner running three stores
+                         * and free catalogues several times the six products the
+                         * storefront went on to serve in full. The repair hides
+                         * the overflow (`visible: false`) and pauses the extra
+                         * stores (`isLive: false`); nothing is deleted, and the
+                         * merchant picks what stays live from Settings.
+                         */
+                        const preferredId = readPersistedActiveStoreId();
+                        const runningId =
+                          storesList.find((store) => store.id && store.id === preferredId)?.id ?? null;
+                        const repaired = repairAccountToPlan(storesList, runningId);
+                        const writes = repairWrites(storesList, repaired);
+                        if (writes.length) {
+                          setStores(repaired.stores);
+                          void persistRepairedRows(writes);
+                        }
+                        const notice = repairNotice(
+                          repaired.plan,
+                          repaired.repair,
+                          PLAN_DETAILS[repaired.plan].name,
+                        );
+                        if (notice) addToast(notice, "info");
+
+                        // Plan comes from DB via fetchStores — no hardcoded override.
+                        // The store the merchant was last working in stays the one
+                        // that opens, not simply the first row.
+                        const active =
+                          repaired.stores.find((store) => store.id && store.id === runningId) ??
+                          repaired.stores[0];
+                        const nextState = normalizeShopState(active);
                         setState(nextState);
                         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
                     } else {
@@ -1313,25 +1441,21 @@ export function SwiftLinkProvider({
     setCartOpen(open);
   }, []);
 
-  const sendWhatsAppOrder = useCallback(() => {
+  const sendWhatsAppOrder = useCallback((overrideStoreState?: unknown) => {
+    const isShopState = overrideStoreState && typeof overrideStoreState === "object" && "bizName" in overrideStoreState;
+    const activeShop = (isShopState ? overrideStoreState : state) as ShopState;
     if (Object.keys(cart).length === 0) {
       addToast("Your cart is empty.", "error");
       return;
     }
-    // Strip everything except digits
-    let phone = state.phone.replace(/\D/g, "");
-    
-    // If it starts with 0 and is likely a local number, we have a problem because we don't know the country.
-    // However, if the user used our CountrySelector, the state.phone already has +234 etc.
-    // If state.phone was "+234 808...", digits is "234808...".
-    // If state.phone was "0808..." and they are in Nigeria, they need 234.
-    
+    const phone = getCleanWhatsAppDigits(activeShop.phone);
+
     if (!phone) {
       addToast("This store has no WhatsApp number configured yet.", "error");
       return;
     }
 
-    if (state.isLive === false) {
+    if (activeShop.isLive === false) {
       addToast("This store is not accepting orders right now.", "error");
       return;
     }
@@ -1339,17 +1463,13 @@ export function SwiftLinkProvider({
     const lines: CartOrderLine[] = [];
     const intents: OrderIntentItem[] = [];
     Object.entries(cart).forEach(([id, q]) => {
-      const p = state.products.find((x) => x.id === Number(id));
+      const p = activeShop.products.find((x) => x.id === Number(id));
       if (!p) return;
       lines.push({
         productId: p.id,
         name: p.name,
         quantity: q,
         unitPrice: p.price,
-        // `image` is the thumbnail and is kept in sync with the first gallery
-        // image; fall back to the gallery for older products. The message sends
-        // the photo as a URL, which is the only way a click-to-chat link can
-        // carry a picture — WhatsApp previews the first one it finds.
         imageUrl: p.image || p.images?.[0] || null,
       });
       intents.push({
@@ -1362,24 +1482,18 @@ export function SwiftLinkProvider({
 
     const msg = buildCartOrderMessage({
       reference: ref,
-      currency: state.currency,
-      storeName: state.bizName,
+      currency: activeShop.currency,
+      storeName: activeShop.bizName,
       lines,
     });
 
-    // Open the chat first and synchronously: `window.open` inside a click
-    // handler is what keeps popup blockers from eating the order.
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
     );
 
-    // Then record the intent, deliberately not awaited — the inquiries screen
-    // and the daily stats rollup are fed from here, and a tracking failure must
-    // never interfere with the sale that just happened
-    // (docs/05-IMPROVEMENT-PLAN.md R-05/R-06).
     void recordOrderIntent({
-      storeId: state.id,
-      currency: state.currency,
+      storeId: activeShop.id,
+      currency: activeShop.currency,
       srcParam: inquirySrc,
       items: intents,
     });
@@ -1398,6 +1512,7 @@ export function SwiftLinkProvider({
     state,
     stores,
     switchStore,
+    chooseStore,
     createNewStore,
     transferStore,
     cart,

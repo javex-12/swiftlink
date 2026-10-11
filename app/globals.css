@@ -29,7 +29,16 @@
     background-color: var(--app-bg);
     color: var(--app-text);
     font-family: var(--font-sans);
+    /*
+     * `clip`, not `hidden`. `overflow-x: hidden` makes the body a scroll
+     * container, which silently breaks `position: sticky` for every descendant:
+     * the template headers are `sticky top-0`, and they measured as scrolling
+     * away instead of sticking. `clip` still contains horizontal overflow but
+     * creates no scrollport, so sticky works. The `hidden` line stays first as a
+     * fallback for engines without `clip`.
+     */
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1,

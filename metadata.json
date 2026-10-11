@@ -1,6 +1,6 @@
 {
   "name": "SwiftLink Pro",
-  "description": "The High-Fidelity WhatsApp Commerce Workspace",
+  "description": "Free online store builder: create a mobile storefront, list products, and take orders on WhatsApp",
   "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

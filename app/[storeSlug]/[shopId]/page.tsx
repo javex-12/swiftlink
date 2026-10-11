@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
+import type { ShopState } from "@/lib/schema";
 import { CustomerStorefrontPage } from "@/components/CustomerStorefrontPage";
 import { normalizeStoreUsername } from "@/lib/utils";
 
@@ -105,5 +106,12 @@ export default async function StorePage({
   params: Promise<{ storeSlug: string; shopId: string }>;
 }) {
   const { shopId } = await params;
-  return <CustomerStorefrontPage shopId={shopId} />;
+  const data = await getStoreData(shopId);
+  const state = (data?.state_json ?? null) as Partial<ShopState> | null;
+
+  // Same server-seeding as the canonical `/<handle>` route, so this legacy URL
+  // renders crawlable content too instead of the client loading spinner.
+  const initialState = state ? ({ ...state, id: shopId } as ShopState) : null;
+
+  return <CustomerStorefrontPage shopId={shopId} initialState={initialState} />;
 }
