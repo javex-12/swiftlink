@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getPublicStoreByHandle } from "@/lib/store-lookup";
+import { SEO_SITE } from "@/lib/seo";
 
 export const runtime = "nodejs";
 export const alt = "Store preview";
@@ -23,6 +24,9 @@ export default async function Image({
   const location = state.location || "";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;
   const accent = state.accentColor || "#10b981";
+  const hostLabel = `${SEO_SITE.replace(/^https?:\/\//, "").replace(/\/$/, "")}/${
+    store?.handle || storeSlug
+  }`;
 
   return new ImageResponse(
     (
@@ -60,8 +64,20 @@ export default async function Image({
             >
               {bizName.slice(0, 1).toUpperCase()}
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#a1a1aa", letterSpacing: "0.02em" }}>
-              swiftlinkpro.vercel.app/{store?.handle || storeSlug}
+            {/* A `<div>` with more than one child must declare an explicit
+                `display`, or satori throws and the whole card 500s. The mixed
+                text + expression here was two children: `hostLabel` is
+                precomputed into one. */}
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#a1a1aa",
+                letterSpacing: 0.5,
+              }}
+            >
+              {hostLabel}
             </div>
           </div>
           <div

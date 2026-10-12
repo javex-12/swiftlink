@@ -38,6 +38,8 @@ export type PublicStore = {
   id: string;
   handle: string;
   bizName: string;
+  /** Unix epoch ms of last write — used as a cache-busting token for OG image URLs. */
+  updatedAt: number;
   /** Decoded `state_json`, for metadata and for the storefront to render. */
   state: Partial<ShopState>;
 };
@@ -59,7 +61,7 @@ export async function getPublicStoreByHandle(
   try {
     const { data, error } = await supabase
       .from("stores")
-      .select("id, biz_name, store_username, account_status, state_json")
+      .select("id, biz_name, store_username, account_status, state_json, updated_at")
       .ilike("store_username", handle)
       .maybeSingle();
 
@@ -71,6 +73,7 @@ export async function getPublicStoreByHandle(
       id: data.id as string,
       handle,
       bizName: (state.bizName || data.biz_name || "SwiftLink Store") as string,
+      updatedAt: data.updated_at ? new Date(data.updated_at as string).getTime() : Date.now(),
       state,
     };
   } catch {

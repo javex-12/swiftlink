@@ -24,24 +24,12 @@ import { buildStoreJsonLd, SEO_SITE } from "@/lib/seo";
  */
 export const dynamic = "force-dynamic";
 
-const site =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "https://swiftlinkpro.vercel.app");
-
-/** Crawlers cannot load base64 data URLs, so they must never be the OG image. */
-function resolveOgImage(url?: string): string | null {
-  if (!url || typeof url !== "string") return null;
-  const trimmed = url.trim();
-  if (trimmed.startsWith("data:")) return null;
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-  if (trimmed.startsWith("/")) return `${site}${trimmed}`;
-  return null;
-}
+/**
+ * One origin for every absolute URL this route emits: `og:url`, `og:image`,
+ * the canonical link, and the JSON-LD graph. It must be the same value the OG
+ * image route prints on the card, so both read `SEO_SITE`.
+ */
+const site = SEO_SITE;
 
 export async function generateMetadata({
   params,
@@ -85,21 +73,14 @@ export async function generateMetadata({
     ...(state.categories || []).slice(0, 10),
   ].filter(Boolean) as string[];
 
-  // Dynamic 1200x630 social card natively rendered by Next.js on swiftlinkpro.vercel.app:
-  const dynamicOgImage = `${site}/${store.handle}/opengraph-image`;
-  const candidateCustom =
-    resolveOgImage(state.ogImage) ||
-    resolveOgImage(state.bizImage) ||
-    resolveOgImage(state.heroImage) ||
-    resolveOgImage(state.products?.[0]?.image);
+  // Dynamic 1200x630 social card rendered natively by Next.js — no Supabase headers, no robot blocking.
+  // The `v` param is the store's last-write epoch: each save invalidates the cached preview automatically.
+  const dynamicOgImage = `${site}/${store.handle}/opengraph-image?v=${store.updatedAt}`;
 
-  // Supabase storage bucket sends "x-robots-tag: none" which causes WhatsApp, Twitter,
-  // and Facebook crawlers to drop the image. Our native opengraph-image route is always served
-  // with 200 OK without robot blocking headers.
-  const ogImage =
-    candidateCustom && !candidateCustom.includes("supabase.co")
-      ? candidateCustom
-      : dynamicOgImage;
+  // Always use the native dynamic OG image so WhatsApp/Facebook/Twitter crawlers can fetch it.
+  // Supabase Storage sends `x-robots-tag: none` which causes those crawlers to discard the image.
+  // We ignore any candidate from supabase.co entirely and always use our own hosted image.
+  const ogImage = dynamicOgImage;
 
   const url = `${site}/${store.handle}`;
 

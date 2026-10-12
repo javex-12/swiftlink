@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,45 @@ function GoogleLogo() {
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 /**
+ * Width, in pixels, that Google Identity Services should draw its button at.
+ *
+ * GIS renders its own iframe at a *fixed* pixel width, so the previous
+ * hard-coded `width={380}` was wider than the form column it sat in (420px card
+ * minus `p-6`/`sm:p-8` padding leaves 356-372px), which pushed the whole page
+ * sideways on every phone and on the desktop card. JS cannot shrink that iframe
+ * with CSS without clipping Google's logo and label, and GIS only accepts
+ * 200-400 anyway — so we measure the slot we actually have and feed it back in.
+ * `width` is a dependency of the library's render effect, so a new value
+ * re-renders the button.
+ */
+function useGoogleButtonWidth() {
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(320);
+
+  useEffect(() => {
+    const slot = slotRef.current;
+    if (!slot) return;
+
+    const measure = () => {
+      const available = Math.floor(slot.clientWidth);
+      if (available <= 0) return;
+      setWidth(Math.min(400, Math.max(200, available)));
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(slot);
+    return () => observer.disconnect();
+  }, []);
+
+  return { slotRef, width };
+}
+
+/**
  * Google button — Google Identity Services.
  *
  * Uses @react-oauth/google and Google Identity Services with NEXT_PUBLIC_GOOGLE_CLIENT_ID.
@@ -64,13 +103,14 @@ function GoogleButton({
   label,
   onSuccess,
   onError,
-  loading,
 }: {
   label: string;
   onSuccess: (credential: string) => void;
   onError: (msg: string) => void;
-  loading: boolean;
 }) {
+  // Must run before the early return below: hooks may not be conditional.
+  const { slotRef, width } = useGoogleButtonWidth();
+
   if (!GOOGLE_CLIENT_ID) {
     return (
       <Button type="button" variant="outline" block disabled aria-disabled="true">
@@ -82,7 +122,7 @@ function GoogleButton({
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="w-full flex justify-center [&>div]:w-full [&_iframe]:mx-auto">
+      <div ref={slotRef} className="w-full [&>div]:w-full">
         <GoogleLogin
           onSuccess={(res) => {
             if (res.credential) {
@@ -96,7 +136,7 @@ function GoogleButton({
           size="large"
           text={label.toLowerCase().includes("sign up") ? "signup_with" : "signin_with"}
           shape="rectangular"
-          width="380"
+          width={width}
         />
       </div>
     </GoogleOAuthProvider>
@@ -534,7 +574,6 @@ function AuthPage() {
                     <GoogleButton
                       label={isSignup ? "Sign up with Google" : "Sign in with Google"}
                       onSuccess={handleGoogleSuccess}
-                      loading={loading === "google"}
                       onError={(msg) => {
                         setError(msg);
                         setLoading(null);
