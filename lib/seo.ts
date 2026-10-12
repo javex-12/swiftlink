@@ -19,7 +19,7 @@ export const SEO_SITE =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : "https://swiftlink.vercel.app");
+      : "https://swiftlinkpro.vercel.app");
 
 const SOCIAL_HOST_LABELS: Record<string, string> = {
   instagram: "Instagram",

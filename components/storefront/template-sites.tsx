@@ -556,27 +556,21 @@ function MobileStickyCartBar({ count, onCart }: { count: number; onCart: () => v
   return (
     <aside
       aria-label="Active shopping bag"
-      /*
-       * Cleared of the storefront's own bottom navigation, which is 75px tall
-       * and `z-[100]`. At `bottom-4` this bar rendered 59px *behind* that nav —
-       * i.e. completely invisible — so the only way to reach the bag on a phone
-       * was the nav icon, not the bar advertising it.
-       */
-      className="fixed bottom-[87px] left-4 right-4 z-40 md:hidden"
+      className="fixed bottom-[85px] right-4 z-40 md:hidden"
     >
       <button
         type="button"
         onClick={onCart}
-        className="flex w-full items-center justify-between rounded-2xl bg-t-accent px-5 py-3.5 text-sm font-bold text-t-accent-fg shadow-2xl transition active:scale-[0.98]"
+        aria-label={`Open shopping bag, ${count} ${count === 1 ? "item" : "items"}`}
+        className="group relative flex items-center gap-2.5 rounded-full bg-t-accent text-t-accent-fg pl-3.5 pr-4 py-2.5 shadow-[0_10px_30px_-3px_rgba(0,0,0,0.4),0_4px_12px_-2px_rgba(0,0,0,0.25)] border border-white/20 backdrop-blur-md transition-all duration-200 active:scale-95"
       >
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center justify-center">
           <ShoppingBag className="h-5 w-5" />
-          <span>{count} {count === 1 ? "item" : "items"} in Cart</span>
+          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-t-text px-1 text-[10px] font-black text-t-bg leading-none shadow-sm">
+            {count}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-          <span>Checkout via WhatsApp</span>
-          <ArrowRight className="h-4 w-4" />
-        </div>
+        <span className="text-xs font-bold tracking-tight">Cart</span>
       </button>
     </aside>
   );
@@ -1408,37 +1402,60 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
   return (
     <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text selection:bg-t-accent selection:text-t-accent-fg">
-      {/* Marquee Ticker Tape */}
-      <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-t-accent-fg">
-        {(() => {
-          const items = [state.bizName, state.tagline, state.deliveryAreas || state.location || "Delivered Nationwide", "Order via WhatsApp"].filter(Boolean);
-          const doubled = [...items, ...items];
-          return (
-            <div className="flex whitespace-nowrap" style={{ animation: 'marquee 18s linear infinite' }}>
-              {doubled.map((item, i) => (
-                <span key={i} className="inline-flex items-center">
-                  <span className="mx-5">{item}</span>
-                  <span className="opacity-30 mr-5">·</span>
-                </span>
-              ))}
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* Brutalist Header */}
+      {/* ─── BOLD DYNAMIC STICKY HEADER WITH CONTINUOUS SCROLL INFO ─── */}
       <header className="sticky top-0 z-sticky border-b-2 border-t-border bg-t-bg/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={shopNow}
-            className={cn(
-              "truncate min-w-0 max-w-[150px] sm:max-w-[240px] text-left text-base sm:text-xl font-black uppercase tracking-wider",
-              focusRing
-            )}
-          >
-            {state.bizName || template.name}
-          </button>
+        {/* Dynamic Continuous Scroll Info Bar */}
+        <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-t-accent-fg">
+          {(() => {
+            const items = [
+              state.bizName,
+              state.tagline,
+              state.deliveryAreas || state.location || "Nationwide Doorstep Delivery",
+              "Orders Dispatched Direct via WhatsApp",
+              "Live Verified Storefront",
+              state.phone ? `WhatsApp: ${state.phone}` : null,
+            ].filter(Boolean);
+            const stream = [...items, ...items, ...items];
+            return (
+              <div className="flex whitespace-nowrap animate-marquee">
+                {stream.map((item, i) => (
+                  <span key={i} className="inline-flex items-center">
+                    <span className="mx-4">{item}</span>
+                    <span className="opacity-40 mr-4 font-normal">/</span>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Main Store Identity & Navigation Bar */}
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3.5 py-2.5 sm:px-6 sm:py-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={shopNow}
+              className={cn(
+                "flex items-center gap-2 truncate text-left text-base sm:text-xl font-black uppercase tracking-wider",
+                focusRing
+              )}
+            >
+              {state.bizImage && (
+                <img
+                  src={state.bizImage}
+                  alt=""
+                  className="h-7 w-7 rounded-lg object-cover border-2 border-t-border shrink-0"
+                />
+              )}
+              <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[280px]">
+                {state.bizName || template.name}
+              </span>
+            </button>
+            <span className="hidden md:inline-flex items-center gap-1.5 border border-t-border bg-t-surface px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-t-accent">
+              <span className="h-1.5 w-1.5 rounded-full bg-t-accent animate-ping" />
+              Live Orders
+            </span>
+          </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <button
@@ -1778,11 +1795,19 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
       <header className="sticky top-0 z-sticky border-b border-t-border bg-t-bg/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <button type="button" onClick={shopNow} className={cn("flex min-w-0 items-center gap-2", focusRing)}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-t-accent text-t-accent-fg font-black text-sm shadow-xs">
-              {(state.bizName || template.name).slice(0, 2).toUpperCase()}
-            </div>
-            <div className="text-left">
-              <span className="block truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs font-black text-base sm:text-lg tracking-tight text-t-text">
+            {state.bizImage || (state as any).bizLogo ? (
+              <img
+                src={state.bizImage || (state as any).bizLogo}
+                alt={state.bizName || template.name}
+                className="h-9 w-9 rounded-xl object-cover border border-t-border shadow-xs shrink-0"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-t-accent text-t-accent-fg font-black text-sm shadow-xs shrink-0">
+                {(state.bizName || template.name).slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="text-left min-w-0">
+              <span className="block truncate max-w-[130px] xs:max-w-[190px] sm:max-w-xs font-black text-base sm:text-lg tracking-tight text-t-text">
                 {state.bizName || template.name}
               </span>
               <span className="hidden sm:block text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -1791,7 +1816,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
             </div>
           </button>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -1835,12 +1860,12 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
       </header>
 
       {/* Vibrant Marketplace Billboard Hero */}
-      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-10">
-        <div className="rounded-3xl border border-t-border bg-gradient-to-r from-t-surface via-t-surface-alt to-t-surface p-6 sm:p-10 shadow-sm">
-          <div className="grid items-center gap-6 md:grid-cols-12 md:gap-8">
-            <div className="md:col-span-7 space-y-3.5">
-              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="h-3.5 w-3.5" />
+      <section className="mx-auto max-w-6xl px-3.5 py-4 sm:px-6 sm:py-6 md:py-8">
+        <div className="rounded-2xl sm:rounded-3xl border border-t-border bg-gradient-to-r from-t-surface via-t-surface-alt to-t-surface p-4 sm:p-7 md:p-10 shadow-sm overflow-hidden">
+          <div className="grid items-center gap-5 sm:gap-6 md:grid-cols-12 md:gap-8">
+            <div className="md:col-span-7 space-y-3 sm:space-y-4">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                 <span>Verified Direct Storefront</span>
               </span>
               <h1 className="font-t-display text-2xl sm:text-4xl md:text-5xl font-black text-t-text leading-tight break-words">
@@ -1854,7 +1879,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
                   type="button"
                   onClick={shopNow}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl bg-t-accent px-5 py-3 text-xs sm:text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
+                    "flex items-center gap-2 rounded-xl bg-t-accent px-4 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-t-accent-fg shadow-md transition hover:opacity-95 active:scale-95",
                     focusRing
                   )}
                 >
@@ -1867,7 +1892,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "flex items-center gap-2 rounded-xl border border-t-border bg-t-surface px-4 py-3 text-xs sm:text-sm font-bold text-t-text hover:border-t-accent",
+                      "flex items-center gap-2 rounded-xl border border-t-border bg-t-surface px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-bold text-t-text hover:border-t-accent",
                       focusRing
                     )}
                   >
@@ -1878,50 +1903,63 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
               </div>
             </div>
 
-            {/* Quick Featured Flash Deals strip */}
+            {/* Quick Featured Flash Deals strip or Hero Banner Image */}
             <div className="md:col-span-5">
-              <div className="rounded-2xl border border-t-border bg-t-bg p-4 shadow-2xs">
-                <div className="flex items-center justify-between pb-3 border-b border-t-border">
-                  <span className="text-xs font-bold text-t-text flex items-center gap-1">
-                    <Star className="h-3.5 w-3.5 text-t-accent fill-t-accent/20" /> Featured Picks
-                  </span>
-                  <span className="text-[10px] font-semibold text-t-accent">Fast Delivery</span>
+              {state.heroImage ? (
+                <div className="rounded-2xl overflow-hidden border border-t-border aspect-[16/10] sm:aspect-[4/3] bg-t-surface shadow-sm relative group">
+                  <img
+                    src={state.heroImage}
+                    alt={title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
+                    <span className="text-white text-xs font-bold drop-shadow-sm">Featured Showcase</span>
+                  </div>
                 </div>
-                <div className="mt-3 space-y-2.5">
-                  {(products.length > 0 ? products.slice(0, 2) : []).map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => props.onProduct(product)}
-                      className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-t-surface-alt transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-t-border bg-t-surface-alt">
-                          <ProductMedia product={product} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-bold text-t-text">{product.name}</p>
-                          <p className="text-[11px] font-bold text-t-accent tabular-nums">
-                            {formatPrice(state.currency, product.price)}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          props.onProduct(product);
-                        }}
-                        className="shrink-0 rounded-lg bg-t-accent-subtle px-2.5 py-1 text-[11px] font-bold text-t-accent-text hover:bg-t-accent hover:text-t-accent-fg transition"
+              ) : (
+                <div className="rounded-2xl border border-t-border bg-t-bg p-3.5 sm:p-4 shadow-2xs">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-t-border">
+                    <span className="text-xs font-bold text-t-text flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 text-t-accent fill-t-accent/20" /> Featured Picks
+                    </span>
+                    <span className="text-[10px] font-semibold text-t-accent">Fast Delivery</span>
+                  </div>
+                  <div className="mt-2.5 space-y-2">
+                    {(products.length > 0 ? products.slice(0, 2) : []).map((product) => (
+                      <div
+                        key={product.id}
+                        onClick={() => props.onProduct(product)}
+                        className="flex items-center justify-between gap-2.5 p-2 rounded-xl hover:bg-t-surface-alt transition cursor-pointer"
                       >
-                        Order
-                      </button>
-                    </div>
-                  ))}
-                  {products.length === 0 && (
-                    <p className="text-center py-4 text-xs text-t-text-muted">No featured items yet.</p>
-                  )}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-lg overflow-hidden border border-t-border bg-t-surface-alt">
+                            <ProductMedia product={product} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-t-text">{product.name}</p>
+                            <p className="text-[11px] font-bold text-t-accent tabular-nums">
+                              {formatPrice(state.currency, product.price)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            props.onProduct(product);
+                          }}
+                          className="shrink-0 rounded-lg bg-t-accent-subtle px-2.5 py-1 text-[11px] font-bold text-t-accent-text hover:bg-t-accent hover:text-t-accent-fg transition"
+                        >
+                          Order
+                        </button>
+                      </div>
+                    ))}
+                    {products.length === 0 && (
+                      <p className="text-center py-4 text-xs text-t-text-muted">No featured items yet.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -2479,7 +2517,7 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 rel="noopener noreferrer"
                 className={cn("rounded-full bg-white px-5 py-2 text-xs font-black uppercase tracking-wider text-zinc-950 shadow-lg hover:bg-zinc-100 active:scale-95 transition", focusRing)}
               >
-                Sign Up
+                WhatsApp Order
               </a>
             )}
           </div>
@@ -3155,6 +3193,857 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 }
 
 // =============================================================================
+// 8. NOIR SITE (High-Fashion Luxury Haute Couture Lookbook)
+// =============================================================================
+function NoirSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const title = state.heroTitle || state.bizName || "Collection Privée";
+  const subtitle = state.heroSubtitle || state.tagline || "Haute craftsmanship, rare materials and refined silhouettes tailored for the discerning collector.";
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  const heroImage =
+    state.heroImage ||
+    state.bizImage ||
+    products[0]?.image ||
+    "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1600&q=85";
+
+  return (
+    <div className="min-h-screen bg-[#070709] pb-28 font-serif text-[#f4f4f5] selection:bg-[#d4af37] selection:text-black">
+      {/* ─── LUXURY VIP TOP RAIL ─── */}
+      <div className="border-b border-white/10 bg-black/80 px-4 py-2 text-center text-[10px] tracking-[0.3em] uppercase text-zinc-400">
+        <span>Atelier Privé · Private Concierge Ordering via WhatsApp</span>
+      </div>
+
+      {/* ─── OBSIDIAN HEADER ─── */}
+      <header className="sticky top-0 z-sticky border-b border-white/10 bg-[#070709]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
+          <button type="button" onClick={shopNow} className={cn("flex items-center gap-3 text-left", focusRing)}>
+            {state.bizImage ? (
+              <img
+                src={state.bizImage}
+                alt={state.bizName || template.name}
+                className="h-8 w-8 rounded-full object-cover border border-white/20 shrink-0"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 font-sans text-xs font-bold tracking-wider text-white">
+                {(state.bizName || template.name).slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <span className="block truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs font-serif text-base sm:text-lg tracking-[0.2em] uppercase text-white">
+                {state.bizName || template.name}
+              </span>
+              <span className="hidden sm:block text-[9px] font-sans font-medium uppercase tracking-[0.25em] text-[#d4af37]">
+                Haute Horlogerie & Fashion
+              </span>
+            </div>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-sans text-[11px] font-medium tracking-wider text-zinc-300 hover:border-white/40 transition",
+                focusRing
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-[#d4af37]" />
+              <span>Reviews</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn("p-2 text-zinc-300 hover:text-white transition", focusRing)}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-3.5 py-1.5 font-sans text-xs font-semibold text-[#d4af37] hover:bg-[#d4af37]/20 transition",
+                focusRing
+              )}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <CartMark count={cartCount} />
+            </button>
+
+            {waDigits && (
+              <a
+                href={`https://wa.me/${waDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "hidden xs:inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 font-sans text-xs font-bold text-black hover:bg-zinc-200 transition active:scale-95",
+                  focusRing
+                )}
+              >
+                <span>Concierge</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ─── DRAMATIC LUXURY BILLBOARD HERO ─── */}
+      <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden border-b border-white/10 bg-black px-4 py-20 text-center">
+        <div className="absolute inset-0 z-0 opacity-30 mix-blend-luminosity">
+          <img src={heroImage} alt="" className="h-full w-full object-cover object-center" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-black/70 to-black/90 pointer-events-none" />
+
+        <div className="relative z-10 mx-auto max-w-3xl px-4">
+          <span className="inline-block rounded-full border border-[#d4af37]/30 bg-[#d4af37]/10 px-3.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.3em] text-[#d4af37] mb-6">
+            Collection Privée 2026
+          </span>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-normal tracking-[0.15em] uppercase text-white leading-tight">
+            {title}
+          </h1>
+          <p className="mx-auto mt-6 max-w-lg font-sans text-xs sm:text-sm text-zinc-300 font-light leading-relaxed tracking-wide">
+            {subtitle}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={shopNow}
+              className={cn(
+                "rounded-full bg-white px-8 py-3.5 font-sans text-xs font-bold uppercase tracking-[0.2em] text-black shadow-2xl transition hover:bg-zinc-200 hover:scale-105 active:scale-95",
+                focusRing
+              )}
+            >
+              Acquire Collection
+            </button>
+            {waDigits && (
+              <a
+                href={`https://wa.me/${waDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "rounded-full border border-white/20 bg-white/5 px-6 py-3.5 font-sans text-xs font-bold uppercase tracking-[0.2em] text-white hover:bg-white/10 transition",
+                  focusRing
+                )}
+              >
+                Inquire on WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── LUXURY TRUST STRIP ─── */}
+      <div className="border-b border-white/10 bg-[#0c0c10] py-8 px-4 font-sans text-xs tracking-widest uppercase text-zinc-400">
+        <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-around gap-6 text-center">
+          <span className="text-zinc-400">Atelier Craftsmanship</span>
+          <span className="text-[#d4af37]">·</span>
+          <span className="text-zinc-400">Private Concierge</span>
+          <span className="text-[#d4af37]">·</span>
+          <span className="text-zinc-400">Secured White-Glove Dispatch</span>
+          <span className="text-[#d4af37]">·</span>
+          <span className="text-zinc-400">Direct WhatsApp Ordering</span>
+        </div>
+      </div>
+
+      {/* ─── STAGGERED LOOKBOOK CATALOG ─── */}
+      <main id="catalog" className="mx-auto max-w-6xl px-4 sm:px-8 py-16 scroll-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-10">
+          <div>
+            <span className="font-sans text-[10px] font-bold uppercase tracking-[0.3em] text-[#d4af37]">
+              Curated Lookbook
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal tracking-[0.15em] uppercase text-white mt-1">
+              Select Pieces
+            </h2>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar font-sans pb-1">
+            {categories.map((category) => {
+              const selected = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => props.onCategory(category)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-medium tracking-wider transition uppercase",
+                    focusRing,
+                    selected
+                      ? "bg-white text-black font-bold"
+                      : "border border-white/10 bg-white/5 text-zinc-400 hover:text-white"
+                  )}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="py-20 text-center font-sans text-zinc-500 text-sm">
+            No pieces found in this collection.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filtered.slice(0, shown).map((product) => (
+              <div
+                key={product.id}
+                onClick={() => props.onProduct(product)}
+                className="group relative cursor-pointer border border-white/10 bg-[#0d0d10] rounded-2xl overflow-hidden hover:border-white/30 transition-all duration-300"
+              >
+                <div className="aspect-[3/4] overflow-hidden bg-black/60 relative">
+                  <ProductMedia
+                    product={product}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {product.badge && (
+                    <span className="absolute top-3 left-3 rounded-full border border-white/20 bg-black/70 backdrop-blur-md px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-widest text-[#d4af37]">
+                      {product.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="p-5 font-sans">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-serif text-base sm:text-lg text-white font-normal tracking-wide truncate group-hover:text-[#d4af37] transition">
+                        {product.name}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-400 line-clamp-1">
+                        {product.description || "Bespoke edition"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+                    <span className="text-sm font-bold text-white tracking-wider">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onProduct(product);
+                      }}
+                      className="rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-white hover:bg-white hover:text-black transition"
+                    >
+                      Acquire
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasMore && (
+          <div className="mt-14 text-center">
+            <button
+              type="button"
+              onClick={loadMore}
+              className={cn(
+                "rounded-full border border-white/20 bg-white/5 px-8 py-3 font-sans text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition",
+                focusRing
+              )}
+            >
+              Reveal More Pieces ({remaining})
+            </button>
+          </div>
+        )}
+      </main>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+    </div>
+  );
+}
+
+// =============================================================================
+// 9. FORGE SITE (Industrial Tactical Hardware & Technical Engineering)
+// =============================================================================
+function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const title = state.heroTitle || state.bizName || "Heavy Duty Systems";
+  const subtitle = state.heroSubtitle || state.tagline || "Engineered hardware, precision components and industrial equipment ready for tactical deployment.";
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0b0c0e] pb-28 font-mono text-[#cbd5e1] selection:bg-emerald-500 selection:text-black">
+      {/* ─── TECHNICAL TELEMETRY TICKER ─── */}
+      <div className="border-b border-[#1e232d] bg-[#07080a] py-1.5 px-4 text-[10px] tracking-widest uppercase text-emerald-400">
+        <div className="flex whitespace-nowrap animate-marquee">
+          {[
+            "SYS: ONLINE",
+            `FORGE // ${state.bizName || template.name}`,
+            "STATUS: OPERATIONAL",
+            "DIRECT DISPATCH VIA WHATSAPP",
+            "SPEC: INDUSTRIAL GRADE",
+            state.deliveryAreas || state.location || "NATIONWIDE FREIGHT",
+          ].concat([
+            "SYS: ONLINE",
+            `FORGE // ${state.bizName || template.name}`,
+            "STATUS: OPERATIONAL",
+            "DIRECT DISPATCH VIA WHATSAPP",
+            "SPEC: INDUSTRIAL GRADE",
+            state.deliveryAreas || state.location || "NATIONWIDE FREIGHT",
+          ]).map((item, i) => (
+            <span key={i} className="inline-flex items-center">
+              <span className="mx-4">{item}</span>
+              <span className="text-zinc-600 mr-4 font-normal">::</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── INDUSTRIAL HEADER ─── */}
+      <header className="sticky top-0 z-sticky border-b-2 border-[#1e232d] bg-[#0b0c0e]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <button type="button" onClick={shopNow} className={cn("flex items-center gap-3 text-left", focusRing)}>
+            {state.bizImage ? (
+              <img
+                src={state.bizImage}
+                alt=""
+                className="h-8 w-8 rounded-md object-cover border border-[#333a48] shrink-0"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333a48] bg-[#161a22] font-black text-xs text-emerald-400">
+                F
+              </div>
+            )}
+            <div>
+              <span className="block truncate max-w-[140px] xs:max-w-[190px] sm:max-w-xs text-sm sm:text-base font-black tracking-widest uppercase text-white">
+                {state.bizName || template.name}
+              </span>
+              <span className="text-[10px] text-emerald-500 font-bold tracking-wider">
+                [VERIFIED FORGE]
+              </span>
+            </div>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 border border-[#2a303c] bg-[#13161c] px-3 py-1.5 text-xs text-zinc-300 hover:border-emerald-500 transition",
+                focusRing
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
+              <span>REVIEWS</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn("border border-[#2a303c] bg-[#13161c] p-2 text-zinc-300 hover:text-white", focusRing)}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn(
+                "flex items-center gap-1.5 border-2 border-emerald-500 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500 hover:text-black transition",
+                focusRing
+              )}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <CartMark count={cartCount} />
+            </button>
+
+            {waDigits && (
+              <a
+                href={`https://wa.me/${waDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "hidden xs:inline-flex items-center gap-1 rounded bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-black hover:bg-emerald-400 active:scale-95 transition",
+                  focusRing
+                )}
+              >
+                <span>DEPLOY</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ─── TACTICAL INDUSTRIAL HERO ─── */}
+      <section className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12">
+        <div className="rounded-xl border-2 border-[#1e232d] bg-[#101319] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+          <div className="space-y-4 max-w-2xl relative z-10">
+            <span className="inline-block border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-400">
+              SYS // SPECIFICATION 2026
+            </span>
+            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase leading-none">
+              {title}
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 font-sans leading-relaxed">
+              {subtitle}
+            </p>
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={shopNow}
+                className={cn(
+                  "flex items-center gap-2 rounded bg-emerald-500 px-6 py-3 text-xs font-black uppercase text-black hover:bg-emerald-400 active:scale-95 transition",
+                  focusRing
+                )}
+              >
+                <span>DEPLOY HARDWARE</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              {waDigits && (
+                <a
+                  href={`https://wa.me/${waDigits}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "flex items-center gap-2 rounded border border-[#2a303c] bg-[#161a22] px-5 py-3 text-xs font-bold text-white hover:border-emerald-500 transition",
+                    focusRing
+                  )}
+                >
+                  <MessageCircle className="h-4 w-4 text-emerald-400" />
+                  <span>DIRECT DISPATCH INQUIRY</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SPECIFICATIONS CATALOG GRID ─── */}
+      <main id="catalog" className="mx-auto max-w-6xl px-4 sm:px-6 py-10 scroll-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#1e232d] pb-4 mb-8">
+          <div>
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+              [INVENTORY STATUS]
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white uppercase mt-0.5">
+              CATALOG ITEMS
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            {categories.map((category) => {
+              const selected = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => props.onCategory(category)}
+                  className={cn(
+                    "shrink-0 rounded border px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition",
+                    focusRing,
+                    selected
+                      ? "border-emerald-500 bg-emerald-500 text-black"
+                      : "border-[#2a303c] bg-[#12151b] text-zinc-400 hover:text-white"
+                  )}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center text-xs text-zinc-500 uppercase">
+            NO INVENTORY MATCHING QUERY
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.slice(0, shown).map((product, idx) => (
+              <div
+                key={product.id}
+                onClick={() => props.onProduct(product)}
+                className="group cursor-pointer rounded-lg border-2 border-[#1e232d] bg-[#12151b] p-4 hover:border-emerald-500 transition-all duration-200"
+              >
+                <div className="flex items-center justify-between pb-2 text-[10px] text-zinc-500 border-b border-[#1e232d]">
+                  <span>ITEM // 00{idx + 1}</span>
+                  <span className="text-emerald-400 font-bold">[READY]</span>
+                </div>
+                <div className="aspect-[4/3] rounded overflow-hidden bg-black/60 my-3">
+                  <ProductMedia
+                    product={product}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div>
+                  <h3 className="truncate text-sm font-bold text-white uppercase group-hover:text-emerald-400 transition">
+                    {product.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-400 font-sans line-clamp-2">
+                    {product.description || "Industrial grade hardware specification."}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#1e232d]">
+                    <span className="text-sm font-black text-white tabular-nums">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onProduct(product);
+                      }}
+                      className="rounded bg-emerald-500/20 border border-emerald-500/50 px-3 py-1 text-xs font-bold text-emerald-400 hover:bg-emerald-500 hover:text-black transition uppercase"
+                    >
+                      ORDER
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasMore && (
+          <div className="mt-12 text-center">
+            <button
+              type="button"
+              onClick={loadMore}
+              className={cn(
+                "rounded border-2 border-[#2a303c] bg-[#141820] px-8 py-3 text-xs font-black uppercase text-emerald-400 hover:border-emerald-500 transition",
+                focusRing
+              )}
+            >
+              LOAD MORE ITEMS [{remaining}]
+            </button>
+          </div>
+        )}
+      </main>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+    </div>
+  );
+}
+
+// =============================================================================
+// 10. OASIS SITE (Mediterranean Terracotta Artisanal & Botanical Interiors)
+// =============================================================================
+function OasisSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const title = state.heroTitle || state.bizName || "Sun-Baked Living";
+  const subtitle = state.heroSubtitle || state.tagline || "Handcrafted ceramics, earthy textiles and botanical essentials shaped with warmth and natural texture.";
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  const heroImage =
+    state.heroImage ||
+    state.bizImage ||
+    products[0]?.image ||
+    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=80";
+
+  return (
+    <div className="min-h-screen bg-[#faf6f1] dark:bg-[#181310] pb-28 font-serif text-[#33261f] dark:text-[#ede4dc] selection:bg-[#c2410c] selection:text-white">
+      {/* ─── WARM ARTISANAL HEADER ─── */}
+      <header className="sticky top-0 z-sticky border-b border-[#e6ded5] dark:border-[#2b221c] bg-[#faf6f1]/95 dark:bg-[#181310]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
+          <button type="button" onClick={shopNow} className={cn("flex items-center gap-3 text-left", focusRing)}>
+            {state.bizImage ? (
+              <img
+                src={state.bizImage}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover border border-[#c2410c]/30 shrink-0"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c2410c] text-white font-sans text-xs font-bold">
+                {(state.bizName || template.name).slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <span className="block truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs font-serif text-base sm:text-lg font-bold text-[#33261f] dark:text-[#ede4dc]">
+                {state.bizName || template.name}
+              </span>
+              <span className="hidden sm:block font-sans text-[10px] font-semibold text-[#c2410c] dark:text-[#fb923c] uppercase tracking-wider">
+                Artisanal Living
+              </span>
+            </div>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 rounded-full border border-[#e6ded5] dark:border-[#2b221c] bg-white/70 dark:bg-[#201915] px-3.5 py-1.5 font-sans text-xs text-[#6e584c] dark:text-[#bda495] hover:text-[#c2410c] transition",
+                focusRing
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-[#c2410c]" />
+              <span>Reviews</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn("p-2 text-[#6e584c] dark:text-[#bda495] hover:text-[#c2410c] transition", focusRing)}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full bg-[#c2410c] px-3.5 py-2 font-sans text-xs font-bold text-white shadow-md hover:bg-[#a53609] active:scale-95 transition",
+                focusRing
+              )}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <CartMark count={cartCount} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ─── SUN-BAKED ARCHED BILLBOARD HERO ─── */}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12">
+        <div className="rounded-[2.5rem] border border-[#e6ded5] dark:border-[#2b221c] bg-[#f4ede4] dark:bg-[#221a16] p-6 sm:p-12 overflow-hidden shadow-sm">
+          <div className="grid items-center gap-8 md:grid-cols-12">
+            <div className="md:col-span-7 space-y-4">
+              <span className="inline-block rounded-full bg-[#c2410c]/10 dark:bg-[#c2410c]/20 px-3.5 py-1 font-sans text-[11px] font-bold uppercase tracking-widest text-[#c2410c] dark:text-[#fb923c]">
+                Natural Earthen Craft
+              </span>
+              <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-normal text-[#33261f] dark:text-[#ede4dc] leading-tight">
+                {title}
+              </h1>
+              <p className="max-w-md font-sans text-xs sm:text-sm text-[#6e584c] dark:text-[#bda495] leading-relaxed">
+                {subtitle}
+              </p>
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={shopNow}
+                  className={cn(
+                    "rounded-full bg-[#c2410c] px-7 py-3 font-sans text-xs sm:text-sm font-bold text-white shadow-lg transition hover:bg-[#a53609] active:scale-95",
+                    focusRing
+                  )}
+                >
+                  Explore Collection
+                </button>
+                {waDigits && (
+                  <a
+                    href={`https://wa.me/${waDigits}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "rounded-full border border-[#e6ded5] dark:border-[#2b221c] bg-white dark:bg-[#181310] px-5 py-3 font-sans text-xs sm:text-sm font-bold text-[#33261f] dark:text-[#ede4dc] hover:border-[#c2410c] transition",
+                      focusRing
+                    )}
+                  >
+                    <MessageCircle className="h-4 w-4 inline mr-1 text-[#c2410c]" />
+                    <span>WhatsApp Inquiry</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="md:col-span-5">
+              <div className="rounded-3xl overflow-hidden aspect-[4/3] sm:aspect-square border border-[#e6ded5] dark:border-[#2b221c] shadow-lg">
+                <img src={heroImage} alt="" className="h-full w-full object-cover" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── ARTISANAL CATALOG ─── */}
+      <main id="catalog" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 scroll-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e6ded5] dark:border-[#2b221c] pb-4 mb-8">
+          <div>
+            <span className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#c2410c] dark:text-[#fb923c]">
+              Handcrafted Catalog
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#33261f] dark:text-[#ede4dc] mt-0.5">
+              Organic Essentials
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar font-sans pb-1">
+            {categories.map((category) => {
+              const selected = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => props.onCategory(category)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition",
+                    focusRing,
+                    selected
+                      ? "bg-[#c2410c] text-white shadow-sm"
+                      : "border border-[#e6ded5] dark:border-[#2b221c] bg-white dark:bg-[#201915] text-[#6e584c] dark:text-[#bda495] hover:text-[#c2410c]"
+                  )}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center font-sans text-xs text-[#6e584c] dark:text-[#bda495]">
+            No handcrafted pieces found.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.slice(0, shown).map((product) => (
+              <div
+                key={product.id}
+                onClick={() => props.onProduct(product)}
+                className="group cursor-pointer rounded-3xl border border-[#e6ded5] dark:border-[#2b221c] bg-white dark:bg-[#201915] p-4 shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f4ede4] dark:bg-[#181310] relative">
+                  <ProductMedia
+                    product={product}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {product.badge && (
+                    <span className="absolute top-3 left-3 rounded-full bg-[#c2410c] text-white px-3 py-0.5 font-sans text-[10px] font-bold">
+                      {product.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-[#33261f] dark:text-[#ede4dc] group-hover:text-[#c2410c] transition">
+                    {product.name}
+                  </h3>
+                  <p className="mt-1 font-sans text-xs text-[#6e584c] dark:text-[#bda495] line-clamp-2">
+                    {product.description || "Artisanal hand-worked edition."}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#e6ded5] dark:border-[#2b221c]">
+                    <span className="font-sans text-sm font-bold text-[#c2410c] dark:text-[#fb923c]">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onProduct(product);
+                      }}
+                      className="rounded-full bg-[#c2410c]/10 dark:bg-[#c2410c]/20 px-3.5 py-1 font-sans text-xs font-bold text-[#c2410c] dark:text-[#fb923c] hover:bg-[#c2410c] hover:text-white transition"
+                    >
+                      Order
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasMore && (
+          <div className="mt-12 text-center font-sans">
+            <button
+              type="button"
+              onClick={loadMore}
+              className={cn(
+                "rounded-full border border-[#e6ded5] dark:border-[#2b221c] bg-white dark:bg-[#201915] px-8 py-3 text-xs font-bold text-[#33261f] dark:text-[#ede4dc] hover:border-[#c2410c] transition",
+                focusRing
+              )}
+            >
+              Load More Pieces ({remaining})
+            </button>
+          </div>
+        )}
+      </main>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+    </div>
+  );
+}
+
+// =============================================================================
 // ROUTER: TEMPLATE SITE
 // =============================================================================
 export function TemplateSite(props: TemplateSiteProps) {
@@ -3163,6 +4052,18 @@ export function TemplateSite(props: TemplateSiteProps) {
 
   // Route each template to its dedicated visual experience
   const id = props.state.websiteTemplateId || template.id;
+
+  if (id === "noir") {
+    return <NoirSite {...props} template={template} />;
+  }
+
+  if (id === "forge") {
+    return <ForgeSite {...props} template={template} />;
+  }
+
+  if (id === "oasis") {
+    return <OasisSite {...props} template={template} />;
+  }
 
   if (id === "bloom") {
     return <BloomSite {...props} template={template} />;
@@ -3176,15 +4077,15 @@ export function TemplateSite(props: TemplateSiteProps) {
     return <MarketplaceSite {...props} template={template} />;
   }
 
-  if (id === "studio" || id === "noir") {
+  if (id === "studio") {
     return <StudioSite {...props} template={template} />;
   }
 
-  if (id === "bold" || id === "forge" || template.light.nav === "bottom") {
+  if (id === "bold") {
     return <BoldSite {...props} template={template} />;
   }
 
-  if (id === "boutique" || id === "oasis" || template.light.nav === "drawer") {
+  if (id === "boutique") {
     return <BoutiqueSite {...props} template={template} />;
   }
 

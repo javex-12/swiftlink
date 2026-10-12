@@ -290,6 +290,9 @@ export function StoreEditorV2() {
           ...(localState.storefrontTheme || {}),
           background: mode,
         },
+        bgColor: mode === "dark" ? "#09090b" : "#ffffff",
+        textColor: mode === "dark" ? "#f4f4f5" : "#111827",
+        surfaceColor: mode === "dark" ? "#141416" : "#ffffff",
       };
       setLocalState(next);
       try {
@@ -2023,7 +2026,10 @@ export function StoreEditorV2() {
                   <div
                     data-theme-scope="storefront"
                     style={previewThemeVars}
-                    className="max-h-[750px] overflow-y-auto overscroll-contain"
+                    className={cn(
+                      "max-h-[750px] overflow-y-auto overscroll-contain",
+                      (localState.storefrontTheme?.background === "dark" || previewMode === "dark") && "dark"
+                    )}
                   >
                     <TemplateSite
                       state={localState}
@@ -2046,7 +2052,10 @@ export function StoreEditorV2() {
                 <div
                   data-theme-scope="storefront"
                   style={previewThemeVars}
-                  className="w-full max-w-[768px] mx-auto overflow-hidden rounded-2xl border-4 border-[#1E2D27] bg-[#111C18] shadow-2xl"
+                  className={cn(
+                    "w-full max-w-[768px] mx-auto overflow-hidden rounded-2xl border-4 border-[#1E2D27] bg-[#111C18] shadow-2xl",
+                    (localState.storefrontTheme?.background === "dark" || previewMode === "dark") && "dark"
+                  )}
                 >
                   <TemplateSite
                     state={localState}
@@ -2068,7 +2077,10 @@ export function StoreEditorV2() {
                 <div
                   data-theme-scope="storefront"
                   style={previewThemeVars}
-                  className="w-full max-w-5xl mx-auto overflow-hidden rounded-2xl border border-[#1E2D27] bg-[#111C18] shadow-2xl"
+                  className={cn(
+                    "w-full max-w-5xl mx-auto overflow-hidden rounded-2xl border border-[#1E2D27] bg-[#111C18] shadow-2xl",
+                    (localState.storefrontTheme?.background === "dark" || previewMode === "dark") && "dark"
+                  )}
                 >
                   <TemplateSite
                     state={localState}

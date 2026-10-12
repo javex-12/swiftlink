@@ -60,7 +60,7 @@ export async function getPublicStoreByHandle(
     const { data, error } = await supabase
       .from("stores")
       .select("id, biz_name, store_username, account_status, state_json")
-      .eq("store_username", handle)
+      .ilike("store_username", handle)
       .maybeSingle();
 
     if (error || !data) return null;

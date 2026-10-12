@@ -31,12 +31,16 @@ const site =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : "https://swiftlink.vercel.app");
+      : "https://swiftlinkpro.vercel.app");
 
 /** Crawlers cannot load base64 data URLs, so they must never be the OG image. */
 function resolveOgImage(url?: string): string | null {
-  if (!url || url.startsWith("data:")) return null;
-  return url.startsWith("http://") || url.startsWith("https://") ? url : null;
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("data:")) return null;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("/")) return `${site}${trimmed}`;
+  return null;
 }
 
 export async function generateMetadata({
@@ -48,11 +52,15 @@ export async function generateMetadata({
   const store = await getPublicStoreByHandle(storeSlug);
 
   if (!store) {
-    return { title: "Store not found", robots: { index: false, follow: false } };
+    return {
+      metadataBase: new URL(site),
+      title: "Store not found",
+      robots: { index: false, follow: false },
+    };
   }
 
-  const state = store.state;
-  const bizName = store.bizName;
+  const state = store.state || {};
+  const bizName = store.bizName || state.bizName || "SwiftLink Store";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;
   const title = state.seoTitle || `${bizName} — Shop Online`;
   const description =
@@ -88,6 +96,7 @@ export async function generateMetadata({
   const url = `${site}/${store.handle}`;
 
   return {
+    metadataBase: new URL(site),
     title,
     description,
     keywords,
@@ -98,7 +107,15 @@ export async function generateMetadata({
       description,
       url,
       siteName: "SwiftLink Pro",
-      images: [{ url: ogImage, width: 1200, height: 630, alt: bizName }],
+      images: [
+        {
+          url: ogImage,
+          secureUrl: ogImage,
+          width: 1200,
+          height: 630,
+          alt: bizName,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",

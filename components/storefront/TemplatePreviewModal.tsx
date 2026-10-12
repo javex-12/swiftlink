@@ -65,12 +65,20 @@ export function TemplatePreviewModal({
   const [activeTemplateId, setActiveTemplateId] = useState<string>(templateId);
   const [device, setDevice] = useState<Device>("desktop");
   const [useSampleData, setUseSampleData] = useState<boolean>(!hasVendorProducts);
-  const [appearance, setAppearance] = useState<Appearance>("light");
+  const [appearance, setAppearance] = useState<Appearance>(() =>
+    vendorState.storefrontTheme?.background === "dark" ? "dark" : "light"
+  );
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 
   useEffect(() => {
     setActiveTemplateId(templateId);
   }, [templateId]);
+
+  useEffect(() => {
+    if (vendorState.storefrontTheme?.background === "dark" || vendorState.storefrontTheme?.background === "light") {
+      setAppearance(vendorState.storefrontTheme.background);
+    }
+  }, [vendorState.storefrontTheme?.background]);
 
   // A real phone cannot show a phone mockup. Track the viewport rather than
   // guessing from a CSS breakpoint, because the frame markup itself must change.
@@ -253,7 +261,7 @@ export function TemplatePreviewModal({
         {isNarrowViewport ? (
           // A phone shows the page, not a picture of a phone.
           <PreviewFrame width={null} height="100%" className="mx-auto">
-            <div data-theme-scope="storefront" style={themeVars}>
+            <div data-theme-scope="storefront" style={themeVars} className={cn(appearance === "dark" && "dark", "min-h-full")}>
               {storefront}
             </div>
           </PreviewFrame>
@@ -267,7 +275,7 @@ export function TemplatePreviewModal({
               height="100%"
               className="mx-auto min-h-0 max-w-full flex-1"
             >
-              <div data-theme-scope="storefront" style={themeVars}>
+              <div data-theme-scope="storefront" style={themeVars} className={cn(appearance === "dark" && "dark", "min-h-full")}>
                 {storefront}
               </div>
             </PreviewFrame>
@@ -280,7 +288,7 @@ export function TemplatePreviewModal({
             height="100%"
             className="mx-auto max-w-full overflow-hidden rounded-2xl border-4 border-[#1E2D27] shadow-2xl"
           >
-            <div data-theme-scope="storefront" style={themeVars}>
+            <div data-theme-scope="storefront" style={themeVars} className={cn(appearance === "dark" && "dark", "min-h-full")}>
               {storefront}
             </div>
           </PreviewFrame>
@@ -291,7 +299,7 @@ export function TemplatePreviewModal({
             height="100%"
             className="mx-auto overflow-hidden rounded-xl shadow-2xl"
           >
-            <div data-theme-scope="storefront" style={themeVars}>
+            <div data-theme-scope="storefront" style={themeVars} className={cn(appearance === "dark" && "dark", "min-h-full")}>
               {storefront}
             </div>
           </PreviewFrame>

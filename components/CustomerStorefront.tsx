@@ -1078,15 +1078,17 @@ export function CustomerStorefront({
       // `overflow-x-clip`: contains horizontal overflow without turning this into
       // a scroll container, which would break the templates' `sticky top-0`
       className={cn(
-        "min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-clip",
+        "min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-clip bg-t-bg text-t-text",
         backgroundIntent === "dark" && "dark"
       )}
          style={{ 
-            ...(themeVars ? (themeVars as React.CSSProperties) : { backgroundColor: bgColor }),
+            ...(themeVars ? (themeVars as React.CSSProperties) : {}),
+            backgroundColor: (themeVars as any)?.["--t-bg"] || (backgroundIntent === "dark" ? "#09090b" : bgColor),
+            color: (themeVars as any)?.["--t-text"] || (backgroundIntent === "dark" ? "#f4f4f5" : textColor),
             "--theme-color": accentColor, 
-            "--bg-color": bgColor, 
-            "--text-color": textColor,
-            "--surface-color": surfaceColor,
+            "--bg-color": (themeVars as any)?.["--t-bg"] || (backgroundIntent === "dark" ? "#09090b" : bgColor), 
+            "--text-color": (themeVars as any)?.["--t-text"] || (backgroundIntent === "dark" ? "#f4f4f5" : textColor),
+            "--surface-color": (themeVars as any)?.["--t-surface"] || (backgroundIntent === "dark" ? "#141416" : surfaceColor),
             "--btn-color": buttonColor,
             "--btn-text-color": isDarkColor(buttonColor) ? "#ffffff" : "#000000"
          } as React.CSSProperties}>
