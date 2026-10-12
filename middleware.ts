@@ -157,6 +157,9 @@ export const config = {
     // `api/health` and `api/errors` are excluded so neither depends on the auth
     // stack: the readiness probe must be cheap under a load balancer, and error
     // reporting must still work when auth is what broke.
-    "/((?!api/(?:health|errors)|_next/static|_next/image|favicon.ico|manifest\\.(?:json|webmanifest)|sw\\.js|workbox-.*|.*\\.(?:css|js|map|txt|xml|json|html|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)$).*)",
+    // `auth/callback` is excluded so the OAuth code-exchange route never gets
+    // caught by the session guard (which would redirect to /signup before the
+    // session cookie is even written).
+    "/((?!api/(?:health|errors)|auth/callback|_next/static|_next/image|favicon.ico|manifest\\.(?:json|webmanifest)|sw\\.js|workbox-.*|.*\\.(?:css|js|map|txt|xml|json|html|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)$).*)",
   ],
 };
