@@ -33,6 +33,7 @@ import { type Product, type ShopState } from "@/lib/schema";
 import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
 import { isProductVisible } from "@/lib/plans";
 import { TemplateSite } from "@/components/storefront/template-sites";
+import { StorefrontReviews } from "@/components/storefront/StorefrontReviews";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn, isDarkColor } from "@/lib/utils";
 import { supabase } from "@/lib/supabase-client";
@@ -1076,8 +1077,10 @@ export function CustomerStorefront({
       data-theme-scope="storefront"
       // `overflow-x-clip`: contains horizontal overflow without turning this into
       // a scroll container, which would break the templates' `sticky top-0`
-      // headers (see the note on `body` in app/globals.css).
-      className="min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-clip"
+      className={cn(
+        "min-h-screen flex flex-col items-center selection:bg-emerald-500 selection:text-white w-full overflow-x-clip",
+        backgroundIntent === "dark" && "dark"
+      )}
          style={{ 
             ...(themeVars ? (themeVars as React.CSSProperties) : { backgroundColor: bgColor }),
             "--theme-color": accentColor, 
@@ -1125,6 +1128,18 @@ export function CustomerStorefront({
                         setShowReviewForm(true);
                       }}
                     />
+                    {s.id && (
+                      <div className={cn("py-16 px-4 pb-28", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
+                        <div className="max-w-3xl mx-auto">
+                          <StorefrontReviews
+                            storeId={s.id}
+                            storeName={s.bizName || "Store"}
+                            accentColor={s.accentColor}
+                            isDark={backgroundIntent === "dark"}
+                          />
+                        </div>
+                      </div>
+                    )}
                 </div>
             </div>
 
@@ -1148,7 +1163,7 @@ export function CustomerStorefront({
                                             <>
                                                 <img src={imgs[idx]} alt={selectedProduct.name} className="w-full h-[400px] md:h-full object-cover" />
                                                 {/* Ring + solid blur so the way back stays visible over a pale photo, which is the only thing between it and the merchant's image. */}
-                                                <button aria-label="Back to storefront" onClick={() => changeScreen("home")} className="absolute top-5 left-5 z-20 w-10 h-10 bg-white/95 backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg ring-1 ring-black/10 sf-ink"><ChevronLeft size={20} /></button>
+                                                <button aria-label="Back to storefront" onClick={() => changeScreen("home")} className="absolute top-5 left-5 z-20 w-10 h-10 bg-white/95 dark:bg-zinc-900/95 text-zinc-950 dark:text-white backdrop-blur rounded-full flex items-center justify-center active:scale-90 shadow-lg ring-1 ring-black/10 dark:ring-white/20 transition-colors"><ChevronLeft size={20} /></button>
                                                 {imgs.length > 1 && (
                                                     <div className="absolute bottom-12 left-0 right-0 flex gap-2 px-4 overflow-x-auto no-scrollbar z-20">
                                                         {imgs.map((img, i) => (
@@ -1220,139 +1235,21 @@ export function CustomerStorefront({
                             </div>
                         )}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface pb-24">
+                            <div className="w-full flex flex-col min-h-screen sf-surface pb-28">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex justify-between items-center gap-4">
                                     <div className="flex items-center gap-4">
                                         <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
                                         <h2 className="text-xl font-black sf-ink">Reviews</h2>
                                     </div>
-                                    {!isStoreOwner && !preview && (
-                                        <button 
-                                            onClick={() => setShowReviewForm(!showReviewForm)}
-                                            className="px-4 py-2 sf-inverse text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
-                                        >
-                                            {showReviewForm ? "Cancel" : "Write Review"}
-                                        </button>
-                                    )}
                                 </div>
-                                <div className="p-6">
-                                    {showReviewForm && !isStoreOwner && (
-                                        <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 mb-6 space-y-4">
-                                            <h3 className="text-xs font-black uppercase tracking-wider text-white">Leave Your Review</h3>
-                                            
-                                            {/* Identity pill — no name field needed, auto-resolved on submit */}
-                                            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                                                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                    <User size={12} className="text-emerald-400" />
-                                                </div>
-                                                <p className="text-[10px] text-zinc-400 font-bold">
-                                                    {user ? (
-                                                        <><span className="text-white">Posting as your account</span> — name auto-resolved</>
-                                                    ) : (
-                                                        <span className="text-zinc-500">Anonymous guest — a random ID will be assigned</span>
-                                                    )}
-                                                </p>
-                                            </div>
-
-                                            <textarea 
-                                                placeholder="Share your honest experience with this store..." 
-                                                value={newReview.message} 
-                                                onChange={e => setNewReview({ ...newReview, message: e.target.value })} 
-                                                className="w-full p-3.5 rounded-xl border border-white/10 bg-white/5 text-white outline-none text-xs font-semibold min-h-[100px] placeholder-zinc-600 focus:border-emerald-500/50 transition-colors resize-none"
-                                            />
-                                            
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black uppercase text-zinc-500">Rating</span>
-                                                    <div className="flex gap-1">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <button 
-                                                                key={star} 
-                                                                onClick={() => setNewReview({ ...newReview, rating: star })}
-                                                                className="text-amber-400 hover:scale-125 transition-transform"
-                                                            >
-                                                                <Star size={18} className={star <= newReview.rating ? "fill-amber-400" : "opacity-30"} />
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={submitReview}
-                                                    disabled={!newReview.message.trim()}
-                                                    className="px-6 py-2.5 sf-accent-bg hover:bg-emerald-400 disabled:opacity-40 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95"
-                                                >
-                                                    Post Review
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {reviews.length === 0 ? <p className="text-center sf-muted py-20 font-black uppercase tracking-widest">No reviews yet</p> : (
-                                        <div className="space-y-6">
-                                            {reviews.map(r => (
-                                                <div key={r.id} className="sf-surface dark:bg-zinc-950 p-6 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex items-center gap-3">
-                                                            {/* Reviewer avatar with verification badge */}
-                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-900 border border-black/5 dark:border-white/5 flex items-center justify-center sf-muted relative shrink-0 overflow-visible">
-                                                                {r.author_avatar && r.author_avatar.startsWith("http") ? (
-                                                                    <img src={r.author_avatar} className="w-full h-full rounded-full object-cover" alt="" />
-                                                                ) : (
-                                                                    <span className="w-full h-full flex items-center justify-center text-sm font-black uppercase sf-muted bg-slate-100 dark:bg-zinc-800 rounded-full">{(r.author_name || "G").substring(0, 2)}</span>
-                                                                )}
-                                                                {r.author_is_verified && (
-                                                                    <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 shadow-md border-2 border-white dark:border-zinc-950 flex items-center justify-center" style={{width:16,height:16}}>
-                                                                        <Verified size={9} className="text-white fill-white" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="font-black text-sm sf-ink dark:text-white leading-none">{r.author_name}</span>
-                                                                    {r.author_is_verified && (
-                                                                        <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[7px] font-black uppercase tracking-widest rounded-full border border-blue-500/20">Verified</span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[8px] font-bold sf-muted uppercase tracking-widest mt-0.5 block">{new Date(r.created_at).toLocaleDateString()}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-0.5">{Array.from({length:5}).map((_,i) => <Star key={i} size={13} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 dark:text-zinc-700"}/>)}</div>
-                                                    </div>
-                                                    
-                                                    <p className="text-sm text-gray-600 dark:text-zinc-300 font-medium leading-relaxed">{r.message}</p>
-                                                    
-                                                    {/* Comments Thread */}
-                                                    {(comments[r.id] || []).length > 0 && (
-                                                        <div className="pl-4 border-l-2 border-slate-100 dark:border-zinc-800 space-y-2 mt-4">
-                                                            {(comments[r.id] || []).map(c => (
-                                                                <div key={c.id} className="bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl">
-                                                                    <p className="text-[10px] font-black sf-ink dark:text-white">{c.author_name}</p>
-                                                                    <p className="text-xs sf-muted dark:text-zinc-400 font-medium mt-0.5">{c.message}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Add Comment Box */}
-                                                    <div className="flex gap-2 items-center mt-4">
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="Post comment..." 
-                                                            value={newCommentMessage[r.id] || ""} 
-                                                            onChange={e => setNewCommentMessage({ ...newCommentMessage, [r.id]: e.target.value })} 
-                                                            onKeyDown={e => e.key === "Enter" && submitComment(r.id)}
-                                                            className="flex-1 px-4 py-2 border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-black rounded-xl text-xs font-semibold text-gray-950 dark:text-white outline-none focus:border-emerald-500"
-                                                        />
-                                                        <button 
-                                                            onClick={() => submitComment(r.id)}
-                                                            className="px-4 py-2 bg-gray-950 dark:bg-white text-white dark:text-black rounded-xl text-[9px] font-black uppercase tracking-wider"
-                                                        >
-                                                            Reply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                <div className="p-6 max-w-3xl w-full mx-auto">
+                                    {s.id && (
+                                      <StorefrontReviews
+                                        storeId={s.id}
+                                        storeName={s.bizName || "Store"}
+                                        accentColor={s.accentColor}
+                                        isDark={backgroundIntent === "dark"}
+                                      />
                                     )}
                                 </div>
                             </div>

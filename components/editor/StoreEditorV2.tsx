@@ -78,6 +78,37 @@ export function StoreEditorV2() {
   const [designViewport, setDesignViewport] = useState<"mobile" | "tablet" | "desktop">("desktop");
   const [previewMode, setPreviewMode] = useState<"light" | "dark">(() => (globalState.storefrontTheme?.background === "light" ? "light" : "dark"));
   const [previewCartCount, setPreviewCartCount] = useState<number>(1);
+  const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+
+  // Debounced store handle uniqueness check against Supabase
+  useEffect(() => {
+    const handle = (localState.storeUsername || "").trim().toLowerCase();
+    const currentGlobal = (globalState.storeUsername || "").trim().toLowerCase();
+    if (!handle || handle === currentGlobal) {
+      setHandleStatus("idle");
+      return;
+    }
+    setHandleStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from("stores")
+          .select("id")
+          .ilike("store_username", handle)
+          .maybeSingle();
+
+        const currentStoreId = localState.id || globalState.id || user?.id;
+        if (data && data.id !== currentStoreId) {
+          setHandleStatus("taken");
+        } else {
+          setHandleStatus("available");
+        }
+      } catch {
+        setHandleStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localState.storeUsername, localState.id, globalState.storeUsername, globalState.id, user?.id]);
 
   // Quick populate 4 stock ideas for instant zero-to-one store launch
   const handlePopulateStockIdeas = () => {
@@ -212,6 +243,10 @@ export function StoreEditorV2() {
   // Save changes handler
   const handleSave = useCallback(async () => {
     if (isSaving) return;
+    if (handleStatus === "taken") {
+      addToast(`Handle "@${localState.storeUsername}" is already taken by another store. Store handles must be unique, like a domain name.`, "error");
+      return;
+    }
     setIsSaving(true);
     try {
       await saveFullState(localState);
@@ -226,7 +261,67 @@ export function StoreEditorV2() {
     } finally {
       setIsSaving(false);
     }
-  }, [isSaving, localState, saveFullState, addToast]);
+  }, [isSaving, localState, saveFullState, addToast, handleStatus]);
+
+  // Direct auto-save action whenever a merchant selects a template
+  const handleAutoSaveTemplate = useCallback(
+    async (templateId: WebsiteTemplateId) => {
+      const next = { ...localState, websiteTemplateId: templateId };
+      setLocalState(next);
+      try {
+        await saveFullState(next);
+        initialSerialized.current = JSON.stringify(next);
+        const name = websiteTemplateById(templateId)?.name || templateId;
+        addToast(`Applied & saved "${name}" template live!`, "success");
+      } catch {
+        addToast(`Template applied to store.`, "info");
+      }
+    },
+    [localState, saveFullState, addToast]
+  );
+
+  // Direct auto-save action whenever a merchant toggles light / dark mode
+  const handleAutoSaveThemeMode = useCallback(
+    async (mode: "light" | "dark") => {
+      setPreviewMode(mode);
+      const next: ShopState = {
+        ...localState,
+        storefrontTheme: {
+          ...(localState.storefrontTheme || {}),
+          background: mode,
+        },
+      };
+      setLocalState(next);
+      try {
+        await saveFullState(next);
+        initialSerialized.current = JSON.stringify(next);
+        addToast(`Switched to ${mode === "dark" ? "Dark" : "Light"} mode & saved live!`, "success");
+      } catch {
+        addToast(`Theme mode updated.`, "info");
+      }
+    },
+    [localState, saveFullState, addToast]
+  );
+
+  // Direct auto-save action whenever an accent color is clicked
+  const handleAutoSaveAccentColor = useCallback(
+    async (color: string) => {
+      const next: ShopState = {
+        ...localState,
+        accentColor: color,
+        buttonColor: color,
+      };
+      setLocalState(next);
+      try {
+        await saveFullState(next);
+        initialSerialized.current = JSON.stringify(next);
+        addToast(`Saved brand accent color live!`, "success");
+      } catch {
+        addToast(`Accent color updated.`, "info");
+      }
+    },
+    [localState, saveFullState, addToast]
+  );
 
   const handleDiscardDraft = useCallback(async () => {
     await discardDraft(storeKey);
@@ -862,8 +957,28 @@ export function StoreEditorV2() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-[#E8F1EC]">Store Link Handle</label>
-                      <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-medium text-[#E8F1EC]">Store Link Handle</label>
+                        {handleStatus === "checking" && (
+                          <span className="flex items-center gap-1 text-[10px] text-[#9DB3A8]">
+                            <Loader2 className="h-3 w-3 animate-spin text-[#19C37D]" /> Checking...
+                          </span>
+                        )}
+                        {handleStatus === "available" && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-[#19C37D]">
+                            <Check className="h-3 w-3" /> Available
+                          </span>
+                        )}
+                        {handleStatus === "taken" && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
+                            <X className="h-3 w-3" /> Already Taken
+                          </span>
+                        )}
+                      </div>
+                      <div className={cn(
+                        "mt-1.5 flex items-center rounded-xl border bg-[#0A1210] px-3 py-2 text-sm transition focus-within:border-[#19C37D]",
+                        handleStatus === "taken" ? "border-rose-500/80" : handleStatus === "available" ? "border-[#19C37D]" : "border-[#5C7C6D]"
+                      )}>
                         <span className="select-none text-xs text-[#9DB3A8]">swiftlink.pro/</span>
                         <input
                           type="text"
@@ -876,9 +991,15 @@ export function StoreEditorV2() {
                           className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
                         />
                       </div>
-                      <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                        Your unique shareable link for bio and status.
-                      </p>
+                      {handleStatus === "taken" ? (
+                        <p className="mt-1 text-[11px] font-medium text-rose-400">
+                          Handle &quot;@{localState.storeUsername}&quot; is already owned by another store. Store links are unique like domain names.
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                          Your unique shareable link for bio and status.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1541,7 +1662,7 @@ export function StoreEditorV2() {
                   return (
                     <div
                       key={template.id}
-                      onClick={() => updateField("websiteTemplateId", template.id)}
+                      onClick={() => handleAutoSaveTemplate(template.id)}
                       className={cn(
                         "group flex cursor-pointer flex-col justify-between rounded-xl border p-3.5 transition",
                         isSelected
@@ -1621,13 +1742,7 @@ export function StoreEditorV2() {
                 <div className="mt-3 flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setPreviewMode("light");
-                      updateField("storefrontTheme", {
-                        ...(localState.storefrontTheme || {}),
-                        background: "light",
-                      });
-                    }}
+                    onClick={() => handleAutoSaveThemeMode("light")}
                     className={cn(
                       "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
                       (localState.storefrontTheme?.background === "light" || previewMode === "light")
@@ -1644,13 +1759,7 @@ export function StoreEditorV2() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setPreviewMode("dark");
-                      updateField("storefrontTheme", {
-                        ...(localState.storefrontTheme || {}),
-                        background: "dark",
-                      });
-                    }}
+                    onClick={() => handleAutoSaveThemeMode("dark")}
                     className={cn(
                       "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
                       (localState.storefrontTheme?.background === "dark" || (!localState.storefrontTheme?.background && previewMode === "dark"))
@@ -2021,9 +2130,8 @@ export function StoreEditorV2() {
           isOpen={Boolean(previewTemplateId)}
           onClose={() => setPreviewTemplateId(null)}
           onSelectTemplate={(id) => {
-            updateField("websiteTemplateId", id as WebsiteTemplateId);
+            handleAutoSaveTemplate(id as WebsiteTemplateId);
             setPreviewTemplateId(null);
-            addToast(`Selected ${id} template.`, "success");
           }}
         />
       )}

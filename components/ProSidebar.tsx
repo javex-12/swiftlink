@@ -36,7 +36,7 @@ export function ProSidebar({
   setMobileOpen: (open: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { handleSignOut, state, startTour, isAdmin, stores } = useSwiftLink();
+  const { handleSignOut, state, isAdmin, stores } = useSwiftLink();
 
   /*
    * The admin console was previously unreachable by design oversight: the route
@@ -55,7 +55,7 @@ export function ProSidebar({
       ? [{ href: "/pro/admin", label: "Admin", icon: ShieldCheck } satisfies NavItem]
       : []),
     { href: "/account", label: "Settings", icon: Settings },
-    { href: "#help", label: "Help", icon: HelpCircle, isHelp: true },
+    { href: "/help", label: "Help", icon: HelpCircle },
   ];
 
   const isActive = (href: string) => {
@@ -97,7 +97,7 @@ export function ProSidebar({
           "max-md:fixed max-md:bottom-0 max-md:left-0 max-md:top-0 max-md:w-72 max-md:shadow-2xl",
           mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full",
           // Desktop sidebar style
-          "hidden md:flex md:w-64 md:shrink-0 md:min-h-screen md:sticky md:top-0"
+          "hidden md:flex md:w-64 md:shrink-0 md:h-screen md:overflow-y-auto md:sticky md:top-0"
         )}
       >
         {/* Brand Header */}
@@ -120,27 +120,12 @@ export function ProSidebar({
             const active = isActive(item.href);
             const Icon = item.icon;
 
-            if (item.isHelp) {
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    startTour();
-                  }}
-                  className="flex w-full min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-sm font-medium text-[#9DB3A8] transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
-                >
-                  <Icon className="h-5 w-5 shrink-0 text-[#9DB3A8]" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            }
-
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.href === "/help" ? "_blank" : undefined}
+                rel={item.href === "/help" ? "noopener noreferrer" : undefined}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "relative flex min-h-[44px] items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-sm font-medium transition",

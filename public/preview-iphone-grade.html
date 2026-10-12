@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SwiftLink Pro — iPhone Grade Storefront Design Mockup</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Cabinet+Grotesk:wght@700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            display: ['"Cabinet Grotesk"', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#070709',
+            champagne: '#e5c07b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Smooth Apple-like physics */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .glass-dock {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+    .dark .glass-dock {
+      background: rgba(18, 18, 22, 0.75);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .dark .glass-card {
+      background: rgba(25, 25, 30, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    /* Dynamic Island expansion */
+    .dynamic-island {
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dynamic-island:hover {
+      width: 220px;
+      height: 34px;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans flex flex-col items-center justify-center p-3 sm:p-6 lg:p-10 select-none antialiased">
+
+  <!-- Desktop Presentation Controls Header -->
+  <header class="w-full max-w-5xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/90 border border-zinc-800 rounded-3xl p-4 sm:px-6 shadow-2xl backdrop-blur-xl">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-zinc-950 font-black">
+        ⚡
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold tracking-tight text-white flex items-center gap-2">
+          iPhone Grade Storefront Experience
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Next-Gen</span>
+        </h1>
+        <p class="text-xs text-zinc-400 font-medium">Interactive Prototype · Real-time Themes & Templates</p>
+      </div>
+    </div>
+
+    <!-- Switchers: Template & Theme Mode -->
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <!-- Template Selector Pills -->
+      <div class="flex items-center gap-1 bg-zinc-950/80 p-1 rounded-2xl border border-zinc-800 text-xs">
+        <button onclick="setTemplate('bloom')" id="btn-bloom" class="px-3 py-1.5 rounded-xl font-bold transition bg-emerald-500 text-zinc-950 shadow-sm">Bloom</button>
+        <button onclick="setTemplate('noir')" id="btn-noir" class="px-3 py-1.5 rounded-xl font-bold transition text-zinc-400 hover:text-white">Noir</button>
+        <button onclick="setTemplate('coast')" id="btn-coast" class="px-3 py-1.5 rounded-xl font-bold transition text-zinc-400 hover:text-white">Coast</button>
+        <button onclick="setTemplate('market')" id="btn-market" class="px-3 py-1.5 rounded-xl font-bold transition text-zinc-400 hover:text-white">Market</button>
+      </div>
+
+      <!-- Dark / Light Toggle -->
+      <button onclick="toggleTheme()" id="btn-theme-toggle" class="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition border border-zinc-700/60 shadow-sm">
+        <i data-lucide="sun" id="theme-icon" class="w-4 h-4 text-amber-400"></i>
+        <span id="theme-label">Light Mode</span>
+      </button>
+
+      <!-- Chassis Toggle (Frame / Fullscreen) -->
+      <button onclick="toggleChassis()" id="btn-chassis-toggle" class="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white px-3 py-2 rounded-2xl text-xs font-semibold transition border border-zinc-700/60">
+        <i data-lucide="smartphone" class="w-4 h-4"></i>
+        <span>Frame</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- iPhone 16 Pro Chassis -->
+  <main id="phone-chassis" class="relative w-full max-w-[400px] h-[844px] rounded-[52px] p-[10px] bg-gradient-to-b from-[#2a2b2f] via-[#1a1b1e] to-[#25262a] shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.1),inset_0_0_0_2px_rgba(0,0,0,0.9)] transition-all duration-500 flex flex-col">
+    
+    <!-- Outer Rim Buttons -->
+    <div class="absolute -left-[14px] top-28 w-[4px] h-11 bg-zinc-700 rounded-l-md shadow-sm"></div>
+    <div class="absolute -left-[14px] top-44 w-[4px] h-12 bg-zinc-700 rounded-l-md shadow-sm"></div>
+    <div class="absolute -left-[14px] top-60 w-[4px] h-12 bg-zinc-700 rounded-l-md shadow-sm"></div>
+    <div class="absolute -right-[14px] top-36 w-[4px] h-16 bg-zinc-700 rounded-r-md shadow-sm"></div>
+
+    <!-- Screen Bezel & Canvas -->
+    <div id="screen-container" class="relative w-full h-full rounded-[44px] overflow-hidden bg-white text-zinc-900 transition-colors duration-300 flex flex-col shadow-inner select-text">
+      
+      <!-- iPhone Status Bar with Dynamic Island -->
+      <div class="sticky top-0 z-50 flex items-center justify-between px-7 pt-3.5 pb-2 pointer-events-auto">
+        <!-- Clock -->
+        <span class="text-[13px] font-bold tracking-tight text-inherit">9:41</span>
+
+        <!-- Dynamic Island Pill -->
+        <div class="dynamic-island h-[26px] w-[95px] bg-black rounded-full flex items-center justify-between px-3 cursor-pointer shadow-md">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#0d131f] border border-blue-950 flex items-center justify-center">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-900/60"></div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-emerald-500/90 animate-pulse"></div>
+        </div>
+
+        <!-- Battery & Wi-Fi -->
+        <div class="flex items-center gap-1.5 text-inherit">
+          <i data-lucide="wifi" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+          <div class="w-5 h-2.5 border-[1.5px] border-current rounded-[4px] p-[1px] flex items-center">
+            <div class="w-full h-full bg-current rounded-[1.5px]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Storefront Viewport -->
+      <div id="storefront-body" class="flex-1 overflow-y-auto no-scrollbar pb-28 pt-1">
+        <!-- Content will be injected dynamically by JavaScript depending on selected template -->
+      </div>
+
+      <!-- Floating Glassmorphism Bottom Dock -->
+      <nav id="bottom-dock" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 rounded-full glass-dock px-6 py-2.5 border border-black/10 dark:border-white/15 shadow-2xl transition-all">
+        <button onclick="navClick('home')" class="dock-btn text-emerald-600 dark:text-emerald-400 font-bold transition hover:scale-110 active:scale-95" aria-label="Home">
+          <i data-lucide="home" class="w-5 h-5"></i>
+        </button>
+        <button onclick="navClick('search')" class="dock-btn text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition hover:scale-110 active:scale-95" aria-label="Search">
+          <i data-lucide="search" class="w-5 h-5"></i>
+        </button>
+        <button onclick="navClick('cart')" class="dock-btn relative text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition hover:scale-110 active:scale-95" aria-label="Cart">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          <span id="cart-dock-badge" class="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-white">2</span>
+        </button>
+        <button onclick="navClick('whatsapp')" class="dock-btn text-zinc-500 dark:text-zinc-400 hover:text-emerald-500 transition hover:scale-110 active:scale-95" aria-label="WhatsApp">
+          <i data-lucide="message-circle" class="w-5 h-5 text-emerald-500"></i>
+        </button>
+      </nav>
+
+      <!-- iPhone Home Indicator Bar -->
+      <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-zinc-400/80 dark:bg-zinc-600 rounded-full pointer-events-none z-50"></div>
+
+    </div>
+  </main>
+
+  <script>
+    // State
+    let currentTemplate = 'bloom';
+    let isDarkMode = false;
+    let isChassisOpen = true;
+    let cartCount = 2;
+
+    const templates = {
+      bloom: {
+        name: 'Necessaire & Co',
+        tagline: 'Curated Skincare & Botanical Essentials',
+        phone: '+234 808 123 4567',
+        render: () => `
+          <div class="px-5 space-y-5">
+            <!-- Header -->
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-full bg-zinc-900 text-white font-serif font-black flex items-center justify-center text-sm shadow-md ring-2 ring-emerald-500/20">
+                  N
+                </div>
+                <div>
+                  <h2 class="font-serif text-lg font-bold tracking-tight text-inherit">Necessaire</h2>
+                  <p class="text-[11px] text-zinc-400 font-medium">Daily Body Care · Verified</p>
+                </div>
+              </div>
+              <!-- Refined Professional Star Icon (Replaced bell as requested) -->
+              <button class="h-10 w-10 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-amber-400 hover:scale-105 transition shadow-xs">
+                <i data-lucide="star" class="w-4 h-4 fill-amber-400"></i>
+              </button>
+            </div>
+
+            <!-- 70% Special Promo Hero Card (Necessaire Token) -->
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-5 shadow-xs">
+              <div class="flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white w-fit shadow-md mb-3">
+                <span>Special Promo</span>
+                <span class="rounded bg-white/20 px-1 py-0.2">70%</span>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <span class="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">Featured Serum</span>
+                  <h3 class="font-serif text-xl font-bold tracking-tight mt-0.5 text-inherit">The Body Ritual</h3>
+                  <p class="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1">₦35,000</p>
+                </div>
+                <div class="relative h-24 w-24 rounded-2xl bg-white dark:bg-zinc-800 p-2 shadow-sm flex items-center justify-center">
+                  <img src="https://images.unsplash.com/photo-1608248597359-9942a440e53a?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover rounded-xl" />
+                  <button onclick="addToCart()" class="absolute -bottom-2 -right-2 h-9 w-9 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Pills Filter -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+              <button class="px-4 py-2 rounded-full text-xs font-bold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shrink-0 shadow-sm">All Essentials</button>
+              <button class="px-4 py-2 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 shrink-0 hover:text-inherit">Body Wash</button>
+              <button class="px-4 py-2 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 shrink-0 hover:text-inherit">Serums</button>
+              <button class="px-4 py-2 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 shrink-0 hover:text-inherit">Creams</button>
+            </div>
+
+            <!-- "Best Product" Grid Section -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-serif text-base font-bold text-inherit">Best Products</h4>
+                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 cursor-pointer">View All</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="group rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-3 shadow-xs hover:shadow-md transition cursor-pointer">
+                  <div class="relative aspect-square rounded-2xl bg-white dark:bg-zinc-800/80 p-2 overflow-hidden mb-2">
+                    <img src="https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover rounded-xl group-hover:scale-105 transition duration-300" />
+                    <button onclick="addToCart()" class="absolute bottom-2 right-2 h-7 w-7 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md flex items-center justify-center text-inherit shadow-md hover:scale-110 transition">
+                      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                  <h5 class="font-serif text-xs font-bold truncate text-inherit">The Daily Cleanser</h5>
+                  <p class="text-[10px] text-zinc-400 font-medium">Fragrance-Free</p>
+                  <p class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">₦18,500</p>
+                </div>
+
+                <div class="group rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 p-3 shadow-xs hover:shadow-md transition cursor-pointer">
+                  <div class="relative aspect-square rounded-2xl bg-white dark:bg-zinc-800/80 p-2 overflow-hidden mb-2">
+                    <img src="https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover rounded-xl group-hover:scale-105 transition duration-300" />
+                    <button onclick="addToCart()" class="absolute bottom-2 right-2 h-7 w-7 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md flex items-center justify-center text-inherit shadow-md hover:scale-110 transition">
+                      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                  <h5 class="font-serif text-xs font-bold truncate text-inherit">The Mineral Lotion</h5>
+                  <p class="text-[10px] text-zinc-400 font-medium">Hydrating 200ml</p>
+                  <p class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">₦24,000</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      noir: {
+        name: 'Maison Noir Atelier',
+        tagline: 'High Fashion & Limited Edition Obsidian Drops',
+        phone: '+234 808 123 4567',
+        render: () => `
+          <div class="px-5 space-y-6">
+            <!-- Noir Luxury Top Header -->
+            <div class="flex items-center justify-between pt-1 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+              <div class="flex items-center gap-2">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-200 text-zinc-950 font-serif font-black flex items-center justify-center text-xs shadow-md">
+                  MN
+                </div>
+                <div>
+                  <h2 class="font-serif text-sm font-black tracking-[0.2em] uppercase text-inherit">Maison Noir</h2>
+                  <span class="text-[9px] font-bold tracking-widest text-amber-500 uppercase">VIP Atelier</span>
+                </div>
+              </div>
+              <button class="h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white">
+                <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Atmospheric Noir Billboard Hero -->
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-zinc-900 to-black p-6 text-white border border-amber-500/20 shadow-2xl">
+              <div class="absolute -right-6 -bottom-6 w-36 h-36 rounded-full bg-amber-500/10 filter blur-2xl pointer-events-none"></div>
+              <span class="text-[9px] font-black uppercase tracking-[0.3em] text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/20">
+                Autumn Capsule · 01
+              </span>
+              <h3 class="font-serif text-2xl font-light tracking-[0.15em] uppercase mt-3 leading-snug">
+                Obsidian <br/><strong class="font-black text-amber-300">Edition</strong>
+              </h3>
+              <p class="text-xs text-zinc-400 font-sans tracking-wide mt-2 max-w-[200px]">
+                Handcrafted tailoring crafted in strictly limited allocations.
+              </p>
+              <div class="mt-4 flex items-center gap-3">
+                <button onclick="addToCart()" class="px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-zinc-950 text-xs font-black uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition">
+                  Acquire Piece
+                </button>
+                <span class="text-xs font-serif text-zinc-300">₦85,000</span>
+              </div>
+            </div>
+
+            <!-- Noir Exclusive Product Grid -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Curated Showcase</span>
+                <span class="text-[10px] text-amber-500 uppercase tracking-widest font-bold">VIP Direct</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-3xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-900/60 p-3 shadow-xs">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-800 mb-2">
+                    <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover" />
+                  </div>
+                  <h5 class="font-serif text-xs font-bold tracking-wider text-inherit truncate">Onyx Trench Coat</h5>
+                  <p class="text-[11px] font-sans font-bold text-amber-500 mt-0.5">₦120,000</p>
+                </div>
+
+                <div class="rounded-3xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-900/60 p-3 shadow-xs">
+                  <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-800 mb-2">
+                    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover" />
+                  </div>
+                  <h5 class="font-serif text-xs font-bold tracking-wider text-inherit truncate">Silk Evening Gown</h5>
+                  <p class="text-[11px] font-sans font-bold text-amber-500 mt-0.5">₦95,000</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      coast: {
+        name: 'Gaskuy Expeditions',
+        tagline: 'Technical Gear & Alpine Equipment',
+        phone: '+234 808 123 4567',
+        render: () => `
+          <div class="space-y-5">
+            <!-- Full bleed Mountain Hero Banner (Gaskuy Token) -->
+            <div class="relative h-64 w-full overflow-hidden bg-zinc-900 text-white flex flex-col justify-between p-5">
+              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80" class="absolute inset-0 h-full w-full object-cover opacity-50" />
+              <div class="relative z-10 flex items-center justify-between">
+                <span class="font-black text-xs uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30">Gaskuy!</span>
+                <!-- Replaced "Sign Up" with direct verified WhatsApp button -->
+                <button class="bg-white text-zinc-950 font-black text-xs px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5 text-emerald-600"></i> WhatsApp
+                </button>
+              </div>
+              <div class="relative z-10">
+                <h3 class="font-display text-2xl font-black uppercase leading-tight tracking-tight">
+                  Climb Higher. <br/>Go Beyond.
+                </h3>
+                <p class="text-[11px] text-white/80 mt-1 font-medium">Nationwide Express Alpine Dispatch</p>
+              </div>
+            </div>
+
+            <!-- Floating 3D Fan Out Cards -->
+            <div class="px-5 space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="font-display text-sm font-black uppercase tracking-wider text-inherit">Expedition Packs</h4>
+                <span class="text-xs font-bold text-emerald-500">In Stock</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3 shadow-xs">
+                  <div class="aspect-square rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 mb-2">
+                    <img src="https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover" />
+                  </div>
+                  <h5 class="text-xs font-black text-inherit truncate">75L Summit Pack</h5>
+                  <p class="text-[10px] text-zinc-400">Ripstop Waterproof</p>
+                  <p class="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1">₦48,000</p>
+                </div>
+
+                <div class="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3 shadow-xs">
+                  <div class="aspect-square rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 mb-2">
+                    <img src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-cover" />
+                  </div>
+                  <h5 class="text-xs font-black text-inherit truncate">Carbon Trail Poles</h5>
+                  <p class="text-[10px] text-zinc-400">Ultralight Folding</p>
+                  <p class="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-1">₦26,500</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      market: {
+        name: 'Cyder Electronics',
+        tagline: 'Direct Dispatch Wholesale & Retail Tech',
+        phone: '+234 808 123 4567',
+        render: () => `
+          <div class="px-5 space-y-5">
+            <!-- Header with Merchant Logo (Cyder Logo Token) -->
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-zinc-950 font-black flex items-center justify-center text-sm shadow-md">
+                  CY
+                </div>
+                <div>
+                  <h2 class="font-extrabold text-base tracking-tight text-inherit flex items-center gap-1.5">
+                    Cyder Tech
+                    <span class="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">● Verified</span>
+                  </h2>
+                  <p class="text-[11px] text-zinc-400 font-medium">Lagos & Nationwide Delivery</p>
+                </div>
+              </div>
+              <button class="h-10 w-10 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-500">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Responsive Billboard Banner with Logo Badge -->
+            <div class="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-emerald-500/10 via-zinc-50 dark:via-zinc-900 to-zinc-100 dark:to-zinc-950 p-5 shadow-xs">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="h-10 w-10 rounded-xl bg-emerald-500 text-zinc-950 font-black flex items-center justify-center text-xs shadow-sm">
+                  ⚡
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Flash Tech Drop</span>
+                  <h3 class="font-black text-lg tracking-tight text-inherit">Same-Day Tracked Delivery</h3>
+                </div>
+              </div>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">100% verified original accessories and audio units.</p>
+              <div class="mt-4 flex gap-2">
+                <button onclick="addToCart()" class="flex-1 py-2.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-black shadow-md hover:bg-emerald-400 transition">
+                  Shop Deals
+                </button>
+                <button class="px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-bold text-inherit">
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <!-- Products List -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-zinc-400">Featured Devices</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3">
+                  <div class="aspect-square rounded-xl bg-white dark:bg-zinc-800 p-2 overflow-hidden mb-2">
+                    <img src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-contain" />
+                  </div>
+                  <h5 class="text-xs font-bold text-inherit truncate">Smart Watch Ultra</h5>
+                  <p class="text-xs font-black text-emerald-500 mt-1">₦38,000</p>
+                </div>
+
+                <div class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3">
+                  <div class="aspect-square rounded-xl bg-white dark:bg-zinc-800 p-2 overflow-hidden mb-2">
+                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80" class="h-full w-full object-contain" />
+                  </div>
+                  <h5 class="text-xs font-bold text-inherit truncate">ANC Wireless Studio</h5>
+                  <p class="text-xs font-black text-emerald-500 mt-1">₦45,000</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    function renderScreen() {
+      const container = document.getElementById('storefront-body');
+      container.innerHTML = templates[currentTemplate].render();
+      lucide.createIcons();
+    }
+
+    function setTemplate(name) {
+      currentTemplate = name;
+      ['bloom', 'noir', 'coast', 'market'].forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        if (t === name) {
+          btn.className = "px-3 py-1.5 rounded-xl font-bold transition bg-emerald-500 text-zinc-950 shadow-sm";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-xl font-bold transition text-zinc-400 hover:text-white";
+        }
+      });
+      renderScreen();
+    }
+
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      const screen = document.getElementById('screen-container');
+      const themeIcon = document.getElementById('theme-icon');
+      const themeLabel = document.getElementById('theme-label');
+
+      if (isDarkMode) {
+        screen.classList.add('dark');
+        screen.classList.remove('bg-white', 'text-zinc-900');
+        screen.classList.add('bg-zinc-950', 'text-zinc-100');
+        themeIcon.setAttribute('data-lucide', 'moon');
+        themeIcon.classList.remove('text-amber-400');
+        themeIcon.classList.add('text-blue-400');
+        themeLabel.innerText = "Dark Mode";
+      } else {
+        screen.classList.remove('dark');
+        screen.classList.remove('bg-zinc-950', 'text-zinc-100');
+        screen.classList.add('bg-white', 'text-zinc-900');
+        themeIcon.setAttribute('data-lucide', 'sun');
+        themeIcon.classList.remove('text-blue-400');
+        themeIcon.classList.add('text-amber-400');
+        themeLabel.innerText = "Light Mode";
+      }
+      lucide.createIcons();
+    }
+
+    function toggleChassis() {
+      isChassisOpen = !isChassisOpen;
+      const chassis = document.getElementById('phone-chassis');
+      const btn = document.getElementById('btn-chassis-toggle');
+      if (isChassisOpen) {
+        chassis.className = "relative w-full max-w-[400px] h-[844px] rounded-[52px] p-[10px] bg-gradient-to-b from-[#2a2b2f] via-[#1a1b1e] to-[#25262a] shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.1),inset_0_0_0_2px_rgba(0,0,0,0.9)] transition-all duration-500 flex flex-col";
+        btn.querySelector('span').innerText = "Frame";
+      } else {
+        chassis.className = "relative w-full max-w-lg h-[844px] rounded-3xl p-0 shadow-2xl transition-all duration-500 flex flex-col border border-zinc-800";
+        btn.querySelector('span').innerText = "Full";
+      }
+    }
+
+    function addToCart() {
+      cartCount++;
+      document.getElementById('cart-dock-badge').innerText = cartCount;
+      const dock = document.getElementById('bottom-dock');
+      dock.classList.add('scale-105');
+      setTimeout(() => dock.classList.remove('scale-105'), 200);
+    }
+
+    function navClick(type) {
+      if (type === 'whatsapp') {
+        alert("VIP WhatsApp concierge inquiry ready for: " + templates[currentTemplate].phone);
+      } else {
+        alert("Opened " + type.toUpperCase() + " screen");
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      renderScreen();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

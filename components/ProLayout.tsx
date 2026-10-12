@@ -47,7 +47,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A1210] text-[#E8F1EC] flex flex-col md:flex-row font-sans selection:bg-[#19C37D]/30">
+    <div className="min-h-screen overflow-hidden bg-[#0A1210] text-[#E8F1EC] flex flex-col md:flex-row font-sans selection:bg-[#19C37D]/30">
       {/* Onboarding Wizard Modal */}
       <OnboardingModal />
 

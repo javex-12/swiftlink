@@ -13,6 +13,7 @@ import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { ErrorMonitor } from "@/components/ErrorMonitor";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import "@/styles/tokens.css";
 import "./globals.css";
 
@@ -217,6 +218,7 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           <ErrorMonitor />
         </Suspense>
+        <CookieConsentBanner />
       </body>
     </html>
   );
