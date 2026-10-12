@@ -118,7 +118,7 @@ export async function middleware(request: NextRequest) {
       const { data } = await supabase
         .from("stores")
         .select("id")
-        .eq("store_username", handle)
+        .ilike("store_username", handle)
         .maybeSingle();
 
       if (!data) {

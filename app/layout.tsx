@@ -77,7 +77,7 @@ const site =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : "https://swiftlink.vercel.app");
+      : "https://swiftlinkpro.vercel.app");
 const siteName = "SwiftLink";
 const title = "SwiftLink | Create a Free Online Store That Orders on WhatsApp";
 const description =

@@ -100,7 +100,7 @@ type SwiftLinkContextValue = {
   closeTour: () => void;
   updateState: (field: keyof ShopState, value: unknown) => void;
   setStateMerge: (partial: Partial<ShopState>) => void;
-  saveFullState: (next: ShopState) => void;
+  saveFullState: (next: ShopState) => Promise<void>;
   /** Autosaved drafts keyed by store id. Never live until `saveFullState`. */
   drafts: Record<string, EditorDraft>;
   /** Autosave the merchant's working copy (local + server). Publishes nothing. */
@@ -550,7 +550,7 @@ export function SwiftLinkProvider({
   );
 
   const persistState = useCallback(
-    (next: ShopState) => {
+    async (next: ShopState, immediate: boolean = false): Promise<void> => {
       if (typeof window !== "undefined") {
         localStorage.setItem("swiftlink_state", JSON.stringify(next));
       }
@@ -558,58 +558,59 @@ export function SwiftLinkProvider({
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       setIsSyncing(true);
       
-      syncTimeoutRef.current = setTimeout(async () => {
-          if (!isSupabaseConfigured()) {
-            // Demo mode: the local write is the only store there is, so the
-            // working copy has effectively been published.
-            setIsSyncing(false);
-            clearEditorDraft(storeDraftKey(next));
-            return;
-          }
-          if (isOwnerRef.current && userRef.current?.id) {
-            const uid = userRef.current.id;
-            
-            const storeId = next.id || uid;
-            const stateToSave = { ...next, id: storeId, ownerId: uid };
-            
-            const { error } = await supabase
-              .from('stores')
-              .upsert({
-                id: storeId,
-                owner_id: uid,
-                biz_name: next.bizName,
-                store_username: next.storeUsername,
-                phone: next.phone,
-                state_json: stateToSave,
-                updated_at: new Date().toISOString()
-              });
-
-            if (error) {
-              console.error("Supabase Sync Error:", error);
-            } else {
-              // Publishing makes the live store the newest truth, so the draft
-              // for it is stale. Dropping it here — and only after a confirmed
-              // write — means a failed save never costs the merchant their work.
-              clearEditorDraft(storeDraftKey(stateToSave));
-              void deleteStoreDraft(storeId);
-              setDrafts((prev) => {
-                if (!(storeId in prev)) return prev;
-                const nextDrafts = { ...prev };
-                delete nextDrafts[storeId];
-                return nextDrafts;
-              });
-            }
-          }
+      const doSync = async () => {
+        if (!isSupabaseConfigured()) {
           setIsSyncing(false);
-      }, 1500);
+          clearEditorDraft(storeDraftKey(next));
+          return;
+        }
+        if (isOwnerRef.current && userRef.current?.id) {
+          const uid = userRef.current.id;
+          
+          const storeId = next.id || uid;
+          const stateToSave = { ...next, id: storeId, ownerId: uid };
+          
+          const { error } = await supabase
+            .from('stores')
+            .upsert({
+              id: storeId,
+              owner_id: uid,
+              biz_name: next.bizName,
+              store_username: next.storeUsername,
+              phone: next.phone,
+              state_json: stateToSave,
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error("Supabase Sync Error:", error);
+          } else {
+            clearEditorDraft(storeDraftKey(stateToSave));
+            void deleteStoreDraft(storeId);
+            setDrafts((prev) => {
+              if (!(storeId in prev)) return prev;
+              const nextDrafts = { ...prev };
+              delete nextDrafts[storeId];
+              return nextDrafts;
+            });
+          }
+        }
+        setIsSyncing(false);
+      };
+
+      if (immediate) {
+        await doSync();
+      } else {
+        syncTimeoutRef.current = setTimeout(doSync, 1500);
+      }
     },
     [],
   );
 
   const saveFullState = useCallback(
-    (next: ShopState) => {
+    async (next: ShopState) => {
       setState(next);
-      persistState(next);
+      await persistState(next, true);
     },
     [persistState],
   );

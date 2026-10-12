@@ -14,6 +14,9 @@ import {
   isProductVisible,
   productLimitBlockedMessage,
   visibleProductCount,
+  isTemplateAllowedOnPlan,
+  templateUpgradeRequiredMessage,
+  FREE_TEMPLATE_IDS,
 } from "@/lib/plans";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { DEFAULT_WA_TEMPLATE, renderWhatsAppOrderMessage, ALLOWED_TEMPLATE_VARIABLES, validateWhatsAppTemplate } from "@/lib/whatsapp-template";
@@ -266,18 +269,23 @@ export function StoreEditorV2() {
   // Direct auto-save action whenever a merchant selects a template
   const handleAutoSaveTemplate = useCallback(
     async (templateId: WebsiteTemplateId) => {
+      const templateName = websiteTemplateById(templateId)?.name || templateId;
+      if (!isTemplateAllowedOnPlan(templateId, localState.plan)) {
+        addToast(templateUpgradeRequiredMessage(templateName), "error");
+        return;
+      }
       const next = { ...localState, websiteTemplateId: templateId };
       setLocalState(next);
       try {
         await saveFullState(next);
+        await saveDraft(next);
         initialSerialized.current = JSON.stringify(next);
-        const name = websiteTemplateById(templateId)?.name || templateId;
-        addToast(`Applied & saved "${name}" template live!`, "success");
+        addToast(`Applied & saved "${templateName}" template live!`, "success");
       } catch {
         addToast(`Template applied to store.`, "info");
       }
     },
-    [localState, saveFullState, addToast]
+    [localState, saveFullState, saveDraft, addToast]
   );
 
   // Direct auto-save action whenever a merchant toggles light / dark mode
@@ -297,13 +305,14 @@ export function StoreEditorV2() {
       setLocalState(next);
       try {
         await saveFullState(next);
+        await saveDraft(next);
         initialSerialized.current = JSON.stringify(next);
         addToast(`Switched to ${mode === "dark" ? "Dark" : "Light"} mode & saved live!`, "success");
       } catch {
         addToast(`Theme mode updated.`, "info");
       }
     },
-    [localState, saveFullState, addToast]
+    [localState, saveFullState, saveDraft, addToast]
   );
 
   // Direct auto-save action whenever an accent color is clicked
@@ -1748,14 +1757,14 @@ export function StoreEditorV2() {
                     onClick={() => handleAutoSaveThemeMode("light")}
                     className={cn(
                       "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
-                      (localState.storefrontTheme?.background === "light" || previewMode === "light")
+                      (localState.storefrontTheme?.background === "light")
                         ? "border-[#19C37D] bg-[#14231D] text-[#19C37D] shadow-xs"
                         : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
                     )}
                   >
                     <Sun className="h-4 w-4" />
                     <span>Light Mode</span>
-                    {(localState.storefrontTheme?.background === "light" || previewMode === "light") && (
+                    {localState.storefrontTheme?.background === "light" && (
                       <Check className="h-3.5 w-3.5 text-[#19C37D]" />
                     )}
                   </button>
@@ -1765,14 +1774,14 @@ export function StoreEditorV2() {
                     onClick={() => handleAutoSaveThemeMode("dark")}
                     className={cn(
                       "flex min-h-[44px] items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition",
-                      (localState.storefrontTheme?.background === "dark" || (!localState.storefrontTheme?.background && previewMode === "dark"))
+                      (localState.storefrontTheme?.background !== "light")
                         ? "border-[#19C37D] bg-[#14231D] text-[#19C37D] shadow-xs"
                         : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
                     )}
                   >
                     <Moon className="h-4 w-4" />
                     <span>Dark Mode</span>
-                    {(localState.storefrontTheme?.background === "dark" || (!localState.storefrontTheme?.background && previewMode === "dark")) && (
+                    {localState.storefrontTheme?.background !== "light" && (
                       <Check className="h-3.5 w-3.5 text-[#19C37D]" />
                     )}
                   </button>
@@ -1916,21 +1925,33 @@ export function StoreEditorV2() {
               <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 pt-2 border-t border-[#1E2D27] lg:border-t-0 lg:pt-0">
                 {/* Template Quick Switcher */}
                 <div className="flex items-center rounded-xl border border-[#24382F] bg-[#0A1210] p-0.5 sm:p-1">
-                  {websiteTemplates.map((tmpl) => (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => updateField("websiteTemplateId", tmpl.id)}
-                      className={cn(
-                        "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
-                        (localState.websiteTemplateId || "editorial") === tmpl.id
-                          ? "bg-[#19C37D] text-[#04140D]"
-                          : "text-[#9DB3A8] hover:text-[#E8F1EC]"
-                      )}
-                    >
-                      {tmpl.name}
-                    </button>
-                  ))}
+                  {websiteTemplates.map((tmpl) => {
+                    const isPro = !(FREE_TEMPLATE_IDS as readonly string[]).includes(tmpl.id);
+                    const isSelected = (localState.websiteTemplateId || "editorial") === tmpl.id;
+                    return (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => handleAutoSaveTemplate(tmpl.id)}
+                        className={cn(
+                          "flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition",
+                          isSelected
+                            ? "bg-[#19C37D] text-[#04140D]"
+                            : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                        )}
+                      >
+                        <span>{tmpl.name}</span>
+                        {isPro && (
+                          <span className={cn(
+                            "rounded px-1 py-0.2 text-[8px] font-black uppercase tracking-wider",
+                            isSelected ? "bg-[#04140D]/20 text-[#04140D]" : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                          )}>
+                            PRO
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Device Viewport Toggle */}

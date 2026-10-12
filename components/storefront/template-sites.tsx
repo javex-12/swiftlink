@@ -2515,9 +2515,13 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 href={`https://wa.me/${waDigits}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn("rounded-full bg-white px-5 py-2 text-xs font-black uppercase tracking-wider text-zinc-950 shadow-lg hover:bg-zinc-100 active:scale-95 transition", focusRing)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full bg-white px-3 sm:px-4 py-1.5 text-xs font-bold text-zinc-950 shadow-md hover:bg-zinc-100 active:scale-95 transition",
+                  focusRing
+                )}
               >
-                WhatsApp Order
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden xs:inline">WhatsApp</span>
               </a>
             )}
           </div>
@@ -2538,12 +2542,12 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             {subtitle}
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={shopNow}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-xs sm:text-sm font-black text-zinc-950 shadow-2xl transition hover:bg-zinc-100 hover:scale-105 active:scale-95",
+                "inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-xs sm:text-sm font-bold text-zinc-950 shadow-2xl transition hover:bg-zinc-100 hover:scale-105 active:scale-95",
                 focusRing
               )}
             >
@@ -2557,11 +2561,11 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/30 backdrop-blur-md px-6 py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-black/50",
+                  "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 backdrop-blur-md px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-black/60",
                   focusRing
                 )}
               >
-                <MessageCircle className="h-4 w-4 text-emerald-400" />
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
                 <span>WhatsApp</span>
               </a>
             )}
@@ -2799,7 +2803,6 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 // =============================================================================
 function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const { state, products, categories, activeCategory, cartCount, template } = props;
-  const greeting = `Hello ${state.bizName ? state.bizName.split(" ")[0] : "Juju"}!`;
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>("200 ml");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -2831,7 +2834,7 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-36 font-sans text-zinc-900 dark:text-zinc-100 antialiased selection:bg-zinc-900 selection:text-white">
       {/* ─── SCREEN 1: STOREFRONT MAIN ─── */}
       <main className="mx-auto max-w-4xl px-4 sm:px-6 pt-6 sm:pt-10 space-y-6">
-        {/* Top Header: Avatar + Greeting + Bell */}
+        {/* Top Header: Avatar + Store Name + Actions */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shadow-sm flex items-center justify-center">
@@ -2845,7 +2848,7 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             </div>
             <div>
               <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                {greeting}
+                {state.bizName || template.name}
               </h1>
               <p className="text-[11px] text-zinc-500 font-medium">
                 {state.tagline || "Curated skincare & daily essentials"}
@@ -2857,11 +2860,19 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             <button
               type="button"
               onClick={() => setFeedbackOpen(true)}
-              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition"
-              aria-label="Notifications & Reviews"
+              className="flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition"
+              aria-label="Reviews & Feedback"
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900" />
+              <MessageSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">Reviews</span>
+            </button>
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition"
+              aria-label="Search Catalog"
+            >
+              <Search className="h-4 w-4" />
             </button>
           </div>
         </header>
@@ -2869,9 +2880,9 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         {/* Featured Hero Promo Card */}
         {heroProduct && (
           <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 shadow-xs">
-            {/* 70% Promo Badge */}
-            <div className="absolute top-5 left-5 z-10 flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
-              <span>70% OFF</span>
+            {/* Featured Badge */}
+            <div className="absolute top-5 left-5 z-10 flex items-center gap-1.5 rounded-full bg-zinc-900 dark:bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white dark:text-zinc-950 shadow-md">
+              <span>FEATURED</span>
             </div>
 
             <div className="grid items-center gap-6 sm:grid-cols-12">
@@ -3035,17 +3046,9 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               </button>
             </div>
 
-            {/* Product Image Card with Star Rating */}
+            {/* Product Image Card */}
             <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 p-4 flex items-center justify-center">
               <ProductMedia product={detailProduct} className="h-full w-full object-contain" />
-
-              {/* Vertical Star Rating Chip */}
-              <div className="absolute top-4 left-4 flex flex-col items-center gap-1 rounded-2xl bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-1.5 py-2.5 border border-zinc-200/60 dark:border-zinc-800 shadow-sm">
-                {[1, 2, 3, 4].map((s) => (
-                  <Star key={s} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                ))}
-                <Star className="h-3 w-3 text-zinc-300 dark:text-zinc-600" />
-              </div>
             </div>
 
             {/* Name, Price & Sku */}
@@ -3526,26 +3529,24 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   return (
     <div className="min-h-screen bg-[#0b0c0e] pb-28 font-mono text-[#cbd5e1] selection:bg-emerald-500 selection:text-black">
       {/* ─── TECHNICAL TELEMETRY TICKER ─── */}
-      <div className="border-b border-[#1e232d] bg-[#07080a] py-1.5 px-4 text-[10px] tracking-widest uppercase text-emerald-400">
+      <div className="border-b border-[#1e232d] bg-[#07080a] py-1.5 px-4 text-[10px] tracking-wider uppercase text-emerald-400">
         <div className="flex whitespace-nowrap animate-marquee">
           {[
-            "SYS: ONLINE",
-            `FORGE // ${state.bizName || template.name}`,
-            "STATUS: OPERATIONAL",
-            "DIRECT DISPATCH VIA WHATSAPP",
-            "SPEC: INDUSTRIAL GRADE",
-            state.deliveryAreas || state.location || "NATIONWIDE FREIGHT",
+            "HEAVY-DUTY QUALITY",
+            state.bizName || template.name,
+            "DIRECT WHATSAPP ORDERING",
+            "INDUSTRIAL HARDWARE & TOOLS",
+            state.deliveryAreas || state.location || "FAST DELIVERY",
           ].concat([
-            "SYS: ONLINE",
-            `FORGE // ${state.bizName || template.name}`,
-            "STATUS: OPERATIONAL",
-            "DIRECT DISPATCH VIA WHATSAPP",
-            "SPEC: INDUSTRIAL GRADE",
-            state.deliveryAreas || state.location || "NATIONWIDE FREIGHT",
+            "HEAVY-DUTY QUALITY",
+            state.bizName || template.name,
+            "DIRECT WHATSAPP ORDERING",
+            "INDUSTRIAL HARDWARE & TOOLS",
+            state.deliveryAreas || state.location || "FAST DELIVERY",
           ]).map((item, i) => (
             <span key={i} className="inline-flex items-center">
               <span className="mx-4">{item}</span>
-              <span className="text-zinc-600 mr-4 font-normal">::</span>
+              <span className="text-zinc-600 mr-4 font-normal">/</span>
             </span>
           ))}
         </div>
@@ -3563,15 +3564,15 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333a48] bg-[#161a22] font-black text-xs text-emerald-400">
-                F
+                {(state.bizName || template.name).slice(0, 1).toUpperCase()}
               </div>
             )}
             <div>
-              <span className="block truncate max-w-[140px] xs:max-w-[190px] sm:max-w-xs text-sm sm:text-base font-black tracking-widest uppercase text-white">
+              <span className="block truncate max-w-[140px] xs:max-w-[190px] sm:max-w-xs text-sm sm:text-base font-black tracking-wider uppercase text-white">
                 {state.bizName || template.name}
               </span>
-              <span className="text-[10px] text-emerald-500 font-bold tracking-wider">
-                [VERIFIED FORGE]
+              <span className="text-[10px] text-zinc-400 font-medium">
+                {state.location || "Official Merchant"}
               </span>
             </div>
           </button>
@@ -3586,7 +3587,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               )}
             >
               <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
-              <span>REVIEWS</span>
+              <span>Reviews</span>
             </button>
 
             <button
@@ -3621,7 +3622,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   focusRing
                 )}
               >
-                <span>DEPLOY</span>
+                <span>WhatsApp</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </a>
             )}
@@ -3634,7 +3635,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         <div className="rounded-xl border-2 border-[#1e232d] bg-[#101319] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
           <div className="space-y-4 max-w-2xl relative z-10">
             <span className="inline-block border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-400">
-              SYS // SPECIFICATION 2026
+              Heavy-Duty Catalog
             </span>
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase leading-none">
               {title}
@@ -3651,7 +3652,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   focusRing
                 )}
               >
-                <span>DEPLOY HARDWARE</span>
+                <span>Browse Products</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
               {waDigits && (
@@ -3665,7 +3666,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   )}
                 >
                   <MessageCircle className="h-4 w-4 text-emerald-400" />
-                  <span>DIRECT DISPATCH INQUIRY</span>
+                  <span>WhatsApp Inquiry</span>
                 </a>
               )}
             </div>
@@ -3678,10 +3679,10 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#1e232d] pb-4 mb-8">
           <div>
             <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-              [INVENTORY STATUS]
+              Catalog
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-white uppercase mt-0.5">
-              CATALOG ITEMS
+              Available Items
             </h2>
           </div>
 
@@ -3710,7 +3711,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-xs text-zinc-500 uppercase">
-            NO INVENTORY MATCHING QUERY
+            No items available in this category
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -3720,9 +3721,9 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 onClick={() => props.onProduct(product)}
                 className="group cursor-pointer rounded-lg border-2 border-[#1e232d] bg-[#12151b] p-4 hover:border-emerald-500 transition-all duration-200"
               >
-                <div className="flex items-center justify-between pb-2 text-[10px] text-zinc-500 border-b border-[#1e232d]">
-                  <span>ITEM // 00{idx + 1}</span>
-                  <span className="text-emerald-400 font-bold">[READY]</span>
+                <div className="flex items-center justify-between pb-2 text-[10px] text-zinc-400 border-b border-[#1e232d]">
+                  <span>Item #{idx + 1}</span>
+                  <span className="text-emerald-400 font-medium">In Stock</span>
                 </div>
                 <div className="aspect-[4/3] rounded overflow-hidden bg-black/60 my-3">
                   <ProductMedia
@@ -3735,7 +3736,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                     {product.name}
                   </h3>
                   <p className="mt-1 text-xs text-zinc-400 font-sans line-clamp-2">
-                    {product.description || "Industrial grade hardware specification."}
+                    {product.description || "Heavy-duty specification."}
                   </p>
                   <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#1e232d]">
                     <span className="text-sm font-black text-white tabular-nums">
@@ -3749,7 +3750,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                       }}
                       className="rounded bg-emerald-500/20 border border-emerald-500/50 px-3 py-1 text-xs font-bold text-emerald-400 hover:bg-emerald-500 hover:text-black transition uppercase"
                     >
-                      ORDER
+                      Order
                     </button>
                   </div>
                 </div>
@@ -3768,7 +3769,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                 focusRing
               )}
             >
-              LOAD MORE ITEMS [{remaining}]
+              Load More ({remaining})
             </button>
           </div>
         )}

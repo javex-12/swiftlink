@@ -5,6 +5,7 @@ import { Check, Eye } from "lucide-react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { websiteTemplates, type WebsiteTemplateId } from "@/lib/theme/templates";
+import { isTemplateAllowedOnPlan, templateUpgradeRequiredMessage, FREE_TEMPLATE_IDS } from "@/lib/plans";
 import { TemplateFrame } from "@/components/storefront/template-frames";
 import { TemplatePreviewModal } from "@/components/storefront/TemplatePreviewModal";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,10 @@ export function WebsiteTemplatePicker() {
   const applyTemplate = (id: WebsiteTemplateId) => {
     const template = websiteTemplates.find((item) => item.id === id);
     if (!template) return;
+    if (!isTemplateAllowedOnPlan(id, state.plan)) {
+      addToast(templateUpgradeRequiredMessage(template.name), "error");
+      return;
+    }
     setStateMerge({
       websiteTemplateId: id,
       heroTemplateId: template.composition.heroTemplateId,
@@ -71,7 +76,18 @@ export function WebsiteTemplatePicker() {
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-semibold text-[#E8F1EC]">{template.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="truncate text-sm font-semibold text-[#E8F1EC]">{template.name}</span>
+                      {!(FREE_TEMPLATE_IDS as readonly string[]).includes(template.id) ? (
+                        <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-400">
+                          PRO
+                        </span>
+                      ) : (
+                        <span className="rounded bg-[#19C37D]/10 border border-[#19C37D]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#19C37D]">
+                          FREE
+                        </span>
+                      )}
+                    </div>
                     {isSelected ? (
                       <Badge tone="accent">
                         <Icon icon={Check} size="xs" /> Selected

@@ -1042,7 +1042,8 @@ export function CustomerStorefront({
   // (which is what 14 of the 16 live stores used to hit).
   const template =
     websiteTemplateById(rawState.websiteTemplateId) ?? websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!;
-  const backgroundIntent = rawState.storefrontTheme?.background === "dark" ? "dark" : "light";
+  const isInherentlyDark = template?.id === "noir" || template?.id === "forge";
+  const backgroundIntent = (isInherentlyDark || rawState.storefrontTheme?.background !== "light") ? "dark" : "light";
   const baseTheme = template ? themeForTemplate(template, backgroundIntent) : null;
   const effectiveTheme = baseTheme && rawState.accentColor
     ? { ...baseTheme, brandColor: rawState.accentColor }

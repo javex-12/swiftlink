@@ -38,6 +38,20 @@ export const MAX_PRODUCTS_PER_STORE = 1000;
 /** Hard ceiling on how many stores one account may own, on any plan. */
 export const MAX_STORES_PER_USER = 10;
 
+/** Free-tier eligible storefront templates. All other templates require Pro or Business. */
+export const FREE_TEMPLATE_IDS = ["editorial", "boutique", "bold"] as const;
+export type FreeTemplateId = (typeof FREE_TEMPLATE_IDS)[number];
+
+export function isTemplateAllowedOnPlan(templateId: string, plan: unknown): boolean {
+  const normalized = normalizePlan(plan);
+  if (normalized === "pro" || normalized === "business") return true;
+  return (FREE_TEMPLATE_IDS as readonly string[]).includes(templateId);
+}
+
+export function templateUpgradeRequiredMessage(templateName: string): string {
+  return `The ${templateName} template is an exclusive feature on SwiftLink Pro & Business. Upgrade your plan to use this template on your live store.`;
+}
+
 /**
  * How long a store keeps its entitlements after a card payment fails, before
  * any downgrade is applied. The owner picked 7 days and asked for it to be

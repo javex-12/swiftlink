@@ -85,13 +85,21 @@ export async function generateMetadata({
     ...(state.categories || []).slice(0, 10),
   ].filter(Boolean) as string[];
 
-  // Prefer explicit ogImage → brand image → hero → first product → site logo.
-  const ogImage =
+  // Dynamic 1200x630 social card natively rendered by Next.js on swiftlinkpro.vercel.app:
+  const dynamicOgImage = `${site}/${store.handle}/opengraph-image`;
+  const candidateCustom =
     resolveOgImage(state.ogImage) ||
     resolveOgImage(state.bizImage) ||
     resolveOgImage(state.heroImage) ||
-    resolveOgImage(state.products?.[0]?.image) ||
-    `${site}/logo.png`;
+    resolveOgImage(state.products?.[0]?.image);
+
+  // Supabase storage bucket sends "x-robots-tag: none" which causes WhatsApp, Twitter,
+  // and Facebook crawlers to drop the image. Our native opengraph-image route is always served
+  // with 200 OK without robot blocking headers.
+  const ogImage =
+    candidateCustom && !candidateCustom.includes("supabase.co")
+      ? candidateCustom
+      : dynamicOgImage;
 
   const url = `${site}/${store.handle}`;
 

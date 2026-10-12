@@ -37,12 +37,16 @@ export const defaultShopState = (): ShopState => ({
   ],
 
   accentColor: "#10b981",
-  bgColor: "#ffffff",
-  textColor: "#111827",
-  surfaceColor: "#f8fafc",
+  bgColor: "#09090b",
+  textColor: "#f4f4f5",
+  surfaceColor: "#141416",
   buttonColor: "#10b981",
   fontStyle: "modern",
   buttonRadius: "rounded",
+  storefrontTheme: {
+    primaryColor: "#10b981",
+    background: "dark",
+  },
 
   heroTemplateId: "hero-1",
   catalogTemplateId: "catalog-1",
@@ -103,7 +107,7 @@ export function normalizeShopState(input?: Partial<ShopState> | null): ShopState
 
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = {
   primaryColor: "#10b981",
-  background: "light",
+  background: "dark",
   heroLayout: "split",
   cardRadius: "pill",
   showHeroBadge: true,

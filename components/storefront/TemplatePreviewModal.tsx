@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { X, Smartphone, Tablet, Monitor, Check, Moon, Sun } from "lucide-react";
+import { X, Smartphone, Tablet, Monitor, Check, Moon, Sun, Lock } from "lucide-react";
 import type { ShopState } from "@/lib/schema";
 import { getSampleShopState } from "@/lib/sample-store";
 import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById, websiteTemplates } from "@/lib/theme/templates";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn } from "@/lib/utils";
 import { PREVIEW_DEVICE_WIDTHS, PreviewFrame } from "@/components/storefront/PreviewFrame";
+import { isTemplateAllowedOnPlan, templateUpgradeRequiredMessage, FREE_TEMPLATE_IDS } from "@/lib/plans";
 
 /**
  * The preview renders the *real* storefront, lazily, so the template markup and
@@ -196,17 +197,36 @@ export function TemplatePreviewModal({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                onSelectTemplate(activeTemplateId);
-                onClose();
-              }}
-              className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] sm:flex-initial"
-            >
-              <Check className="h-3.5 w-3.5" />
-              Use this template
-            </button>
+            {(() => {
+              const isAllowed = isTemplateAllowedOnPlan(activeTemplateId, vendorState.plan);
+              if (isAllowed) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTemplate(activeTemplateId);
+                      onClose();
+                    }}
+                    className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] sm:flex-initial"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Use this template
+                  </button>
+                );
+              }
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectTemplate(activeTemplateId);
+                  }}
+                  className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-xs font-bold text-black transition hover:opacity-95 shadow-md sm:flex-initial"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  Upgrade to Pro to Use
+                </button>
+              );
+            })()}
 
             <button
               type="button"
@@ -227,19 +247,28 @@ export function TemplatePreviewModal({
             </span>
             {websiteTemplates.map((t) => {
               const isCurrent = t.id === activeTemplateId;
+              const isPro = !(FREE_TEMPLATE_IDS as readonly string[]).includes(t.id);
               return (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setActiveTemplateId(t.id)}
                   className={cn(
-                    "shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all",
+                    "flex items-center gap-1 shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all",
                     isCurrent
                       ? "bg-[#19C37D] text-[#04140D] shadow-xs font-bold"
                       : "border border-[#24382F] bg-[#111C18] text-[#9DB3A8] hover:border-[#19C37D]/50 hover:text-[#E8F1EC]"
                   )}
                 >
-                  {t.name}
+                  <span>{t.name}</span>
+                  {isPro && (
+                    <span className={cn(
+                      "rounded px-1 py-0.2 text-[8px] font-black uppercase tracking-wider",
+                      isCurrent ? "bg-[#04140D]/20 text-[#04140D]" : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    )}>
+                      PRO
+                    </span>
+                  )}
                 </button>
               );
             })}
