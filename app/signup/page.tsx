@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, ArrowRight, Eye, EyeOff, Mail } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug, cn } from "@/lib/utils";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { CountrySelector } from "@/components/CountrySelector";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
@@ -48,65 +49,57 @@ function GoogleLogo() {
   );
 }
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
 /**
- * Google button — Supabase OAuth redirect.
+ * Google button — Google Identity Services.
  *
- * Replaces the previous @react-oauth/google iframe-overlay approach. That
- * technique rendered an invisible GoogleLogin iframe on top of a styled button;
- * on desktop the iframe's click region misaligned with the visible button,
- * making it unpressable. On mobile the smaller viewport happened to align them.
- *
- * `signInWithOAuth` initiates a proper OAuth redirect: Google opens in the same
- * tab, the user authenticates, and Supabase redirects back to `redirectTo` —
- * which honours the Site URL configured in the Supabase dashboard
- * (swiftlink.vercel.app), so the branding in the consent screen is unchanged.
- * No NEXT_PUBLIC_GOOGLE_CLIENT_ID env var is needed here; the client ID lives
- * only in the Supabase dashboard under Authentication → Providers → Google.
+ * Uses @react-oauth/google and Google Identity Services with NEXT_PUBLIC_GOOGLE_CLIENT_ID.
+ * By rendering Google's official GIS button directly (without an invisible overlay
+ * that triggers desktop clickjacking blocks), desktop and mobile clicks work reliably,
+ * and the Google consent popup displays swiftlinkpro.vercel.app directly.
+ * The credential token is exchanged seamlessly with supabase.auth.signInWithIdToken.
  */
 function GoogleButton({
   label,
-  nextPath,
+  onSuccess,
   onError,
   loading,
-  setLoading,
 }: {
   label: string;
-  nextPath: string;
+  onSuccess: (credential: string) => void;
   onError: (msg: string) => void;
   loading: boolean;
-  setLoading: (v: "google" | null) => void;
 }) {
-  const handleClick = async () => {
-    if (!isSupabaseConfigured()) return;
-    setLoading("google");
-    const destination = nextPath.startsWith("/") ? nextPath : "/pro";
-    const redirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`
-        : `/auth/callback?next=${encodeURIComponent(destination)}`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
-    if (error) {
-      onError(error.message || "Google sign-in failed.");
-      setLoading(null);
-    }
-    // On success the browser navigates away — no further state update needed.
-  };
+  if (!GOOGLE_CLIENT_ID) {
+    return (
+      <Button type="button" variant="outline" block disabled aria-disabled="true">
+        <GoogleLogo />
+        <span>Google sign-in not configured</span>
+      </Button>
+    );
+  }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      block
-      loading={loading}
-      onClick={handleClick}
-      disabled={!isSupabaseConfigured() || loading}
-    >
-      {loading ? null : <GoogleLogo />}
-      <span>{label}</span>
-    </Button>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="w-full flex justify-center [&>div]:w-full [&_iframe]:mx-auto">
+        <GoogleLogin
+          onSuccess={(res) => {
+            if (res.credential) {
+              onSuccess(res.credential);
+            } else {
+              onError("No credential returned from Google.");
+            }
+          }}
+          onError={() => onError("Google sign-in was cancelled or encountered an error.")}
+          theme="outline"
+          size="large"
+          text={label.toLowerCase().includes("sign up") ? "signup_with" : "signin_with"}
+          shape="rectangular"
+          width="380"
+        />
+      </div>
+    </GoogleOAuthProvider>
   );
 }
 
@@ -261,6 +254,28 @@ function AuthPage() {
     [searchParams],
   );
 
+  const handleGoogleSuccess = async (credential: string) => {
+    setLoading("google");
+    setError(null);
+    try {
+      if (!isSupabaseConfigured()) {
+        router.push("/pro");
+        return;
+      }
+      const { data, error: authError } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: credential,
+      });
+      if (authError) throw authError;
+      if (data.user) {
+        await saveUserStore(data.user.id, data.user.email);
+        router.push(nextPath);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Google sign-in failed.");
+      setLoading(null);
+    }
+  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -518,9 +533,8 @@ function AuthPage() {
                   <div className="mt-6">
                     <GoogleButton
                       label={isSignup ? "Sign up with Google" : "Sign in with Google"}
-                      nextPath={nextPath}
+                      onSuccess={handleGoogleSuccess}
                       loading={loading === "google"}
-                      setLoading={setLoading}
                       onError={(msg) => {
                         setError(msg);
                         setLoading(null);

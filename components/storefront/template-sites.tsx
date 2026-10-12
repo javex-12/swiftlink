@@ -22,14 +22,20 @@ import {
   MessageSquare,
   Send,
   Check,
-  Sparkles,
-  Flame,
-  Zap,
   Plus,
   Tag,
   Quote,
+  ArrowUpRight,
+  Bookmark,
+  Heart,
+  Bell,
+  Share2,
+  Home,
+  User,
+  Settings,
+  Minus,
 } from "lucide-react";
-import { getCleanWhatsAppDigits } from "@/lib/phone";
+import { getCleanWhatsAppDigits, formatDisplayPhone } from "@/lib/phone";
 
 /*
  * The three stock-photo hero fallbacks (`unsplash.com/photo-...`) that used to
@@ -1035,12 +1041,12 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
   return (
     <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
       {/* Top Ambient Ribbon */}
-      <div className="bg-t-accent-subtle/80 px-4 py-2.5 text-center text-xs font-medium text-t-accent-text border-b border-t-border backdrop-blur-sm">
+      <div className="bg-t-accent-subtle/80 px-4 py-2 text-center text-xs font-medium text-t-accent-text border-b border-t-border backdrop-blur-sm">
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-t-accent inline" />
-          <span>{state.tagline || template.tagline || "Curated Artisanal Studio"}</span>
+          <Tag className="h-3.5 w-3.5 text-t-accent inline" />
+          <span>{state.tagline || template.tagline || "Curated Storefront"}</span>
           <span className="opacity-40">·</span>
-          <span>Fast Nationwide Doorstep Delivery</span>
+          <span>{state.deliveryAreas || state.location || "Nationwide Delivery"}</span>
         </span>
       </div>
 
@@ -1117,8 +1123,8 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
           <div className="relative z-10 grid items-center gap-8 md:grid-cols-12 md:gap-12">
             <div className="md:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-t-border/60 bg-t-bg/80 px-4 py-1.5 text-xs font-semibold text-t-accent shadow-xs backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Handcrafted & Curated Collection</span>
+                <Tag className="h-3.5 w-3.5" />
+                <span>Curated Storefront</span>
               </div>
               <h1 className="font-t-display text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-t-text leading-[1.1] break-words">
                 {title}
@@ -1135,7 +1141,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                     focusRing
                   )}
                 >
-                  <span>{state.heroButtonText || "Explore Pinboard"}</span>
+                  <span>{state.heroButtonText || "Explore Catalog"}</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
                 {waDigits && (
@@ -1149,7 +1155,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                     )}
                   >
                     <MessageCircle className="h-4 w-4 text-emerald-500" />
-                    <span>Chat with Merchant</span>
+                    <span>WhatsApp Inquiry</span>
                   </a>
                 )}
               </div>
@@ -1183,8 +1189,8 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                   </div>
                 ) : (
                   <div className="w-full rounded-2xl border border-dashed border-t-border bg-t-bg/70 p-6 text-center shadow-xs">
-                    <Sparkles className="mx-auto h-8 w-8 text-t-accent/60" />
-                    <p className="mt-2 text-xs font-semibold text-t-text">New Arrivals Coming Soon</p>
+                    <ShoppingBag className="mx-auto h-8 w-8 text-t-accent/60" />
+                    <p className="mt-2 text-xs font-semibold text-t-text">Catalog Updating</p>
                   </div>
                 )}
               </div>
@@ -1402,19 +1408,22 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
   return (
     <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text selection:bg-t-accent selection:text-t-accent-fg">
-      {/* High-Energy Running Ticker Tape */}
-      <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-2 text-xs font-black uppercase tracking-[0.25em] text-t-accent-fg">
-        <div className="flex whitespace-nowrap animate-pulse">
-          <span className="mx-4">⚡ NEW DROP LIVE</span>
-          <span className="mx-4">{"///"}</span>
-          <span className="mx-4">NATIONWIDE EXPRESS DISPATCH</span>
-          <span className="mx-4">{"///"}</span>
-          <span className="mx-4">DIRECT WHATSAPP CHECKOUT</span>
-          <span className="mx-4">{"///"}</span>
-          <span className="mx-4">100% VERIFIED AUTHENTIC</span>
-          <span className="mx-4">{"///"}</span>
-          <span className="mx-4">SECURE TRANSACTIONS</span>
-        </div>
+      {/* Marquee Ticker Tape */}
+      <div className="overflow-hidden border-b-2 border-t-border bg-t-accent py-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-t-accent-fg">
+        {(() => {
+          const items = [state.bizName, state.tagline, state.deliveryAreas || state.location || "Delivered Nationwide", "Order via WhatsApp"].filter(Boolean);
+          const doubled = [...items, ...items];
+          return (
+            <div className="flex whitespace-nowrap" style={{ animation: 'marquee 18s linear infinite' }}>
+              {doubled.map((item, i) => (
+                <span key={i} className="inline-flex items-center">
+                  <span className="mx-5">{item}</span>
+                  <span className="opacity-30 mr-5">·</span>
+                </span>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Brutalist Header */}
@@ -1484,7 +1493,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   DROP ACTIVE
                 </span>
                 <span className="border border-t-border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-t-text-muted">
-                  NATIONWIDE DISPATCH
+                  {state.deliveryAreas || state.location || "Nationwide Delivery"}
                 </span>
               </div>
               <h1 className="mt-4 text-4xl sm:text-6xl md:text-7xl font-black uppercase leading-[0.88] tracking-tight break-words">
@@ -1675,7 +1684,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <section id="story" className="border-t-2 border-t-border px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl border-2 border-t-border bg-t-surface p-8 sm:p-12 shadow-[5px_5px_0px_0px_var(--t-accent)]">
           <span className="text-xs font-black uppercase tracking-[0.28em] text-t-accent">
-            {"// OUR MANIFESTO"}
+            {state.bizName ? `${state.bizName.toUpperCase()}` : "OUR STORY"}
           </span>
           <p className="mt-3 max-w-3xl text-2xl sm:text-4xl font-black uppercase leading-tight tracking-tight text-t-text">
             {story}
@@ -1757,11 +1766,11 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
 
   return (
     <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
-      {/* Top Flash Deals Bar */}
-      <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center text-xs font-bold tracking-wide shadow-2xs">
+      {/* Top Bar */}
+      <div className="bg-t-accent text-t-accent-fg px-4 py-2 text-center text-xs font-bold tracking-wide shadow-2xs">
         <span className="inline-flex items-center gap-1.5">
-          <Flame className="h-3.5 w-3.5 fill-amber-950 inline" />
-          <span>Flash Marketplace Deals: Order direct to WhatsApp for fastest dispatch!</span>
+          <Tag className="h-3.5 w-3.5 inline" />
+          <span>Direct WhatsApp Ordering · Fast Tracked Doorstep Dispatch</span>
         </span>
       </div>
 
@@ -1874,7 +1883,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
               <div className="rounded-2xl border border-t-border bg-t-bg p-4 shadow-2xs">
                 <div className="flex items-center justify-between pb-3 border-b border-t-border">
                   <span className="text-xs font-bold text-t-text flex items-center gap-1">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" /> Featured Picks
+                    <Star className="h-3.5 w-3.5 text-t-accent fill-t-accent/20" /> Featured Picks
                   </span>
                   <span className="text-[10px] font-semibold text-t-accent">Fast Delivery</span>
                 </div>
@@ -2304,6 +2313,848 @@ function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 }
 
 // =============================================================================
+// 6. COAST SITE (Immersive Expedition / Voyage Layout inspired by Gaskuy UI tokens)
+// =============================================================================
+function CoastSocialRail() {
+  return (
+    <div className="hidden lg:flex flex-col items-center gap-4 rounded-full bg-black/40 backdrop-blur-md px-2.5 py-5 border border-white/15 text-white/80 shadow-xl">
+      <a href="#social" className="hover:text-white transition hover:scale-110" aria-label="Instagram">
+        <svg className="h-4 w-4 fill-none stroke-currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+        </svg>
+      </a>
+      <a href="#social" className="hover:text-white transition hover:scale-110" aria-label="Facebook">
+        <svg className="h-4 w-4 fill-currentColor" viewBox="0 0 24 24">
+          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+        </svg>
+      </a>
+      <a href="#social" className="hover:text-white transition hover:scale-110" aria-label="LinkedIn">
+        <svg className="h-4 w-4 fill-currentColor" viewBox="0 0 24 24">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
+          <circle cx="4" cy="4" r="2" />
+        </svg>
+      </a>
+      <a href="#social" className="hover:text-white transition hover:scale-110" aria-label="Twitter">
+        <svg className="h-4 w-4 fill-currentColor" viewBox="0 0 24 24">
+          <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" />
+        </svg>
+      </a>
+    </div>
+  );
+}
+
+function renderCoastPillHeadline(rawTitle: string) {
+  const words = rawTitle.trim().split(/\s+/);
+  if (words.length <= 1) {
+    return (
+      <span className="inline-block bg-white text-zinc-950 font-black px-4 sm:px-6 py-1 rounded-full shadow-2xl mx-1 align-middle">
+        {words[0]}
+      </span>
+    );
+  }
+
+  return words.map((w, i) => {
+    // In "Crafting Journeys Not Just Trips", words 1 ("Journeys") and 4 ("Trips") are badges
+    const isPill = i === 1 || (words.length >= 4 && i === words.length - 1);
+    if (isPill) {
+      return (
+        <span
+          key={i}
+          className="inline-block bg-white text-zinc-950 font-black px-3.5 sm:px-6 py-0.5 sm:py-1 rounded-full shadow-2xl mx-1 sm:mx-2 align-middle transform hover:scale-105 transition-transform"
+        >
+          {w}
+        </span>
+      );
+    }
+    return (
+      <span key={i} className="inline-block mx-1">
+        {w}
+      </span>
+    );
+  });
+}
+
+function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const rawTitle = state.heroTitle || state.bizName || "Crafting Journeys Not Just Trips";
+  const subtitle = state.heroSubtitle || state.tagline || "This activity involves the movement of people from one location to another, domestically or internationally. Curated with premium care.";
+  const heroBtnText = state.heroButtonText || "Consultation";
+  const [searchFilter, setSearchFilter] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const heroImage =
+    state.heroImage ||
+    state.bizImage ||
+    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80";
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesSearch =
+        !searchFilter.trim() ||
+        p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchFilter.toLowerCase());
+      return matchesCat && matchesSearch;
+    });
+  }, [products, activeCategory, searchFilter]);
+
+  const { shown, remaining, hasMore, loadMore } = useCatalogWindow(
+    filtered.length,
+    `${activeCategory}|${searchFilter}`,
+  );
+
+  const featuredCards = useMemo(() => {
+    return products.slice(0, 3);
+  }, [products]);
+
+  const handleFeedbackClick = () => {
+    if (props.onLeaveFeedback) {
+      props.onLeaveFeedback();
+    } else {
+      setFeedbackOpen(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-t-bg pb-28 font-t-body text-t-text">
+      {/* ─── FULL-BLEED IMMERSIVE HERO WITH GASKUY DESIGN TOKENS ─── */}
+      <section className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden bg-zinc-950 text-white">
+        {/* Background Image with Cinematic Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={heroImage}
+            alt={state.bizName || template.name}
+            className="h-full w-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/85" />
+          <div className="absolute inset-0 bg-cyan-950/20 mix-blend-color" />
+        </div>
+
+        {/* Top Header */}
+        <header className="relative z-20 mx-auto w-full max-w-6xl px-4 py-5 sm:px-8 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={shopNow}
+            className={cn("text-left font-black text-2xl sm:text-3xl tracking-tight text-white hover:opacity-90 transition", focusRing)}
+          >
+            {state.bizName || template.name}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleFeedbackClick}
+              className={cn("hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white border border-white/20 hover:bg-white/20 transition", focusRing)}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Reviews</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onSearch}
+              className={cn("flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition", focusRing)}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onCart}
+              className={cn("flex h-9 items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-md px-3.5 border border-white/25 text-xs font-bold text-white hover:bg-white/25 transition", focusRing)}
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <CartMark count={cartCount} />
+            </button>
+
+            {waDigits && (
+              <a
+                href={`https://wa.me/${waDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn("rounded-full bg-white px-5 py-2 text-xs font-black uppercase tracking-wider text-zinc-950 shadow-lg hover:bg-zinc-100 active:scale-95 transition", focusRing)}
+              >
+                Sign Up
+              </a>
+            )}
+          </div>
+        </header>
+
+        {/* Vertical Social Rail (Floating on upper-left) */}
+        <div className="absolute left-6 sm:left-10 top-28 z-20">
+          <CoastSocialRail />
+        </div>
+
+        {/* Hero Center-Bottom Content */}
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 pb-16 sm:pb-20 text-center">
+          <h1 className="font-t-display text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.15] break-words">
+            {renderCoastPillHeadline(rawTitle)}
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-xl text-xs sm:text-sm text-white/80 font-medium leading-relaxed drop-shadow-sm">
+            {subtitle}
+          </p>
+
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={shopNow}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-xs sm:text-sm font-black text-zinc-950 shadow-2xl transition hover:bg-zinc-100 hover:scale-105 active:scale-95",
+                focusRing
+              )}
+            >
+              <span>{heroBtnText}</span>
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+
+            {waDigits && (
+              <a
+                href={`https://wa.me/${waDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/30 backdrop-blur-md px-6 py-3 text-xs sm:text-sm font-bold text-white transition hover:bg-black/50",
+                  focusRing
+                )}
+              >
+                <MessageCircle className="h-4 w-4 text-emerald-400" />
+                <span>WhatsApp</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SECTION 2: 3D FAN-OUT CARDS SHOWCASE (RIGHT MOCKUP) ─── */}
+      <section className="bg-t-surface py-16 sm:py-24 px-4 sm:px-6">
+        <div className="mx-auto max-w-5xl text-center">
+          <h2 className="font-t-display text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-t-text">
+            MAKE YOUR EXPENSES, USED FOR TRAVEL
+          </h2>
+          <p className="mt-3 text-xs sm:text-sm uppercase tracking-widest text-t-text-muted">
+            {state.deliveryAreas || state.location || "Curated Expeditions & High-Altitude Routes"}
+          </p>
+
+          {/* 3D Stacked / Fan-out Cards */}
+          {featuredCards.length > 0 && (
+            <div className="relative mx-auto mt-12 flex max-w-3xl items-center justify-center h-[420px] sm:h-[480px]">
+              {featuredCards.map((product, idx) => {
+                let cardTransform = "z-20 scale-100 shadow-2xl";
+                if (idx === 0 && featuredCards.length > 1) {
+                  cardTransform = "-translate-x-12 sm:-translate-x-24 -rotate-6 scale-90 z-10 opacity-75 hover:opacity-100 hover:scale-95 transition-all duration-300";
+                } else if (idx === 2) {
+                  cardTransform = "translate-x-12 sm:translate-x-24 rotate-6 scale-90 z-10 opacity-75 hover:opacity-100 hover:scale-95 transition-all duration-300";
+                }
+
+                return (
+                  <div
+                    key={product.id}
+                    onClick={() => props.onProduct(product)}
+                    className={cn(
+                      "absolute inset-x-4 sm:inset-x-16 top-0 bottom-0 rounded-[2.5rem] overflow-hidden border border-t-border bg-zinc-950 cursor-pointer shadow-2xl transition-all duration-300 group",
+                      cardTransform
+                    )}
+                  >
+                    <ProductMedia product={product} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/35 pointer-events-none" />
+
+                    {/* Top Floating Glass Chips */}
+                    <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-sm">
+                        <Bookmark className="h-4 w-4" />
+                      </span>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-rose-400 shadow-sm">
+                        <Heart className="h-4 w-4 fill-rose-500" />
+                      </span>
+                    </div>
+
+                    {/* Bottom Frosted Card Overlay */}
+                    <div className="absolute bottom-5 left-5 right-5 z-10 rounded-2xl bg-zinc-950/75 backdrop-blur-md p-4 sm:p-5 border border-white/15 flex items-center justify-between gap-4 text-white shadow-xl">
+                      <div className="min-w-0 text-left">
+                        <h4 className="truncate text-base sm:text-lg font-bold text-white tracking-tight">
+                          {product.name}
+                        </h4>
+                        <p className="mt-0.5 truncate text-[11px] text-zinc-300 font-medium">
+                          {product.category || "Top Destination"} · {formatPrice(state.currency, product.price)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-center gap-1 shrink-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white group-hover:bg-white group-hover:text-zinc-950 transition-colors">
+                          <ArrowUpRight className="h-4 w-4" />
+                        </div>
+                        <span className="text-[9px] font-bold tracking-widest uppercase text-white/70">Detail</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── SECTION 3: MINIMALIST TRUST PARTNER STRIP ─── */}
+      <div className="border-y border-t-border/50 py-10 px-4 bg-t-surface-alt/40">
+        <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-around gap-6 sm:gap-10 text-xs sm:text-sm font-black tracking-[0.25em] text-t-text-muted/60 uppercase">
+          <span className="hover:text-t-text transition cursor-default">LATTICE</span>
+          <span className="hover:text-t-text transition cursor-default">MONDAY.COM</span>
+          <span className="hover:text-t-text transition cursor-default">CONTENTFUL</span>
+          <span className="hover:text-t-text transition cursor-default">PRODUCTBOARD</span>
+          <span className="hover:text-t-text transition cursor-default">CUSTOMER.IO</span>
+        </div>
+      </div>
+
+      {/* ─── SECTION 4: COMPLETE CATALOG GRID ─── */}
+      <section id="catalog" className="scroll-mt-16 py-14 sm:py-20 px-4 sm:px-6 mx-auto max-w-6xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-t-border pb-6">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-t-accent">
+              SELECTED CATALOG
+            </span>
+            <h3 className="font-t-display text-2xl sm:text-3xl font-black text-t-text tracking-tight uppercase mt-1">
+              ALL PACKAGES & GEAR
+            </h3>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {categories.map((category) => {
+              const selected = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => props.onCategory(category)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition shadow-2xs",
+                    focusRing,
+                    selected
+                      ? "bg-t-accent text-t-accent-fg shadow-sm"
+                      : "border border-t-border bg-t-surface text-t-text-muted hover:text-t-text"
+                  )}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="py-16">
+            <EmptyCatalog />
+          </div>
+        ) : (
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+            {filtered.slice(0, shown).map((product) => (
+              <div
+                key={product.id}
+                onClick={() => props.onProduct(product)}
+                className={cn(
+                  "group flex flex-col justify-between rounded-3xl border border-t-border bg-t-surface p-3 sm:p-4 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer",
+                  focusRing
+                )}
+              >
+                <div>
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-t-surface-alt">
+                    <ProductMedia product={product} className="transition-transform duration-500 group-hover:scale-105" />
+                    <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-black text-white shadow-xs">
+                      {formatPrice(state.currency, product.price)}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-left">
+                    <p className="text-[10px] font-bold text-t-accent uppercase tracking-wider">
+                      {product.category || "Item"}
+                    </p>
+                    <h4 className="mt-0.5 truncate text-xs sm:text-sm font-bold text-t-text group-hover:text-t-accent transition">
+                      {product.name}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-t-border/50 pt-2.5">
+                  <span className="text-[11px] font-medium text-t-text-muted">Direct Order</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-t-accent text-t-accent-fg group-hover:scale-110 transition-transform">
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
+      </section>
+
+      {/* ─── SECTION 5: SOME EXPERIENCES FROM CLIMBERS ─── */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 mx-auto max-w-5xl text-center border-t border-t-border/60">
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-t-accent">
+          TESTIMONIALS
+        </span>
+        <h2 className="mt-3 font-t-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-t-text">
+          SOME EXPERIENCES FROM CLIMBERS
+        </h2>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+          {[
+            {
+              name: "Alex Thorne",
+              role: "Summit Mountaineer",
+              quote: "The expedition logistics, guidance, and doorstep gear dispatch were absolute perfection. Unmatched experience.",
+            },
+            {
+              name: "Elena Rostova",
+              role: "Trail Explorer",
+              quote: "Booking and inquiring directly through WhatsApp made the preparation effortless. Every detail was curated with care.",
+            },
+            {
+              name: "Marcus Vance",
+              role: "Alpine Adventurer",
+              quote: "Quality and authenticity were 100% verified. Easily the most reliable travel storefront I have ever used.",
+            },
+          ].map((item, i) => (
+            <div key={i} className="rounded-3xl border border-t-border bg-t-surface p-6 shadow-sm flex flex-col justify-between">
+              <Quote className="h-6 w-6 text-t-accent/40 mb-3" />
+              <p className="text-xs sm:text-sm leading-relaxed text-t-text-muted italic">
+                &ldquo;{item.quote}&rdquo;
+              </p>
+              <div className="mt-6 pt-4 border-t border-t-border/50">
+                <p className="text-xs font-bold text-t-text">{item.name}</p>
+                <p className="text-[10px] text-t-accent font-semibold">{item.role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-t-border px-4 py-12 text-center text-xs tracking-wider text-t-text-muted">
+        <p className="font-bold text-t-text text-sm">{state.bizName || template.name}</p>
+        <p className="mt-2 text-xs">
+          {formatDisplayPhone(state.phone)} {state.location ? `· ${state.location}` : ""}
+        </p>
+        <p className="mt-4 text-[11px] opacity-60">
+          &copy; {new Date().getFullYear()} · All rights reserved
+        </p>
+      </footer>
+
+      <MobileStickyCartBar count={cartCount} onCart={props.onCart} />
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
+// 7. BLOOM SITE (Luxury Beauty / Skincare Minimalist Storefront inspired by Necessaire tokens)
+// =============================================================================
+function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
+  const { state, products, categories, activeCategory, cartCount, template } = props;
+  const greeting = `Hello ${state.bizName ? state.bizName.split(" ")[0] : "Juju"}!`;
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string>("200 ml");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const waDigits = getCleanWhatsAppDigits(state.phone);
+
+  const heroProduct = useMemo(() => {
+    return products[0] || null;
+  }, [products]);
+
+  const filtered = useMemo(() => {
+    if (activeCategory === "All") return products;
+    return products.filter((p) => p.category === activeCategory);
+  }, [products, activeCategory]);
+
+  const sizes = ["50 ml", "180 ml", "200 ml", "250 ml"];
+
+  const handleQuickCheckout = (product: Product) => {
+    if (!waDigits) {
+      props.onProduct(product);
+      return;
+    }
+    const text = encodeURIComponent(
+      `Hello ${state.bizName || ""}, I'd like to order:\n• ${product.name} (${selectedSize}) - ${formatPrice(state.currency, product.price)}\n\nPlease confirm availability and delivery.`
+    );
+    window.open(`https://wa.me/${waDigits}?text=${text}`, "_blank");
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-36 font-sans text-zinc-900 dark:text-zinc-100 antialiased selection:bg-zinc-900 selection:text-white">
+      {/* ─── SCREEN 1: STOREFRONT MAIN ─── */}
+      <main className="mx-auto max-w-4xl px-4 sm:px-6 pt-6 sm:pt-10 space-y-6">
+        {/* Top Header: Avatar + Greeting + Bell */}
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shadow-sm flex items-center justify-center">
+              {state.bizImage ? (
+                <img src={state.bizImage} alt={state.bizName} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full bg-zinc-900 text-white font-serif font-black flex items-center justify-center text-sm">
+                  {(state.bizName || "B").slice(0, 2).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div>
+              <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                {greeting}
+              </h1>
+              <p className="text-[11px] text-zinc-500 font-medium">
+                {state.tagline || "Curated skincare & daily essentials"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFeedbackOpen(true)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition"
+              aria-label="Notifications & Reviews"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900" />
+            </button>
+          </div>
+        </header>
+
+        {/* Featured Hero Promo Card */}
+        {heroProduct && (
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 shadow-xs">
+            {/* 70% Promo Badge */}
+            <div className="absolute top-5 left-5 z-10 flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+              <span>70% OFF</span>
+            </div>
+
+            <div className="grid items-center gap-6 sm:grid-cols-12">
+              {/* Product Visual Center */}
+              <div className="sm:col-span-7 flex justify-center items-center py-2">
+                <div className="relative aspect-[4/3] w-full max-w-[280px] sm:max-w-[340px] overflow-hidden rounded-2xl bg-white/60 dark:bg-zinc-800/60 p-3 shadow-inner">
+                  <ProductMedia product={heroProduct} className="h-full w-full object-contain" />
+                </div>
+              </div>
+
+              {/* Price & Action */}
+              <div className="sm:col-span-5 flex flex-col justify-between space-y-4 text-left">
+                <div>
+                  <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    {heroProduct.category || "Special Offer"}
+                  </span>
+                  <h3 className="mt-1 font-serif text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white">
+                    {heroProduct.name}
+                  </h3>
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                    Special Price
+                  </p>
+                  <p className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
+                    {formatPrice(state.currency, heroProduct.price)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDetailProduct(heroProduct)}
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-lg hover:scale-105 active:scale-95 transition"
+                    title="View Product"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailProduct(heroProduct)}
+                    className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white hover:underline"
+                  >
+                    View Details →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section: "Best Product" */}
+        <section className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              Best Product
+            </h2>
+            <button
+              type="button"
+              onClick={shopNow}
+              className="text-xs font-medium text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
+            >
+              See all
+            </button>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {categories.map((cat) => {
+              const active = cat === activeCategory;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => props.onCategory(cat)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all shadow-2xs",
+                    active
+                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold"
+                      : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                  )}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 2-Column Responsive Product Grid */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3">
+            {filtered.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => setDetailProduct(product)}
+                className="group flex flex-col justify-between rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/90 p-3 sm:p-4 shadow-2xs hover:shadow-md transition-all duration-300 cursor-pointer"
+              >
+                <div>
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 p-2">
+                    <ProductMedia product={product} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailProduct(product);
+                      }}
+                      className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 shadow-xs group-hover:scale-110 transition-transform"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-3 text-left">
+                    <h4 className="font-serif text-sm sm:text-base font-bold text-zinc-900 dark:text-white truncate">
+                      {product.name}
+                    </h4>
+                    <p className="mt-0.5 text-[11px] text-zinc-400 font-medium truncate">
+                      {product.category || "Body Care"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-2">
+                  <span className="font-sans text-sm sm:text-base font-black text-zinc-950 dark:text-white">
+                    {formatPrice(state.currency, product.price)}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    In Stock
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* ─── SCREEN 2: DETAIL PRODUCT MODAL (MATCHING MIDDLE MOCKUP) ─── */}
+      {detailProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-[2.5rem] bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
+              <button
+                type="button"
+                onClick={() => setDetailProduct(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              >
+                <ArrowRight className="h-4 w-4 rotate-180" />
+              </button>
+              <h3 className="font-serif text-base font-bold text-zinc-900 dark:text-white">
+                Detail Product
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: detailProduct.name, url: window.location.href });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Product Image Card with Star Rating */}
+            <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 p-4 flex items-center justify-center">
+              <ProductMedia product={detailProduct} className="h-full w-full object-contain" />
+
+              {/* Vertical Star Rating Chip */}
+              <div className="absolute top-4 left-4 flex flex-col items-center gap-1 rounded-2xl bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-1.5 py-2.5 border border-zinc-200/60 dark:border-zinc-800 shadow-sm">
+                {[1, 2, 3, 4].map((s) => (
+                  <Star key={s} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                ))}
+                <Star className="h-3 w-3 text-zinc-300 dark:text-zinc-600" />
+              </div>
+            </div>
+
+            {/* Name, Price & Sku */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white">
+                  {detailProduct.name}
+                </h2>
+                <p className="text-xs text-zinc-400 font-medium">
+                  {detailProduct.category || "Body Care"}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="font-sans text-xl sm:text-2xl font-black text-zinc-950 dark:text-white">
+                  {formatPrice(state.currency, detailProduct.price)}
+                </span>
+                <p className="text-[11px] text-zinc-400 font-medium">{selectedSize}</p>
+              </div>
+            </div>
+
+            {/* Product Detail Description */}
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                Product Detail
+              </h4>
+              <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {detailProduct.description ||
+                  "Formulated to hydrate and restore the skin barrier with clean, verified ingredients. Suitable for daily use and all skin types."}
+              </p>
+            </div>
+
+            {/* Select Size Variant Pills */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                Select Size
+              </h4>
+              <div className="flex items-center gap-2">
+                {sizes.map((s) => {
+                  const isSel = s === selectedSize;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSelectedSize(s)}
+                      className={cn(
+                        "rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+                        isSel
+                          ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm"
+                          : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
+                      )}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Dual Action Buttons */}
+            <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => {
+                  props.onProduct(detailProduct);
+                  setDetailProduct(null);
+                }}
+                className="flex-1 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3 text-xs font-bold text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
+              >
+                Add to Cart
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickCheckout(detailProduct)}
+                className="flex-1 rounded-full bg-zinc-950 dark:bg-white py-3 text-xs font-bold text-white dark:text-zinc-950 hover:opacity-90 active:scale-95 transition shadow-lg"
+              >
+                Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FLOATING BOTTOM NAV DOCK PILL (MATCHING SCREEN 1 & 3) ─── */}
+      <nav
+        aria-label="Store navigation dock"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 rounded-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border border-zinc-200/90 dark:border-zinc-800/90 px-6 py-2.5 shadow-2xl"
+      >
+        <button
+          type="button"
+          onClick={shopNow}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm"
+          aria-label="Home"
+        >
+          <Home className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={props.onCart}
+          className="relative text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
+          aria-label="Cart List"
+        >
+          <ShoppingBag className="h-5 w-5" />
+          {cartCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white">
+              {cartCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={props.onSearch}
+          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
+          aria-label="Search"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFeedbackOpen(true)}
+          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
+          aria-label="Reviews"
+        >
+          <User className="h-5 w-5" />
+        </button>
+      </nav>
+
+      {/* Footer */}
+      <footer className="mt-20 border-t border-zinc-200 dark:border-zinc-800/60 px-4 py-8 text-center text-xs text-zinc-400">
+        <p className="font-serif font-bold text-sm text-zinc-900 dark:text-white">{state.bizName || template.name}</p>
+        <p className="mt-1">{formatDisplayPhone(state.phone)}</p>
+        <p className="mt-2 text-[11px] opacity-60">&copy; {new Date().getFullYear()} · All rights reserved</p>
+      </footer>
+
+      <StoreFeedbackModal
+        bizName={state.bizName || template.name}
+        phone={state.phone}
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
+    </div>
+  );
+}
+
+// =============================================================================
 // ROUTER: TEMPLATE SITE
 // =============================================================================
 export function TemplateSite(props: TemplateSiteProps) {
@@ -2313,11 +3164,19 @@ export function TemplateSite(props: TemplateSiteProps) {
   // Route each template to its dedicated visual experience
   const id = props.state.websiteTemplateId || template.id;
 
+  if (id === "bloom") {
+    return <BloomSite {...props} template={template} />;
+  }
+
+  if (id === "coast") {
+    return <CoastSite {...props} template={template} />;
+  }
+
   if (id === "market") {
     return <MarketplaceSite {...props} template={template} />;
   }
 
-  if (id === "studio" || id === "noir" || id === "coast") {
+  if (id === "studio" || id === "noir") {
     return <StudioSite {...props} template={template} />;
   }
 
@@ -2325,11 +3184,12 @@ export function TemplateSite(props: TemplateSiteProps) {
     return <BoldSite {...props} template={template} />;
   }
 
-  if (id === "boutique" || id === "bloom" || id === "oasis" || template.light.nav === "drawer") {
+  if (id === "boutique" || id === "oasis" || template.light.nav === "drawer") {
     return <BoutiqueSite {...props} template={template} />;
   }
 
   // Baseline classic editorial layout preserved as requested
   return <EditorialSite {...props} template={template} />;
 }
+
 

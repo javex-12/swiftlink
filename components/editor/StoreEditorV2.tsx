@@ -480,7 +480,7 @@ export function StoreEditorV2() {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="truncate text-xs sm:text-sm font-semibold text-[#E8F1EC] max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-none">
+                  <h1 className="truncate text-xs sm:text-sm font-semibold text-[#E8F1EC] max-w-[120px] xs:max-w-[160px] sm:max-w-[180px] md:max-w-[150px] lg:max-w-[220px]">
                     {localState.bizName || "My Store"}
                   </h1>
                   <span
@@ -601,19 +601,19 @@ export function StoreEditorV2() {
             <div className="flex shrink-0 items-center gap-2">
               {isDirty && (
                 <span
-                  className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-[#9DB3A8]"
+                  className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-[#9DB3A8] max-w-[130px] lg:max-w-none truncate"
                   aria-live="polite"
                 >
                   {(draftSaving || !draftSavedAt) && !restoredFrom ? (
                     <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>Autosaving…</span>
+                      <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                      <span className="truncate">Autosaving…</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-3 w-3 text-[#19C37D]" />
-                      <span>
-                        {draftSynced ? "Draft saved" : "Draft saved on this device"}
+                      <CheckCircle2 className="h-3 w-3 shrink-0 text-[#19C37D]" />
+                      <span className="truncate">
+                        Draft saved
                         {draftSavedAt ? ` · ${describeDraftAge(draftSavedAt)}` : ""}
                       </span>
                     </>

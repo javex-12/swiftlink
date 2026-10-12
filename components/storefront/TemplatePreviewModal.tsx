@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { X, Smartphone, Tablet, Monitor, Check, Moon, Sun } from "lucide-react";
 import type { ShopState } from "@/lib/schema";
 import { getSampleShopState } from "@/lib/sample-store";
-import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
+import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById, websiteTemplates } from "@/lib/theme/templates";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn } from "@/lib/utils";
 import { PREVIEW_DEVICE_WIDTHS, PreviewFrame } from "@/components/storefront/PreviewFrame";
@@ -62,10 +62,15 @@ export function TemplatePreviewModal({
   onSelectTemplate,
 }: TemplatePreviewModalProps) {
   const hasVendorProducts = (vendorState.products?.length || 0) > 0;
+  const [activeTemplateId, setActiveTemplateId] = useState<string>(templateId);
   const [device, setDevice] = useState<Device>("desktop");
   const [useSampleData, setUseSampleData] = useState<boolean>(!hasVendorProducts);
   const [appearance, setAppearance] = useState<Appearance>("light");
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+
+  useEffect(() => {
+    setActiveTemplateId(templateId);
+  }, [templateId]);
 
   // A real phone cannot show a phone mockup. Track the viewport rather than
   // guessing from a CSS breakpoint, because the frame markup itself must change.
@@ -78,8 +83,8 @@ export function TemplatePreviewModal({
   }, []);
 
   const template = useMemo(
-    () => websiteTemplateById(templateId) ?? websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!,
-    [templateId],
+    () => websiteTemplateById(activeTemplateId) ?? websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!,
+    [activeTemplateId],
   );
 
   // Active state to render in the template. The storefront theme decides the
@@ -87,16 +92,16 @@ export function TemplatePreviewModal({
   // than passing a separate flag — otherwise the two can disagree.
   const activeState = useMemo<ShopState>(() => {
     const base = useSampleData || !hasVendorProducts
-      ? getSampleShopState(templateId, vendorState.currency || "NGN")
+      ? getSampleShopState(activeTemplateId, vendorState.currency || "NGN")
       : vendorState;
 
     return {
       ...base,
-      websiteTemplateId: templateId as any,
+      websiteTemplateId: activeTemplateId as any,
       accentColor: vendorState.accentColor || base.accentColor,
       storefrontTheme: { ...(base.storefrontTheme ?? {}), background: appearance },
     };
-  }, [useSampleData, hasVendorProducts, templateId, vendorState, appearance]);
+  }, [useSampleData, hasVendorProducts, activeTemplateId, vendorState, appearance]);
 
   const themeVars = useMemo(() => {
     const baseTheme = themeForTemplate(template, appearance);
@@ -142,14 +147,14 @@ export function TemplatePreviewModal({
       */}
       <header className="shrink-0 border-b border-[#1E2D27] bg-[#111C18] overflow-x-hidden">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2.5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-3 overflow-x-hidden">
-          {/* Row 1: identity */}
+          {/* Row 1: identity & template picker */}
           <div className="flex min-w-0 items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
             <div className="flex min-w-0 items-center gap-2.5">
               <span
                 className={cn("h-2 w-2 shrink-0 rounded-full", useSampleData ? "bg-[#E8B93A]" : "bg-[#19C37D]")}
                 aria-hidden="true"
               />
-              <div className="min-w-0 max-w-[200px] xs:max-w-xs sm:max-w-sm">
+              <div className="min-w-0 max-w-[160px] xs:max-w-[200px] sm:max-w-xs">
                 <p className="truncate text-sm font-semibold leading-tight text-[#E8F1EC]">{template.name}</p>
                 <p className="truncate text-[11px] leading-tight text-[#9DB3A8]">
                   {sourceLabel}
@@ -186,7 +191,7 @@ export function TemplatePreviewModal({
             <button
               type="button"
               onClick={() => {
-                onSelectTemplate(templateId);
+                onSelectTemplate(activeTemplateId);
                 onClose();
               }}
               className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] sm:flex-initial"
@@ -203,6 +208,33 @@ export function TemplatePreviewModal({
             >
               <X className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+
+        {/* Template Switcher Rail: switch templates directly without leaving preview */}
+        <div className="border-t border-[#1E2D27] bg-[#0E1714] px-3 py-2 sm:px-4">
+          <div className="mx-auto flex max-w-[1600px] items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-bold text-[#9DB3A8] uppercase tracking-wider shrink-0 mr-1.5">
+              Change Template:
+            </span>
+            {websiteTemplates.map((t) => {
+              const isCurrent = t.id === activeTemplateId;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTemplateId(t.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all",
+                    isCurrent
+                      ? "bg-[#19C37D] text-[#04140D] shadow-xs font-bold"
+                      : "border border-[#24382F] bg-[#111C18] text-[#9DB3A8] hover:border-[#19C37D]/50 hover:text-[#E8F1EC]"
+                  )}
+                >
+                  {t.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>

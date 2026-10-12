@@ -269,3 +269,23 @@ export function getCleanWhatsAppDigits(phone: string, defaultCountry: CountryCod
   }
   return digits;
 }
+
+/**
+ * Formats a phone number for display to visitors/customers with full country code.
+ * (e.g. +234 808 123 4567)
+ */
+export function formatDisplayPhone(phone: string, defaultCountry: CountryCode = "NG"): string {
+  if (!phone) return "";
+  const norm = normalizePhoneNumber(phone, defaultCountry);
+  if (norm.isValid && norm.formattedInternational) {
+    return norm.formattedInternational;
+  }
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 11) {
+    return `+234 ${digits.slice(1, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+  }
+  if (!phone.startsWith("+") && digits.length >= 10) {
+    return `+234 ${digits.slice(-10, -7)} ${digits.slice(-7, -4)} ${digits.slice(-4)}`;
+  }
+  return phone.startsWith("+") ? phone : `+234 ${phone}`;
+}

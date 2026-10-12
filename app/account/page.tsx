@@ -9,6 +9,7 @@ import { ProLayout } from "@/components/ProLayout";import {
   CheckCircle2, AlertCircle, Camera, ArrowLeft, Pause, Play, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDisplayPhone, normalizePhoneNumber } from "@/lib/phone";
 import {
   PLANS,
   PLAN_DETAILS,
@@ -593,9 +594,25 @@ export default function AccountPage() {
                       <Smartphone size={15} className="text-[#9DB3A8]" />
                       <input 
                         type="tel" 
-                        value={state.phone || ""} 
+                        value={state.phone ? (state.phone.startsWith("+") ? state.phone : formatDisplayPhone(state.phone)) : ""} 
                         onChange={(e) => updateState("phone", e.target.value)}
-                        placeholder="+234..."
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          if (val) {
+                            const norm = normalizePhoneNumber(val, "NG");
+                            if (norm.isValid) {
+                              updateState("phone", norm.normalized);
+                            } else if (!val.startsWith("+")) {
+                              const digits = val.replace(/\D/g, "");
+                              if (digits.startsWith("0")) {
+                                updateState("phone", `+234${digits.slice(1)}`);
+                              } else {
+                                updateState("phone", `+234${digits}`);
+                              }
+                            }
+                          }
+                        }}
+                        placeholder="+234 808 000 0000"
                         className="bg-transparent flex-1 font-medium text-xs outline-none text-[#E8F1EC] placeholder:text-[#9DB3A8]/50"
                       />
                     </div>
