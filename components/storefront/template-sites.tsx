@@ -644,7 +644,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
               // eslint-disable-next-line @next/next/no-img-element
               <img src={state.bizImage} alt="" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 rounded-full object-cover border border-t-border" />
             )}
-            <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs md:max-w-none">{state.bizName || template.name}</span>
+            <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-xs">{state.bizName || template.name}</span>
           </button>
 
           <nav className="hidden items-center gap-7 text-sm font-medium md:flex" aria-label="Store">
@@ -1424,7 +1424,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
             type="button"
             onClick={shopNow}
             className={cn(
-              "truncate min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none text-left text-base sm:text-2xl font-black uppercase tracking-wider",
+              "truncate min-w-0 max-w-[150px] sm:max-w-[240px] text-left text-base sm:text-xl font-black uppercase tracking-wider",
               focusRing
             )}
           >

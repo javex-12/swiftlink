@@ -658,24 +658,17 @@ export function BusinessView() {
       
       {/* FLOATING SAVE BUTTON — CSS only, no mount/unmount = no layout reflow = no keyboard snap */}
       <div
+        className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 whitespace-nowrap"
         style={{
-          position: "fixed",
-          bottom: "5rem",
-          left: "50%",
           transform: `translateX(-50%) translateY(${isDirty ? "0" : "80px"})`,
           opacity: isDirty ? 1 : 0,
           pointerEvents: isDirty ? "auto" : "none",
           transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease",
-          zIndex: 100,
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
           backgroundColor: "#0f172a",
           color: "white",
           borderRadius: "9999px",
           padding: "0.75rem 1.5rem",
           boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
-          whiteSpace: "nowrap"
         }}
       >
         <div className="flex items-center gap-2">
@@ -741,7 +734,7 @@ export function BusinessView() {
             <div className="text-left">
                 <h1 className="font-serif-luxury italic text-4xl sm:text-6xl font-black text-white tracking-wide">WORKSPACE</h1>
             </div>
-            <div className="w-full sm:w-auto overflow-x-auto custom-scrollbar pb-1">
+            <div className="w-full sm:w-auto overflow-x-auto sm:overflow-visible no-scrollbar pb-1">
                 <div className="flex bg-[#0e251b] p-1.5 sm:p-2 rounded-full border border-emerald-500/20 shadow-xl min-w-max">
                     <button className={cn("px-5 sm:px-8 py-2.5 sm:py-3 text-xs font-black uppercase tracking-widest rounded-full transition-all relative", activeTab === "store" ? "text-[#00c885]" : "text-slate-400 hover:text-white")} onClick={() => handleTabChange("store")}>
                       PRODUCTS
