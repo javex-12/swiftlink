@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { formatMoney } from "@/lib/currency";
 import { toMinorUnits } from "@/lib/inquiry-write";
 import { cn } from "@/lib/utils";
+import { inquirySourceLabel } from "@/lib/checkout-channels";
 import {
   MessageSquare,
   Clock,
@@ -16,6 +17,7 @@ import {
   Phone,
   X,
   Banknote,
+  TicketPercent,
 } from "lucide-react";
 
 /**
@@ -49,6 +51,12 @@ interface Inquiry {
   status: InquiryStatus;
   source: string;
   created_at: string;
+  /** Reference shown to the buyer; one per cart order. */
+  order_ref: string | null;
+  discount_code: string | null;
+  discount_minor: number | null;
+  /** The order text the buyer was handed — the order as they wrote it. */
+  message: string | null;
 }
 
 interface Customer {
@@ -93,6 +101,10 @@ export default function InquiriesPage() {
   const [saleTarget, setSaleTarget] = useState<Inquiry | null>(null);
   const [saleAmount, setSaleAmount] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  /** Which channel is being viewed; `all` is the default. */
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  /** The order text is collapsed by default: most rows the merchant reads are not it. */
+  const [openMessageId, setOpenMessageId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!storeId || !isSupabaseConfigured()) {
@@ -112,7 +124,7 @@ export default function InquiriesPage() {
       supabase
         .from("inquiries")
         .select(
-          "id, product_id, product_name, currency, product_price_minor, selected_option, final_amount_minor, sold_at, buyer_name, buyer_phone, status, source, created_at",
+          "id, product_id, product_name, currency, product_price_minor, selected_option, final_amount_minor, sold_at, buyer_name, buyer_phone, status, source, created_at, order_ref, discount_code, discount_minor, message",
         )
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
@@ -207,10 +219,21 @@ export default function InquiriesPage() {
     await setStatus(target, "sold", parsed);
   };
 
-  const visibleInquiries = useMemo(
-    () => (activeTab === "sales" ? inquiries.filter((row) => row.status === "sold") : inquiries),
-    [activeTab, inquiries],
-  );
+  /** Channels present in the loaded rows, so the filter never offers a dead tab. */
+  const sources = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const row of inquiries) {
+      const key = row.source || "direct";
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+    }
+    return [...seen.entries()].sort((a, b) => b[1] - a[1]);
+  }, [inquiries]);
+
+  const visibleInquiries = useMemo(() => {
+    const byTab = activeTab === "sales" ? inquiries.filter((row) => row.status === "sold") : inquiries;
+    if (sourceFilter === "all") return byTab;
+    return byTab.filter((row) => (row.source || "direct") === sourceFilter);
+  }, [activeTab, inquiries, sourceFilter]);
 
   const soldRevenueMinor = useMemo(
     () =>
@@ -296,6 +319,42 @@ export default function InquiriesPage() {
           })}
         </div>
 
+        {/*
+          Channel filter. Only channels that actually have orders are offered, so
+          the merchant never taps a tab that cannot have anything in it.
+        */}
+        {inquiries.length > 0 && sources.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSourceFilter("all")}
+              className={cn(
+                "min-h-[32px] rounded-full border px-3 py-1 text-[11px] font-semibold transition",
+                sourceFilter === "all"
+                  ? "border-[#19C37D]/40 bg-[#19C37D]/15 text-[#19C37D]"
+                  : "border-[#24382F] bg-[#14231D] text-[#9DB3A8] hover:text-[#E8F1EC]",
+              )}
+            >
+              All channels
+            </button>
+            {sources.map(([source, count]) => (
+              <button
+                key={source}
+                type="button"
+                onClick={() => setSourceFilter(source)}
+                className={cn(
+                  "min-h-[32px] rounded-full border px-3 py-1 text-[11px] font-semibold transition",
+                  sourceFilter === source
+                    ? "border-[#19C37D]/40 bg-[#19C37D]/15 text-[#19C37D]"
+                    : "border-[#24382F] bg-[#14231D] text-[#9DB3A8] hover:text-[#E8F1EC]",
+                )}
+              >
+                {inquirySourceLabel(source)} ({count})
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Customers list */}
         {activeTab === "customers" ? (
           customers.length > 0 ? (
@@ -356,11 +415,52 @@ export default function InquiriesPage() {
                           {inquiry.status}
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                        {formatDate(inquiry.created_at)} · via {inquiry.source}
-                        {inquiry.selected_option ? ` · ${inquiry.selected_option}` : ""}
-                        {inquiry.buyer_phone ? ` · ${inquiry.buyer_phone}` : ""}
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#9DB3A8]">
+                        <span>
+                          {formatDate(inquiry.created_at)} · via {
+                            inquirySourceLabel(inquiry.source)
+                          }
+                          {inquiry.order_ref ? ` · ${inquiry.order_ref}` : ""}
+                          {inquiry.selected_option ? ` · ${inquiry.selected_option}` : ""}
+                          {inquiry.buyer_phone ? ` · ${inquiry.buyer_phone}` : ""}
+                        </span>
+                        {inquiry.discount_code && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#19C37D]/40 bg-[#19C37D]/10 px-2 py-0.5 font-semibold text-[#19C37D]">
+                            <TicketPercent className="h-3 w-3" />
+                            {inquiry.discount_code}
+                            {inquiry.discount_minor
+                              ? ` −${formatMoney(inquiry.discount_minor, inquiry.currency || currency)}`
+                              : ""}
+                          </span>
+                        )}
                       </p>
+
+                      {/*
+                        The prefilled order text, stored verbatim when the order was
+                        placed. This is what makes the dashboard independent of the
+                        messaging app: the merchant reads the order here, not by
+                        scrolling a chat thread they may not own.
+                      */}
+                      {inquiry.message && (
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenMessageId(openMessageId === inquiry.id ? null : inquiry.id)
+                            }
+                            aria-expanded={openMessageId === inquiry.id}
+                            className="inline-flex min-h-[32px] items-center gap-1.5 rounded-[10px] border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-[11px] font-semibold text-[#9DB3A8] hover:text-[#E8F1EC]"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                            {openMessageId === inquiry.id ? "Hide order message" : "View order message"}
+                          </button>
+                          {openMessageId === inquiry.id && (
+                            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-[12px] border border-[#24382F] bg-[#0A1210] p-3 text-[11px] leading-relaxed text-[#E8F1EC]">
+                              {inquiry.message}
+                            </pre>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-[#E8F1EC] tabular-nums">

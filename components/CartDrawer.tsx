@@ -3,8 +3,9 @@
 import { useMemo } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/types";
-import { Minus, Plus, Trash2, ArrowRight, CreditCard, X, MessageCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, X } from "lucide-react";
 import Link from "next/link";
+import { CheckoutChannels } from "@/components/storefront/CheckoutChannels";
 
 export function CartDrawer({
   open,
@@ -17,19 +18,20 @@ export function CartDrawer({
     state,
     cart,
     updateCart,
-    sendWhatsAppOrder,
+    placeOrder,
+    checkoutChannels,
+    cartTotals,
+    applyDiscountCode,
+    clearDiscount,
     cartItemCount,
-    addToast,
   } = useSwiftLink();
 
   const theme = useMemo(() => resolveStorefrontTheme(state), [state]);
   const storeAcceptingOrders = state.isLive !== false;
 
-  let total = 0;
   const lines = Object.entries(cart).map(([id, q]) => {
     const p = state.products.find((x) => x.id === Number(id));
     if (!p) return null;
-    total += p.price * q;
     return (
       <div
         key={id}
@@ -113,14 +115,6 @@ export function CartDrawer({
           )}
         </div>
         <div className="p-8 bg-slate-50 space-y-4">
-          <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase">
-            <span>Total Amount</span>
-            <span className="text-3xl text-slate-900">
-              {state.currency}
-              {total.toLocaleString()}
-            </span>
-          </div>
-          
           <div className="flex flex-col gap-3">
              <Link
                href="/cart"
@@ -130,41 +124,25 @@ export function CartDrawer({
                View Full Bag <ArrowRight size={14} />
              </Link>
 
-             {(state.orderMethod === "whatsapp" || state.orderMethod === "both" || !state.orderMethod) && (
-                <button
-                  type="button"
-                  onClick={() => sendWhatsAppOrder()}
-                  disabled={!storeAcceptingOrders}
-                  className="w-full text-white py-5 rounded-2xl font-black shadow-lg flex items-center justify-center space-x-3 active:scale-95 transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
-                  style={{
-                    backgroundColor: theme.primaryColor,
-                    boxShadow: `0 12px 28px -8px ${theme.primaryColor}88`,
-                  }}
-                >
-                  <MessageCircle size={22} className="shrink-0" />
-                  <span>
-                    {storeAcceptingOrders ? "WhatsApp Order" : "Orders paused"}
-                  </span>
-                </button>
-             )}
+             {/*
+               One button per channel the store actually has a destination for,
+               plus the discount field. The old Paystack button is gone: it only
+               ever raised "Paystack is not enabled for this store yet", which
+               tells a buyer nothing and costs the sale.
 
-             {(state.orderMethod === "paystack" || state.orderMethod === "both") && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    addToast(
-                      "Paystack is not enabled for this store yet.",
-                      "error",
-                    )
-                  }
-                  disabled={!storeAcceptingOrders}
-                  className="w-full bg-white text-slate-900 border border-slate-200 py-5 rounded-2xl font-black shadow-sm flex items-center justify-center space-x-3 active:scale-95 transition-all hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CreditCard size={20} />
-                  <span>
-                    {storeAcceptingOrders ? "Pay with Paystack" : "Orders paused"}
-                  </span>
-                </button>
+               Hidden while the bag is empty, where there is nothing to order.
+             */}
+             {cartItemCount > 0 && (
+               <CheckoutChannels
+                 channels={checkoutChannels}
+                 totals={cartTotals}
+                 currency={state.currency}
+                 acceptingOrders={storeAcceptingOrders}
+                 accent={theme.primaryColor}
+                 onSelect={(channelId) => placeOrder(channelId)}
+                 onApplyCode={applyDiscountCode}
+                 onClearCode={clearDiscount}
+               />
              )}
           </div>
         </div>

@@ -2,8 +2,13 @@
 
 import { useState, useMemo } from "react";
 import type { Product, ShopState } from "@/lib/schema";
-import { websiteTemplateById, type WebsiteTemplate } from "@/lib/theme/templates";
+import {
+  DEFAULT_WEBSITE_TEMPLATE_ID,
+  websiteTemplateById,
+  type WebsiteTemplate,
+} from "@/lib/theme/templates";
 import { cn } from "@/lib/utils";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { LoadMoreButton, useCatalogWindow } from "@/components/storefront/catalog-window";
 import {
   ShoppingBag,
@@ -57,6 +62,22 @@ export type TemplateSiteProps = {
   onCart: () => void;
   onReviews: () => void;
   onLeaveFeedback?: () => void;
+  /**
+   * "Checkout" straight from a product: adds the item and opens the bag, where
+   * the buyer picks their channel and the order is recorded as an inquiry.
+   *
+   * It used to open a pre-filled WhatsApp chat here, which quietly made WhatsApp
+   * the only way to buy from this template and left every such order out of the
+   * merchant's dashboard. Falls back to the product page when the storefront has
+   * not wired the handler (the console's template previews).
+   */
+  onQuickCheckout?: (product: Product) => void;
+  /**
+   * The visitor owns this store. A merchant reviews their own shop nowhere: the
+   * customer-facing feedback entry points are hidden for them, and the review
+   * wall offers replies instead.
+   */
+  isOwner?: boolean;
 };
 
 const focusRing =
@@ -206,12 +227,21 @@ function TrustFeaturesStrip({ template }: { template: WebsiteTemplate }) {
 export function StoreFeedbackModal({
   bizName,
   phone,
+  storeId,
+  isOwner = false,
   isOpen,
   onClose,
   onSubmitReview,
 }: {
   bizName: string;
   phone?: string;
+  /**
+   * The store this review belongs to. Without it there is nowhere to save the
+   * review, which is why the modal refuses to claim success without one.
+   */
+  storeId?: string | null;
+  /** A merchant cannot review their own shop, so the dialog never opens for them. */
+  isOwner?: boolean;
   isOpen: boolean;
   onClose: () => void;
   onSubmitReview?: (review: { name: string; rating: number; message: string }) => void;
@@ -220,19 +250,66 @@ export function StoreFeedbackModal({
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || isOwner) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    const trimmed = message.trim();
+    if (!trimmed || saving) return;
+
+    // The DB enforces 5..800 characters; catching it here keeps the shopper from
+    // reading a Postgres constraint name as their error message.
+    if (trimmed.length < 5) {
+      setError("Please write at least 5 characters.");
+      return;
+    }
+
     if (onSubmitReview) {
       onSubmitReview({
         name: name.trim() || "Verified Buyer",
         rating,
-        message: message.trim(),
+        message: trimmed,
       });
+      setIsSubmitted(true);
+      return;
     }
+
+    /*
+     * This dialog used to show "Thank You!" and save nothing at all, so the
+     * storefront promised a review that never existed. It now writes the same
+     * `store_reviews` row the Reviews tab reads, and only claims success when
+     * that insert actually succeeded.
+     */
+    if (!storeId || !isSupabaseConfigured()) {
+      setError("Reviews are unavailable right now. Please try again later.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const reviewName = name.trim() || "Store Visitor";
+    const { error: insertError } = await supabase.from("store_reviews").insert({
+      store_id: storeId,
+      // `author_name` is NOT NULL on the live table; `guest_name` is what the
+      // insert policy checks for an anonymous review.
+      author_name: reviewName,
+      guest_name: reviewName,
+      message: trimmed,
+      rating,
+    });
+
+    setSaving(false);
+
+    if (insertError) {
+      console.error("[StoreFeedbackModal] review insert failed:", insertError.message);
+      setError(insertError.message);
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
@@ -263,10 +340,10 @@ export function StoreFeedbackModal({
         <div className="flex items-start justify-between border-b border-t-border/50 pb-4">
           <div>
             <h3 id="feedback-modal-title" className="font-t-display text-xl font-bold">
-              Leave Store Feedback
+              Leave a Review
             </h3>
             <p className="mt-1 text-xs text-t-text-muted">
-              Share your thoughts, review products, or send direct feedback to {bizName}.
+              Your rating and review of {bizName} appear on their storefront.
             </p>
           </div>
           <button
@@ -286,7 +363,7 @@ export function StoreFeedbackModal({
             </div>
             <h4 className="font-t-display text-lg font-bold">Thank You!</h4>
             <p className="mx-auto max-w-xs text-xs text-t-text-muted">
-              Your feedback for {bizName} has been received. Your input helps improve our store.
+              Your review of {bizName} is live on their storefront.
             </p>
             <div className="pt-2 flex justify-center gap-3">
               {cleanPhone && (
@@ -379,11 +456,11 @@ export function StoreFeedbackModal({
               )}
               <button
                 type="submit"
-                disabled={!message.trim()}
+                disabled={!message.trim() || saving}
                 className="flex items-center justify-center gap-2 rounded-xl bg-t-accent px-5 py-2.5 text-xs font-bold text-t-accent-fg transition hover:opacity-95 disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" />
-                <span>Submit Feedback</span>
+                <span>{saving ? "Posting..." : "Post Review"}</span>
               </button>
             </div>
           </form>
@@ -942,7 +1019,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
       <TestimonialsSection
         bizName={state.bizName || template.name}
         testimonials={state.testimonials}
-        onLeaveFeedback={handleFeedbackClick}
+        onLeaveFeedback={props.isOwner ? undefined : handleFeedbackClick}
       />
 
       {/* FAQ Section */}
@@ -988,6 +1065,8 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -1335,7 +1414,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
       <TestimonialsSection
         bizName={state.bizName || template.name}
         testimonials={state.testimonials}
-        onLeaveFeedback={handleFeedbackClick}
+        onLeaveFeedback={props.isOwner ? undefined : handleFeedbackClick}
       />
 
       <FaqSection faqs={state.faqItems} />
@@ -1357,6 +1436,8 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -1719,7 +1800,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <TestimonialsSection
         bizName={state.bizName || template.name}
         testimonials={state.testimonials}
-        onLeaveFeedback={handleFeedbackClick}
+        onLeaveFeedback={props.isOwner ? undefined : handleFeedbackClick}
       />
 
       <FaqSection faqs={state.faqItems} />
@@ -1738,6 +1819,8 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -2100,7 +2183,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
       <TestimonialsSection
         bizName={state.bizName || template.name}
         testimonials={state.testimonials}
-        onLeaveFeedback={handleFeedbackClick}
+        onLeaveFeedback={props.isOwner ? undefined : handleFeedbackClick}
       />
 
       <FaqSection faqs={state.faqItems} />
@@ -2117,6 +2200,8 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -2325,7 +2410,7 @@ function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <TestimonialsSection
         bizName={state.bizName || template.name}
         testimonials={state.testimonials}
-        onLeaveFeedback={handleFeedbackClick}
+        onLeaveFeedback={props.isOwner ? undefined : handleFeedbackClick}
       />
 
       <FaqSection faqs={state.faqItems} />
@@ -2343,6 +2428,8 @@ function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -2791,6 +2878,8 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -2820,14 +2909,15 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
   const sizes = ["50 ml", "180 ml", "200 ml", "250 ml"];
 
   const handleQuickCheckout = (product: Product) => {
-    if (!waDigits) {
-      props.onProduct(product);
+    // Goes to the bag rather than straight to a chat: the buyer chooses the
+    // channel there (WhatsApp, Instagram, Facebook or TikTok) and the order is
+    // recorded, which a `wa.me` link could not do. The chosen size travels with
+    // the line as its option.
+    if (props.onQuickCheckout) {
+      props.onQuickCheckout(product);
       return;
     }
-    const text = encodeURIComponent(
-      `Hello ${state.bizName || ""}, I'd like to order:\n• ${product.name} (${selectedSize}) - ${formatPrice(state.currency, product.price)}\n\nPlease confirm availability and delivery.`
-    );
-    window.open(`https://wa.me/${waDigits}?text=${text}`, "_blank");
+    props.onProduct(product);
   };
 
   return (
@@ -2859,7 +2949,9 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setFeedbackOpen(true)}
+              // The merchant gets the review wall, where they can reply to their
+              // customers; the shopper gets the dialog that posts a review.
+              onClick={() => (props.isOwner ? props.onReviews() : setFeedbackOpen(true))}
               className="flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition"
               aria-label="Reviews & Feedback"
             >
@@ -3170,7 +3262,7 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
         <button
           type="button"
-          onClick={() => setFeedbackOpen(true)}
+          onClick={() => (props.isOwner ? props.onReviews() : setFeedbackOpen(true))}
           className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
           aria-label="Reviews"
         >
@@ -3188,6 +3280,8 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
       <StoreFeedbackModal
         bizName={state.bizName || template.name}
         phone={state.phone}
+        storeId={state.id}
+        isOwner={props.isOwner}
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
       />
@@ -4048,11 +4142,23 @@ function OasisSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 // ROUTER: TEMPLATE SITE
 // =============================================================================
 export function TemplateSite(props: TemplateSiteProps) {
-  const template = websiteTemplateById(props.state.websiteTemplateId);
-  if (!template) return null;
+  /*
+   * Every store renders a template.
+   *
+   * This used to `return null` when the store had no `websiteTemplateId` — or one
+   * pointing at an id we have since retired — and `<TemplateSite>` is the *first*
+   * child of the storefront home, with the review wall as the only sibling after
+   * it. So those stores served a "home page" that was literally just the review
+   * section: no hero, no catalog, nothing. Falls back to the default template,
+   * which is what the storefront's theme resolution and the console's preview
+   * already assume happens.
+   */
+  const template =
+    websiteTemplateById(props.state.websiteTemplateId) ??
+    websiteTemplateById(DEFAULT_WEBSITE_TEMPLATE_ID)!;
 
   // Route each template to its dedicated visual experience
-  const id = props.state.websiteTemplateId || template.id;
+  const id = template.id;
 
   if (id === "noir") {
     return <NoirSite {...props} template={template} />;

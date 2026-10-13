@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { WebsiteTemplateId } from "./theme/templates";
+import type { DiscountCode } from "./discounts";
 
 export type ProductAttribute = {
   label: string;
@@ -136,9 +137,24 @@ export type ShopState = {
   footerTemplateId?: string;
   
   // Store Behaviour
+  /**
+   * Legacy single-method flag. Checkout is no longer driven by it: the buyer
+   * picks a channel from whatever the store has configured (see
+   * `lib/checkout-channels.ts`). Kept because it is stored in every existing
+   * `state_json` blob and still feeds the SEO payment copy.
+   */
   orderMethod: "whatsapp" | "paystack" | "both";
   waTemplate?: string;
   minOrder?: number;
+  /**
+   * Discount codes the merchant has published (`lib/discounts.ts`).
+   *
+   * Public on purpose: the storefront evaluates a code in the buyer's cart, so
+   * the codes have to reach the browser. They are shareable by nature — the
+   * secret worth protecting is never here, which is why redemption counts are
+   * derived from `inquiries`, not from a client-side counter.
+   */
+  discountCodes?: DiscountCode[];
   outOfStockDisplay?: "hide" | "show-sold-out" | "show-badge";
   
   // Business Info

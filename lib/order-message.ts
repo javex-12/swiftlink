@@ -35,6 +35,12 @@ export interface CartOrderMessageInput {
   currency: string;
   storeName: string;
   lines: CartOrderLine[];
+  /**
+   * Discount the buyer applied, in integer minor units. When present the message
+   * shows the subtotal, the money off and the discounted total, so the merchant
+   * and the buyer are looking at the same arithmetic.
+   */
+  discount?: { code: string; amountMinor: number } | null;
 }
 
 /** A URL WhatsApp can actually preview, or null. Never throws. */
@@ -66,6 +72,7 @@ export function buildCartOrderMessage({
   currency,
   storeName,
   lines,
+  discount,
 }: CartOrderMessageInput): string {
   const orderLines = lines || [];
   const parts: string[] = [`*NEW ORDER ${reference}*`, "━━━━━━━━━━", ""];
@@ -80,8 +87,22 @@ export function buildCartOrderMessage({
     parts.push("");
   });
 
+  const subtotal = cartOrderTotal(orderLines);
+  const discountMajor = Math.max(0, (Number(discount?.amountMinor) || 0) / 100);
+  // A discount can never exceed the cart: the merchant must not read a negative
+  // total in the chat and wonder whether the buyer is owed money.
+  const applied = Math.min(discountMajor, subtotal);
+
   parts.push("━━━━━━━━━━");
-  parts.push(`💰 *Total: ${money(currency, cartOrderTotal(orderLines))}*`);
+
+  if (discount?.code && applied > 0) {
+    parts.push(`Subtotal: ${money(currency, subtotal)}`);
+    parts.push(`🎟️ *${discount.code}*: −${money(currency, applied)}`);
+    parts.push(`💰 *Total: ${money(currency, subtotal - applied)}*`);
+  } else {
+    parts.push(`💰 *Total: ${money(currency, subtotal)}*`);
+  }
+
   parts.push("");
   parts.push(`_Store: ${storeName}_`);
 

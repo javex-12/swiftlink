@@ -3,7 +3,18 @@
  */
 
 export type InquiryStatus = "new" | "chatting" | "sold" | "lost";
-export type InquirySource = "whatsapp" | "instagram" | "tiktok" | "direct" | "other";
+/**
+ * The channel an order arrived on. Mirrors the `inquiries_source_check`
+ * constraint — `facebook` was added by migration `20261013120000`, and these
+ * four must stay in step with `lib/checkout-channels.ts`.
+ */
+export type InquirySource =
+  | "whatsapp"
+  | "instagram"
+  | "facebook"
+  | "tiktok"
+  | "direct"
+  | "other";
 
 export interface InquiryRecord {
   id: string;
@@ -15,6 +26,19 @@ export interface InquiryRecord {
   /** Integer minor units (kobo/cents/pence) — matches `product_price_minor`. */
   product_price_minor: number;
   selected_option?: string | null;
+  /**
+   * The prefilled order text the buyer was handed for the channel they chose,
+   * stored verbatim (migration `20261013120000`). This is the order as the
+   * buyer wrote it, so the dashboard does not depend on who else can read the
+   * WhatsApp thread.
+   */
+  message?: string | null;
+  /** Reference shown to the buyer (`SL-XXXX`); one per cart order. */
+  order_ref?: string | null;
+  /** Discount code applied to the order, if any. */
+  discount_code?: string | null;
+  /** Discount in integer minor units, stored once per order. */
+  discount_minor?: number | null;
   /** Integer minor units — matches `final_amount_minor`. */
   final_amount_minor?: number | null;
   sold_at?: string | null;
@@ -119,6 +143,7 @@ export function resolveInquirySource(srcParam?: string | null, referrer?: string
     const s = srcParam.toLowerCase().trim();
     if (s === "whatsapp" || s === "wa") return "whatsapp";
     if (s === "instagram" || s === "ig") return "instagram";
+    if (s === "facebook" || s === "fb") return "facebook";
     if (s === "tiktok" || s === "tt") return "tiktok";
     if (s === "direct") return "direct";
     return "other";
@@ -131,6 +156,11 @@ export function resolveInquirySource(srcParam?: string | null, referrer?: string
     const host = url.hostname.toLowerCase();
     if (host.includes("whatsapp") || host.includes("wa.me")) return "whatsapp";
     if (host.includes("instagram")) return "instagram";
+    // `m.me` and `fb.com` are Facebook's own link hosts, and a tracked ad link
+    // usually lands on one of those rather than on facebook.com itself.
+    if (host.includes("facebook") || host.includes("m.me") || host === "fb.com" || host.endsWith(".fb.com")) {
+      return "facebook";
+    }
     if (host.includes("tiktok")) return "tiktok";
     return "other";
   } catch {

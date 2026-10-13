@@ -9,6 +9,14 @@ export interface StorefrontReviewsProps {
   storeName: string;
   accentColor?: string;
   isDark?: boolean;
+  /**
+   * The visitor owns this store.
+   *
+   * A merchant rating their own shop is not a review, it is an advertisement, so
+   * the posting form is not offered to them. What they get instead is the reply
+   * box under each review — the half of this wall only the store can write.
+   */
+  isOwner?: boolean;
 }
 
 interface StoreReview {
@@ -18,8 +26,19 @@ interface StoreReview {
   reviewer_biz_name?: string | null;
   reviewer_avatar?: string | null;
   guest_name?: string | null;
+  /** Reviews written before the review wall existed only carry these. */
+  author_name?: string | null;
+  author_id?: string | null;
   message: string;
   rating?: number | null;
+  created_at: string;
+}
+
+interface StoreReviewComment {
+  id: string;
+  review_id: string;
+  author_name?: string | null;
+  message: string;
   created_at: string;
 }
 
@@ -34,8 +53,13 @@ export function StorefrontReviews({
   storeName,
   accentColor = "#19C37D",
   isDark = false,
+  isOwner = false,
 }: StorefrontReviewsProps) {
   const [reviews, setReviews] = useState<StoreReview[]>([]);
+  const [comments, setComments] = useState<Record<string, StoreReviewComment[]>>({});
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -69,8 +93,31 @@ export function StorefrontReviews({
 
       if (error) {
         console.error("Error loading reviews:", error.message);
-      } else if (data) {
-        setReviews(data as StoreReview[]);
+        return;
+      }
+
+      const rows = (data || []) as StoreReview[];
+      setReviews(rows);
+
+      // Replies live in their own table. One query covers the whole page of
+      // reviews rather than one per card.
+      if (rows.length > 0) {
+        const { data: commentRows, error: commentError } = await supabase
+          .from("store_review_comments")
+          .select("*")
+          .in("review_id", rows.map((row) => row.id))
+          .order("created_at", { ascending: true });
+
+        if (commentError) {
+          console.error("Error loading review replies:", commentError.message);
+        } else {
+          const grouped: Record<string, StoreReviewComment[]> = {};
+          for (const comment of (commentRows || []) as StoreReviewComment[]) {
+            if (!grouped[comment.review_id]) grouped[comment.review_id] = [];
+            grouped[comment.review_id].push(comment);
+          }
+          setComments(grouped);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch reviews:", err);
@@ -153,6 +200,9 @@ export function StorefrontReviews({
 
         const { error } = await supabase.from("store_reviews").insert({
           store_id: storeId,
+          // `author_name` is NOT NULL on the live table — the insert used to omit
+          // it and was rejected outright (probed against the real schema).
+          author_name: trimmedName,
           guest_name: trimmedName,
           message: trimmedMsg,
           rating: rating || null,
@@ -168,10 +218,12 @@ export function StorefrontReviews({
           return;
         }
 
+        const reviewerName = merchantProfile?.biz_name || "Verified Merchant";
         const { error } = await supabase.from("store_reviews").insert({
           store_id: storeId,
+          author_name: reviewerName,
           reviewer_user_id: currentUser.id,
-          reviewer_biz_name: merchantProfile?.biz_name || "Verified Merchant",
+          reviewer_biz_name: reviewerName,
           reviewer_avatar: merchantProfile?.biz_image || null,
           message: trimmedMsg,
           rating: rating || null,
@@ -199,6 +251,40 @@ export function StorefrontReviews({
     }
   };
 
+  const submitReply = async (review: StoreReview) => {
+    const draft = (replyDrafts[review.id] || "").trim();
+    if (!draft || !isSupabaseConfigured() || replyingTo) return;
+
+    setReplyingTo(review.id);
+    setReplyError(null);
+
+    const { data, error } = await supabase
+      .from("store_review_comments")
+      .insert({
+        review_id: review.id,
+        store_id: storeId,
+        author_name: storeName,
+        author_id: currentUser?.id ?? null,
+        message: draft,
+      })
+      .select()
+      .single();
+
+    setReplyingTo(null);
+
+    if (error || !data) {
+      console.error("Failed to post review reply:", error?.message);
+      setReplyError(error?.message || "Could not post your reply. Please try again.");
+      return;
+    }
+
+    setComments((prev) => ({
+      ...prev,
+      [review.id]: [...(prev[review.id] || []), data as StoreReviewComment],
+    }));
+    setReplyDrafts((prev) => ({ ...prev, [review.id]: "" }));
+  };
+
   const cardBg = isDark ? "bg-[#111111] border-[#222222] text-white" : "bg-white border-gray-100 text-gray-900";
   const subText = isDark ? "text-gray-400" : "text-gray-500";
   const inputBg = isDark
@@ -211,18 +297,22 @@ export function StorefrontReviews({
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Customer Reviews</h2>
           <p className={`text-sm mt-1 ${subText}`}>
-            Feedback and experiences from customers of {storeName}
+            {isOwner
+              ? `What customers say about ${storeName} — reply from here`
+              : `Feedback and experiences from customers of ${storeName}`}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setFormOpen((prev) => !prev)}
-          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl text-white transition-opacity hover:opacity-90 shadow-sm self-start sm:self-auto"
-          style={{ backgroundColor: accentColor }}
-        >
-          {formOpen ? "Close Review Form" : "Leave a Review"}
-        </button>
+        {!isOwner && (
+          <button
+            type="button"
+            onClick={() => setFormOpen((prev) => !prev)}
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl text-white transition-opacity hover:opacity-90 shadow-sm self-start sm:self-auto"
+            style={{ backgroundColor: accentColor }}
+          >
+            {formOpen ? "Close Review Form" : "Leave a Review"}
+          </button>
+        )}
       </div>
 
       {formOpen && (
@@ -408,8 +498,12 @@ export function StorefrontReviews({
               month: "short",
               year: "numeric",
             });
-            const displayName = rev.reviewer_biz_name || rev.guest_name || "Customer";
+            // Rows written before the review wall existed carry `author_name`
+            // instead, and used to render as an anonymous "Customer".
+            const displayName =
+              rev.reviewer_biz_name || rev.guest_name || rev.author_name || "Customer";
             const initial = displayName.charAt(0).toUpperCase() || "C";
+            const replies = comments[rev.id] || [];
 
             return (
               <div key={rev.id} className={`rounded-2xl border p-4 ${cardBg}`}>
@@ -433,7 +527,7 @@ export function StorefrontReviews({
                     <div>
                       <div className="text-sm font-semibold flex items-center gap-1.5">
                         <span>{displayName}</span>
-                        {rev.reviewer_user_id && (
+                        {(rev.reviewer_user_id || rev.author_id) && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             Verified
                           </span>
@@ -453,6 +547,56 @@ export function StorefrontReviews({
                 </div>
 
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{rev.message}</p>
+
+                {replies.length > 0 && (
+                  <div className="mt-4 space-y-2 border-l-2 pl-3" style={{ borderColor: accentColor }}>
+                    {replies.map((reply) => (
+                      <div key={reply.id}>
+                        <div className="text-xs font-semibold">{reply.author_name || "Store"}</div>
+                        <p className="text-xs leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/*
+                  * Replies are gated to a signed-in owner: the comment table's
+                  * insert policy rejects an anonymous author (probed against the
+                  * live schema), so the box must not be offered without a
+                  * session to write with.
+                  */}
+                {isOwner && currentUser && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={replyDrafts[rev.id] || ""}
+                        onChange={(e) =>
+                          setReplyDrafts((prev) => ({ ...prev, [rev.id]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") submitReply(rev);
+                        }}
+                        placeholder="Reply to this review..."
+                        aria-label={`Reply to ${displayName}'s review`}
+                        maxLength={400}
+                        className={`flex-1 px-3 py-2 rounded-xl border text-sm outline-none transition-colors ${inputBg}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => submitReply(rev)}
+                        disabled={replyingTo === rev.id || !(replyDrafts[rev.id] || "").trim()}
+                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-xl text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        {replyingTo === rev.id ? "Posting..." : "Reply"}
+                      </button>
+                    </div>
+                    {replyError && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{replyError}</p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

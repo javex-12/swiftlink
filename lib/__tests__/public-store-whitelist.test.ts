@@ -30,6 +30,9 @@ export const PUBLIC_STORE_STATE_WHITELIST = new Set([
   "orderMethod",
   "waTemplate",
   "minOrder",
+  // Published promo codes are read by the storefront cart, so they are public by
+  // design. Redemption counts are NOT derived from them (see lib/discounts.ts).
+  "discountCodes",
   "outOfStockDisplay",
   "socials",
   "location",

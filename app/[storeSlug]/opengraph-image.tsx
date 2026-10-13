@@ -1,14 +1,68 @@
 import { ImageResponse } from "next/og";
 import { getPublicStoreByHandle } from "@/lib/store-lookup";
-import { SEO_SITE } from "@/lib/seo";
+import { resolveMerchantOgImage, SEO_SITE } from "@/lib/seo";
 
 export const runtime = "nodejs";
+/**
+ * These describe the generated card, which is what this route returns when the
+ * merchant has not uploaded a social image. Their own upload keeps whatever size
+ * they gave it, and `generateMetadata` in `page.tsx` drops the declared
+ * dimensions in that case rather than claiming 1200x630 for something else.
+ */
 export const alt = "Store preview";
 export const size = {
   width: 1200,
   height: 630,
 };
 export const contentType = "image/png";
+
+/**
+ * A link preview is fetched by a crawler with a short patience, and an 8 MB hero
+ * shot is not a preview card, so the merchant's upload is bounded on both ends.
+ * Anything slow, non-image, oversized or broken falls through to the generated
+ * card — an unpublished custom image must never cost the store its preview.
+ */
+const MERCHANT_IMAGE_TIMEOUT_MS = 4000;
+const MAX_MERCHANT_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/*
+ * Why proxy instead of pointing `og:image` straight at the uploaded file:
+ * Supabase Storage answers every public object with `x-robots-tag: none`
+ * (verified against the live bucket), which is enough for Facebook and WhatsApp
+ * to discard the image. Streaming the bytes from our own origin drops that
+ * header, pins the content type, and leaves a single URL shape to debug.
+ */
+async function merchantImageResponse(url: string): Promise<Response | null> {
+  try {
+    const upstream = await fetch(url, {
+      cache: "no-store",
+      redirect: "follow",
+      signal: AbortSignal.timeout(MERCHANT_IMAGE_TIMEOUT_MS),
+    });
+    if (!upstream.ok) return null;
+
+    const contentType = (upstream.headers.get("content-type") || "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    if (!contentType.startsWith("image/")) return null;
+
+    const bytes = await upstream.arrayBuffer();
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_MERCHANT_IMAGE_BYTES) return null;
+
+    return new Response(bytes, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": String(bytes.byteLength),
+        // The `?v=` token is the store's last write, so a replaced image is only
+        // ever stale until the merchant saves the store again.
+        "Cache-Control": "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800",
+      },
+    });
+  } catch {
+    return null;
+  }
+}
 
 export default async function Image({
   params,
@@ -18,8 +72,17 @@ export default async function Image({
   const { storeSlug } = await params;
   const store = await getPublicStoreByHandle(storeSlug);
 
-  const bizName = store?.bizName || "SwiftLink Store";
   const state = store?.state || {};
+
+  // The image the merchant set in SEO settings is the preview they expect to
+  // see, so it wins over the generated card whenever it can be served.
+  const merchantOgImage = resolveMerchantOgImage(state);
+  if (merchantOgImage) {
+    const response = await merchantImageResponse(merchantOgImage);
+    if (response) return response;
+  }
+
+  const bizName = store?.bizName || "SwiftLink Store";
   const tagline = state.tagline || state.bio || "Order directly on WhatsApp";
   const location = state.location || "";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;

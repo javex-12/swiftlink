@@ -20,6 +20,8 @@ import {
 } from "@/lib/plans";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { DEFAULT_WA_TEMPLATE, renderWhatsAppOrderMessage, ALLOWED_TEMPLATE_VARIABLES, validateWhatsAppTemplate } from "@/lib/whatsapp-template";
+import { DiscountCodesSection } from "@/components/editor/DiscountCodesSection";
+import { sanitizeDiscountCodes } from "@/lib/discounts";
 import { TemplateFrame } from "@/components/storefront/template-frames";
 import { TemplatePreviewModal } from "@/components/storefront/TemplatePreviewModal";
 import { TemplateSite } from "@/components/storefront/template-sites";
@@ -1086,6 +1088,25 @@ export function StoreEditorV2() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-medium text-[#E8F1EC]">Facebook Handle</label>
+                  <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
+                    <span className="text-xs text-[#9DB3A8]">@</span>
+                    <input
+                      type="text"
+                      value={localState.socials?.facebook || ""}
+                      onChange={(e) =>
+                        updateField("socials", {
+                          ...localState.socials,
+                          facebook: e.target.value.replace(/^@/, ""),
+                        })
+                      }
+                      placeholder="yourbrand or facebook.com/yourbrand"
+                      className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-xs font-medium text-[#E8F1EC]">X / Twitter Handle</label>
                   <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
                     <span className="text-xs text-[#9DB3A8]">@</span>
@@ -1119,6 +1140,14 @@ export function StoreEditorV2() {
                 </div>
               </div>
             </section>
+
+            {/* Section: Discount codes */}
+            <DiscountCodesSection
+              codes={sanitizeDiscountCodes(localState.discountCodes)}
+              currency={localState.currency || "₦"}
+              storeId={localState.id ?? null}
+              onChange={(next) => updateField("discountCodes", next)}
+            />
 
             {/* Section: Frequently Asked Questions (FAQ) */}
             <section

@@ -3,7 +3,8 @@
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { resolveStorefrontTheme } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, CreditCard, MessageSquare, XCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ShieldCheck, Truck, XCircle } from "lucide-react";
+import { CheckoutChannels, formatMinor } from "@/components/storefront/CheckoutChannels";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
@@ -18,7 +19,11 @@ export function CartView() {
     state,
     cart,
     updateCart,
-    sendWhatsAppOrder,
+    placeOrder,
+    checkoutChannels,
+    cartTotals,
+    applyDiscountCode,
+    clearDiscount,
     cartItemCount,
     addToast,
   } = useSwiftLink();
@@ -33,7 +38,6 @@ export function CartView() {
     return { ...p, quantity: q };
   }).filter(Boolean) as any[];
 
-  const total = cartLines.reduce((acc, p) => acc + p.price * p.quantity, 0);
 
   const returnUrl = useMemo(() => {
     if (shopId) return `/?shop=${shopId}`;
@@ -121,30 +125,47 @@ export function CartView() {
                ))}
             </div>
 
-            {/* Simple Total */}
+            {/*
+              Checkout. The buyer picks the channel they actually use — the store
+              may be on WhatsApp, Instagram, Facebook, TikTok or any mix — and any
+              discount code is applied here, before the order is composed, so the
+              total the merchant reads in the chat is the total the cart shows.
+            */}
             <div className="pt-12 border-t border-black/5 dark:border-white/5">
-               <div className="flex flex-col items-end gap-6">
+               <div className="flex flex-col gap-6">
                   <div className="text-right">
                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block mb-2">Estimated Total</span>
                      <span className="text-4xl md:text-6xl font-black italic tracking-tighter dark:text-white">
-                        {state.currency}{total.toLocaleString()}
+                        {formatMinor(cartTotals.totalMinor, state.currency)}
                      </span>
                   </div>
 
-                  <button 
-                     onClick={sendWhatsAppOrder}
-                     disabled={!storeAcceptingOrders}
-                     className={cn(
-                        "w-full md:w-auto px-12 py-6 rounded-full font-black text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 shadow-3xl transition-all active:scale-95",
-                        storeAcceptingOrders ? "bg-black dark:bg-white text-white dark:text-black hover:brightness-110" : "bg-slate-100 dark:bg-zinc-900 text-slate-400 cursor-not-allowed"
-                     )}
-                  >
-                     <MessageSquare size={16} fill="currentColor" />
-                     {storeAcceptingOrders ? "Confirm Selection" : "Store Paused"}
-                  </button>
-                  
+                  <div className="w-full md:max-w-md md:self-end">
+                     <CheckoutChannels
+                        channels={checkoutChannels}
+                        totals={cartTotals}
+                        currency={state.currency}
+                        acceptingOrders={storeAcceptingOrders}
+                        accent={accentStr}
+                        // The cart page is the storefront's own chrome: it wears the
+                        // app's light/dark surfaces, not a template's.
+                        tone="console"
+                        onSelect={(channelId) => {
+                           const placed = placeOrder(channelId);
+                           if (placed && !placed.copied && !placed.channel.prefilled) {
+                              addToast(
+                                 `Copy your order from the bag and paste it into ${placed.channel.label}.`,
+                                 "info",
+                              );
+                           }
+                        }}
+                        onApplyCode={applyDiscountCode}
+                        onClearCode={clearDiscount}
+                     />
+                  </div>
+
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] text-center w-full">
-                     Logistics & payment will be finalized on WhatsApp
+                     Delivery and payment are agreed with the store in the chat you choose
                   </p>
                </div>
             </div>

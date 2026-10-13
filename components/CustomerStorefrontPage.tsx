@@ -14,9 +14,21 @@ import type { ShopState } from "@/lib/schema";
 export function CustomerStorefrontPage({
   shopId,
   initialState = null,
+  viewerIsOwner = false,
 }: {
   shopId: string;
   initialState?: ShopState | null;
+  /**
+   * Set by the server route when the signed-in account owns this store. It is a
+   * boolean on purpose: the owner id it was derived from stays on the server.
+   */
+  viewerIsOwner?: boolean;
 }) {
-  return <CustomerStorefront shopId={shopId} initialState={initialState} />;
+  return (
+    <CustomerStorefront
+      shopId={shopId}
+      initialState={initialState}
+      viewerIsOwner={viewerIsOwner}
+    />
+  );
 }

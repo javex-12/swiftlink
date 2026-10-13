@@ -1,3 +1,4 @@
+import { sanitizeDiscountCodes } from "./discounts";
 import { ShopState, StorefrontTheme } from "./schema";
 
 export * from "./schema";
@@ -57,6 +58,7 @@ export const defaultShopState = (): ShopState => ({
   waTemplate: "Hi, I would like to order:\n{cart_details}\n\nTotal: {total}",
   minOrder: 0,
   outOfStockDisplay: "show-sold-out",
+  discountCodes: [],
 
   categories: [],
   notifications: [],
@@ -89,6 +91,10 @@ export function normalizeShopState(input?: Partial<ShopState> | null): ShopState
   next.notifications = Array.isArray(next.notifications) ? next.notifications : [];
   next.testimonials = Array.isArray(next.testimonials) ? next.testimonials : [];
   next.socials = next.socials || {};
+  // Codes come out of a shared JSON blob, so anything malformed (an older
+  // schema, a hand-edited blob) is dropped here rather than crashing a cart at
+  // checkout time.
+  next.discountCodes = sanitizeDiscountCodes(next.discountCodes);
   next.sections =
     Array.isArray(next.sections) && next.sections.length > 0
       ? next.sections.map((section, order) => ({

@@ -37,7 +37,16 @@ import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draf
 import { deleteStoreDraft, storeDraftKey, writeStoreDraft } from "@/lib/store-drafts";
 import { recordOrderIntent, toMinorUnits, type OrderIntentItem } from "@/lib/inquiry-write";
 import { buildCartOrderMessage, type CartOrderLine } from "@/lib/order-message";
-import { getCleanWhatsAppDigits } from "@/lib/phone";
+import {
+  availableCheckoutChannels,
+  channelLabel,
+  checkoutHref,
+  copyOrderText,
+  type CheckoutChannel,
+  type CheckoutChannelId,
+  type PlacedOrder,
+} from "@/lib/checkout-channels";
+import { cartTotalsFrom, evaluateDiscount, sanitizeDiscountCodes, type CartTotals } from "@/lib/discounts";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
@@ -125,7 +134,35 @@ type SwiftLinkContextValue = {
   setPrimaryImage: (productId: number, index: number) => void;
   updateCart: (id: number, delta: number) => void;
   toggleCartDrawer: (open: boolean) => void;
+  /**
+   * Send the live cart to one of the store's channels.
+   *
+   * Returns what happened so the caller can tell the buyer which channel opened
+   * and, on a channel that cannot prefill a message, show them the order text.
+   * Null means the order was blocked — empty cart, paused store, or no contact
+   * detail for that channel — and a toast already says why.
+   */
+  placeOrder: (
+    channelId: CheckoutChannelId,
+    overrideStoreState?: ShopState | unknown,
+  ) => PlacedOrder | null;
+  /** The WhatsApp-only path, kept for callers that mean exactly that. */
   sendWhatsAppOrder: (overrideStoreState?: ShopState | unknown) => void;
+  /** Channels this store can take an order on (see `lib/checkout-channels.ts`). */
+  checkoutChannels: CheckoutChannel[];
+  /** Money for the live cart, discount included — integer minor units. */
+  cartTotals: CartTotals;
+  /** Discount code currently in force, or null. */
+  appliedDiscountCode: string | null;
+  /**
+   * Validate and apply a buyer-typed code against a store. Refusals come back to
+   * the caller rather than into a toast, because the cart shows them inline.
+   */
+  applyDiscountCode: (
+    raw: string,
+    overrideStoreState?: ShopState | unknown,
+  ) => { ok: boolean; error?: string };
+  clearDiscount: () => void;
   cartItemCount: number;
   isSyncing: boolean;
   toasts: any[];
@@ -160,6 +197,11 @@ export function SwiftLinkProvider({
   const [stores, setStores] = useState<ShopState[]>([]);
   const [drafts, setDrafts] = useState<Record<string, EditorDraft>>({});
   const [cart, setCart] = useState<CartMap>({});
+  /**
+   * The discount code the buyer has applied, stored normalized and re-evaluated
+   * against the live cart rather than frozen as an amount — see `cartTotals`.
+   */
+  const [discountCode, setDiscountCode] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   const fetchStores = useCallback(async (userId: string) => {
@@ -1442,63 +1484,172 @@ export function SwiftLinkProvider({
     setCartOpen(open);
   }, []);
 
-  const sendWhatsAppOrder = useCallback((overrideStoreState?: unknown) => {
-    const isShopState = overrideStoreState && typeof overrideStoreState === "object" && "bizName" in overrideStoreState;
-    const activeShop = (isShopState ? overrideStoreState : state) as ShopState;
-    if (Object.keys(cart).length === 0) {
-      addToast("Your cart is empty.", "error");
-      return;
-    }
-    const phone = getCleanWhatsAppDigits(activeShop.phone);
+  const placeOrder = useCallback(
+    (channelId: CheckoutChannelId, overrideStoreState?: unknown): PlacedOrder | null => {
+      const isShopState = overrideStoreState && typeof overrideStoreState === "object" && "bizName" in overrideStoreState;
+      const activeShop = (isShopState ? overrideStoreState : state) as ShopState;
 
-    if (!phone) {
-      addToast("This store has no WhatsApp number configured yet.", "error");
-      return;
-    }
+      if (Object.keys(cart).length === 0) {
+        addToast("Your cart is empty.", "error");
+        return null;
+      }
 
-    if (activeShop.isLive === false) {
-      addToast("This store is not accepting orders right now.", "error");
-      return;
-    }
-    const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
-    const lines: CartOrderLine[] = [];
-    const intents: OrderIntentItem[] = [];
+      if (activeShop.isLive === false) {
+        addToast("This store is not accepting orders right now.", "error");
+        return null;
+      }
+
+      const channel = availableCheckoutChannels({
+        phone: activeShop.phone,
+        socials: activeShop.socials,
+      }).find((entry) => entry.id === channelId);
+
+      if (!channel) {
+        addToast(
+          `This store has no ${channelLabel(channelId)} contact set up yet. Try another way to order.`,
+          "error",
+        );
+        return null;
+      }
+
+      const ref = "SL-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+      const lines: CartOrderLine[] = [];
+      const intents: OrderIntentItem[] = [];
+      let subtotalMinor = 0;
+      Object.entries(cart).forEach(([id, q]) => {
+        const p = activeShop.products.find((x) => x.id === Number(id));
+        if (!p) return;
+        subtotalMinor += toMinorUnits(p.price) * q;
+        lines.push({
+          productId: p.id,
+          name: p.name,
+          quantity: q,
+          unitPrice: p.price,
+          imageUrl: p.image || p.images?.[0] || null,
+        });
+        intents.push({
+          productId: p.id,
+          productName: p.name,
+          unitPriceMinor: toMinorUnits(p.price),
+          quantity: q,
+        });
+      });
+
+      // Re-evaluate against the store being ordered from rather than against
+      // whatever `state` holds: the console can preview a storefront whose
+      // codes are not the loaded store's.
+      const evaluation = discountCode
+        ? evaluateDiscount(sanitizeDiscountCodes(activeShop.discountCodes), {
+            code: discountCode,
+            subtotalMinor,
+            currencySymbol: activeShop.currency,
+          })
+        : null;
+      const appliedDiscount =
+        evaluation?.ok && evaluation.discountMinor > 0
+          ? { code: evaluation.code, amountMinor: evaluation.discountMinor }
+          : null;
+
+      const msg = buildCartOrderMessage({
+        reference: ref,
+        currency: activeShop.currency,
+        storeName: activeShop.bizName,
+        lines,
+        discount: appliedDiscount,
+      });
+
+      // Must stay synchronous inside the click handler or the popup blocker eats
+      // it — everything after this can be fire-and-forget.
+      window.open(checkoutHref(channel, msg));
+
+      const copied = channel.prefilled ? false : copyOrderText(msg);
+
+      void recordOrderIntent({
+        storeId: activeShop.id,
+        currency: activeShop.currency,
+        srcParam: inquirySrc,
+        channel: channelId,
+        orderRef: ref,
+        message: msg,
+        discount: appliedDiscount,
+        items: intents,
+      });
+
+      return { channel, message: msg, copied };
+    },
+    [cart, state, addToast, inquirySrc, discountCode],
+  );
+
+  const sendWhatsAppOrder = useCallback(
+    (overrideStoreState?: unknown) => {
+      placeOrder("whatsapp", overrideStoreState);
+    },
+    [placeOrder],
+  );
+
+  const checkoutChannels = useMemo(
+    () => availableCheckoutChannels({ phone: state.phone, socials: state.socials }),
+    [state.phone, state.socials],
+  );
+
+  const cartSubtotalMinor = useMemo(() => {
+    let subtotal = 0;
     Object.entries(cart).forEach(([id, q]) => {
-      const p = activeShop.products.find((x) => x.id === Number(id));
-      if (!p) return;
-      lines.push({
-        productId: p.id,
-        name: p.name,
-        quantity: q,
-        unitPrice: p.price,
-        imageUrl: p.image || p.images?.[0] || null,
+      const p = state.products.find((x) => x.id === Number(id));
+      if (p) subtotal += toMinorUnits(p.price) * q;
+    });
+    return subtotal;
+  }, [cart, state.products]);
+
+  // Kept as the normalized code rather than a frozen amount: the cart can change
+  // after the code is applied, and the discount has to follow it (or stop
+  // applying if the cart drops below the code's minimum).
+  const discountEvaluation = useMemo(
+    () =>
+      discountCode
+        ? evaluateDiscount(sanitizeDiscountCodes(state.discountCodes), {
+            code: discountCode,
+            subtotalMinor: cartSubtotalMinor,
+            currencySymbol: state.currency,
+          })
+        : null,
+    [discountCode, state.discountCodes, state.currency, cartSubtotalMinor],
+  );
+
+  const cartTotals = useMemo(
+    () => cartTotalsFrom(cartSubtotalMinor, discountEvaluation),
+    [cartSubtotalMinor, discountEvaluation],
+  );
+
+  const applyDiscountCode = useCallback(
+    (raw: string, overrideStoreState?: unknown) => {
+      const isShopState = overrideStoreState && typeof overrideStoreState === "object" && "bizName" in overrideStoreState;
+      const activeShop = (isShopState ? overrideStoreState : state) as ShopState;
+
+      // Both the codes and the prices come from the store the buyer is looking at:
+      // on a public storefront that is the server-injected shop, not whatever the
+      // console happens to have open.
+      const subtotalMinor = Object.entries(cart).reduce((subtotal, [id, qty]) => {
+        const product = activeShop.products.find((entry) => entry.id === Number(id));
+        return product ? subtotal + toMinorUnits(product.price) * qty : subtotal;
+      }, 0);
+
+      const result = evaluateDiscount(sanitizeDiscountCodes(activeShop.discountCodes), {
+        code: raw,
+        subtotalMinor,
+        currencySymbol: activeShop.currency,
       });
-      intents.push({
-        productId: p.id,
-        productName: p.name,
-        unitPriceMinor: toMinorUnits(p.price),
-        quantity: q,
-      });
-    });
+      // A refused code leaves any code already in force alone: a typo must not
+      // silently cost the buyer the discount they had.
+      if (!result.ok) return { ok: false, error: result.error };
+      setDiscountCode(result.code);
+      addToast(`${result.code} applied.`, "success");
+      return { ok: true };
+    },
+    [state, cart, addToast],
+  );
 
-    const msg = buildCartOrderMessage({
-      reference: ref,
-      currency: activeShop.currency,
-      storeName: activeShop.bizName,
-      lines,
-    });
-
-    window.open(
-      `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,
-    );
-
-    void recordOrderIntent({
-      storeId: activeShop.id,
-      currency: activeShop.currency,
-      srcParam: inquirySrc,
-      items: intents,
-    });
-  }, [cart, state, addToast, inquirySrc]);
+  const clearDiscount = useCallback(() => setDiscountCode(null), []);
 
   const cartItemCount = useMemo(
     () => Object.values(cart).reduce((a, b) => a + b, 0),
@@ -1506,7 +1657,11 @@ export function SwiftLinkProvider({
   );
 
   useEffect(() => {
-    if (cartItemCount === 0) setCartOpen(false);
+    if (cartItemCount === 0) {
+      setCartOpen(false);
+      // An empty bag cannot carry a discount, so the code goes with it.
+      setDiscountCode(null);
+    }
   }, [cartItemCount]);
 
   const value: SwiftLinkContextValue = {
@@ -1551,7 +1706,13 @@ export function SwiftLinkProvider({
     handleImageUpload,
     updateCart,
     toggleCartDrawer,
+    placeOrder,
     sendWhatsAppOrder,
+    checkoutChannels,
+    cartTotals,
+    appliedDiscountCode: cartTotals.appliedCode,
+    applyDiscountCode,
+    clearDiscount,
     cartItemCount,
     addProductImage,
     removeProductImage,

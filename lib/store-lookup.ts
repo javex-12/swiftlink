@@ -38,6 +38,13 @@ export type PublicStore = {
   id: string;
   handle: string;
   bizName: string;
+  /**
+   * The account that owns this store, for the server-side "is the viewer the
+   * owner?" check. Server-only: the public storefront projection never carries
+   * an owner id (`lib/__tests__/public-store-whitelist.test.ts`), so this field
+   * must stay on the server and only ever leave it as a boolean.
+   */
+  ownerId: string | null;
   /** Unix epoch ms of last write — used as a cache-busting token for OG image URLs. */
   updatedAt: number;
   /** Decoded `state_json`, for metadata and for the storefront to render. */
@@ -61,7 +68,7 @@ export async function getPublicStoreByHandle(
   try {
     const { data, error } = await supabase
       .from("stores")
-      .select("id, biz_name, store_username, account_status, state_json, updated_at")
+      .select("id, owner_id, biz_name, store_username, account_status, state_json, updated_at")
       .ilike("store_username", handle)
       .maybeSingle();
 
@@ -72,6 +79,7 @@ export async function getPublicStoreByHandle(
     return {
       id: data.id as string,
       handle,
+      ownerId: (data.owner_id as string) ?? null,
       bizName: (state.bizName || data.biz_name || "SwiftLink Store") as string,
       updatedAt: data.updated_at ? new Date(data.updated_at as string).getTime() : Date.now(),
       state,

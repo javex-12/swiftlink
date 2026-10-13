@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { formatMoney } from "@/lib/currency";
+import { inquirySourceLabel } from "@/lib/checkout-channels";
+import { normalizeDiscountCode } from "@/lib/discounts";
 import { 
   MousePointer2, MessageSquare, 
-  BarChart3, Package, Activity, RefreshCw, BadgeCheck
+  BarChart3, Package, Activity, RefreshCw, BadgeCheck, TicketPercent
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,12 @@ type InquiryRow = {
   status: string;
   final_amount_minor: number | null;
   created_at: string;
+  /** Which channel the order came in on (`inquiries_source_check`). */
+  source: string | null;
+  /** Groups the product lines of one cart order; null on pre-migration rows. */
+  order_ref: string | null;
+  discount_code: string | null;
+  discount_minor: number | null;
 };
 
 type StatRow = {
@@ -56,9 +64,52 @@ type ProductRow = {
   inquiries: number;
 };
 
+/** One channel's performance over the reporting window. */
+type ChannelRow = {
+  source: string;
+  label: string;
+  /** Distinct `order_ref`s — one cart order can be several inquiry rows. */
+  orders: number;
+  inquiries: number;
+  sold: number;
+  revenueMinor: number;
+  /** Orders in the last half of the window vs. the half before it. */
+  recent: number;
+  previous: number;
+};
+
+/** One discount code's redemptions. */
+type DiscountRow = {
+  code: string;
+  orders: number;
+  givenMinor: number;
+};
+
+/**
+ * Half the window, used for the only honest comparison available: this period
+ * against the one before it, inside the data we already fetch.
+ */
+const GROWTH_DAYS = RANGE_DAYS / 2;
+
 /** Local YYYY-MM-DD, so buckets line up with how the trigger stores `day`. */
 function toDayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Change over the two halves of the window, or null when there is nothing to
+ * compare. Deliberately coarse: an arrow on a three-order channel is noise, so
+ * "new" is reported instead of a percentage computed from a zero baseline.
+ */
+function growthLabel(channel: ChannelRow): { text: string; positive: boolean } | null {
+  if (channel.recent === 0 && channel.previous === 0) return null;
+  if (channel.previous === 0) return { text: "new", positive: true };
+  const change = ((channel.recent - channel.previous) / channel.previous) * 100;
+  if (Math.abs(change) < 5) return { text: "flat", positive: true };
+  return {
+    text: `${change > 0 ? "▲" : "▼"} ${Math.abs(Math.round(change))}%`,
+    positive: change > 0,
+  };
 }
 
 export function AnalyticsView() {
@@ -98,7 +149,9 @@ export function AnalyticsView() {
     const [inquiryRes, statRes, tapRes] = await Promise.all([
       supabase
         .from("inquiries")
-        .select("id, product_id, product_name, status, final_amount_minor, created_at")
+        .select(
+          "id, product_id, product_name, status, final_amount_minor, created_at, source, order_ref, discount_code, discount_minor",
+        )
         .eq("store_id", storeId)
         .gte("created_at", since)
         .order("created_at", { ascending: false }),
@@ -182,10 +235,78 @@ export function AnalyticsView() {
 
     const conversion = inquiries.length > 0 ? (sold.length / inquiries.length) * 100 : 0;
 
-    const bySource = statRows.reduce<Record<string, number>>((acc, row) => {
+    const tapsBySource = statRows.reduce<Record<string, number>>((acc, row) => {
       acc[row.source] = (acc[row.source] ?? 0) + (row.product_taps ?? 0);
       return acc;
     }, {});
+
+    /**
+     * Per-channel performance.
+     *
+     * Built from `inquiries.source` rather than only from the daily-stat taps:
+     * taps say who *looked*, inquiries say who *ordered*, and only inquiries
+     * carry the sale — which is the number worth ranking channels by.
+     */
+    const now = Date.now();
+    const cutoff = now - GROWTH_DAYS * 86_400_000;
+    const channelTotals = new Map<string, ChannelRow & { orderKeys: Set<string> }>();
+
+    for (const row of inquiries) {
+      const source = row.source || "direct";
+      const entry =
+        channelTotals.get(source) ??
+        {
+          source,
+          label: inquirySourceLabel(source),
+          orders: 0,
+          orderKeys: new Set<string>(),
+          inquiries: 0,
+          sold: 0,
+          revenueMinor: 0,
+          recent: 0,
+          previous: 0,
+        };
+
+      entry.inquiries += 1;
+      // Rows written before `order_ref` existed count as one order each.
+      entry.orderKeys.add(row.order_ref || row.id);
+      if (row.status === "sold") {
+        entry.sold += 1;
+        entry.revenueMinor += row.final_amount_minor ?? 0;
+      }
+
+      const created = new Date(row.created_at).getTime();
+      if (Number.isFinite(created)) {
+        if (created >= cutoff) entry.recent += 1;
+        else entry.previous += 1;
+      }
+
+      channelTotals.set(source, entry);
+    }
+
+    const channels: ChannelRow[] = [...channelTotals.values()]
+      .map(({ orderKeys, ...rest }) => ({ ...rest, orders: orderKeys.size }))
+      .sort((a, b) => b.orders - a.orders || b.inquiries - a.inquiries);
+
+    /**
+     * Discount redemptions.
+     *
+     * `discount_minor` is written once per order (on its first line), so it is
+     * summed directly; the order count is distinct `order_ref`s, never rows.
+     */
+    const discountTotals = new Map<string, DiscountRow & { orderKeys: Set<string> }>();
+    for (const row of inquiries) {
+      const code = normalizeDiscountCode(row.discount_code);
+      if (!code) continue;
+      const entry =
+        discountTotals.get(code) ?? { code, orders: 0, orderKeys: new Set<string>(), givenMinor: 0 };
+      entry.orderKeys.add(row.order_ref || row.id);
+      entry.givenMinor += row.discount_minor ?? 0;
+      discountTotals.set(code, entry);
+    }
+    const discounts: DiscountRow[] = [...discountTotals.values()]
+      .map(({ orderKeys, ...rest }) => ({ ...rest, orders: orderKeys.size }))
+      .sort((a, b) => b.orders - a.orders || b.givenMinor - a.givenMinor);
 
     return {
       inquiryCount: inquiries.length,
@@ -195,16 +316,20 @@ export function AnalyticsView() {
       perDay: [...perDay.entries()],
       topProducts,
       conversion,
-      bySource,
+      tapsBySource,
+      channels,
+      discounts,
+      // Store orders (distinct carts), which is what a merchant counts as "an order".
+      orderCount: new Set(inquiries.map((row) => row.order_ref || row.id)).size,
       hasData: inquiries.length > 0,
     };
   }, [inquiries, statRows, tapRows]);
 
   const tiles = [
     {
-      label: "WhatsApp Inquiries",
-      value: metrics.inquiryCount.toLocaleString(),
-      hint: `Last ${RANGE_DAYS} days`,
+      label: "Orders",
+      value: metrics.orderCount.toLocaleString(),
+      hint: `All channels · last ${RANGE_DAYS} days`,
       icon: MessageSquare,
       color: "text-[#19C37D]",
     },
@@ -321,7 +446,8 @@ export function AnalyticsView() {
                 <BarChart3 size={36} className="opacity-30" />
                 <p className="text-xs">No inquiries recorded in this period</p>
                 <p className="text-[10px] max-w-xs text-center">
-                  Every tap on &ldquo;Order on WhatsApp&rdquo; appears here automatically.
+                  Every order from WhatsApp, Instagram, Facebook or TikTok appears here
+                  automatically.
                 </p>
               </div>
             )}
@@ -331,30 +457,52 @@ export function AnalyticsView() {
         {/* Channel breakdown — derived from the source column the RPC records */}
         <div className="space-y-6">
           <div className="bg-[#111C18] p-5 sm:p-6 rounded-[18px] border border-[#1E2D27] flex flex-col h-full">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8] mb-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8] mb-1">
               Where Buyers Came From
             </h3>
-            {Object.keys(metrics.bySource).length > 0 ? (
+            <p className="mb-5 text-[10px] text-[#9DB3A8]">
+              Orders per channel · vs the {GROWTH_DAYS} days before
+            </p>
+            {metrics.channels.length > 0 ? (
               <div className="space-y-4">
-                {Object.entries(metrics.bySource)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([source, count]) => {
-                    const share = metrics.productTaps > 0 ? (count / metrics.productTaps) * 100 : 0;
-                    return (
-                      <div key={source} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-medium text-[#E8F1EC]">
-                          <span className="capitalize">{source}</span>
-                          <span className="text-[#9DB3A8] tabular-nums">{count}</span>
-                        </div>
-                        <div className="h-1.5 bg-[#0A1210] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#19C37D] rounded-full" style={{ width: `${share}%` }} />
-                        </div>
+                {metrics.channels.map((channel) => {
+                  const share =
+                    metrics.orderCount > 0 ? (channel.orders / metrics.orderCount) * 100 : 0;
+                  const growth = growthLabel(channel);
+                  const taps = metrics.tapsBySource[channel.source] ?? 0;
+                  return (
+                    <div key={channel.source} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-medium text-[#E8F1EC]">
+                        <span>{channel.label}</span>
+                        <span className="text-[#9DB3A8] tabular-nums">
+                          {channel.orders} {channel.orders === 1 ? "order" : "orders"}
+                        </span>
                       </div>
-                    );
-                  })}
+                      <div className="h-1.5 bg-[#0A1210] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#19C37D] rounded-full" style={{ width: `${share}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-[#9DB3A8]">
+                        <span>
+                          {channel.sold} sold
+                          {channel.revenueMinor > 0
+                            ? ` · ${formatMoney(channel.revenueMinor, currency)}`
+                            : ""}
+                          {taps > 0 ? ` · ${taps} taps` : ""}
+                        </span>
+                        {growth && (
+                          <span className={growth.positive ? "text-[#19C37D]" : "text-[#FF8A8A]"}>
+                            {growth.text}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-xs text-[#9DB3A8]">No channel data yet.</p>
+              <p className="text-xs text-[#9DB3A8]">
+                No orders yet. Share your store link and every channel a buyer picks is counted here.
+              </p>
             )}
 
             <div className="mt-auto pt-6 border-t border-[#1E2D27]">
@@ -364,12 +512,46 @@ export function AnalyticsView() {
               </div>
               <p className="text-xs text-[#9DB3A8] leading-relaxed">
                 {metrics.hasData
-                  ? `${metrics.inquiryCount} inquiries and ${metrics.soldCount} confirmed sales in the last ${RANGE_DAYS} days.`
-                  : "Share your storefront link on WhatsApp and Instagram to start receiving orders."}
+                  ? `${metrics.orderCount} orders (${metrics.inquiryCount} inquiries) and ${metrics.soldCount} confirmed sales in the last ${RANGE_DAYS} days.`
+                  : "Share your storefront link on WhatsApp, Instagram, Facebook or TikTok to start receiving orders."}
               </p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Discount codes — what they cost and how many orders they brought back */}
+      <div className="bg-[#111C18] p-5 sm:p-6 rounded-[18px] border border-[#1E2D27] shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-[#E8F1EC]">Discount codes</h3>
+            <p className="text-xs text-[#9DB3A8] mt-0.5">
+              Redemptions from orders buyers placed with a code, last {RANGE_DAYS} days.
+            </p>
+          </div>
+          <TicketPercent size={18} className="text-[#19C37D]" />
+        </div>
+
+        {metrics.discounts.length > 0 ? (
+          <div className="mt-4 space-y-3">
+            {metrics.discounts.map((entry) => (
+              <div key={entry.code} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-mono font-semibold tracking-wide text-[#E8F1EC]">
+                  {entry.code}
+                </span>
+                <span className="text-[#9DB3A8] tabular-nums">
+                  {entry.orders} {entry.orders === 1 ? "order" : "orders"} · −
+                  {formatMoney(entry.givenMinor, currency)} given
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-[#9DB3A8]">
+            No code has been used yet. Create one in your store settings — a discount is the cheapest
+            reason for a customer to come back.
+          </p>
+        )}
       </div>
 
       {/* Product Performance */}

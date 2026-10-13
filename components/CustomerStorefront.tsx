@@ -31,12 +31,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
 import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
+import { viewerOwnsStore } from "@/lib/store-ownership";
 import { isProductVisible } from "@/lib/plans";
 import { TemplateSite } from "@/components/storefront/template-sites";
 import { StorefrontReviews } from "@/components/storefront/StorefrontReviews";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn, isDarkColor } from "@/lib/utils";
 import { supabase } from "@/lib/supabase-client";
+import { CheckoutChannels } from "@/components/storefront/CheckoutChannels";
+import {
+  availableCheckoutChannels,
+  checkoutFollowUp,
+  copyOrderText,
+  type CheckoutChannelId,
+  type PlacedOrder,
+} from "@/lib/checkout-channels";
+import { cartTotalsFrom, evaluateDiscount, sanitizeDiscountCodes } from "@/lib/discounts";
+import { toMinorUnits } from "@/lib/inquiry-write";
 import dynamic from "next/dynamic";
 
 const ThreeDBackground = dynamic(
@@ -658,6 +669,7 @@ export function CustomerStorefront({
   overrideState = null,
   initialState = null,
   preview = false,
+  viewerIsOwner = false,
 }: {
   shopId?: string;
   isEditable?: boolean;
@@ -683,17 +695,34 @@ export function CustomerStorefront({
    * is a look at a site, not a visit to it.
    */
   preview?: boolean;
+  /**
+   * The server route compared the session against this store's `owner_id`, so the
+   * first paint already knows the merchant is looking at their own shop.
+   */
+  viewerIsOwner?: boolean;
 }) {
   const { 
       state, 
       cart: liveCart, 
       updateCart: liveUpdateCart, 
       cartItemCount: liveCartItemCount,
-      sendWhatsAppOrder,
+      placeOrder,
+      appliedDiscountCode,
+      applyDiscountCode,
+      clearDiscount,
       logEvent,
       addToast,
-      user
+      user,
+      stores
   } = useSwiftLink();
+
+  /**
+   * Which channel the buyer just checked out on, for the success screen.
+   *
+   * It matters because only WhatsApp can prefill the message: on the other three
+   * the buyer has to paste the order we copied, and the screen says so.
+   */
+  const [placedOrder, setPlacedOrder] = useState<PlacedOrder | null>(null);
 
   const [publicState, setPublicState] = useState<ShopState | null>(initialState);
   /**
@@ -703,7 +732,25 @@ export function CustomerStorefront({
    */
   const effectiveState = overrideState ?? (shopId ? publicState : state);
   
-  const isStoreOwner = isEditable || (user && effectiveState && effectiveState.ownerId === user.id);
+  /**
+   * Ownership on the *public* storefront.
+   *
+   * The public store projection deliberately drops `ownerId`
+   * (lib/__tests__/public-store-whitelist.test.ts), so a merchant who opened
+   * their own `/<handle>` looked like a stranger to this component — which is how
+   * the owner ended up able to post a review on their own shop. Two sources, in
+   * order of authority: the server's session check (`viewerIsOwner`), then the
+   * store list the console has already loaded for this account.
+   */
+  const isStoreOwner =
+    isEditable ||
+    viewerIsOwner ||
+    viewerOwnsStore(
+      effectiveState?.id,
+      user?.id,
+      stores.map((owned) => owned.id),
+    ) ||
+    Boolean(user && effectiveState && effectiveState.ownerId === user.id);
   
   const [screen, setScreen] = useState<"home" | "product" | "cart" | "search" | "success" | "community">("home");
   const [activeTab, setActiveTab] = useState<"home" | "search" | "cart" | "community">("home");
@@ -1015,15 +1062,64 @@ export function CustomerStorefront({
     }, 0);
   }, [cart, effectiveState]);
 
-  const handleOrder = () => {
+  /**
+   * Checkout is built from `effectiveState`, not from the console's `state`.
+   *
+   * On a public storefront the two are different stores — the server injects the
+   * visited store as `publicState` while the console still holds whatever store
+   * the merchant last had open — so reading the channels or the codes from the
+   * context here would offer the wrong shop's Instagram handle.
+   */
+  const storefrontChannels = useMemo(
+    () =>
+      availableCheckoutChannels({
+        phone: effectiveState?.phone,
+        socials: effectiveState?.socials,
+      }),
+    [effectiveState?.phone, effectiveState?.socials],
+  );
+
+  const storefrontTotals = useMemo(() => {
+    const subtotalMinor = toMinorUnits(totalPrice);
+    return cartTotalsFrom(
+      subtotalMinor,
+      appliedDiscountCode
+        ? evaluateDiscount(sanitizeDiscountCodes(effectiveState?.discountCodes), {
+            code: appliedDiscountCode,
+            subtotalMinor,
+            currencySymbol: effectiveState?.currency || "₦",
+          })
+        : null,
+    );
+  }, [totalPrice, appliedDiscountCode, effectiveState?.discountCodes, effectiveState?.currency]);
+
+  /**
+   * Check out over the channel the buyer picked.
+   *
+   * `placed` carries the channel and the order text back, which the success
+   * screen needs: Instagram, Facebook and TikTok cannot carry a prefilled
+   * message, so the buyer is shown the text to paste into the chat we opened.
+   */
+  const handleOrder = (channelId: CheckoutChannelId) => {
     if (preview) {
       addToast("This is a preview — checkout is disabled until you publish.", "info");
       return;
     }
-    logEvent("whatsapp_checkout", { total: totalPrice, items: Object.keys(cart).length });
-    sendWhatsAppOrder(effectiveState || undefined);
+    const placed = placeOrder(channelId, effectiveState || undefined);
+    if (!placed) return;
+
+    // The channel is recorded in the event metadata as well as on the inquiry, so
+    // engagement can be read per platform even when an order is never completed.
+    logEvent("checkout", {
+      channel: channelId,
+      total: storefrontTotals.totalMinor / 100,
+      discount: storefrontTotals.discountMinor / 100,
+      items: Object.keys(cart).length,
+    });
+
+    setPlacedOrder(placed);
     changeScreen("success");
-    setTimeout(() => { changeScreen("home"); setActiveTab("home"); }, 3000);
+    setTimeout(() => { changeScreen("home"); setActiveTab("home"); }, 6000);
   };
 
   if (!effectiveState && shopId) {
@@ -1125,11 +1221,16 @@ export function CustomerStorefront({
                       }}
                       onSearch={() => goTab("search")}
                       onCart={() => goTab("cart")}
-                      onReviews={() => goTab("community")}
-                      onLeaveFeedback={() => {
-                        goTab("community");
-                        setShowReviewForm(true);
+                      onQuickCheckout={(product) => {
+                        // Straight to the bag with the item in it: the channel
+                        // chooser and the discount field live there, so a quick
+                        // checkout is still a recorded, multi-channel order.
+                        updateCart(product.id, 1);
+                        goTab("cart");
                       }}
+                      onReviews={() => goTab("community")}
+                      onLeaveFeedback={() => goTab("community")}
+                      isOwner={Boolean(isStoreOwner)}
                     />
                     {s.id && (
                       <div className={cn("py-16 px-4 pb-28", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
@@ -1139,6 +1240,7 @@ export function CustomerStorefront({
                             storeName={s.bizName || "Store"}
                             accentColor={s.accentColor}
                             isDark={backgroundIntent === "dark"}
+                            isOwner={Boolean(isStoreOwner)}
                           />
                         </div>
                       </div>
@@ -1228,9 +1330,24 @@ export function CustomerStorefront({
                                                 if (!p || q <= 0) return null;
                                                 return <div key={id} className="sf-surface p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-sm font-black sf-ink">{p.name}<br /><span className="sf-accent-text">{s.currency}{(p.price * q).toLocaleString()}</span></div><div className="flex items-center gap-3 sf-ink"><button onClick={() => updateCart(p.id, -1)}><Minus size={14}/></button><span>{q}</span><button onClick={() => updateCart(p.id, 1)}><Plus size={14}/></button></div></div>
                                             })}
-                                            <div className="pt-10 space-y-4">
-                                                <div className="flex justify-between font-black sf-ink"><span>Total</span><span className="text-xl sf-accent-text">{s.currency}{totalPrice.toLocaleString()}</span></div>
-                                                <button onClick={handleOrder} className="w-full py-5 sf-inverse text-white rounded-2xl font-black shadow-xl">CHECKOUT ON WHATSAPP</button>
+                                            <div className="pt-10">
+                                                {/*
+                                                  The buyer chooses how to reach the store —
+                                                  WhatsApp, Instagram, Facebook or TikTok — and
+                                                  can apply a discount code before the order
+                                                  text is composed.
+                                                */}
+                                                <CheckoutChannels
+                                                    channels={storefrontChannels}
+                                                    totals={storefrontTotals}
+                                                    currency={s.currency}
+                                                    acceptingOrders={s.isLive !== false}
+                                                    accent={buttonColor}
+                                                    tone="storefront"
+                                                    onSelect={handleOrder}
+                                                    onApplyCode={(raw) => applyDiscountCode(raw, effectiveState || undefined)}
+                                                    onClearCode={clearDiscount}
+                                                />
                                             </div>
                                         </div>
                                     )}
@@ -1252,6 +1369,7 @@ export function CustomerStorefront({
                                         storeName={s.bizName || "Store"}
                                         accentColor={s.accentColor}
                                         isDark={backgroundIntent === "dark"}
+                                        isOwner={Boolean(isStoreOwner)}
                                       />
                                     )}
                                 </div>
@@ -1260,8 +1378,45 @@ export function CustomerStorefront({
                         {screen === "success" && (
                             <div className="w-full flex flex-col items-center justify-center p-10 text-center min-h-screen sf-surface">
                                 <CheckCircle2 size={64} className="sf-accent-text mb-6" />
-                                <h2 className="text-3xl font-black sf-ink italic uppercase">Order Sent!</h2>
-                                <p className="sf-muted font-medium mt-4">We&apos;ve forwarded your request to the store on WhatsApp.</p>
+                                <h2 className="text-3xl font-black sf-ink italic uppercase">
+                                    {placedOrder?.channel.prefilled ? "Order Sent!" : "Order Ready"}
+                                </h2>
+                                <p className="sf-muted font-medium mt-4 max-w-sm">
+                                    {placedOrder
+                                        ? checkoutFollowUp(placedOrder.channel)
+                                        : "We've handed your order to the store."}
+                                </p>
+
+                                {/*
+                                  Instagram, Facebook and TikTok cannot carry a
+                                  prefilled message, so the order text is shown here
+                                  as well as copied: if the clipboard was blocked the
+                                  buyer can still select it by hand instead of losing
+                                  the order.
+                                */}
+                                {placedOrder && !placedOrder.channel.prefilled && (
+                                    <div className="mt-6 w-full max-w-sm text-left">
+                                        <p className="text-[10px] font-black uppercase tracking-widest sf-muted mb-2">
+                                            Your order
+                                        </p>
+                                        <textarea
+                                            id="storefront-order-text"
+                                            readOnly
+                                            value={placedOrder.message}
+                                            rows={6}
+                                            onFocus={(event) => event.currentTarget.select()}
+                                            className="w-full rounded-2xl border border-black/10 sf-surface-alt p-3 text-xs sf-ink outline-none"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => copyOrderText(placedOrder.message)}
+                                            className="mt-2 text-[10px] font-black uppercase tracking-widest sf-accent-text"
+                                        >
+                                            Copy again
+                                        </button>
+                                    </div>
+                                )}
+
                                 <button onClick={() => changeScreen("home")} className="mt-10 px-10 py-4 sf-inverse text-white rounded-full font-black shadow-xl">BACK TO STORE</button>
                             </div>
                         )}

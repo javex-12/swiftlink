@@ -21,6 +21,25 @@ export const SEO_SITE =
       ? `https://${process.env.VERCEL_URL}`
       : "https://swiftlinkpro.vercel.app");
 
+/**
+ * The social card the merchant uploaded in SEO settings, if it is one we can
+ * actually fetch.
+ *
+ * Base64 uploads are real to a browser and meaningless to a crawler, and a bare
+ * path has no origin to fetch, so both are rejected. The URL is never handed to
+ * a crawler directly: `/<handle>/opengraph-image` streams the bytes from our own
+ * origin instead, because Supabase Storage answers public objects with
+ * `x-robots-tag: none` and Facebook/WhatsApp discard an image served that way.
+ */
+export function resolveMerchantOgImage(
+  state: Partial<ShopState> | null | undefined,
+): string | null {
+  const value = String(state?.ogImage || "").trim();
+  if (!value || value.startsWith("data:")) return null;
+  if (!/^https?:\/\//i.test(value)) return null;
+  return value;
+}
+
 const SOCIAL_HOST_LABELS: Record<string, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",

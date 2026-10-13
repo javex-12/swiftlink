@@ -20,10 +20,14 @@
  *    as `computeDedupeKey` alone would — is a race.
  * 3. **Money is integer minor units**, matching the schema
  *    (`product_price_minor`), never floats.
+ * 4. **The order arrives whole.** `order_ref` is written on every line so the
+ *    lines of one cart can be read back as one order, while the message text and
+ *    the discount total — which describe the *order*, not any single product —
+ *    are written once, on the first line.
  */
 
 import { supabase, isSupabaseConfigured } from "./supabase-client";
-import { getDeviceHash, resolveInquirySource } from "./inquiries";
+import { getDeviceHash, resolveInquirySource, type InquirySource } from "./inquiries";
 
 export interface OrderIntentItem {
   productId: number;
@@ -39,6 +43,17 @@ export interface RecordOrderIntentParams {
   currency: string | undefined;
   /** `?src=` from the storefront URL — beats the referrer when present. */
   srcParam?: string | null;
+  /**
+   * The channel the buyer actually chose at checkout. Beats both `srcParam` and
+   * the referrer: the buyer's tap is a fact, the referrer is an inference.
+   */
+  channel?: InquirySource | null;
+  /** Reference shown to the buyer (`SL-XXXX`), shared by every line of the order. */
+  orderRef?: string | null;
+  /** The prefilled order text, stored once on the first line of the order. */
+  message?: string | null;
+  /** Discount applied to the order — `amountMinor` is the order total, stored once. */
+  discount?: { code: string; amountMinor: number } | null;
   items: OrderIntentItem[];
 }
 
@@ -56,20 +71,26 @@ export function toMinorUnits(major: number): number {
 export async function recordOrderIntent(
   params: RecordOrderIntentParams,
 ): Promise<number> {
-  const { storeId, currency, srcParam, items } = params;
+  const { storeId, currency, srcParam, channel, orderRef, message, discount, items } = params;
 
   // The storefront also runs in demo/offline mode where there is no Supabase
   // project; touching the client there throws by design.
   if (!storeId || !isSupabaseConfigured() || items.length === 0) return 0;
 
-  const source = resolveInquirySource(
-    srcParam,
-    typeof document !== "undefined" ? document.referrer : null,
-  );
+  const source =
+    channel ??
+    resolveInquirySource(
+      srcParam,
+      typeof document !== "undefined" ? document.referrer : null,
+    );
   const deviceHash = getDeviceHash();
 
   let recorded = 0;
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
+    // The text and the discount are properties of the order, and every product in
+    // the cart gets its own inquiry row — so they are written on the first row
+    // only, rather than repeated once per product.
+    const isFirstLine = index === 0;
     try {
       const { error } = await supabase.rpc("create_or_update_inquiry", {
         p_store_id: storeId,
@@ -82,6 +103,10 @@ export async function recordOrderIntent(
         p_buyer_phone: null,
         p_device_hash: deviceHash,
         p_source: source,
+        p_message: isFirstLine ? message ?? null : null,
+        p_order_ref: orderRef ?? null,
+        p_discount_code: discount?.code ?? null,
+        p_discount_minor: isFirstLine ? discount?.amountMinor ?? null : null,
       });
 
       if (error) {
