@@ -157,7 +157,13 @@ export async function initializePlanCheckout(input: {
     };
   }
 
-  return paystackFetch<InitializeResult>("/transaction/initialize", {
+  const result = await paystackFetch<{
+    authorization_url?: string;
+    access_code?: string;
+    reference?: string;
+    authorizationUrl?: string;
+    accessCode?: string;
+  }>("/transaction/initialize", {
     method: "POST",
     body: {
       email: input.email,
@@ -173,6 +179,33 @@ export async function initializePlanCheckout(input: {
       },
     },
   });
+
+  if (!result.ok || !result.data) {
+    return { ...result, data: null };
+  }
+
+  const raw = result.data;
+  const authorizationUrl = raw.authorization_url ?? raw.authorizationUrl ?? "";
+  const accessCode = raw.access_code ?? raw.accessCode ?? "";
+  const reference = raw.reference ?? "";
+
+  if (!authorizationUrl) {
+    return {
+      ...result,
+      ok: false,
+      data: null,
+      message: result.message || "Paystack did not return a checkout URL.",
+    };
+  }
+
+  return {
+    ...result,
+    data: {
+      authorizationUrl,
+      accessCode,
+      reference,
+    },
+  };
 }
 
 export type VerifiedTransaction = {

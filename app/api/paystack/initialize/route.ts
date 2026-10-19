@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     authorizationUrl: result.data.authorizationUrl,
+    authorization_url: result.data.authorizationUrl,
     reference: result.data.reference,
   });
 }

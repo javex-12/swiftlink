@@ -106,11 +106,31 @@ export function repairAccountToPlan(
     return { stores: [], repair: EMPTY_REPAIR, plan };
   }
 
-  // A named running store *is* the allowance — a single-store plan must not
-  // keep the first row published as well and end up with two live storefronts.
-  const stayPublished = new Set(
-    runningStoreId ? [runningStoreId] : publishedAllowance(stores, storeLimit),
-  );
+  // Determine which stores stay published under the plan.
+  // For a single-store plan (Free), a named running store is the only store allowed
+  // to be live. For multi-store plans (Pro allows 3, Business allows 10), we preserve
+  // the running store AND keep other already-live stores up to the plan's storeLimit.
+  let stayPublished: Set<string>;
+  if (isUnlimited(storeLimit)) {
+    stayPublished = new Set(stores.map((s) => s.id as string).filter(Boolean));
+  } else if (runningStoreId && stores.some((s) => s.id === runningStoreId)) {
+    const set = new Set<string>();
+    const runningStore = stores.find((s) => s.id === runningStoreId);
+    if (runningStore && isStorePublished(runningStore)) {
+      set.add(runningStoreId);
+    } else if (storeLimit === 1) {
+      set.add(runningStoreId);
+    }
+    for (const store of stores) {
+      if (set.size >= storeLimit) break;
+      if (store.id && isStorePublished(store)) {
+        set.add(store.id);
+      }
+    }
+    stayPublished = set;
+  } else {
+    stayPublished = new Set(publishedAllowance(stores, storeLimit));
+  }
 
   let storeId: string | null = null;
   let hiddenProducts = 0;

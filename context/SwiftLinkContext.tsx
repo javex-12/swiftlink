@@ -530,39 +530,51 @@ export function SwiftLinkProvider({
     }
 
     setState(target);
+    localStorage.setItem("swiftlink_state", JSON.stringify(target));
     addToast(`Switched to ${target.bizName}`, "success");
   }, [stores, addToast, state]);
 
   /**
-   * Pick the one store this account runs, when it owns more than its plan
+   * Pick the store this account runs, when it owns more than its plan
    * allows.
    *
    * `switchStore` refuses a single-store plan outright, which is correct for
    * *switching* but left a merchant with three stores no way to say which one
    * they actually wanted — the account was stuck on whichever row the database
    * happened to return first. Choosing is not switching: the chosen store is
-   * published, the rest are paused, every row is kept, and the choice can be made
-   * again at any time. Multi-store plans fall through to the ordinary switch.
+   * published, the excess are paused, every row is kept, and the choice can be made
+   * again at any time. Multi-store plans within their limit fall through to the ordinary switch.
    */
   const chooseStore = useCallback(async (id: string) => {
     const target = stores.find(s => s.id === id);
     if (!target) return false;
 
     const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
+    const storeLimit = effectiveStoreLimitFor(currentPlan);
     /*
-     * Plans that can hold every store they own (Pro and Business) must not
-     * pause anything here: choosing a store is then only a switch. This used
-     * to test `isUnlimited`, which is false for every plan now that all limits
-     * are finite — so even Business paused nine stores when opening one.
+     * Plans that can hold every store they own (Pro with <= 3, Business with <= 10)
+     * must not pause anything here: choosing a store is then only a switch.
      */
     if (effectiveStoreLimitFor(currentPlan) >= stores.length) {
       await switchStore(id);
       return true;
     }
 
-    const nextStores = stores.map(s => ({ ...s, isLive: s.id === id }));
-    const chosenStore = nextStores.find(s => s.id === id)!;
-    const paused = Math.max(0, nextStores.length - 1);
+    // Keep the chosen store live, and keep other already-live stores up to storeLimit.
+    const liveStores = new Set<string>([id]);
+    for (const store of stores) {
+      if (liveStores.size >= storeLimit) break;
+      if (store.id && store.id !== id && store.isLive !== false) {
+        liveStores.add(store.id);
+      }
+    }
+
+    const nextStores = stores.map((s) => ({
+      ...s,
+      isLive: liveStores.has(s.id as string),
+    }));
+    const chosenStore = nextStores.find((s) => s.id === id)!;
+    const paused = nextStores.filter((s) => !s.isLive).length;
 
     setStores(nextStores);
     setState(chosenStore);

@@ -106,10 +106,12 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
       });
       const payload = (await response.json().catch(() => ({}))) as {
         authorizationUrl?: string;
+        authorization_url?: string;
         error?: string;
       };
-      if (response.ok && payload.authorizationUrl) {
-        window.location.href = payload.authorizationUrl;
+      const redirectUrl = payload.authorizationUrl || payload.authorization_url;
+      if (response.ok && redirectUrl) {
+        window.location.href = redirectUrl;
         return;
       }
       setError(payload.error || "Could not start checkout.");

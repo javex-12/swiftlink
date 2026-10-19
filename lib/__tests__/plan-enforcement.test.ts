@@ -156,6 +156,27 @@ describe("repairAccountToPlan — stores", () => {
     const { repair } = repairAccountToPlan(rows);
     expect(repair.unpublishedStoreIds).toEqual([]);
   });
+
+  it("keeps multiple stores published on Pro and Business when runningStoreId is specified", () => {
+    const rows = [
+      store({ id: "s1", plan: "pro", isLive: true }),
+      store({ id: "s2", plan: "pro", isLive: true }),
+      store({ id: "s3", plan: "pro", isLive: true }),
+    ];
+    const { stores, repair } = repairAccountToPlan(rows, "s2");
+    expect(stores.map((s) => s.isLive)).toEqual([true, true, true]);
+    expect(repair.unpublishedStoreIds).toEqual([]);
+  });
+
+  it("preserves manually paused stores on paid tiers when runningStoreId is specified", () => {
+    const rows = [
+      store({ id: "s1", plan: "pro", isLive: true }),
+      store({ id: "s2", plan: "pro", isLive: false }),
+    ];
+    const { stores, repair } = repairAccountToPlan(rows, "s1");
+    expect(stores.map((s) => s.isLive)).toEqual([true, false]);
+    expect(repair.unpublishedStoreIds).toEqual([]);
+  });
 });
 
 describe("repairWrites and repairNotice", () => {
