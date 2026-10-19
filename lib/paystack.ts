@@ -22,7 +22,12 @@
  */
 
 import crypto from "node:crypto";
-import { PLAN_PRICE_MINOR, type Plan } from "./plans";
+import {
+  PLAN_PRICE_MINOR,
+  PLAN_PRICE_YEARLY_MINOR,
+  type BillingInterval,
+  type Plan,
+} from "./plans";
 
 export type PaidPlan = Exclude<Plan, "free">;
 
@@ -38,8 +43,15 @@ export function isPaidPlan(value: unknown): value is PaidPlan {
   return value === "pro" || value === "business";
 }
 
-/** The Paystack plan code for a tier, or null when that plan is not configured. */
-export function planCodeFor(plan: PaidPlan): string | null {
+/** The Paystack plan code for a tier and interval, or null when that plan is not configured. */
+export function planCodeFor(plan: PaidPlan, interval: BillingInterval = "monthly"): string | null {
+  if (interval === "yearly") {
+    const code =
+      plan === "pro"
+        ? process.env.PAYSTACK_PLAN_PRO_YEARLY?.trim() || process.env.PAYSTACK_PLAN_PRO?.trim()
+        : process.env.PAYSTACK_PLAN_BUSINESS_YEARLY?.trim() || process.env.PAYSTACK_PLAN_BUSINESS?.trim();
+    return code || null;
+  }
   const code =
     plan === "pro"
       ? process.env.PAYSTACK_PLAN_PRO?.trim()
@@ -51,15 +63,17 @@ export function planCodeFor(plan: PaidPlan): string | null {
 export function planForCode(code: unknown): PaidPlan | null {
   if (typeof code !== "string") return null;
   const pro = process.env.PAYSTACK_PLAN_PRO?.trim();
+  const proYearly = process.env.PAYSTACK_PLAN_PRO_YEARLY?.trim();
   const business = process.env.PAYSTACK_PLAN_BUSINESS?.trim();
-  if (pro && code === pro) return "pro";
-  if (business && code === business) return "business";
+  const businessYearly = process.env.PAYSTACK_PLAN_BUSINESS_YEARLY?.trim();
+  if ((pro && code === pro) || (proYearly && code === proYearly)) return "pro";
+  if ((business && code === business) || (businessYearly && code === businessYearly)) return "business";
   return null;
 }
 
-/** Amount in minor units for a tier — the same number the plan was created with. */
-export function amountFor(plan: PaidPlan): number {
-  return PLAN_PRICE_MINOR[plan];
+/** Amount in minor units for a tier and interval. */
+export function amountFor(plan: PaidPlan, interval: BillingInterval = "monthly"): number {
+  return interval === "yearly" ? PLAN_PRICE_YEARLY_MINOR[plan] : PLAN_PRICE_MINOR[plan];
 }
 
 /**
@@ -144,10 +158,12 @@ export type InitializeResult = {
 export async function initializePlanCheckout(input: {
   email: string;
   plan: PaidPlan;
+  interval?: BillingInterval;
   ownerId: string;
   callbackUrl: string;
 }): Promise<PaystackResponse<InitializeResult>> {
-  const planCode = planCodeFor(input.plan);
+  const interval = input.interval ?? "monthly";
+  const planCode = planCodeFor(input.plan, interval);
   if (!planCode) {
     return {
       ok: false,
@@ -169,12 +185,13 @@ export async function initializePlanCheckout(input: {
       email: input.email,
       // Paystack overrides this with the plan's own amount; sending both keeps
       // the record readable if the plan is edited in the dashboard later.
-      amount: amountFor(input.plan),
+      amount: amountFor(input.plan, interval),
       plan: planCode,
       callback_url: input.callbackUrl,
       metadata: {
         owner_id: input.ownerId,
         plan: input.plan,
+        interval,
         product: "swiftlink-subscription",
       },
     },

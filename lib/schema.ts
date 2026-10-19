@@ -143,6 +143,12 @@ export type ShopState = {
   websiteTemplateId?: WebsiteTemplateId;
   storeHours?: string;
   
+  /** Custom preloader screen for Business tier storefronts */
+  customPreloader?: {
+    enabled?: boolean;
+    text?: string;
+  };
+  
   // The Visual Editor Engine
   sections: PageSection[];
   

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  BUSINESS_PRODUCT_LIMIT,
   FREE_PRODUCT_LIMIT,
   GRACE_PERIOD_DAYS,
   MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
   PLANS,
   PLAN_DETAILS,
+  PRO_PRODUCT_LIMIT,
   accountPlanFor,
   applyProductVisibility,
   canCreateStore,
@@ -45,22 +47,22 @@ import {
  * pin the tiers so that drift cannot come back silently.
  */
 describe("plan limits — single source of truth", () => {
-  it("caps the free tier at exactly 6 products", () => {
-    expect(FREE_PRODUCT_LIMIT).toBe(6);
-    expect(productLimitFor("free")).toBe(6);
-    expect(productLimitMessage("free")).toContain("6 products");
+  it("caps the free tier at exactly 10 products", () => {
+    expect(FREE_PRODUCT_LIMIT).toBe(10);
+    expect(productLimitFor("free")).toBe(10);
+    expect(productLimitMessage("free")).toContain("10 products");
   });
 
   /*
    * Paid plans are capped, and the cap is the number the pricing page quotes.
-   * These used to be infinite entitlements with a hidden 1,000 ceiling, so the
-   * product could refuse a save against a limit no screen had mentioned.
+   * Pro allows up to 500 products across all stores, and Business allows up to 1,000.
    */
   it("caps pro and business at the published per-store limit, not at infinity", () => {
+    expect(productLimitFor("pro")).toBe(PRO_PRODUCT_LIMIT);
+    expect(productLimitFor("business")).toBe(BUSINESS_PRODUCT_LIMIT);
     for (const plan of ["pro", "business"] as const) {
-      expect(productLimitFor(plan)).toBe(MAX_PRODUCTS_PER_STORE);
       expect(isUnlimited(productLimitFor(plan))).toBe(false);
-      expect(productLimitMessage(plan)).toContain(String(MAX_PRODUCTS_PER_STORE));
+      expect(productLimitMessage(plan)).toContain(productLimitFor(plan).toLocaleString());
       expect(productLimitMessage(plan)).not.toContain("unlimited");
     }
   });
@@ -183,7 +185,7 @@ describe("plan limits — single source of truth", () => {
       // Neither paid tier may promise an unbounded catalogue.
       for (const id of ["pro", "business"] as const) {
         const copy = PLAN_DETAILS[id].features.join(" ");
-        expect(copy).toContain(MAX_PRODUCTS_PER_STORE.toLocaleString());
+        expect(copy).toContain(productLimitFor(id).toLocaleString());
         expect(copy.toLowerCase()).not.toContain("unlimited");
       }
       expect(PLAN_DETAILS.business.features.join(" ")).toContain(String(MAX_STORES_PER_USER));
@@ -203,7 +205,7 @@ describe("plan limits — single source of truth", () => {
     });
 
     it("formats usage against the enforced cap", () => {
-      expect(formatUsage(4, productLimitFor("free"))).toBe("4 of 6");
+      expect(formatUsage(4, productLimitFor("free"))).toBe("4 of 10");
       expect(formatUsage(4, productLimitFor("business"))).toBe(`4 of ${MAX_PRODUCTS_PER_STORE}`);
     });
   });
@@ -251,16 +253,16 @@ describe("plan limits — single source of truth", () => {
   });
 
   it("formats limits for UI copy", () => {
-    expect(formatLimit(productLimitFor("free"))).toBe("6");
-    expect(formatLimit(productLimitFor("pro"))).toBe(String(MAX_PRODUCTS_PER_STORE));
+    expect(formatLimit(productLimitFor("free"))).toBe("10");
+    expect(formatLimit(productLimitFor("pro"))).toBe(String(PRO_PRODUCT_LIMIT));
   });
 });
 
 describe("per-store ceilings — no single account can take all the space", () => {
   it("enforces the same finite ceiling the plan copy states", () => {
-    expect(effectiveProductLimitFor("free")).toBe(6);
-    expect(effectiveProductLimitFor("pro")).toBe(MAX_PRODUCTS_PER_STORE);
-    expect(effectiveProductLimitFor("business")).toBe(MAX_PRODUCTS_PER_STORE);
+    expect(effectiveProductLimitFor("free")).toBe(10);
+    expect(effectiveProductLimitFor("pro")).toBe(PRO_PRODUCT_LIMIT);
+    expect(effectiveProductLimitFor("business")).toBe(BUSINESS_PRODUCT_LIMIT);
     expect(effectiveStoreLimitFor("free")).toBe(1);
     expect(effectiveStoreLimitFor("pro")).toBe(3);
     expect(effectiveStoreLimitFor("business")).toBe(MAX_STORES_PER_USER);
@@ -268,13 +270,13 @@ describe("per-store ceilings — no single account can take all the space", () =
 
   it("names the ceiling in both the entitlement and the blocked copy", () => {
     // The entitlement copy names the cap the merchant bought …
-    expect(productLimitMessage("business")).toContain(String(MAX_PRODUCTS_PER_STORE));
+    expect(productLimitMessage("business")).toContain(MAX_PRODUCTS_PER_STORE.toLocaleString());
     expect(productLimitMessage("business")).not.toContain("unlimited");
     // … and the *blocked* copy names the same number, not a second one.
     expect(productLimitBlockedMessage("business")).toContain(
       `${MAX_PRODUCTS_PER_STORE.toLocaleString()}-product limit`,
     );
-    expect(productLimitBlockedMessage("free")).toContain("6 products");
+    expect(productLimitBlockedMessage("free")).toContain("10 products");
     expect(storeLimitMessage("business", MAX_STORES_PER_USER)).toContain(
       `${MAX_STORES_PER_USER}-store limit`,
     );

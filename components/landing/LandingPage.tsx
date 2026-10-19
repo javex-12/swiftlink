@@ -30,10 +30,14 @@ import { Logo } from "@/components/Logo";
 import { FEATURE_FLAGS, isFeatureEnabled } from "@/lib/flags";
 import {
   FREE_PRODUCT_LIMIT,
+  PRO_PRODUCT_LIMIT,
+  BUSINESS_PRODUCT_LIMIT,
   MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
   PLAN_PRICE_NGN,
+  PLAN_PRICE_YEARLY_NGN,
   PRO_STORE_LIMIT,
+  type BillingInterval,
 } from "@/lib/plans";
 
 /**
@@ -700,6 +704,8 @@ type Plan = {
 };
 
 function Pricing() {
+  const [interval, setInterval] = useState<BillingInterval>("monthly");
+
   const plans: Plan[] = [
     {
       name: "Starter",
@@ -711,46 +717,48 @@ function Pricing() {
         { label: "WhatsApp checkout" },
         { label: "Price requests for services" },
         { label: "3 starter templates" },
+        { label: "SwiftLink branding shown" },
       ],
       cta: "Start free",
     },
     {
       name: "Pro",
-      // The amount Paystack actually charges, with no second currency shown
-      // for it: the plans are NGN-only, so a dollar figure here would be a
-      // price the merchant could never be billed.
-      price: `₦${PLAN_PRICE_NGN.pro.toLocaleString()}`,
-      period: "/mo",
+      price:
+        interval === "yearly"
+          ? `₦${PLAN_PRICE_YEARLY_NGN.pro.toLocaleString()}`
+          : `₦${PLAN_PRICE_NGN.pro.toLocaleString()}`,
+      period: interval === "yearly" ? "/yr" : "/mo",
       description: "Everything you need to run a serious store.",
       features: [
-        // The cap the editor actually enforces, not a promise of infinity: a
-        // merchant who reads "unlimited" here and hits a ceiling there is being
-        // sold something the product does not do.
         { label: "Everything in Free" },
-        { label: `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products` },
+        { label: `Up to ${PRO_PRODUCT_LIMIT} products` },
         { label: `Up to ${PRO_STORE_LIMIT} stores` },
         { label: "All storefront templates" },
         { label: "Discount codes" },
         { label: "Detailed analytics" },
         { label: "CSV export" },
+        { label: "SwiftLink branding shown" },
       ],
       cta: "Upgrade to Pro",
       featured: true,
     },
     {
       name: "Business",
-      // Same constant the in-app plan card and Paystack charge use.
-      price: `₦${PLAN_PRICE_NGN.business.toLocaleString()}`,
-      period: "/mo",
-      description: "For established brands and small teams.",
+      price:
+        interval === "yearly"
+          ? `₦${PLAN_PRICE_YEARLY_NGN.business.toLocaleString()}`
+          : `₦${PLAN_PRICE_NGN.business.toLocaleString()}`,
+      period: interval === "yearly" ? "/yr" : "/mo",
+      description: "For established brands and scaling teams.",
       features: [
         { label: "Everything in Pro" },
+        { label: `Up to ${BUSINESS_PRODUCT_LIMIT.toLocaleString()} products` },
         { label: `Up to ${MAX_STORES_PER_USER} stores` },
         { label: "Connect your own domain" },
         { label: "No SwiftLink branding" },
+        { label: "Custom preloader screen" },
+        { label: "Priority WhatsApp support" },
       ],
-      // Self-serve: the signup link below starts a real checkout, so the label
-      // says what happens rather than inviting a conversation that never comes.
       cta: "Upgrade to Business",
     },
   ];
@@ -768,6 +776,39 @@ function Pricing() {
           <p className="mt-4 text-base text-app-text-muted">
             Start free, upgrade when you outgrow it, and keep 100% of your revenue either way.
           </p>
+
+          {/* Billing Interval Switch */}
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-surface p-1">
+              <button
+                type="button"
+                onClick={() => setInterval("monthly")}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-xs font-semibold transition",
+                  interval === "monthly"
+                    ? "bg-app-accent text-app-accent-fg"
+                    : "text-app-text-muted hover:text-app-text"
+                )}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setInterval("yearly")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition",
+                  interval === "yearly"
+                    ? "bg-app-accent text-app-accent-fg"
+                    : "text-app-text-muted hover:text-app-text"
+                )}
+              >
+                <span>Yearly</span>
+                <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
+                  Pay for 10 mos, get 12
+                </span>
+              </button>
+            </div>
+          </div>
         </InView>
 
         <div className="mt-12 grid gap-5 lg:grid-cols-3 lg:items-start">

@@ -18,6 +18,7 @@ import {
   templateUpgradeRequiredMessage,
   FREE_TEMPLATE_IDS,
   normalizePlan,
+  accountPlanFor,
 } from "@/lib/plans";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { DEFAULT_WA_TEMPLATE, renderWhatsAppOrderMessage, ALLOWED_TEMPLATE_VARIABLES, validateWhatsAppTemplate } from "@/lib/whatsapp-template";
@@ -78,7 +79,7 @@ interface OptionRow {
 }
 
 export function StoreEditorV2() {
-  const { state: globalState, saveFullState, saveDraft, discardDraft, drafts, addToast, user } = useSwiftLink();
+  const { state: globalState, stores, saveFullState, saveDraft, discardDraft, drafts, addToast, user } = useSwiftLink();
 
   // Local working copy of store state
   const [localState, setLocalState] = useState<ShopState>(() => JSON.parse(JSON.stringify(globalState)));
@@ -89,6 +90,18 @@ export function StoreEditorV2() {
   const [previewMode, setPreviewMode] = useState<"light" | "dark">(() => (globalState.storefrontTheme?.background === "light" ? "light" : "dark"));
   const [previewCartCount, setPreviewCartCount] = useState<number>(1);
   const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+
+  const effectivePlan = useMemo(() => {
+    return accountPlanFor(stores && stores.length ? stores : [localState]);
+  }, [stores, localState]);
+
+  const totalVisibleProducts = useMemo(() => {
+    const allStores = stores && stores.length > 0 ? stores : [localState];
+    return allStores.reduce((sum, s) => {
+      const prods = s.id === localState.id ? localState.products : s.products;
+      return sum + visibleProductCount(prods || []);
+    }, 0);
+  }, [stores, localState.id, localState.products]);
 
   // Debounced store handle uniqueness check against Supabase
   useEffect(() => {
@@ -122,8 +135,8 @@ export function StoreEditorV2() {
 
   // Quick populate 4 stock ideas for instant zero-to-one store launch
   const handlePopulateStockIdeas = () => {
-    if (visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)) {
-      addToast(productLimitBlockedMessage(localState.plan), "error");
+    if (totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)) {
+      addToast(productLimitBlockedMessage(effectivePlan), "error");
       return;
     }
     const isNgn = localState.currency === "NGN";
@@ -575,8 +588,8 @@ export function StoreEditorV2() {
   const openAddProductModal = () => {
     // Only *visible* products count against the plan, so hidden ones left by a
     // downgrade never block an upgrade back into the catalogue (lib/plans.ts).
-    if (visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)) {
-      addToast(productLimitBlockedMessage(localState.plan), "error");
+    if (totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)) {
+      addToast(productLimitBlockedMessage(effectivePlan), "error");
       return;
     }
     setEditingProductId(null);
@@ -613,9 +626,9 @@ export function StoreEditorV2() {
     const turningVisible = !isProductVisible(product);
     if (
       turningVisible &&
-      visibleProductCount(localState.products) >= effectiveProductLimitFor(localState.plan)
+      totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)
     ) {
-      addToast(productLimitBlockedMessage(localState.plan), "error");
+      addToast(productLimitBlockedMessage(effectivePlan), "error");
       return;
     }
     updateField(
@@ -2055,6 +2068,92 @@ export function StoreEditorV2() {
                     />
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Section: Custom Preloader Screen (Business Exclusive) */}
+            <section
+              aria-labelledby="preloader-settings-heading"
+              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+            >
+              <div className="border-b border-[#1E2D27] pb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#19C37D]" />
+                  <h2 id="preloader-settings-heading" className="text-base font-semibold text-[#E8F1EC]">
+                    Custom Preloader Screen
+                  </h2>
+                </div>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Display a custom branded splash screen with your logo, brand colors, and custom loading text when shoppers open your store.
+                </p>
+              </div>
+
+              <div className="mt-6">
+                {effectivePlan !== "business" ? (
+                  <ProGate
+                    feature="Custom preloader screen"
+                    planLabel="Business"
+                    description="White-label your storefront launch with a custom branded preloader screen showing your store logo and custom message instead of the default spinner."
+                  />
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between rounded-xl border border-[#24382F] bg-[#0A1210] p-4">
+                      <div>
+                        <span className="text-sm font-medium text-[#E8F1EC]">
+                          Enable Preloader Screen
+                        </span>
+                        <p className="mt-0.5 text-xs text-[#9DB3A8]">
+                          Show your branded loading screen on initial storefront visit
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateField("customPreloader", {
+                            ...localState.customPreloader,
+                            enabled: localState.customPreloader?.enabled === false,
+                          })
+                        }
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                          localState.customPreloader?.enabled !== false
+                            ? "bg-[#19C37D]"
+                            : "bg-[#24382F]"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                            localState.customPreloader?.enabled !== false
+                              ? "translate-x-5"
+                              : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#E8F1EC]">
+                        Custom Loading Text
+                      </label>
+                      <input
+                        type="text"
+                        value={localState.customPreloader?.text || ""}
+                        onChange={(e) =>
+                          updateField("customPreloader", {
+                            ...localState.customPreloader,
+                            text: e.target.value.slice(0, 80),
+                          })
+                        }
+                        placeholder={localState.tagline || "Preparing your experience…"}
+                        className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                      />
+                      <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                        Shown below your logo while your storefront initializes.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 

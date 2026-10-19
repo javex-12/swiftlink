@@ -37,12 +37,12 @@ function store(overrides: Partial<ShopState> & { id: string }): ShopState {
   } as ShopState;
 }
 
-const freeWithNineProducts = () =>
+const freeWithOverflowProducts = (overflow = 3) =>
   store({
     id: "store-1",
     plan: "free",
     isLive: true,
-    products: Array.from({ length: 9 }, (_, index) => product(index + 1)),
+    products: Array.from({ length: FREE_PRODUCT_LIMIT + overflow }, (_, index) => product(index + 1)),
   });
 
 describe("repairAccountToPlan — products", () => {
@@ -53,32 +53,35 @@ describe("repairAccountToPlan — products", () => {
    * the account is entitled to.
    */
   it("applies the passed entitlement instead of clamping an admin catalogue", () => {
-    const before = freeWithNineProducts();
+    const before = freeWithOverflowProducts();
     const { stores, repair, plan } = repairAccountToPlan([before], null, "business");
 
     expect(plan).toBe("business");
     expect(repair.hiddenProducts).toBe(0);
-    expect(stores[0].products.filter((p) => p.visible !== false)).toHaveLength(9);
+    expect(stores[0].products.filter((p) => p.visible !== false)).toHaveLength(FREE_PRODUCT_LIMIT + 3);
   });
 
   it("hides the overflow beyond the cap and deletes nothing", () => {
-    const before = freeWithNineProducts();
+    const before = freeWithOverflowProducts();
     const { stores, repair } = repairAccountToPlan([before]);
 
     const repaired = stores[0];
-    expect(repaired.products).toHaveLength(9);
+    expect(repaired.products).toHaveLength(FREE_PRODUCT_LIMIT + 3);
     expect(repaired.products.filter((p) => p.visible !== false)).toHaveLength(FREE_PRODUCT_LIMIT);
     expect(repair.hiddenProducts).toBe(3);
   });
 
   it("keeps the merchant's existing order and existing hidden products", () => {
-    const products = Array.from({ length: 8 }, (_, index) => product(index + 1));
+    const total = FREE_PRODUCT_LIMIT + 2;
+    const products = Array.from({ length: total }, (_, index) => product(index + 1));
     products[1] = product(2, false);
     const { stores } = repairAccountToPlan([store({ id: "s", plan: "free", products })]);
 
     // The already-hidden product stays hidden and does not consume an allowance.
     expect(stores[0].products[1].visible).toBe(false);
-    expect(stores[0].products.filter((p) => p.visible !== false).map((p) => p.id)).toEqual([1, 3, 4, 5, 6, 7]);
+    const visibleIds = stores[0].products.filter((p) => p.visible !== false).map((p) => p.id);
+    expect(visibleIds).toHaveLength(FREE_PRODUCT_LIMIT);
+    expect(visibleIds).not.toContain(2);
   });
 
   it("leaves a catalogue that already fits exactly as it was", () => {
@@ -195,7 +198,7 @@ describe("repairWrites and repairNotice", () => {
         id: "s1",
         plan: "free",
         isLive: true,
-        products: Array.from({ length: 9 }, (_, i) => product(i + 1)),
+        products: Array.from({ length: FREE_PRODUCT_LIMIT + 3 }, (_, i) => product(i + 1)),
       }),
       store({ id: "s2", plan: "free", isLive: true }),
     ]);

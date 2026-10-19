@@ -33,9 +33,15 @@ export type Plan = "free" | "pro" | "business";
 export const PLANS: readonly Plan[] = ["free", "pro", "business"] as const;
 
 /** The free-tier catalogue cap. Exported so UI copy can name the real number. */
-export const FREE_PRODUCT_LIMIT = 6;
+export const FREE_PRODUCT_LIMIT = 10;
 
-/** The hard ceiling on published products in one store, on every plan. */
+/** The product limit for the Pro tier across all stores. */
+export const PRO_PRODUCT_LIMIT = 500;
+
+/** The product limit for the Business tier across all stores. */
+export const BUSINESS_PRODUCT_LIMIT = 1000;
+
+/** The hard ceiling on published products across all stores, on every plan. */
 export const MAX_PRODUCTS_PER_STORE = 1000;
 
 /** Stores a free account may run. */
@@ -69,11 +75,11 @@ export function templateUpgradeRequiredMessage(templateName: string): string {
  */
 export const GRACE_PERIOD_DAYS = 7;
 
+export type BillingInterval = "monthly" | "yearly";
+
 /**
- * What each paid tier costs per month, in **minor units** — the unit Paystack
- * charges in. Exported so billing and the pricing copy are the same number: the
- * in-app card used to say ₦12,000 while the landing page said ₦15,000, and a
- * merchant charged a third price would be right to complain.
+ * What each paid tier costs per month, in **minor units** — the unit Paystack charges in.
+ * Pro: ₦5,000 / mo. Business: ₦12,000 / mo.
  */
 export const PLAN_PRICE_MINOR: Record<"pro" | "business", number> = {
   pro: 500_000,
@@ -84,6 +90,20 @@ export const PLAN_PRICE_MINOR: Record<"pro" | "business", number> = {
 export const PLAN_PRICE_NGN: Record<"pro" | "business", number> = {
   pro: PLAN_PRICE_MINOR.pro / 100,
   business: PLAN_PRICE_MINOR.business / 100,
+};
+
+/**
+ * Yearly option: pay for 10 months, get 12.
+ * Pro: ₦50,000 / yr (save ₦10,000). Business: ₦120,000 / yr (save ₦24,000).
+ */
+export const PLAN_PRICE_YEARLY_MINOR: Record<"pro" | "business", number> = {
+  pro: 5_000_000,
+  business: 12_000_000,
+};
+
+export const PLAN_PRICE_YEARLY_NGN: Record<"pro" | "business", number> = {
+  pro: PLAN_PRICE_YEARLY_MINOR.pro / 100,
+  business: PLAN_PRICE_YEARLY_MINOR.business / 100,
 };
 
 
@@ -183,8 +203,8 @@ export function reconcileAccountPlan(
  */
 export const PLAN_PRODUCT_LIMIT: Record<Plan, number> = {
   free: FREE_PRODUCT_LIMIT,
-  pro: MAX_PRODUCTS_PER_STORE,
-  business: MAX_PRODUCTS_PER_STORE,
+  pro: PRO_PRODUCT_LIMIT,
+  business: BUSINESS_PRODUCT_LIMIT,
 };
 
 /** Maximum number of products a plan may publish. */
@@ -260,6 +280,8 @@ export type PlanDetail = {
   id: Plan;
   name: string;
   price: string;
+  yearlyPrice?: string;
+  tag?: string;
   /** Short line for a badge or a plan card. */
   summary: string;
   /** Card features, in the order they matter to a merchant. */
@@ -275,57 +297,59 @@ export const PLAN_DETAILS: Record<Plan, PlanDetail> = {
     id: "free",
     name: "Free",
     price: "₦0",
+    yearlyPrice: "₦0",
     summary: "Run one store with a full storefront.",
     features: [
       `Up to ${FREE_PRODUCT_LIMIT} products`,
       `${FREE_STORE_LIMIT} store`,
       "WhatsApp checkout",
       "Price requests for services",
-      /*
-       * This said "All storefront templates" while `isTemplateAllowedOnPlan`
-       * allowed three of the ten — a plan card advertising something the
-       * template picker then refused. The number comes from the allow-list so
-       * the copy cannot drift from the rule again.
-       */
       `${FREE_TEMPLATE_IDS.length} starter templates`,
+      "SwiftLink branding shown",
     ],
   },
   pro: {
     id: "pro",
     name: "Pro",
+    tag: "Most Popular",
     price: `₦${PLAN_PRICE_NGN.pro.toLocaleString()} / month`,
-    summary: `Up to ${PRO_STORE_LIMIT} stores with ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products each.`,
+    yearlyPrice: `₦${PLAN_PRICE_YEARLY_NGN.pro.toLocaleString()} / year`,
+    summary: `Up to ${PRO_STORE_LIMIT} stores with up to ${PRO_PRODUCT_LIMIT} products across all stores.`,
     features: [
       "Everything in Free",
-      `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products`,
+      `Up to ${PRO_PRODUCT_LIMIT} products`,
       `Up to ${PRO_STORE_LIMIT} stores`,
       "All storefront templates",
       "Discount codes",
       "Detailed analytics",
       "CSV export",
+      "SwiftLink branding shown",
     ],
   },
   business: {
     id: "business",
     name: "Business",
     price: `₦${PLAN_PRICE_NGN.business.toLocaleString()} / month`,
-    summary: "Several brands, one account.",
+    yearlyPrice: `₦${PLAN_PRICE_YEARLY_NGN.business.toLocaleString()} / year`,
+    summary: `Up to ${MAX_STORES_PER_USER} stores with up to ${BUSINESS_PRODUCT_LIMIT.toLocaleString()} products across all stores.`,
     features: [
       "Everything in Pro",
-      `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products`,
+      `Up to ${BUSINESS_PRODUCT_LIMIT.toLocaleString()} products`,
       `Up to ${MAX_STORES_PER_USER} stores`,
       "Connect your own domain",
       "No SwiftLink branding",
+      "Custom preloader screen",
+      "Priority WhatsApp support",
     ],
   },
 };
 
-/** Human-readable usage for a plan card: "4 of 6". */
+/** Human-readable usage for a plan card: "4 of 10". */
 export function formatUsage(used: number, limit: number): string {
   return `${used} of ${formatLimit(limit)}`;
 }
 
-/** Human-readable limit, for toasts and upgrade prompts: "6". */
+/** Human-readable limit, for toasts and upgrade prompts: "10". */
 export function formatLimit(limit: number): string {
   return isUnlimited(limit) ? String(MAX_PRODUCTS_PER_STORE) : String(limit);
 }
@@ -336,12 +360,16 @@ export function formatLimit(limit: number): string {
  */
 export function productLimitMessage(plan: unknown): string {
   const limit = productLimitFor(plan);
-  return `Your ${normalizePlan(plan).toUpperCase()} plan allows a maximum of ${limit} products. Upgrade to add more!`;
+  const normalized = normalizePlan(plan);
+  if (normalized === "free") {
+    return `Your FREE plan allows a maximum of ${limit} products. Upgrade to Pro for up to 500 products!`;
+  }
+  return `Your ${normalized.toUpperCase()} plan allows a maximum of ${limit.toLocaleString()} products across all stores. Upgrade to add more!`;
 }
 
 /** Copy for the per-store ceiling, which is the cap every paid plan has. */
 export function productCeilingMessage(): string {
-  return `You have reached the ${MAX_PRODUCTS_PER_STORE.toLocaleString()}-product limit for a single store.`;
+  return `You have reached the ${BUSINESS_PRODUCT_LIMIT.toLocaleString()}-product limit across all stores.`;
 }
 
 /**
@@ -350,7 +378,7 @@ export function productCeilingMessage(): string {
  * is the same 1,000 the pricing page quotes.
  */
 export function productLimitBlockedMessage(plan: unknown): string {
-  return effectiveProductLimitFor(plan) === MAX_PRODUCTS_PER_STORE
+  return effectiveProductLimitFor(plan) === BUSINESS_PRODUCT_LIMIT
     ? productCeilingMessage()
     : productLimitMessage(plan);
 }

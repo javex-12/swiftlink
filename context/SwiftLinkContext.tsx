@@ -1435,8 +1435,15 @@ export function SwiftLinkProvider({
 
   const addProduct = useCallback(() => {
     setState((prev) => {
-      if (visibleProductCount(prev.products) >= effectiveProductLimitFor(prev.plan)) {
-        addToast(productLimitBlockedMessage(prev.plan), "error");
+      const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [prev]);
+      const allStores = stores.length > 0 ? stores : [prev];
+      const totalVisible = allStores.reduce((sum, s) => {
+        const prods = s.id === prev.id ? prev.products : s.products;
+        return sum + visibleProductCount(prods || []);
+      }, 0);
+
+      if (totalVisible >= effectiveProductLimitFor(currentPlan)) {
+        addToast(productLimitBlockedMessage(currentPlan), "error");
         return prev;
       }
 
@@ -1458,7 +1465,7 @@ export function SwiftLinkProvider({
       persistState(next);
       return next;
     });
-  }, [persistState, addToast]);
+  }, [stores, persistState, addToast]);
 
   const updateProduct = useCallback(
     (id: number, field: string, value: unknown) => {

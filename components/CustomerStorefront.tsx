@@ -33,7 +33,7 @@ import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
 import { DEFAULT_WEBSITE_TEMPLATE_ID, themeForTemplate, websiteTemplateById } from "@/lib/theme/templates";
 import { viewerOwnsStore } from "@/lib/store-ownership";
-import { isProductVisible } from "@/lib/plans";
+import { isProductVisible, normalizePlan } from "@/lib/plans";
 import { TemplateSite } from "@/components/storefront/template-sites";
 import { StorefrontReviews } from "@/components/storefront/StorefrontReviews";
 import { themeToCssVars } from "@/lib/theme/derive";
@@ -914,6 +914,20 @@ export function CustomerStorefront({
     ) ||
     Boolean(user && effectiveState && effectiveState.ownerId === user.id);
   
+  const isBusinessTier = whiteLabel || normalizePlan(effectiveState?.plan) === "business";
+  const [showPreloader, setShowPreloader] = useState<boolean>(() => {
+    return isBusinessTier && effectiveState?.customPreloader?.enabled !== false;
+  });
+
+  useEffect(() => {
+    if (showPreloader) {
+      const timer = setTimeout(() => {
+        setShowPreloader(false);
+      }, 950);
+      return () => clearTimeout(timer);
+    }
+  }, [showPreloader]);
+
   const [screen, setScreen] = useState<"home" | "product" | "cart" | "search" | "success" | "community">("home");
   const [activeTab, setActiveTab] = useState<"home" | "search" | "cart" | "community">("home");
   const [activeImgIdx, setActiveImgIdx] = useState(0);
@@ -1554,6 +1568,65 @@ export function CustomerStorefront({
          } as React.CSSProperties}>
       
       <div className="w-full min-h-screen flex flex-col relative overflow-x-clip">
+        <AnimatePresence>
+          {showPreloader && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-white/98 dark:bg-[#0A1210]/98 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {s.bizImage ? (
+                  <img
+                    src={s.bizImage}
+                    alt={s.bizName || "Store"}
+                    className="h-20 w-20 rounded-2xl object-cover shadow-lg border border-black/5 dark:border-white/10"
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl text-2xl font-black text-white shadow-lg"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {(s.bizName || "·").slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </motion.div>
+              {s.bizName ? (
+                <motion.h2
+                  initial={{ y: 8, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.08, duration: 0.25 }}
+                  className="text-base font-bold text-slate-900 dark:text-[#E8F1EC]"
+                >
+                  {s.bizName}
+                </motion.h2>
+              ) : null}
+              <div className="w-32 h-1 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: accentColor }}
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "100%" }}
+                  transition={{ repeat: Infinity, duration: 0.9, ease: "easeInOut" }}
+                />
+              </div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.12, duration: 0.25 }}
+                className="text-xs font-medium text-slate-500 dark:text-[#9DB3A8]"
+              >
+                {s.customPreloader?.text || s.tagline || "Preparing your experience…"}
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex-1 flex flex-col relative">
             
             {/* HOME SCREEN - PERSISTENT TO PRESERVE SCROLL */}

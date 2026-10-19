@@ -20,16 +20,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Billing is not configured yet." }, { status: 503 });
   }
 
-  const body = (await request.json().catch(() => null)) as { plan?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { plan?: unknown; interval?: unknown } | null;
   const plan = body?.plan;
   if (!isPaidPlan(plan)) {
     return NextResponse.json({ error: "Choose Pro or Business." }, { status: 400 });
   }
 
+  const interval = body?.interval === "yearly" ? "yearly" : "monthly";
+
   const origin = new URL(request.url).origin;
   const result = await initializePlanCheckout({
     email: user.email,
     plan,
+    interval,
     ownerId: user.id,
     callbackUrl: `${origin}/account?billing=return`,
   });

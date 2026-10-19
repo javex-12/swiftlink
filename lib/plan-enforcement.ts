@@ -132,6 +132,7 @@ export function repairAccountToPlan(
     stayPublished = new Set(publishedAllowance(stores, storeLimit));
   }
 
+  let remainingProducts = productLimit;
   let storeId: string | null = null;
   let hiddenProducts = 0;
   const unpublishedStoreIds: string[] = [];
@@ -144,12 +145,17 @@ export function repairAccountToPlan(
       unpublishedStoreIds.push(store.id as string);
     }
 
-    if (!isUnlimited(productLimit) && visibleProductCount(repaired.products) > productLimit) {
-      const alreadyHidden = repaired.products.filter((product) => !isProductVisible(product)).length;
-      const products = clampProductVisibility(repaired.products, productLimit);
-      hiddenProducts += products.filter((product) => !isProductVisible(product)).length - alreadyHidden;
-      storeId = store.id ?? null;
-      repaired = { ...repaired, products };
+    if (!isUnlimited(productLimit)) {
+      const allowed = Math.max(0, remainingProducts);
+      const visibleCount = visibleProductCount(repaired.products);
+      if (visibleCount > allowed) {
+        const alreadyHidden = repaired.products.filter((product) => !isProductVisible(product)).length;
+        const products = clampProductVisibility(repaired.products, allowed);
+        hiddenProducts += products.filter((product) => !isProductVisible(product)).length - alreadyHidden;
+        storeId = store.id ?? null;
+        repaired = { ...repaired, products };
+      }
+      remainingProducts -= visibleProductCount(repaired.products);
     }
 
     return repaired;

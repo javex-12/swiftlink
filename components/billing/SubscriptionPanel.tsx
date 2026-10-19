@@ -5,7 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, CreditCard, Loader2, TriangleAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { PLAN_DETAILS, PLAN_PRICE_NGN, type Plan } from "@/lib/plans";
+import {
+  PLAN_DETAILS,
+  PLAN_PRICE_NGN,
+  PLAN_PRICE_YEARLY_NGN,
+  type BillingInterval,
+  type Plan,
+} from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,6 +50,7 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
   const [busy, setBusy] = useState<PaidPlan | "cancel" | "verify" | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   const loadSubscription = useCallback(async () => {
     if (!user?.id) return;
@@ -102,7 +109,7 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
       const response = await fetch("/api/paystack/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, interval }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         authorizationUrl?: string;
@@ -190,6 +197,46 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
             </p>
           )}
 
+          {upgradeTargets.length > 0 && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[11px] font-medium text-[#9DB3A8]">Billing:</span>
+              <div className="inline-flex rounded-[10px] border border-[#24382F] bg-[#111C18] p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setInterval("monthly")}
+                  className={cn(
+                    "rounded-[8px] px-2.5 py-1 text-[10px] font-semibold transition",
+                    interval === "monthly"
+                      ? "bg-[#19C37D] text-[#04140D]"
+                      : "text-[#9DB3A8] hover:text-[#E8F1EC]",
+                  )}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInterval("yearly")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[8px] px-2.5 py-1 text-[10px] font-semibold transition",
+                    interval === "yearly"
+                      ? "bg-[#19C37D] text-[#04140D]"
+                      : "text-[#9DB3A8] hover:text-[#E8F1EC]",
+                  )}
+                >
+                  <span>Yearly</span>
+                  <span className={cn(
+                    "rounded-full px-1.5 py-0.2 text-[9px] font-extrabold",
+                    interval === "yearly"
+                      ? "bg-[#04140D]/20 text-[#04140D]"
+                      : "bg-[#19C37D]/20 text-[#19C37D]",
+                  )}>
+                    Pay for 10 mos, get 12
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {upgradeTargets.map((plan) => (
               <button
@@ -209,7 +256,17 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
                 ) : (
                   <ArrowUpRight size={12} />
                 )}
-                Upgrade to {PLAN_DETAILS[plan].name} — ₦{PLAN_PRICE_NGN[plan].toLocaleString()}/mo
+                <span>Upgrade to {PLAN_DETAILS[plan].name}</span>
+                {plan === "pro" && (
+                  <span className="rounded-full bg-[#E8B93A]/25 px-1.5 py-0.5 text-[9px] font-extrabold text-[#E8B93A]">
+                    MOST POPULAR
+                  </span>
+                )}
+                <span className="opacity-80">
+                  — ₦{interval === "yearly"
+                    ? `${PLAN_PRICE_YEARLY_NGN[plan].toLocaleString()}/yr`
+                    : `${PLAN_PRICE_NGN[plan].toLocaleString()}/mo`}
+                </span>
               </button>
             ))}
 

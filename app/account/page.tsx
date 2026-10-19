@@ -13,6 +13,7 @@ import { formatDisplayPhone, normalizePhoneNumber } from "@/lib/phone";
 import {
   PLANS,
   PLAN_DETAILS,
+  accountPlanFor,
   applyProductVisibility,
   effectiveProductLimitFor,
   effectiveStoreLimitFor,
@@ -89,15 +90,19 @@ export default function AccountPage() {
    * differently — and usage is shown against the *enforced* limits, which is
    * what a merchant actually hits.
    */
-  const plan = normalizePlan(state.plan) as keyof typeof PLAN_DETAILS;
+  const plan = normalizePlan(accountPlanFor(stores.length ? stores : [state])) as keyof typeof PLAN_DETAILS;
   const planDetail = PLAN_DETAILS[plan];
   const productLimit = effectiveProductLimitFor(plan);
   const storeLimit = effectiveStoreLimitFor(plan);
-  const visibleProducts = state.products.filter((p) => p.visible !== false).length;
+  const allStores = stores.length > 0 ? stores : [state];
+  const totalVisibleProducts = allStores.reduce((sum, s) => {
+    const prods = s.id === state.id ? state.products : s.products;
+    return sum + (prods || []).filter((p) => p.visible !== false).length;
+  }, 0);
   const usage = [
     {
       label: "Products",
-      used: visibleProducts,
+      used: totalVisibleProducts,
       limit: productLimit,
       icon: Package,
     },
@@ -108,7 +113,7 @@ export default function AccountPage() {
    * has `1 of 1` stores by design, so counting that showed "At limit" to every
    * free and Pro merchant as though something were wrong.
    */
-  const atLimit = !isUnlimited(productLimit) && visibleProducts >= productLimit;
+  const atLimit = !isUnlimited(productLimit) && totalVisibleProducts >= productLimit;
 
   /*
    * "Choose what stays live". Products are pre-selected from what the
@@ -365,7 +370,14 @@ export default function AccountPage() {
                       )}
                     >
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-[#E8F1EC]">{detail.name}</h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-[#E8F1EC]">{detail.name}</h4>
+                          {detail.tag && (
+                            <span className="rounded-full bg-[#19C37D]/20 border border-[#19C37D]/40 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[#19C37D]">
+                              {detail.tag}
+                            </span>
+                          )}
+                        </div>
                         {isCurrent ? (
                           <span className="rounded-full bg-[#19C37D]/15 px-2 py-0.5 text-[10px] font-semibold text-[#19C37D]">
                             Current
