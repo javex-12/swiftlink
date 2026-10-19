@@ -306,9 +306,23 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     if (currentType === type) setInteractions(prev => ({ ...prev, [id]: null }));
     else { setInteractions(prev => ({ ...prev, [id]: type })); if (type === "like") nl++; if (type === "dislike") nd++; }
     setReviews(prev => prev.map(r => r.id === id ? { ...r, likes: nl, dislikes: nd } : r));
-    void supabase.from("store_reviews").update({ likes: nl, dislikes: nd }).eq("id", id);
+
+    /*
+     * Awaited, because a PostgREST builder sends nothing until it is awaited.
+     * These two were `void supabase.from(...)…`, which built the request and
+     * discarded it: the like counter moved on screen and never moved in the
+     * database. The reactions looked like a working feature that silently reset
+     * on every reload.
+     */
+    const { error: reactionError } = await supabase
+      .from("store_reviews")
+      .update({ likes: nl, dislikes: nd })
+      .eq("id", id);
+    if (reactionError) console.warn("[social] reaction not saved:", reactionError.message);
+
     if (type === "like" && user && review.user_id && review.user_id !== user.id) {
-       void supabase.from("social_notifications").insert({ user_id: review.user_id, actor_id: user.id, type: "vibe", post_id: id });
+       const { error: notifyError } = await supabase.from("social_notifications").insert({ user_id: review.user_id, actor_id: user.id, type: "vibe", post_id: id });
+       if (notifyError) console.warn("[social] notification not sent:", notifyError.message);
     }
   };
 
@@ -376,7 +390,10 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
        setComments(prev => prev.filter(c => c.id !== tempId));
     } else {
        if (user && activeThread.user_id && activeThread.user_id !== user.id) {
-           void supabase.from("social_notifications").insert({ user_id: activeThread.user_id, actor_id: user.id, type: "comment", post_id: activeThread.id });
+           // Awaited for the same reason as the like above: `void` on a lazy
+           // builder is not a fire-and-forget write, it is no write at all.
+           const { error: notifyError } = await supabase.from("social_notifications").insert({ user_id: activeThread.user_id, actor_id: user.id, type: "comment", post_id: activeThread.id });
+           if (notifyError) console.warn("[social] reply notification not sent:", notifyError.message);
        }
     }
   };

@@ -23,7 +23,7 @@ async function getStoreData(shopId: string) {
     if (!supabase) return null;
     const { data } = await supabase
       .from("stores")
-      .select("state_json, biz_name")
+      .select("state_json, biz_name, plan")
       .eq("id", shopId)
       .single();
     return data;
@@ -52,10 +52,20 @@ export async function generateMetadata({
   const state = data?.state_json as any;
   const bizName = state?.bizName || data?.biz_name || "SwiftLink Store";
   const seoTitle = state?.seoTitle || `${bizName} — Shop Now`;
+  /*
+   * This legacy `/<handle>/<id>` address is still reachable from old shared
+   * links, so it must hold the same promise as the canonical `/<handle>` page:
+   * a Business store never carries the platform's name. Without the `absolute`
+   * title the root layout appends "| SwiftLink", and without the brand siteName
+   * the social card advertises us instead of the merchant.
+   */
+  const whiteLabel = data?.plan === "business";
   const ogDescription =
     state?.ogDescription ||
     state?.tagline ||
-    `Shop ${bizName} on SwiftLink Pro. Fast WhatsApp ordering, live product catalog.`;
+    (whiteLabel
+      ? `Shop ${bizName}. Fast WhatsApp ordering, live product catalog.`
+      : `Shop ${bizName} on SwiftLink Pro. Fast WhatsApp ordering, live product catalog.`);
 
   // Prefer explicit ogImage → bizImage → heroImage → product image → site logo
   // Skip any base64 data URLs — crawlers cannot render them
@@ -73,7 +83,7 @@ export async function generateMetadata({
   const url = `${site}${canonicalPath}`;
 
   return {
-    title: seoTitle,
+    title: whiteLabel ? { absolute: seoTitle } : seoTitle,
     description: ogDescription,
     alternates: { canonical: canonicalPath },
     openGraph: {
@@ -81,7 +91,7 @@ export async function generateMetadata({
       title: seoTitle,
       description: ogDescription,
       url,
-      siteName: "SwiftLink Pro",
+      siteName: whiteLabel ? bizName : "SwiftLink Pro",
       images: [
         {
           url: ogImage,
@@ -113,5 +123,11 @@ export default async function StorePage({
   // renders crawlable content too instead of the client loading spinner.
   const initialState = state ? ({ ...state, id: shopId } as ShopState) : null;
 
-  return <CustomerStorefrontPage shopId={shopId} initialState={initialState} />;
+  return (
+    <CustomerStorefrontPage
+      shopId={shopId}
+      initialState={initialState}
+      whiteLabel={data?.plan === "business"}
+    />
+  );
 }

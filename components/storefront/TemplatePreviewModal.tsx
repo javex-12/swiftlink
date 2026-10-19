@@ -135,7 +135,11 @@ export function TemplatePreviewModal({
    * the template is applied.
    */
   const storefront = (
-    <CustomerStorefront preview overrideState={activeState} />
+    <CustomerStorefront
+      preview
+      overrideState={activeState}
+      whiteLabel={vendorState.plan === "business"}
+    />
   );
 
   const sourceLabel = useSampleData

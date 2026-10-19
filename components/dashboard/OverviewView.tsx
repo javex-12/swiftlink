@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
+import { supabase } from "@/lib/supabase-client";
 import { formatMoney } from "@/lib/currency";
+import { confirmedSalesMinor } from "@/lib/inquiry-revenue";
 import { cn, getSmartFirstName } from "@/lib/utils";
 import {
   PLAN_DETAILS,
@@ -36,15 +38,36 @@ import {
   ShieldAlert,
   Pause,
   Play,
+  RefreshCw,
 } from "lucide-react";
 
+/**
+ * The numbers on this screen are read from the store, not printed as zero.
+ *
+ * They were literal `0` placeholders, so the console told every merchant their
+ * store had never been seen even while the events table held real rows. The
+ * storefront writes `view`, `product_click`, `checkout` and `quote_request`
+ * events, and inquiries carry status and amount, which is everything the four
+ * cards need.
+ */
+type LiveStats = {
+  views: number;
+  productTaps: number;
+  inquiries: number;
+  soldMinor: number;
+};
+
+const EMPTY_STATS: LiveStats = { views: 0, productTaps: 0, inquiries: 0, soldMinor: 0 };
+
 export function OverviewView() {
-  const { state, user, addToast, updateState, stores } = useSwiftLink();
+  const { state, user, addToast, updateState, stores, planReady } = useSwiftLink();
   // Set by middleware/requireAdmin when an authenticated non-admin opens an
   // ADMIN_PREFIXES route. Previously that redirect was silent, which made the
   // console look like a missing page rather than a permission boundary
   // (docs/05-IMPROVEMENT-PLAN.md R-01, R-14).
   const deniedAdmin = useSearchParams().get("denied") === "admin";
+  const [stats, setStats] = useState<LiveStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedChannel, setCopiedChannel] = useState<ShareChannel | null>(null);
   const [linkShared, setLinkShared] = useState(() => {
@@ -55,6 +78,60 @@ export function OverviewView() {
   });
 
   const firstName = getSmartFirstName(state.ownerName, user?.email, state.bizName);
+
+  const loadStats = useCallback(async () => {
+    const storeId = state.id;
+    if (!storeId) {
+      setStats(EMPTY_STATS);
+      return;
+    }
+    setStatsLoading(true);
+    try {
+      const [views, taps, inquiries, sales] = await Promise.all([
+        supabase
+          .from("store_events")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId)
+          .eq("event_type", "view"),
+        supabase
+          .from("store_events")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId)
+          .eq("event_type", "product_click"),
+        supabase
+          .from("inquiries")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId),
+        supabase
+          .from("inquiries")
+          .select("status, order_ref, final_amount_minor, product_price_minor")
+          .eq("store_id", storeId)
+          .eq("status", "sold"),
+      ]);
+
+      const soldMinor = confirmedSalesMinor(
+        (sales.data as
+          | { order_ref: string | null; final_amount_minor: number | null; product_price_minor: number | null }[]
+          | null) ?? [],
+      );
+
+      setStats({
+        views: views.count ?? 0,
+        productTaps: taps.count ?? 0,
+        inquiries: inquiries.count ?? 0,
+        soldMinor,
+      });
+    } catch {
+      // A stats read is not worth an error banner over the merchant's store.
+      setStats(EMPTY_STATS);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [state.id]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
 
   // A failed card puts the store in grace: entitlements are untouched and
   // nothing is deleted until the window closes (lib/plans.ts).
@@ -210,20 +287,26 @@ export function OverviewView() {
                 actually be changed. */}
             <Link
               href="/account#plans"
-              title={`${planDetail.name} plan — ${planDetail.summary}`}
+              title={
+                planReady
+                  ? `${planDetail.name} plan — ${planDetail.summary}`
+                  : "Checking your plan"
+              }
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition",
-                plan === "free"
+                planReady && plan === "free"
                   ? "border-[#24382F] bg-[#14231D] text-[#9DB3A8] hover:border-[#19C37D] hover:text-[#E8F1EC]"
                   : "border-[#19C37D]/30 bg-[#19C37D]/10 text-[#19C37D] hover:border-[#19C37D]",
               )}
             >
               <BadgeCheck className="h-3 w-3" />
-              {planDetail.name} plan
-              <span className="text-[10px] font-normal opacity-80">·
-                {formatUsage(state.products.length, productLimit)} products ·
-                {formatUsage(stores.length, storeLimit)} stores
-              </span>
+              {planReady ? `${planDetail.name} plan` : "Checking plan…"}
+              {planReady && (
+                <span className="text-[10px] font-normal opacity-80">·
+                  {formatUsage(state.products.length, productLimit)} products ·
+                  {formatUsage(stores.length, storeLimit)} stores
+                </span>
+              )}
             </Link>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -382,54 +465,77 @@ export function OverviewView() {
       </section>
 
       {/* ─── Four Key Stat Cards ─────────────────────────────────────────── */}
-      <section aria-label="Store overview stats" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {/* Store Views */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9DB3A8]">Store views</span>
-            <Eye className="h-4 w-4 text-[#9DB3A8]" />
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">0</span>
-            <p className="mt-1 text-[11px] text-[#9DB3A8]">From direct links &amp; social</p>
-          </div>
+      <section aria-label="Store overview stats">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8]">
+            All time
+          </h2>
+          <button
+            type="button"
+            onClick={() => void loadStats()}
+            disabled={statsLoading}
+            className="flex min-h-[32px] items-center gap-1.5 rounded-full border border-[#24382F] px-3 text-[11px] font-semibold text-[#9DB3A8] transition hover:border-[#19C37D] hover:text-[#E8F1EC] disabled:opacity-60"
+          >
+            <RefreshCw className={cn("h-3 w-3", statsLoading && "animate-spin")} />
+            {statsLoading ? "Updating" : "Refresh"}
+          </button>
         </div>
 
-        {/* Product Taps */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9DB3A8]">Product taps</span>
-            <MousePointerClick className="h-4 w-4 text-[#9DB3A8]" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {/* Store Views */}
+          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9DB3A8]">Store views</span>
+              <Eye className="h-4 w-4 text-[#9DB3A8]" />
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
+                {stats ? stats.views.toLocaleString() : "—"}
+              </span>
+              <p className="mt-1 text-[11px] text-[#9DB3A8]">From direct links &amp; social</p>
+            </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">0</span>
-            <p className="mt-1 text-[11px] text-[#9DB3A8]">Buyers viewing details</p>
-          </div>
-        </div>
 
-        {/* Chats Started */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9DB3A8]">Chats started</span>
-            <MessageSquare className="h-4 w-4 text-[#9DB3A8]" />
+          {/* Product Taps */}
+          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9DB3A8]">Product taps</span>
+              <MousePointerClick className="h-4 w-4 text-[#9DB3A8]" />
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
+                {stats ? stats.productTaps.toLocaleString() : "—"}
+              </span>
+              <p className="mt-1 text-[11px] text-[#9DB3A8]">Buyers viewing details</p>
+            </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">0</span>
-            <p className="mt-1 text-[11px] text-[#9DB3A8]">WhatsApp order inquiries</p>
-          </div>
-        </div>
 
-        {/* Confirmed Sales */}
-        <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9DB3A8]">Confirmed sales</span>
-            <BadgeCheck className="h-4 w-4 text-[#19C37D]" />
+          {/* Chats Started */}
+          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9DB3A8]">Order inquiries</span>
+              <MessageSquare className="h-4 w-4 text-[#9DB3A8]" />
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
+                {stats ? stats.inquiries.toLocaleString() : "—"}
+              </span>
+              <p className="mt-1 text-[11px] text-[#9DB3A8]">WhatsApp, social &amp; price requests</p>
+            </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
-              {formatMoney(0, state.currency || "NGN")}
-            </span>
-            <p className="mt-1 text-[11px] text-[#9DB3A8]">Recorded through inquiries</p>
+
+          {/* Confirmed Sales */}
+          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[#9DB3A8]">Confirmed sales</span>
+              <BadgeCheck className="h-4 w-4 text-[#19C37D]" />
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
+                {stats ? formatMoney(stats.soldMinor, state.currency || "NGN") : "—"}
+              </span>
+              <p className="mt-1 text-[11px] text-[#9DB3A8]">Recorded through inquiries</p>
+            </div>
           </div>
         </div>
       </section>

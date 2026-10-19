@@ -7,6 +7,17 @@ export type ProductAttribute = {
   value: string;
 };
 
+/**
+ * A question on a service's price-request form. The merchant writes these, so
+ * the form asks what that particular business needs to quote the job rather
+ * than a fixed set of fields that only fit some trades.
+ */
+export type ProductRequestQuestion = {
+  id: string;
+  label: string;
+  required?: boolean;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -15,6 +26,20 @@ export type Product = {
   image: string; // primary image for backwards compat
   images?: string[]; // new list of multiple images
   outOfStock: boolean;
+
+  /**
+   * `fixed` (default) sells at `price`. `quote` is a service whose price depends
+   * on the job: the storefront prints "Ask for price" and opens a request form
+   * instead of the cart (see `lib/product-pricing.ts`).
+   */
+  priceType?: "fixed" | "quote";
+
+  /**
+   * The buyer questions for a `quote` product, in the merchant's own words.
+   * Absent means "use the default set"; an empty array means the merchant
+   * removed them all and only wants a name and phone.
+   */
+  requestQuestions?: ProductRequestQuestion[];
   
   // Phase 2: Dynamic Attributes
   category?: string;

@@ -44,10 +44,10 @@ export const defaultShopState = (): ShopState => ({
   buttonColor: "#10b981",
   fontStyle: "modern",
   buttonRadius: "rounded",
-  storefrontTheme: {
-    primaryColor: "#10b981",
-    background: "dark",
-  },
+  // No `storefrontTheme` until the merchant changes something: its mere
+  // presence is how `hasCustomizedDesign` (lib/setup-guide.ts) knows the
+  // "Customize your store" step is done. `resolveStorefrontTheme` supplies the
+  // defaults, so an absent theme still renders dark with the default accent.
 
   heroTemplateId: "hero-1",
   catalogTemplateId: "catalog-1",

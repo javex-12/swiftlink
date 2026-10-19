@@ -28,6 +28,12 @@ import {
 } from "@/lib/theme/templates";
 import { Logo } from "@/components/Logo";
 import { FEATURE_FLAGS, isFeatureEnabled } from "@/lib/flags";
+import {
+  FREE_PRODUCT_LIMIT,
+  MAX_PRODUCTS_PER_STORE,
+  MAX_STORES_PER_USER,
+  PLAN_PRICE_NGN,
+} from "@/lib/plans";
 
 /**
  * The marketing page.
@@ -693,53 +699,58 @@ type Plan = {
 };
 
 function Pricing() {
-  const currency = useCurrency();
-
   const plans: Plan[] = [
     {
       name: "Starter",
       price: "Free",
       description: "Try the whole workflow. No card required.",
       features: [
-        { label: "5 live products" },
-        { label: "WhatsApp order inquiries" },
-        { label: "Basic order tracking" },
-        { label: "SwiftLink branding" },
-        { label: "Community support" },
+        { label: `Up to ${FREE_PRODUCT_LIMIT} products` },
+        { label: "1 store" },
+        { label: "WhatsApp checkout" },
+        { label: "Price requests for services" },
+        { label: "3 starter templates" },
       ],
       cta: "Start free",
     },
     {
       name: "Pro",
-      price: currency === "₦" ? "₦5,000" : "$10",
+      // The amount Paystack actually charges, with no second currency shown
+      // for it: the plans are NGN-only, so a dollar figure here would be a
+      // price the merchant could never be billed.
+      price: `₦${PLAN_PRICE_NGN.pro.toLocaleString()}`,
       period: "/mo",
       description: "Everything you need to run a serious store.",
       features: [
-        { label: "Unlimited products" },
-        { label: "Custom branding" },
-        { label: "Detailed analytics" },
+        // The cap the editor actually enforces, not a promise of infinity: a
+        // merchant who reads "unlimited" here and hits a ceiling there is being
+        // sold something the product does not do.
+        { label: "Everything in Free" },
+        { label: `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products` },
+        { label: "1 store" },
+        { label: "All storefront templates" },
         { label: "Discount codes" },
-        { label: "Export orders (CSV)" },
-        { label: "Priority support" },
+        { label: "Detailed analytics" },
+        { label: "CSV export" },
       ],
       cta: "Upgrade to Pro",
       featured: true,
     },
     {
       name: "Business",
-      price: currency === "₦" ? "₦15,000" : "$29",
+      // Same constant the in-app plan card and Paystack charge use.
+      price: `₦${PLAN_PRICE_NGN.business.toLocaleString()}`,
       period: "/mo",
       description: "For established brands and small teams.",
       features: [
         { label: "Everything in Pro" },
-        { label: "Multi-store management" },
-        { label: "Team roles" },
-        { label: "Custom domain" },
-        { label: "White-label experience" },
-        { label: "API access & webhooks", soon: true },
-        { label: "Audit logs & backups", soon: true },
+        { label: `Up to ${MAX_STORES_PER_USER} stores` },
+        { label: "Connect your own domain" },
+        { label: "No SwiftLink branding" },
       ],
-      cta: "Talk to us",
+      // Self-serve: the signup link below starts a real checkout, so the label
+      // says what happens rather than inviting a conversation that never comes.
+      cta: "Upgrade to Business",
     },
   ];
 

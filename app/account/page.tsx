@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase } from "@/lib/supabase-client";
 import { ProLayout } from "@/components/ProLayout";import {
-  User, Package, Globe, Smartphone, Store, Sparkles,
+  User, Package, Globe, Smartphone, Store, BadgeCheck, ArrowUpRight, MessageCircle,
   CheckCircle2, AlertCircle, Camera, ArrowLeft, Pause, Play, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,9 +21,11 @@ import {
   isUnlimited,
   normalizePlan,
 } from "@/lib/plans";
+import { SubscriptionPanel } from "@/components/billing/SubscriptionPanel";
+import { DomainSettings } from "@/components/domains/DomainSettings";
 
 export default function AccountPage() {
-  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores, chooseStore } =
+  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores, chooseStore, planReady } =
     useSwiftLink();
 
   const [actionLoading, setActionLoading] = useState<"deactivate" | "delete" | null>(null);
@@ -101,7 +103,12 @@ export default function AccountPage() {
     },
     { label: "Stores", used: stores.length, limit: storeLimit, icon: Store },
   ];
-  const atLimit = usage.some((u) => !isUnlimited(u.limit) && u.used >= u.limit);
+  /*
+   * Only the catalogue being full is worth flagging. Every single-store plan
+   * has `1 of 1` stores by design, so counting that showed "At limit" to every
+   * free and Pro merchant as though something were wrong.
+   */
+  const atLimit = !isUnlimited(productLimit) && visibleProducts >= productLimit;
 
   /*
    * "Choose what stays live". Products are pre-selected from what the
@@ -240,19 +247,37 @@ export default function AccountPage() {
               <div className="relative z-10">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9DB3A8]">Your Plan</span>
                 <div className="flex items-center gap-2 mt-1 mb-3">
-                  <h2 className="text-lg font-bold text-[#E8F1EC]">{planDetail.name} plan</h2>
-                  {atLimit && (
+                  {/*
+                    Never name a tier before the server has: the local mirror
+                    can hold an old plan, and printing it then correcting it is
+                    the flicker this replaced.
+                  */}
+                  <h2 className="text-lg font-bold text-[#E8F1EC]">
+                    {planReady ? `${planDetail.name} plan` : "Checking your plan…"}
+                  </h2>
+                  {planReady && atLimit && (
                     <span className="rounded-full bg-[#E8B93A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#E8B93A]">At limit</span>
                   )}
                 </div>
                 <p className="text-xs text-[#9DB3A8] leading-relaxed mb-4">{planDetail.summary}</p>
-                <Link
-                  href="#plans"
-                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[12px] border border-[#24382F] bg-[#14231D] px-3 text-[11px] font-semibold text-[#E8F1EC] transition hover:border-[#19C37D]"
-                >
-                  <Sparkles size={12} />
-                  Compare and upgrade
-                </Link>
+                {plan === "business" ? (
+                  /*
+                    Business is the top tier, so there is nothing above it. A
+                    "compare and upgrade" button here led to a panel that could
+                    only offer it what it already had.
+                  */
+                  <span className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[12px] border border-[#19C37D]/30 bg-[#19C37D]/10 px-3 text-[11px] font-semibold text-[#19C37D]">
+                    <BadgeCheck size={12} /> Highest plan
+                  </span>
+                ) : (
+                  <Link
+                    href="#plans"
+                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[12px] border border-[#24382F] bg-[#14231D] px-3 text-[11px] font-semibold text-[#E8F1EC] transition hover:border-[#19C37D]"
+                  >
+                    <ArrowUpRight size={12} />
+                    Upgrade plan
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -261,10 +286,9 @@ export default function AccountPage() {
           <div className="lg:col-span-2 space-y-6">
             {/*
               Plans — the current plan, usage against the *enforced* limits, and
-              every tier. There is no self-serve checkout in the app yet (only
-              Paystack for storefront orders), so the call to action opens the
-              feedback channel an admin already reads rather than pretending to
-              take a payment.
+              every tier. Upgrades are self-serve through Paystack's hosted
+              checkout (see SubscriptionPanel); the feedback button is still there
+              for merchants who would rather talk to a person first.
             */}
             <section
               id="plans"
@@ -272,12 +296,18 @@ export default function AccountPage() {
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
-                  <Sparkles size={18} />
+                  <BadgeCheck size={18} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-[#E8F1EC]">Plan and usage</h3>
                   <p className="text-xs text-[#9DB3A8]">
-                    You are on <strong className="text-[#E8F1EC]">{planDetail.name}</strong> ({planDetail.price}).
+                    {planReady ? (
+                      <>
+                        You are on <strong className="text-[#E8F1EC]">{planDetail.name}</strong> ({planDetail.price}).
+                      </>
+                    ) : (
+                      "Checking the plan on your account…"
+                    )}
                   </p>
                 </div>
               </div>
@@ -356,20 +386,26 @@ export default function AccountPage() {
                 })}
               </div>
 
+              {/*
+                Self-serve billing. The card flow lives on Paystack's hosted page
+                and the plan is only changed after a verified payment (or a
+                signature-checked webhook) — this panel never decides a tier.
+              */}
+              {planReady && user ? <SubscriptionPanel currentPlan={plan} /> : null}
+
               <div className="mt-6 flex flex-col gap-3 border-t border-[#1E2D27] pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="flex items-start gap-2 text-[11px] leading-relaxed text-[#9DB3A8]">
                   <Lock size={13} className="mt-0.5 shrink-0" />
-                  Card checkout for plans is not live in the app yet — plan changes are
-                  applied by the team, and your stores and products are never deleted
-                  when a limit is reached.
+                  Your plan changes as soon as payment is confirmed. Nothing is deleted at a
+                  limit: extra products are hidden and extra stores are paused until you upgrade.
                 </p>
                 <button
                   type="button"
                   onClick={() => setFeedbackOpen(true)}
-                  className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#19C37D] px-4 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070]"
+                  className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 text-xs font-bold text-[#E8F1EC] transition hover:border-[#19C37D]"
                 >
-                  <Sparkles size={14} />
-                  {plan === "business" ? "Ask about your plan" : "Request an upgrade"}
+                  <MessageCircle size={14} />
+                  Ask about your plan
                 </button>
               </div>
 
@@ -491,6 +527,33 @@ export default function AccountPage() {
                   )}
                 </div>
               )}
+            </section>
+
+            {/*
+              Custom domain. The panel writes an owner-scoped row and asks the
+              server to check DNS; routing itself lives in middleware.ts, so a
+              merchant's hostname serves the same canonical storefront.
+            */}
+            <section
+              id="domain"
+              className="scroll-mt-20 bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
+                  <Globe size={18} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm text-[#E8F1EC]">Your own domain</h3>
+                  <p className="text-xs text-[#9DB3A8]">
+                    Point a domain you already own at your store instead of using the shared link.
+                  </p>
+                </div>
+              </div>
+              <DomainSettings
+                currentPlan={plan}
+                storeId={state.id}
+                storeHandle={state.storeUsername}
+              />
             </section>
 
             {/*

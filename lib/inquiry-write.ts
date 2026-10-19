@@ -52,6 +52,13 @@ export interface RecordOrderIntentParams {
   orderRef?: string | null;
   /** The prefilled order text, stored once on the first line of the order. */
   message?: string | null;
+  /**
+   * Buyer details from a price request. Cart checkout collects nothing, so these
+   * stay null there; the quote form asks for them because the merchant has to be
+   * able to reply even if the WhatsApp hand-off is declined.
+   */
+  buyerName?: string | null;
+  buyerPhone?: string | null;
   /** Discount applied to the order — `amountMinor` is the order total, stored once. */
   discount?: { code: string; amountMinor: number } | null;
   items: OrderIntentItem[];
@@ -71,7 +78,8 @@ export function toMinorUnits(major: number): number {
 export async function recordOrderIntent(
   params: RecordOrderIntentParams,
 ): Promise<number> {
-  const { storeId, currency, srcParam, channel, orderRef, message, discount, items } = params;
+  const { storeId, currency, srcParam, channel, orderRef, message, buyerName, buyerPhone, discount, items } =
+    params;
 
   // The storefront also runs in demo/offline mode where there is no Supabase
   // project; touching the client there throws by design.
@@ -99,8 +107,8 @@ export async function recordOrderIntent(
         p_currency: (currency || "NGN").slice(0, 3).toUpperCase(),
         p_product_price_minor: item.unitPriceMinor,
         p_selected_option: item.selectedOption ?? null,
-        p_buyer_name: null,
-        p_buyer_phone: null,
+        p_buyer_name: isFirstLine ? buyerName ?? null : null,
+        p_buyer_phone: isFirstLine ? buyerPhone ?? null : null,
         p_device_hash: deviceHash,
         p_source: source,
         p_message: isFirstLine ? message ?? null : null,

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isReservedFirstSegment, normalizeStoreUsername } from "@/lib/utils";
 
+
 /**
  * Server-side route protection + session refresh.
  *
@@ -16,6 +17,21 @@ const PROTECTED_PREFIXES = ["/pro", "/business", "/account"];
 
 // Routes that additionally require an entry in `system_admins`.
 const ADMIN_PREFIXES = ["/pro/admin"];
+
+/**
+ * Whether this request is for the platform itself rather than a merchant domain.
+ *
+ * `NEXT_PUBLIC_APP_HOST` covers the production app if it runs on its own custom
+ * domain (e.g. `swiftlink.pro`); without it, the app's own domain would be
+ * treated as a merchant hostname and rewritten to a store.
+ */
+function isPlatformHost(host: string): boolean {
+  if (!host) return true;
+  if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") return true;
+  if (host.endsWith(".vercel.app")) return true;
+  const appHost = process.env.NEXT_PUBLIC_APP_HOST?.trim().toLowerCase();
+  return Boolean(appHost && host === appHost);
+}
 
 const SIGN_IN_PATH = "/signup";
 
@@ -59,6 +75,33 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
+
+  /*
+   * Custom domains.
+   *
+   * A merchant's own hostname serves their storefront, so it is rewritten to the
+   * canonical `/<handle>` route — the same page, metadata and JSON-LD as the
+   * shared link, with no second rendering path to keep in sync. The lookup only
+   * returns verified domains (`resolve_store_domain`), so adding a row in
+   * Settings does not let anyone serve a store on a hostname they do not control.
+   *
+   * Unknown merchant hosts fall through untouched and get the normal 404 —
+   * answering with something clever there would leak which domains are claimed.
+   */
+  const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
+  if (host && !isPlatformHost(host)) {
+    const { data } = await supabase.rpc("resolve_store_domain", { hostname: host });
+    const resolved = (Array.isArray(data) ? data[0] : data) as { handle?: string } | null;
+    const handle = resolved?.handle ? normalizeStoreUsername(String(resolved.handle)) : null;
+    if (handle) {
+      const target = request.nextUrl.clone();
+      target.pathname = `/${handle}`;
+      const rewritten = NextResponse.rewrite(target, { request });
+      // Keep any cookie the auth client refreshed while we were here.
+      response.cookies.getAll().forEach((cookie) => rewritten.cookies.set(cookie));
+      return rewritten;
+    }
+  }
 
   // Legacy storefront URL → canonical, as a real 308.
   //

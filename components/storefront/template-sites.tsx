@@ -39,8 +39,11 @@ import {
   User,
   Settings,
   Minus,
+  Package,
 } from "lucide-react";
 import { getCleanWhatsAppDigits, formatDisplayPhone } from "@/lib/phone";
+import { hasDeliveryDetails } from "@/components/storefront/ProductDisclosure";
+import { formatProductPrice, isPriceOnRequest } from "@/lib/product-pricing";
 
 /*
  * The three stock-photo hero fallbacks (`unsplash.com/photo-...`) that used to
@@ -62,6 +65,12 @@ export type TemplateSiteProps = {
   onCart: () => void;
   onReviews: () => void;
   onLeaveFeedback?: () => void;
+  /**
+   * Business stores hide the platform credit. Decided on the server from
+   * `stores.plan` (see PublicStore), never from `state_json` — otherwise a
+   * merchant could white-label themselves by editing their own content.
+   */
+  whiteLabel?: boolean;
   /**
    * "Checkout" straight from a product: adds the item and opens the bag, where
    * the buyer picks their channel and the order is recorded as an inquiry.
@@ -85,6 +94,14 @@ const focusRing =
 
 function formatPrice(currency: string, price: number) {
   return `${currency}${Number(price).toLocaleString()}`;
+}
+
+/**
+ * What a card prints for a product. A quote-priced service must not advertise
+ * ₦0, so the label comes from the shared helper rather than from `price` alone.
+ */
+function priceLabel(currency: string, product: Product) {
+  return formatProductPrice(currency, product);
 }
 
 function shopNow() {
@@ -954,7 +971,7 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
                   {/* Card Bottom / Price & CTA */}
                   <div className="flex items-center justify-between border-t border-t-border/50 px-4 py-3 sm:px-5">
                     <span className="text-sm sm:text-base font-bold tabular-nums text-t-text">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -1053,7 +1070,8 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
             </div>
           </div>
           <div className="mt-8 border-t border-t-border/50 pt-6 text-center text-xs text-t-text-muted">
-            &copy; {new Date().getFullYear()} {state.bizName || template.name}. All rights reserved. Powered by SwiftLink.
+            &copy; {new Date().getFullYear()} {state.bizName || template.name}. All rights reserved.
+            {!props.whiteLabel && " Powered by SwiftLink."}
           </div>
         </div>
       </footer>
@@ -1251,7 +1269,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
                         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-t-surface-alt">
                           <ProductMedia product={product} />
                           <span className="absolute bottom-2 left-2 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                            {formatPrice(state.currency, product.price)}
+                            {priceLabel(state.currency, product)}
                           </span>
                         </div>
                         <p className="mt-2 truncate text-xs font-semibold text-t-text">
@@ -1369,7 +1387,7 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
 
                   <div className="mt-4 flex items-center justify-between border-t border-t-border/50 pt-3 px-1">
                     <span className="font-t-display text-sm sm:text-base font-bold tabular-nums text-t-text">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -1426,7 +1444,8 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
           <p className="mt-2 text-sm">{state.phone || "Message us on WhatsApp to order"}</p>
           <p className="mt-1">{state.deliveryAreas || state.location || "Nationwide Delivery"}</p>
           <p className="mt-8 text-[11px] opacity-70">
-            &copy; {new Date().getFullYear()} {state.bizName || template.name} · Powered by SwiftLink
+            &copy; {new Date().getFullYear()} {state.bizName || template.name}
+            {!props.whiteLabel && " · Powered by SwiftLink"}
           </p>
         </div>
       </footer>
@@ -1644,7 +1663,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                     #{String(idx + 1).padStart(2, "0")}
                   </span>
                   <span className="absolute bottom-2 left-2 right-2 truncate bg-black/80 px-2 py-1 text-[10px] font-black text-white">
-                    {formatPrice(state.currency, product.price)}
+                    {priceLabel(state.currency, product)}
                   </span>
                 </button>
               ))}
@@ -1756,7 +1775,7 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
                   <div className="mt-4 flex items-center justify-between border-t-2 border-t-border pt-3">
                     <span className="text-base font-black tabular-nums text-t-text">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -2021,7 +2040,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
                           <div className="min-w-0">
                             <p className="truncate text-xs font-bold text-t-text">{product.name}</p>
                             <p className="text-[11px] font-bold text-t-accent tabular-nums">
-                              {formatPrice(state.currency, product.price)}
+                              {priceLabel(state.currency, product)}
                             </p>
                           </div>
                         </div>
@@ -2146,7 +2165,7 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
 
                   <div className="mt-3 flex items-center justify-between border-t border-t-border/60 pt-2.5">
                     <span className="text-xs sm:text-sm font-bold tabular-nums text-t-text">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -2388,7 +2407,7 @@ function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                       <p className="mt-0.5 text-xs text-t-text-muted font-light">{product.category}</p>
                     </div>
                     <span className="text-xs font-semibold tabular-nums text-t-text">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                   </div>
                 </div>
@@ -2710,7 +2729,7 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                           {product.name}
                         </h4>
                         <p className="mt-0.5 truncate text-[11px] text-zinc-300 font-medium">
-                          {product.category || "Top Destination"} · {formatPrice(state.currency, product.price)}
+                          {product.category || "Top Destination"} · {priceLabel(state.currency, product)}
                         </p>
                       </div>
                       <div className="flex flex-col items-center gap-1 shrink-0">
@@ -2794,7 +2813,7 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-t-surface-alt">
                     <ProductMedia product={product} className="transition-transform duration-500 group-hover:scale-105" />
                     <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-black text-white shadow-xs">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                   </div>
                   <div className="mt-3 text-left">
@@ -2870,6 +2889,7 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         </p>
         <p className="mt-4 text-[11px] opacity-60">
           &copy; {new Date().getFullYear()} · All rights reserved
+          {!props.whiteLabel && " · Powered by SwiftLink"}
         </p>
       </footer>
 
@@ -2913,7 +2933,10 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
     // channel there (WhatsApp, Instagram, Facebook or TikTok) and the order is
     // recorded, which a `wa.me` link could not do. The chosen size travels with
     // the line as its option.
-    if (props.onQuickCheckout) {
+    //
+    // A quote-priced service has no amount to add, so it opens the product page
+    // (and its request form) instead of putting a ₦0 line in the bag.
+    if (!isPriceOnRequest(product) && props.onQuickCheckout) {
       props.onQuickCheckout(product);
       return;
     }
@@ -2998,7 +3021,7 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                     Special Price
                   </p>
                   <p className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
-                    {formatPrice(state.currency, heroProduct.price)}
+                    {priceLabel(state.currency, heroProduct)}
                   </p>
                 </div>
 
@@ -3095,7 +3118,7 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
                 <div className="mt-3 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-2">
                   <span className="font-sans text-sm sm:text-base font-black text-zinc-950 dark:text-white">
-                    {formatPrice(state.currency, product.price)}
+                    {priceLabel(state.currency, product)}
                   </span>
                   <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                     In Stock
@@ -3109,7 +3132,12 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
       {/* ─── SCREEN 2: DETAIL PRODUCT MODAL (MATCHING MIDDLE MOCKUP) ─── */}
       {detailProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        /*
+          z-[110]: the storefront's navigation bar is `fixed bottom-0 z-[100]`,
+          so a `z-50` sheet had its last two buttons — Add to Cart and Checkout —
+          underneath the bar on a phone. A modal belongs above the chrome.
+        */
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-[2.5rem] bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-5">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
@@ -3155,21 +3183,69 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
               </div>
               <div className="text-right">
                 <span className="font-sans text-xl sm:text-2xl font-black text-zinc-950 dark:text-white">
-                  {formatPrice(state.currency, detailProduct.price)}
+                  {priceLabel(state.currency, detailProduct)}
                 </span>
                 <p className="text-[11px] text-zinc-400 font-medium">{selectedSize}</p>
               </div>
             </div>
 
-            {/* Product Detail Description */}
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                Product Detail
-              </h4>
-              <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            {/*
+              The buyer's product sheet prints the description, delivery and
+              returns in the open. Collapsing them behind headings made the
+              shopper tap several times to read what they came for.
+            */}
+            <div className="space-y-3 border-t border-zinc-100 pt-4 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              <p>
                 {detailProduct.description ||
                   "Formulated to hydrate and restore the skin barrier with clean, verified ingredients. Suitable for daily use and all skin types."}
               </p>
+              {(detailProduct.attributes?.length || 0) > 0 && (
+                <dl className="space-y-1.5">
+                  {detailProduct.attributes!.map((attribute) => (
+                    <div key={`${attribute.label}-${attribute.value}`} className="flex gap-2">
+                      <dt className="font-semibold text-zinc-900 dark:text-white">{attribute.label}:</dt>
+                      <dd>{attribute.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+
+              {hasDeliveryDetails(state) && (
+                <div>
+                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                    <Truck className="h-3.5 w-3.5" /> Delivery
+                  </p>
+                  <div className="mt-1 space-y-1">
+                    {state.deliveryAreas ? (
+                      <p>
+                        <span className="font-semibold text-zinc-900 dark:text-white">We deliver to: </span>
+                        {state.deliveryAreas}
+                      </p>
+                    ) : null}
+                    {state.deliveryFee ? (
+                      <p>
+                        <span className="font-semibold text-zinc-900 dark:text-white">Delivery fee: </span>
+                        {state.deliveryFee}
+                      </p>
+                    ) : null}
+                    {Number(state.minOrder) > 0 ? (
+                      <p>
+                        <span className="font-semibold text-zinc-900 dark:text-white">Minimum order: </span>
+                        {state.currency}{Number(state.minOrder).toLocaleString()}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+
+              {state.returnPolicy ? (
+                <div>
+                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Returns
+                  </p>
+                  <p className="mt-1">{state.returnPolicy}</p>
+                </div>
+              ) : null}
             </div>
 
             {/* Select Size Variant Pills */}
@@ -3201,80 +3277,65 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
 
             {/* Dual Action Buttons */}
             <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-              <button
-                type="button"
-                onClick={() => {
-                  props.onProduct(detailProduct);
-                  setDetailProduct(null);
-                }}
-                className="flex-1 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3 text-xs font-bold text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
-              >
-                Add to Cart
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickCheckout(detailProduct)}
-                className="flex-1 rounded-full bg-zinc-950 dark:bg-white py-3 text-xs font-bold text-white dark:text-zinc-950 hover:opacity-90 active:scale-95 transition shadow-lg"
-              >
-                Checkout
-              </button>
+              {isPriceOnRequest(detailProduct) ? (
+                /* A service is quoted, not bought: one action, and it opens the
+                   request form rather than an empty cart line. */
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onProduct(detailProduct);
+                    setDetailProduct(null);
+                  }}
+                  className="flex-1 rounded-full bg-zinc-950 dark:bg-white py-3 text-xs font-bold text-white dark:text-zinc-950 hover:opacity-90 active:scale-95 transition shadow-lg"
+                >
+                  Request a price
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      props.onProduct(detailProduct);
+                      setDetailProduct(null);
+                    }}
+                    className="flex-1 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3 text-xs font-bold text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
+                  >
+                    Add to Cart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickCheckout(detailProduct)}
+                    className="flex-1 rounded-full bg-zinc-950 dark:bg-white py-3 text-xs font-bold text-white dark:text-zinc-950 hover:opacity-90 active:scale-95 transition shadow-lg"
+                  >
+                    Checkout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── FLOATING BOTTOM NAV DOCK PILL (MATCHING SCREEN 1 & 3) ─── */}
-      <nav
-        aria-label="Store navigation dock"
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 rounded-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border border-zinc-200/90 dark:border-zinc-800/90 px-6 py-2.5 shadow-2xl"
-      >
-        <button
-          type="button"
-          onClick={shopNow}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm"
-          aria-label="Home"
-        >
-          <Home className="h-4 w-4" />
-        </button>
+      {/*
+        No bottom dock here.
 
-        <button
-          type="button"
-          onClick={props.onCart}
-          className="relative text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
-          aria-label="Cart List"
-        >
-          <ShoppingBag className="h-5 w-5" />
-          {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white">
-              {cartCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={props.onSearch}
-          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
-          aria-label="Search"
-        >
-          <Search className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => (props.isOwner ? props.onReviews() : setFeedbackOpen(true))}
-          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition"
-          aria-label="Reviews"
-        >
-          <User className="h-5 w-5" />
-        </button>
-      </nav>
+        Bloom used to render its own floating pill (home / cart / search /
+        reviews) at `bottom-4`, *on top of* the storefront's real navigation bar
+        in `CustomerStorefront`. Two navigation strips for the same four
+        destinations, and the floating one sat over the footer and the last
+        product card — the reason the bottom of a store page could not be
+        reached on a phone. The shared bar already routes all four, with a cart
+        badge and labels, so this is duplication rather than a feature.
+      */}
 
       {/* Footer */}
       <footer className="mt-20 border-t border-zinc-200 dark:border-zinc-800/60 px-4 py-8 text-center text-xs text-zinc-400">
         <p className="font-serif font-bold text-sm text-zinc-900 dark:text-white">{state.bizName || template.name}</p>
         <p className="mt-1">{formatDisplayPhone(state.phone)}</p>
-        <p className="mt-2 text-[11px] opacity-60">&copy; {new Date().getFullYear()} · All rights reserved</p>
+        <p className="mt-2 text-[11px] opacity-60">
+          &copy; {new Date().getFullYear()} · All rights reserved
+          {!props.whiteLabel && " · Powered by SwiftLink"}
+        </p>
       </footer>
 
       <StoreFeedbackModal
@@ -3545,7 +3606,7 @@ function NoirSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
                     <span className="text-sm font-bold text-white tracking-wider">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -3834,7 +3895,7 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   </p>
                   <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#1e232d]">
                     <span className="text-sm font-black text-white tabular-nums">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"
@@ -4098,7 +4159,7 @@ function OasisSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
                   </p>
                   <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#e6ded5] dark:border-[#2b221c]">
                     <span className="font-sans text-sm font-bold text-[#c2410c] dark:text-[#fb923c]">
-                      {formatPrice(state.currency, product.price)}
+                      {priceLabel(state.currency, product)}
                     </span>
                     <button
                       type="button"

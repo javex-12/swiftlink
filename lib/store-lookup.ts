@@ -37,6 +37,13 @@ function publicClient(): SupabaseClient | null {
 export type PublicStore = {
   id: string;
   handle: string;
+  /**
+   * The store's paid tier, used for the one presentation rule that depends on
+   * it: a Business storefront does not print "Powered by SwiftLink". It is the
+   * `stores.plan` column, not the editable `state_json` mirror, so a merchant
+   * cannot white-label themselves by editing the blob.
+   */
+  plan: string;
   bizName: string;
   /**
    * The account that owns this store, for the server-side "is the viewer the
@@ -68,7 +75,7 @@ export async function getPublicStoreByHandle(
   try {
     const { data, error } = await supabase
       .from("stores")
-      .select("id, owner_id, biz_name, store_username, account_status, state_json, updated_at")
+      .select("id, owner_id, biz_name, store_username, account_status, state_json, updated_at, plan")
       .ilike("store_username", handle)
       .maybeSingle();
 
@@ -79,6 +86,7 @@ export async function getPublicStoreByHandle(
     return {
       id: data.id as string,
       handle,
+      plan: (data.plan as string) ?? "free",
       ownerId: (data.owner_id as string) ?? null,
       bizName: (state.bizName || data.biz_name || "SwiftLink Store") as string,
       updatedAt: data.updated_at ? new Date(data.updated_at as string).getTime() : Date.now(),

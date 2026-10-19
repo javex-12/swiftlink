@@ -84,6 +84,12 @@ export type StoreSeoSchemaInput = {
   handle: string;
   state: Partial<ShopState>;
   description: string;
+  /**
+   * False for a Business storefront: the platform must not appear in the
+   * merchant's breadcrumb, because that is the shop's own structured data. The
+   * marketing pages still describe the platform; a store page should not.
+   */
+  includePlatformInBreadcrumb?: boolean;
 };
 
 /**
@@ -92,7 +98,12 @@ export type StoreSeoSchemaInput = {
  * `Store` (rather than a generic `Organization`) is the type whose rich results
  * Google actually shows for a shop: name, logo, address, and the offer catalog.
  */
-export function buildStoreJsonLd({ handle, state, description }: StoreSeoSchemaInput) {
+export function buildStoreJsonLd({
+  handle,
+  state,
+  description,
+  includePlatformInBreadcrumb = true,
+}: StoreSeoSchemaInput) {
   const url = `${SEO_SITE}/${handle}`;
   const products = visibleProducts(state.products);
   const sameAs = Object.entries(state.socials || {})
@@ -151,12 +162,19 @@ export function buildStoreJsonLd({ handle, state, description }: StoreSeoSchemaI
     });
   }
 
+  /*
+   * Two crumbs for a platform storefront (home → store), one for a white-label
+   * one. A single-crumb BreadcrumbList is valid, and it is the honest shape:
+   * nothing above the merchant's own home page belongs to a Business site.
+   */
   graph.push({
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "SwiftLink Pro", item: SEO_SITE },
-      { "@type": "ListItem", position: 2, name: state.bizName || "Store", item: url },
-    ],
+    itemListElement: includePlatformInBreadcrumb
+      ? [
+          { "@type": "ListItem", position: 1, name: "SwiftLink Pro", item: SEO_SITE },
+          { "@type": "ListItem", position: 2, name: state.bizName || "Store", item: url },
+        ]
+      : [{ "@type": "ListItem", position: 1, name: state.bizName || "Store", item: url }],
   });
 
   return { "@context": "https://schema.org", "@graph": graph };

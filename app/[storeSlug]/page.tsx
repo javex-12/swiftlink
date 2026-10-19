@@ -84,10 +84,19 @@ export async function generateMetadata({
   const bizName = store.bizName || state.bizName || "SwiftLink Store";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;
   const title = state.seoTitle || `${bizName} — Shop Online`;
+
+  /*
+   * A Business store opts the platform out of every piece of metadata: title
+   * suffix, `siteName`, the fallback description, and the breadcrumb. The fallback
+   * matters most — it is what a merchant sees when they have not written their
+   * own, and it used to advertise "on SwiftLink Pro" on their site.
+   */
+  const whiteLabel = store.plan === "business";
+
   const description =
     state.ogDescription ||
     state.tagline ||
-    `Shop ${bizName} online on SwiftLink Pro${
+    `Shop ${bizName} online${whiteLabel ? "" : " on SwiftLink Pro"}${
       productCount ? ` — ${productCount} products` : ""
     }${state.location ? ` in ${state.location}` : ""}. Browse the catalog and place your order on WhatsApp.`;
 
@@ -119,7 +128,18 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(site),
-    title,
+    // Browser/OS metadata ("Add to Home Screen", reader mode) names the shop,
+    // not us, on a white-label store.
+    applicationName: whiteLabel ? bizName : "SwiftLink",
+    authors: [{ name: whiteLabel ? bizName : "SwiftLink" }],
+    creator: whiteLabel ? bizName : "SwiftLink",
+    publisher: whiteLabel ? bizName : "SwiftLink",
+    /*
+     * The root layout appends "| SwiftLink" to page titles. A Business storefront
+     * opts out with `absolute`: the merchant's own site should not advertise the
+     * platform in its tab, and its social card should name the brand, not us.
+     */
+    title: whiteLabel ? { absolute: title } : title,
     description,
     keywords,
     alternates: { canonical: `/${store.handle}` },
@@ -128,7 +148,7 @@ export async function generateMetadata({
       title,
       description,
       url,
-      siteName: "SwiftLink Pro",
+      siteName: whiteLabel ? bizName : "SwiftLink Pro",
       images: [
         {
           url: ogImage,
@@ -172,6 +192,7 @@ export default async function StoreByHandlePage({
   const jsonLd = buildStoreJsonLd({
     handle: store.handle,
     state: store.state,
+    includePlatformInBreadcrumb: store.plan !== "business",
     description:
       store.state.ogDescription ||
       store.state.tagline ||
@@ -185,16 +206,25 @@ export default async function StoreByHandlePage({
         // The graph is built from store state, never from user HTML.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Visible breadcrumb: also what the JSON-LD BreadcrumbList mirrors. */}
+      {/*
+        Visible breadcrumb: also what the JSON-LD BreadcrumbList mirrors, so the
+        two must agree — a Business store has one crumb, its own name, because
+        there is nothing above the merchant's home page on their own site.
+      */}
       <nav aria-label="Breadcrumb" className="sr-only">
-        <a href={SEO_SITE}>SwiftLink Pro</a>
-        <span aria-hidden="true">{" / "}</span>
+        {store.plan !== "business" && (
+          <>
+            <a href={SEO_SITE}>SwiftLink Pro</a>
+            <span aria-hidden="true">{" / "}</span>
+          </>
+        )}
         <a href={`/${store.handle}`}>{store.bizName}</a>
       </nav>
       <CustomerStorefrontPage
         shopId={store.id}
         initialState={initialState}
         viewerIsOwner={viewerIsOwner}
+        whiteLabel={store.plan === "business"}
       />
     </>
   );

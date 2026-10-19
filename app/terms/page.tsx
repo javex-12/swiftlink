@@ -109,21 +109,21 @@ export default function TermsPage() {
                 <li className="flex gap-3">
                   <span className="shrink-0 font-black text-[#19C37D]">&mdash;</span>
                   <span>
-                    <strong className="text-[#E8F1EC]">Pro:</strong> unlimited published products in a
-                    single store.
+                    <strong className="text-[#E8F1EC]">Pro:</strong> up to 1,000 published products in
+                    a single store.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="shrink-0 font-black text-[#19C37D]">&mdash;</span>
                   <span>
-                    <strong className="text-[#E8F1EC]">Business:</strong> unlimited published products
-                    plus multiple stores.
+                    <strong className="text-[#E8F1EC]">Business:</strong> up to 1,000 published
+                    products, plus up to 10 stores.
                   </span>
                 </li>
               </ul>
               <p>
-                Paid tiers are subject to a fair-use ceiling so that one account cannot consume
-                shared capacity: up to 1,000 products per store and up to 10 stores per account.
+                Those ceilings apply to every account so that one store cannot consume shared
+                capacity: 1,000 published products per store, and 10 stores per account.
                 Store handles are allocated on a first-come basis and must not impersonate another
                 business or a public figure.
               </p>

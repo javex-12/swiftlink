@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { normalizePlan } from "@/lib/plans";
+import { ProGate } from "@/components/billing/ProGate";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { formatMoney } from "@/lib/currency";
@@ -357,6 +359,29 @@ export function AnalyticsView() {
   ];
 
   const peak = Math.max(1, ...metrics.perDay.map(([, count]) => count));
+
+  /*
+   * Analytics is sold as a Pro feature, so it has to actually be one. The gate
+   * sits after every hook (React requires that) and replaces the whole view for
+   * a free account rather than blurring the charts: a blurred dashboard is an
+   * invitation to inspect the page source, and there is nothing to hide here.
+   */
+  if (normalizePlan(state.plan) === "free") {
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="border-b border-[#1E2D27] pb-5">
+          <h1 className="text-2xl font-bold tracking-tight text-[#E8F1EC]">Analytics &amp; Performance</h1>
+          <p className="mt-1 text-xs text-[#9DB3A8]">
+            Buyer activity from your storefront, last {RANGE_DAYS} days.
+          </p>
+        </div>
+        <ProGate
+          feature="Detailed analytics"
+          description="See orders, product taps, confirmed sales, conversion rate and which discount codes actually earn. Available on Pro and Business."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto w-full px-4 py-6 sm:px-6 sm:py-8">

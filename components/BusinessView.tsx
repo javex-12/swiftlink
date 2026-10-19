@@ -1007,10 +1007,18 @@ export function BusinessView() {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Price</label>
-                                        <div className="bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] flex items-center gap-2">
-                                            <span className="text-slate-400 font-black">{localState.currency}</span>
-                                            <input type="number" value={p.price || ''} onChange={(e) => updateProductLocal(p.id, "price", Number(e.target.value))} className="bg-transparent font-black text-[#E8F1EC] outline-none w-full" />
-                                        </div>
+                                        {p.priceType === "quote" ? (
+                                            /* A service is quoted per job; there is no amount to type
+                                               here, and showing "₦0" would look like a free product. */
+                                            <div className="bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] font-black text-[#19C37D]">
+                                                On request
+                                            </div>
+                                        ) : (
+                                            <div className="bg-[#14231D]/50 px-4 py-3 rounded-xl border border-[#1E2D27] flex items-center gap-2">
+                                                <span className="text-slate-400 font-black">{localState.currency}</span>
+                                                <input type="number" value={p.price || ''} onChange={(e) => updateProductLocal(p.id, "price", Number(e.target.value))} className="bg-transparent font-black text-[#E8F1EC] outline-none w-full" />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Category</label>

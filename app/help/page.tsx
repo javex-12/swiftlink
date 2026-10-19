@@ -75,7 +75,7 @@ const FAQ_SECTIONS: FaqCategory[] = [
         question: "How many products can I publish on each plan?",
         answer: (
           <p>
-            The Free plan permits up to 6 published products in a single storefront. Upgrading to Pro or Business unlocks unlimited published products (up to a fair-use ceiling of 1,000 products per store). You can also store additional hidden products in your catalog without deletion.
+            The Free plan permits up to 6 published products in one storefront. Pro and Business each allow up to 1,000 published products per store — a stated limit, not an unbounded plan with a hidden ceiling behind it. You can also keep additional hidden products in your catalog without deleting them.
           </p>
         ),
       },

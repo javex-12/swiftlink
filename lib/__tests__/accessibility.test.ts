@@ -52,20 +52,31 @@ describe("Accessibility & WCAG AA/AAA Verification", () => {
 });
 
 describe("Console Shell & Overview View Integrity", () => {
-  it("OverviewView contains the four designed stat cards with 0 initial values", () => {
+  it("OverviewView contains the four designed stat cards, driven by real data", () => {
     const overviewFile = fs.readFileSync(path.join(process.cwd(), "components/dashboard/OverviewView.tsx"), "utf8");
     
     // Four stat cards
     expect(overviewFile).toContain("Store views");
     expect(overviewFile).toContain("Product taps");
-    expect(overviewFile).toContain("Chats started");
+    expect(overviewFile).toContain("Order inquiries");
     expect(overviewFile).toContain("Confirmed sales");
 
     // Designed subtexts
     expect(overviewFile).toContain("From direct links &amp; social");
     expect(overviewFile).toContain("Buyers viewing details");
-    expect(overviewFile).toContain("WhatsApp order inquiries");
+    expect(overviewFile).toContain("WhatsApp, social &amp; price requests");
     expect(overviewFile).toContain("Recorded through inquiries");
+
+    /*
+     * The cards used to print literal zeros, so the console told every merchant
+     * their store had never been seen while `store_events` held real rows. They
+     * must read the store's own table, and must not go back to a constant.
+     */
+    expect(overviewFile).toContain('eq("event_type", "view")');
+    expect(overviewFile).toContain('eq("event_type", "product_click")');
+    expect(overviewFile).toContain('eq("status", "sold")');
+    expect(overviewFile).toContain("stats.views.toLocaleString()");
+    expect(overviewFile).not.toContain(">0</span>");
   });
 
   it("OverviewView header has no duplicate logo on mobile and displays status", () => {

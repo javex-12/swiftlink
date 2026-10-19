@@ -37,6 +37,28 @@ const tailwind = read("tailwind.config.ts");
 const preview = read("components/storefront/TemplatePreviewModal.tsx");
 const storefront = read("components/CustomerStorefront.tsx");
 
+/*
+ * The sticky Save header.
+ *
+ * `sticky top-0` was on the editor header the whole time and never stuck, so a
+ * merchant who scrolled to the bottom of a long catalogue had to scroll back up
+ * to save. The cause was an ancestor, not the header: `overflow-hidden` makes a
+ * box a scroll container, and a sticky element inside a container that never
+ * scrolls scrolls away with the page. `overflow-x-clip` contains the same
+ * horizontal overflow without creating that container.
+ */
+describe("The editor's Save header stays on screen while the page scrolls", () => {
+  it("pins the editor header to the top", () => {
+    expect(editor).toContain('className="sticky top-0 z-30 border-b border-[#1E2D27] bg-[#0A1210]/95');
+  });
+
+  it("has no scroll-container ancestor in the console layout", () => {
+    expect(layout).toContain("min-h-screen overflow-x-clip");
+    expect(layout).not.toMatch(/min-h-screen overflow-hidden/);
+    expect(layout).not.toMatch(/\boverflow-y-auto/);
+  });
+});
+
 describe("Stop store / Go live — a control every user can reach", () => {
   it("is on the console home, wired to the persisted isLive field", () => {
     expect(overview).toContain('updateState("isLive", next)');
@@ -83,10 +105,13 @@ describe("Store switcher — shown whenever the account really has more stores",
   });
 });
 
-describe("Plan inheritance — a new store cannot demote the account", () => {
-  it("inserts the account's plan, not a hard-coded free tier", () => {
+describe("Plan inheritance — a new store cannot demote the account", () => {    it("inserts the account's plan, not a hard-coded free tier", () => {
     expect(context).toMatch(/plan: accountPlan,\s+account_status: 'active',/);
-    expect(context).toContain("const currentPlan = accountPlanFor(stores.length ? stores : [state])");
+    // The *entitled* plan first, so an administrator's Business override is not
+    // lost to a free row when they add a store.
+    expect(context).toContain(
+      "const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state])",
+    );
   });
 
   it("refuses to create or switch stores beyond the plan, in the context itself", () => {
@@ -97,7 +122,20 @@ describe("Plan inheritance — a new store cannot demote the account", () => {
 
   it("resolves entitlements per account and repairs disagreeing rows", () => {
     expect(context).toContain("reconcileAccountPlan(data as any[])");
-    expect(context).toMatch(/\.update\(\{ plan: accountPlan \}\)/);
+    /*
+     * Rows are aligned with each other (`dbPlan`), never with the admin
+     * override: the entitlement follows the person, so writing it into
+     * `stores.plan` would leave a paid tier behind after a demotion.
+     */
+    expect(context).toMatch(/\.update\(\{ plan: dbPlan \}\)/);
+    expect(context).not.toMatch(/\.update\(\{ plan: accountPlan \}\)/);
+  });
+
+  it("asks the server for the entitlement instead of trusting one row", () => {
+    expect(context).toContain('supabase.rpc("get_account_entitlement")');
+    expect(context).toContain("entitledPlanFor(data as any[], { isAdmin: entitlement.isAdmin })");
+    // The old client-side upgrade is what `fetchStores` overwrote.
+    expect(context).not.toContain("setState(prev => ({ ...prev, plan: 'business' }))");
   });
 });
 
@@ -124,7 +162,12 @@ describe("Template preview — dark mode, exact render, phone-is-just-a-page", (
     // The preview used to render the bare template with dead callbacks, which is
     // why opening a product in it did nothing and "back" dropped the merchant at
     // the top of the page. It now renders `CustomerStorefront` itself.
-    expect(preview).toContain('<CustomerStorefront preview overrideState={activeState} />');
+    expect(preview).toContain("<CustomerStorefront");
+    expect(preview).toContain("preview");
+    expect(preview).toContain("overrideState={activeState}");
+    // The preview must white-label a Business store too, or it shows the merchant
+    // branding their own live site no longer carries.
+    expect(preview).toContain('whiteLabel={vendorState.plan === "business"}');
     expect(preview).not.toContain("onProduct={() => {}}");
   });
 

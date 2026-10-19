@@ -10,13 +10,16 @@
  *
  * Tiers (confirmed with the owner, see the plan §6):
  *   free      — 6 products, 1 store
- *   pro       — unlimited products, 1 store
- *   business  — unlimited products, multiple stores
+ *   pro       — 1,000 products, 1 store
+ *   business  — 1,000 products, up to 10 stores
  *
- * "Unlimited" is an entitlement, not a licence to consume unbounded shared
- * storage: a per-user store cap and a per-store product fair-use ceiling are
- * applied on top, so one account cannot take all the space. Both numbers are
- * deliberately centralised here so they can be tuned in one place.
+ * **No tier is unlimited, and no copy says it is.** "Unlimited products" used
+ * to describe a plan whose real enforced ceiling was 1,000, so a merchant could
+ * read one number on the pricing page and hit a different one in the editor. A
+ * shared host also cannot promise unbounded storage: one account filling it
+ * would degrade every other store, so the ceiling is a product decision, not an
+ * apology. Every cap lives here and every screen reads it from here, which is
+ * what keeps the claim and the enforcement the same number.
  *
  * The downgrade policy is **never delete anything**. Over the product limit the
  * vendor chooses which products stay visible and the rest are *hidden* (kept in
@@ -32,7 +35,7 @@ export const PLANS: readonly Plan[] = ["free", "pro", "business"] as const;
 /** The free-tier catalogue cap. Exported so UI copy can name the real number. */
 export const FREE_PRODUCT_LIMIT = 6;
 
-/** Fair-use ceiling applied to every plan, including "unlimited" ones. */
+/** The hard ceiling on published products in one store, on every plan. */
 export const MAX_PRODUCTS_PER_STORE = 1000;
 
 /** Hard ceiling on how many stores one account may own, on any plan. */
@@ -60,8 +63,23 @@ export function templateUpgradeRequiredMessage(templateName: string): string {
  */
 export const GRACE_PERIOD_DAYS = 7;
 
-/** `Infinity` reads naturally in comparisons (`count >= limit`) and in UI copy. */
-const UNLIMITED = Number.POSITIVE_INFINITY;
+/**
+ * What each paid tier costs per month, in **minor units** — the unit Paystack
+ * charges in. Exported so billing and the pricing copy are the same number: the
+ * in-app card used to say ₦12,000 while the landing page said ₦15,000, and a
+ * merchant charged a third price would be right to complain.
+ */
+export const PLAN_PRICE_MINOR: Record<"pro" | "business", number> = {
+  pro: 500_000,
+  business: 1_200_000,
+};
+
+/** The same prices in major units, for display. */
+export const PLAN_PRICE_NGN: Record<"pro" | "business", number> = {
+  pro: PLAN_PRICE_MINOR.pro / 100,
+  business: PLAN_PRICE_MINOR.business / 100,
+};
+
 
 /** Anything unrecognised is treated as `free` — never as a paid tier. */
 export function normalizePlan(value: unknown): Plan {
@@ -93,6 +111,27 @@ export function accountPlanFor(stores: readonly { plan?: unknown }[]): Plan {
     const candidate = normalizePlan(store.plan);
     return PLAN_RANK[candidate] > PLAN_RANK[best] ? candidate : best;
   }, "free");
+}
+
+/**
+ * The plan the account is actually **entitled** to, which is what every screen
+ * and every cap must read.
+ *
+ * A deployment administrator is entitled to Business — that rule used to live
+ * only in `checkAdminStatus`, which upgraded local state that `fetchStores` then
+ * overwrote from the store row, so the badge flicked to the real plan and an
+ * admin was capped at the free tier. The server resolves this now
+ * (`get_account_entitlement`); this function is the pure equivalent used as a
+ * fallback and in tests, so both paths agree.
+ *
+ * An admin override is **not** written back to `stores.plan`: it follows the
+ * person, not the shop, and demoting an admin must not leave paid plans behind.
+ */
+export function entitledPlanFor(
+  stores: readonly { plan?: unknown }[],
+  options: { isAdmin?: boolean } = {},
+): Plan {
+  return options.isAdmin ? "business" : accountPlanFor(stores);
 }
 
 /** A store row as far as entitlements are concerned. */
@@ -132,29 +171,44 @@ export function reconcileAccountPlan(
   return { accountPlan, staleIds };
 }
 
-/** Maximum number of products a plan may hold, before the fair-use ceiling. */
+/**
+ * How many products each plan may publish. Finite for every tier on purpose:
+ * the pricing page, the editor and this cap all quote the same number.
+ */
+export const PLAN_PRODUCT_LIMIT: Record<Plan, number> = {
+  free: FREE_PRODUCT_LIMIT,
+  pro: MAX_PRODUCTS_PER_STORE,
+  business: MAX_PRODUCTS_PER_STORE,
+};
+
+/** Maximum number of products a plan may publish. */
 export function productLimitFor(plan: unknown): number {
-  return normalizePlan(plan) === "free" ? FREE_PRODUCT_LIMIT : UNLIMITED;
+  return PLAN_PRODUCT_LIMIT[normalizePlan(plan)];
 }
 
-/** Maximum number of products actually enforced, after the fair-use ceiling. */
+/** The limit actually enforced. Kept as its own function so callers read intent. */
 export function effectiveProductLimitFor(plan: unknown): number {
   return Math.min(productLimitFor(plan), MAX_PRODUCTS_PER_STORE);
 }
 
 /**
- * Maximum number of stores a plan may own, before the per-user cap. Only
- * Business may exceed one; free and pro are both single-store.
+ * Maximum number of stores a plan may own. Only Business may exceed one; free
+ * and pro are both single-store, and Business stops at the per-account cap.
  */
 export function storeLimitFor(plan: unknown): number {
-  return normalizePlan(plan) === "business" ? UNLIMITED : 1;
+  return normalizePlan(plan) === "business" ? MAX_STORES_PER_USER : 1;
 }
 
-/** Maximum number of stores actually enforced, after the per-user cap. */
+/** The store limit actually enforced. */
 export function effectiveStoreLimitFor(plan: unknown): number {
   return Math.min(storeLimitFor(plan), MAX_STORES_PER_USER);
 }
 
+/**
+ * Whether a limit is unbounded. No plan is any more, so this is now only a
+ * guard for callers that must not divide by or compare against a missing
+ * number — it returning true in production would mean a cap was forgotten.
+ */
 export function isUnlimited(limit: number): boolean {
   return !Number.isFinite(limit);
 }
@@ -216,43 +270,54 @@ export const PLAN_DETAILS: Record<Plan, PlanDetail> = {
       `Up to ${FREE_PRODUCT_LIMIT} products`,
       "1 store",
       "WhatsApp checkout",
-      "All storefront templates",
+      "Price requests for services",
+      /*
+       * This said "All storefront templates" while `isTemplateAllowedOnPlan`
+       * allowed three of the ten — a plan card advertising something the
+       * template picker then refused. The number comes from the allow-list so
+       * the copy cannot drift from the rule again.
+       */
+      `${FREE_TEMPLATE_IDS.length} starter templates`,
     ],
   },
   pro: {
     id: "pro",
     name: "Pro",
-    price: "₦5,000 / month",
-    summary: "One store with an unlimited catalogue.",
+    price: `₦${PLAN_PRICE_NGN.pro.toLocaleString()} / month`,
+    summary: `One store with up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products.`,
     features: [
-      "Unlimited products",
+      "Everything in Free",
+      `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products`,
       "1 store",
-      "WhatsApp checkout",
       "All storefront templates",
+      "Discount codes",
+      "Detailed analytics",
+      "CSV export",
     ],
   },
   business: {
     id: "business",
     name: "Business",
-    price: "₦12,000 / month",
+    price: `₦${PLAN_PRICE_NGN.business.toLocaleString()} / month`,
     summary: "Several brands, one account.",
     features: [
-      "Unlimited products",
+      "Everything in Pro",
+      `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products`,
       `Up to ${MAX_STORES_PER_USER} stores`,
-      "Switch stores without signing out",
-      "All storefront templates",
+      "Connect your own domain",
+      "No SwiftLink branding",
     ],
   },
 };
 
-/** Human-readable usage for a plan card: "4 of 6" or "4 of unlimited". */
+/** Human-readable usage for a plan card: "4 of 6". */
 export function formatUsage(used: number, limit: number): string {
   return `${used} of ${formatLimit(limit)}`;
 }
 
-/** Human-readable limit, for toasts and upgrade prompts: "6" or "unlimited". */
+/** Human-readable limit, for toasts and upgrade prompts: "6". */
 export function formatLimit(limit: number): string {
-  return isUnlimited(limit) ? "unlimited" : String(limit);
+  return isUnlimited(limit) ? String(MAX_PRODUCTS_PER_STORE) : String(limit);
 }
 
 /**
@@ -261,19 +326,18 @@ export function formatLimit(limit: number): string {
  */
 export function productLimitMessage(plan: unknown): string {
   const limit = productLimitFor(plan);
-  if (isUnlimited(limit)) return "This plan allows unlimited products.";
   return `Your ${normalizePlan(plan).toUpperCase()} plan allows a maximum of ${limit} products. Upgrade to add more!`;
 }
 
-/** Copy for the hard fair-use ceiling that applies even to "unlimited" plans. */
+/** Copy for the per-store ceiling, which is the cap every paid plan has. */
 export function productCeilingMessage(): string {
-  return `You have reached the ${MAX_PRODUCTS_PER_STORE}-product fair-use limit for a single store.`;
+  return `You have reached the ${MAX_PRODUCTS_PER_STORE.toLocaleString()}-product limit for a single store.`;
 }
 
 /**
- * The message to show when a product add is actually refused. For a paid plan
- * the block is the fair-use ceiling, not the entitlement, so it must not claim
- * the plan is limited — and for a free plan it must name the real cap.
+ * The message to show when a product add is actually refused: for a free plan it
+ * names the free cap, and for a paid plan it names the per-store ceiling, which
+ * is the same 1,000 the pricing page quotes.
  */
 export function productLimitBlockedMessage(plan: unknown): string {
   return effectiveProductLimitFor(plan) === MAX_PRODUCTS_PER_STORE

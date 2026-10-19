@@ -87,6 +87,13 @@ export default async function Image({
   const location = state.location || "";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;
   const accent = state.accentColor || "#10b981";
+  /*
+   * The generated card is the merchant's link preview on WhatsApp and Facebook,
+   * so for a Business store it must not credit the platform: the card is the
+   * first thing a customer sees, and "Powered by SwiftLink Pro" there would
+   * undo the white-label storefront behind it.
+   */
+  const whiteLabel = store?.plan === "business";
   const hostLabel = `${SEO_SITE.replace(/^https?:\/\//, "").replace(/\/$/, "")}/${
     store?.handle || storeSlug
   }`;
@@ -210,9 +217,11 @@ export default async function Image({
               </div>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: "#71717a" }}>
-            Powered by <span style={{ color: "#10b981", fontWeight: 800 }}>SwiftLink Pro</span>
-          </div>
+          {!whiteLabel && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: "#71717a" }}>
+              Powered by <span style={{ color: "#10b981", fontWeight: 800 }}>SwiftLink Pro</span>
+            </div>
+          )}
         </div>
       </div>
     ),

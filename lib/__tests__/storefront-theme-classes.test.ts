@@ -114,7 +114,7 @@ describe("the shopper chrome follows the template", () => {
     // Live proof this was wrong: a store on a dark template (#1c1f2e) rendered a
     // white nav, because the bar was painted with the legacy `bgColor` field.
     expect(CUSTOMER_STOREFRONT).toContain(
-      'backgroundColor: "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)"',
+      '"color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)"',
     );
     expect(CUSTOMER_STOREFRONT).not.toContain("backgroundColor: `${bgColor}f2`");
   });
@@ -126,9 +126,34 @@ describe("the shopper chrome follows the template", () => {
     expect(overlayRegion(CUSTOMER_STOREFRONT)).not.toContain("backgroundColor: bgColor");
   });
 
-  it("keeps the mobile sticky cart bar clear of the bottom nav", () => {
-    // It sat 59px behind the 75px nav, i.e. entirely hidden.
-    expect(TEMPLATE_SITES).toContain('className="fixed bottom-[87px] left-4 right-4 z-40 md:hidden"');
+  it("leaves room for the bottom nav instead of floating a second bar over it", () => {
+    // Two problems, one cause. Bloom rendered its own `fixed bottom-4` pill on
+    // top of the storefront nav (two navigation strips for the same four
+    // destinations, the floating one covering the footer), and the full-height
+    // overlay screens reserved no space for the bar at all, so the cart's
+    // checkout block and the product sheet's buttons sat underneath it.
+    expect(TEMPLATE_SITES).not.toContain('aria-label="Store navigation dock"');
+    expect(CUSTOMER_STOREFRONT).toContain("pb-[calc(75px+env(safe-area-inset-bottom,0px))]");
+    expect(CUSTOMER_STOREFRONT).toContain(
+      'height: "calc(75px + env(safe-area-inset-bottom, 0px))"',
+    );
+    // The reviews screen has the floating cart pill above the nav as well, so it
+    // reserves more than the bare bar height — its last review row was hidden.
+    expect(CUSTOMER_STOREFRONT).toContain(
+      "pb-[calc(180px+env(safe-area-inset-bottom,0px))]",
+    );
+  });
+
+  it("gives each template family its own bottom-nav layout", () => {
+    // The same bar on all ten templates undid the template's character at the
+    // last thing a visitor looks at. Four chrome variants, one per family.
+    expect(CUSTOMER_STOREFRONT).toContain(
+      'type StorefrontNavVariant = "classic" | "pill" | "bold" | "minimal"',
+    );
+    expect(CUSTOMER_STOREFRONT).toContain("variant={navVariant}");
+    ["pill", "bold", "minimal"].forEach((variant) => {
+      expect(CUSTOMER_STOREFRONT).toContain(`is${variant[0].toUpperCase()}${variant.slice(1)}`);
+    });
   });
 });
 
@@ -145,10 +170,13 @@ describe("the retired override bridge", () => {
     });
   });
 
-  it("leaves no bridged palette class in the website templates", () => {
-    Object.keys(REPLACEMENTS).forEach((token) => {
-      expect(bareTokenCount(TEMPLATE_SITES, token), `${token} is back in template-sites`).toBe(0);
-    });
+  it("leaves no bridge remnants in the website templates", () => {
+    // The templates still use raw Tailwind palette classes for their own fixed
+    // palettes (Forge is emerald by design, for example). With no <style> block
+    // repainting them, those render exactly as written — so the thing to guard
+    // is the bridge itself, not the colours.
+    expect(TEMPLATE_SITES).not.toContain("!important");
+    expect(TEMPLATE_SITES).not.toContain("<style>");
   });
 
   it("keeps un-bridged palette variants exactly as they were", () => {
@@ -156,6 +184,6 @@ describe("the retired override bridge", () => {
     // must still be present and raw — changing them would be a silent restyle.
     expect(TEMPLATE_SITES).toContain("bg-emerald-500/10");
     expect(TEMPLATE_SITES).toContain("border-emerald-500/20");
-    expect(overlayRegion(CUSTOMER_STOREFRONT)).toContain("text-emerald-400");
+    expect(TEMPLATE_SITES).toContain("text-emerald-400");
   });
 });

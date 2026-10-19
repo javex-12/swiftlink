@@ -46,6 +46,21 @@ const freeWithNineProducts = () =>
   });
 
 describe("repairAccountToPlan — products", () => {
+  /*
+   * The entitlement can be higher than the rows say. An administrator holds
+   * Business with no `stores.plan` behind it, so repairing from the rows alone
+   * hid three of their nine products on every load — a cap applied to a plan
+   * the account is entitled to.
+   */
+  it("applies the passed entitlement instead of clamping an admin catalogue", () => {
+    const before = freeWithNineProducts();
+    const { stores, repair, plan } = repairAccountToPlan([before], null, "business");
+
+    expect(plan).toBe("business");
+    expect(repair.hiddenProducts).toBe(0);
+    expect(stores[0].products.filter((p) => p.visible !== false)).toHaveLength(9);
+  });
+
   it("hides the overflow beyond the cap and deletes nothing", () => {
     const before = freeWithNineProducts();
     const { stores, repair } = repairAccountToPlan([before]);

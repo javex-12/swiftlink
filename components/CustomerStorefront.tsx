@@ -27,6 +27,7 @@ import {
   Ghost,
   ShieldCheck
 } from "lucide-react";
+import { hasDeliveryDetails } from "@/components/storefront/ProductDisclosure";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { type Product, type ShopState } from "@/lib/schema";
@@ -42,12 +43,19 @@ import { CheckoutChannels } from "@/components/storefront/CheckoutChannels";
 import {
   availableCheckoutChannels,
   checkoutFollowUp,
+  checkoutHref,
   copyOrderText,
   type CheckoutChannelId,
   type PlacedOrder,
 } from "@/lib/checkout-channels";
 import { cartTotalsFrom, evaluateDiscount, sanitizeDiscountCodes } from "@/lib/discounts";
-import { toMinorUnits } from "@/lib/inquiry-write";
+import { recordOrderIntent, toMinorUnits } from "@/lib/inquiry-write";
+import {
+  buildQuoteRequestMessage,
+  formatProductPrice,
+  isPriceOnRequest,
+  resolveRequestQuestions,
+} from "@/lib/product-pricing";
 import dynamic from "next/dynamic";
 
 const ThreeDBackground = dynamic(
@@ -613,14 +621,16 @@ const AboutTemplate = ({ state, templateId }: { state: ShopState, templateId: st
     );
 };
 
-const FooterTemplate = ({ state, templateId }: { state: ShopState, templateId: string }) => {
+const FooterTemplate = ({ state, templateId, whiteLabel }: { state: ShopState, templateId: string, whiteLabel?: boolean }) => {
     const accent = state.accentColor || "#10b981";
     return (
         <footer className="p-10 md:p-20 mt-20 flex flex-col md:flex-row gap-10 justify-between w-full border-t border-black/5 dark:border-white/5 storefront-footer" style={{ backgroundColor: `${accent}08` }}>
             <div className="space-y-4 max-w-sm">
                 <h3 className="text-xl font-black text-gray-900 dark:text-white italic uppercase">{state.bizName}</h3>
                 <p className="text-gray-500 font-medium text-sm leading-relaxed">{state.tagline || "Premium Products"}</p>
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
+                {!whiteLabel && (
+                  <p className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400">Powered by SwiftLink</p>
+                )}
             </div>
             <div className="space-y-3 text-right">
                 {state.contactEmail && <p className="text-xs text-gray-500 font-medium">{state.contactEmail}</p>}
@@ -661,6 +671,155 @@ const AvatarIcon = ({ src, className = "w-full h-full", isVerified }: { src?: st
      );
 };
 
+type StorefrontNavVariant = "classic" | "pill" | "bold" | "minimal";
+
+/**
+ * The shopper's bottom navigation, styled per template family.
+ *
+ * Ten templates used to end in one identical bar, which undid the template's
+ * character at the last thing a visitor looks at. The four destinations and the
+ * accessible semantics are the same everywhere; the chrome is not:
+ *
+ *   classic — the original full-width bar
+ *   pill    — a floating, rounded dock with a soft active chip
+ *   bold    — big icons and a solid accent block on the active tab
+ *   minimal — quiet, icon-only, with a small accent underline
+ *
+ * Height and safe-area reservation stay identical so every full-height screen
+ * (product, bag, reviews) keeps clearing it.
+ */
+function StorefrontNav({
+  variant,
+  activeTab,
+  onTab,
+  cartCount,
+}: {
+  variant: StorefrontNavVariant;
+  activeTab: "home" | "search" | "cart" | "community";
+  onTab: (tab: "home" | "search" | "cart" | "community") => void;
+  cartCount: number;
+}) {
+  const items = [
+    { id: "home" as const, icon: Home, label: "Store" },
+    { id: "search" as const, icon: Search, label: "Search" },
+    { id: "community" as const, icon: MessageCircle, label: "Reviews" },
+    { id: "cart" as const, icon: ShoppingCart, label: "Cart", badge: cartCount },
+  ];
+
+  const isPill = variant === "pill";
+  const isBold = variant === "bold";
+  const isMinimal = variant === "minimal";
+
+  return (
+    <nav
+      aria-label="Storefront navigation"
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-[100] flex items-center justify-center md:px-0 md:pb-8",
+        isPill ? "px-3" : isBold ? "px-0" : "px-4",
+        isBold ? "border-t-2 border-t-border" : "border-t border-t-border",
+        !isBold && !isMinimal && "backdrop-blur-md",
+      )}
+      style={{
+        // The safe-area inset is part of the bar, not extra space under it:
+        // on a phone with a home indicator the icons must sit above the
+        // inset, and every full-height screen below reserves exactly this.
+        height: "calc(75px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        backgroundColor: isBold
+          ? "var(--t-surface, var(--surface-color, #ffffff))"
+          : isMinimal
+            ? "transparent"
+            : "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)",
+      }}
+    >
+      <div
+        className={cn(
+          "flex items-center",
+          isPill &&
+            "w-full max-w-md gap-1 rounded-full border border-t-border px-2 py-1.5 shadow-[0_12px_36px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl",
+          isBold && "h-full w-full max-w-screen-lg",
+          (isMinimal || (!isPill && !isBold)) &&
+            "w-full max-w-screen-lg mx-auto md:w-fit md:gap-12 md:px-8 md:py-2",
+        )}
+        style={
+          isPill
+            ? {
+                backgroundColor:
+                  "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 92%, transparent)",
+              }
+            : undefined
+        }
+      >
+        {items.map(({ id, icon: Icon, label, badge }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onTab(id)}
+              aria-current={active ? "page" : undefined}
+              aria-label={label}
+              className={cn(
+                "relative flex items-center justify-center transition-all active:scale-90",
+                isBold
+                  ? cn(
+                      "h-full flex-1 flex-col gap-1",
+                      active ? "bg-t-accent text-t-accent-fg" : "text-t-text-muted",
+                    )
+                  : isPill
+                    ? cn(
+                        "flex-1 flex-col gap-0.5 rounded-full py-1.5",
+                        active ? "bg-t-accent-subtle text-t-accent-text" : "text-t-text-muted",
+                      )
+                    : isMinimal
+                      ? cn("flex-1 flex-col gap-1 py-2 md:flex-initial", active ? "sf-ink" : "sf-muted")
+                      : cn(
+                          "flex-1 flex-col gap-1 py-2 md:flex-initial",
+                          active ? "sf-ink" : "sf-muted opacity-70 hover:opacity-100",
+                        ),
+              )}
+            >
+              {isMinimal && active && (
+                <span aria-hidden className="absolute top-0 h-0.5 w-6 rounded-full bg-t-accent" />
+              )}
+              <span
+                className={cn(
+                  "relative flex items-center justify-center",
+                  isBold && active && "rounded-full bg-black/10 p-1.5 dark:bg-white/15",
+                )}
+              >
+                <Icon
+                  className={cn(
+                    isBold ? "h-5 w-5 md:h-6 md:w-6" : isMinimal ? "h-[19px] w-[19px]" : "h-[18px] w-[18px]",
+                    isPill ? "md:h-5 md:w-5" : "md:h-[22px] md:w-[22px]",
+                  )}
+                  strokeWidth={active ? 2.5 : 1.5}
+                />
+                {badge != null && badge > 0 && (
+                  <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full sf-accent-bg text-[7px] font-black text-white">
+                    {badge}
+                  </span>
+                )}
+              </span>
+              <span
+                className={cn(
+                  isBold
+                    ? "text-[9px] font-black uppercase tracking-tight"
+                    : isMinimal
+                      ? "sr-only"
+                      : "text-[8px] font-black uppercase tracking-widest",
+                )}
+              >
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export function CustomerStorefront({
   shopId,
   isEditable = false,
@@ -670,8 +829,11 @@ export function CustomerStorefront({
   initialState = null,
   preview = false,
   viewerIsOwner = false,
+  whiteLabel = false,
 }: {
   shopId?: string;
+  /** Business stores do not carry the platform credit (see PublicStore.plan). */
+  whiteLabel?: boolean;
   isEditable?: boolean;
   selectedSectionId?: string | null;
   onSectionAction?: (id: string, action: string) => void;
@@ -758,6 +920,20 @@ export function CustomerStorefront({
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  /**
+   * Price-request form state. A service has no amount to put in a cart, so the
+   * product page collects what the job is and sends it to the store's WhatsApp.
+   */
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quoteSent, setQuoteSent] = useState(false);
+  const [quoteBusy, setQuoteBusy] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({ name: "", phone: "" });
+  /**
+   * One answer per question the merchant wrote. Keyed by question id so a label
+   * can be reworded without losing what the buyer already typed.
+   */
+  const [quoteAnswers, setQuoteAnswers] = useState<Record<string, string>>({});
 
   /**
    * The bag is the one piece of shopper state a preview must not touch: adding
@@ -1122,7 +1298,123 @@ export function CustomerStorefront({
     setTimeout(() => { changeScreen("home"); setActiveTab("home"); }, 6000);
   };
 
+  /**
+   * Send a price request for a quote-priced service.
+   *
+   * It goes through the store's own WhatsApp channel (the contact every other
+   * order uses) and is recorded as an inquiry with a zero amount, so the merchant
+   * sees it in Inquiries and the home counters rather than only in a chat they
+   * might not open. Nothing is added to the cart: a line with no price would
+   * total the order at zero.
+   */
+  const submitQuoteRequest = async () => {
+    const product = selectedProduct;
+    if (!product || !effectiveState || preview) return;
+
+    const questions = resolveRequestQuestions(product.requestQuestions);
+    const answers = questions.map((question) => ({
+      label: question.label,
+      value: (quoteAnswers[question.id] ?? "").trim(),
+    }));
+
+    const missing = questions.find((question, index) => question.required && !answers[index]?.value);
+    if (missing) {
+      addToast(`Please answer: ${missing.label}`, "error");
+      return;
+    }
+
+    const channel = storefrontChannels.find((entry) => entry.id === "whatsapp");
+    if (!channel) {
+      addToast("This store has not set up WhatsApp yet.", "error");
+      return;
+    }
+
+    setQuoteBusy(true);
+    try {
+      const message = buildQuoteRequestMessage({
+        storeName: effectiveState.bizName,
+        productName: product.name,
+        productUrl:
+          typeof window !== "undefined" && window.location.href.startsWith("http")
+            ? window.location.href
+            : null,
+        buyerName: quoteForm.name,
+        buyerPhone: quoteForm.phone,
+        answers,
+        currency: effectiveState.currency,
+      });
+
+      // Must stay synchronous inside the click handler or the popup blocker eats
+      // it — the write below is fire-and-forget on purpose.
+      window.open(checkoutHref(channel, message));
+
+      const srcParam =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("src")
+          : null;
+
+      void recordOrderIntent({
+        storeId: effectiveState.id,
+        currency: effectiveState.currency,
+        srcParam,
+        channel: "whatsapp",
+        message,
+        buyerName: quoteForm.name.trim() || null,
+        buyerPhone: quoteForm.phone.trim() || null,
+        items: [
+          {
+            productId: product.id,
+            productName: product.name,
+            unitPriceMinor: 0,
+            quantity: 1,
+          },
+        ],
+      });
+
+      logEvent("quote_request", { productId: product.id });
+      setQuoteSent(true);
+    } finally {
+      setQuoteBusy(false);
+    }
+  };
+
   if (!effectiveState && shopId) {
+    /*
+     * Two loading screens, one rule: a shopper must never see the platform's
+     * name on a Business store.
+     *
+     * The branded version uses only what the server already handed us
+     * (`initialState`), so it is correct on the very first paint — no flash of
+     * a generic spinner before the merchant's identity appears.
+     */
+    if (whiteLabel) {
+      const brandName = initialState?.bizName || "";
+      const accent = initialState?.accentColor || "#10b981";
+      const logo = initialState?.bizImage;
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-white dark:bg-black">
+          {logo ? (
+            <img src={logo} alt={brandName} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
+          ) : (
+            <div
+              aria-hidden
+              className="flex h-16 w-16 items-center justify-center rounded-2xl text-lg font-black text-white"
+              style={{ backgroundColor: accent }}
+            >
+              {(brandName || "·").slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          {brandName ? (
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{brandName}</p>
+          ) : null}
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: accent }} />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+            Opening the store…
+          </p>
+        </div>
+      );
+    }
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black">
             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
@@ -1155,6 +1447,20 @@ export function CustomerStorefront({
     accentColor: rawState.accentColor || baseTheme?.brandColor || "#10b981",
     buttonColor: rawState.buttonColor || rawState.accentColor || baseTheme?.brandColor || "#10b981",
   };
+  /** Template family decides the nav chrome (see StorefrontNav). */
+  const navVariant: StorefrontNavVariant = [
+    "boutique",
+    "bloom",
+    "coast",
+    "oasis",
+  ].includes(template?.id ?? "")
+    ? "pill"
+    : ["bold", "forge"].includes(template?.id ?? "")
+      ? "bold"
+      : ["noir", "studio"].includes(template?.id ?? "")
+        ? "minimal"
+        : "classic";
+
   const pageAnim = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -1168,6 +1474,60 @@ export function CustomerStorefront({
   const textColor = s.textColor || "#111827";
   const surfaceColor = s.surfaceColor || "#ffffff";
   const buttonColor = s.buttonColor || accentColor;
+  /** Drives the Delivery block: no point printing an empty section. */
+  const hasDeliveryInfo = hasDeliveryDetails(s);
+
+  /**
+   * The buy controls for the open product.
+   *
+   * Rendered twice on purpose: inline in the detail column on desktop, and in a
+   * fixed bar above the storefront navigation on a phone. The old version used
+   * `sticky` inside a column that was exactly as tall as its content, so it had
+   * no room to stick and scrolled away with the page.
+   */
+  const productActions = (product: Product) => {
+    if (isPriceOnRequest(product)) {
+      return (
+        <button
+          type="button"
+          disabled={preview}
+          onClick={() => {
+            setQuoteSent(false);
+            setQuoteAnswers({});
+            setQuoteOpen(true);
+          }}
+          className="flex w-full items-center justify-center gap-3 rounded-2xl sf-inverse py-4 text-xs font-black text-white shadow-2xl transition-all active:scale-95 disabled:opacity-60 md:rounded-3xl md:py-5 md:text-sm"
+        >
+          <MessageSquare size={18} />
+          REQUEST A PRICE
+        </button>
+      );
+    }
+
+    if (qty(product.id) === 0) {
+      return (
+        <button
+          disabled={product.outOfStock}
+          onClick={() => updateCart(product.id, 1)}
+          className="flex w-full items-center justify-center gap-3 rounded-2xl sf-inverse py-4 text-xs font-black text-white shadow-2xl transition-all active:scale-95 disabled:opacity-50 md:rounded-3xl md:py-6 md:text-sm"
+        >
+          <ShoppingCart size={18} /> ADD TO CART
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between rounded-2xl sf-surface-alt px-8 py-4 sf-ink md:rounded-3xl md:py-6">
+        <button onClick={() => updateCart(product.id, -1)} className="active:scale-90">
+          <Minus size={20} />
+        </button>
+        <span className="text-lg font-black md:text-xl">{qty(product.id)}</span>
+        <button onClick={() => updateCart(product.id, 1)} className="active:scale-90 sf-accent-text">
+          <Plus size={20} />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -1231,9 +1591,15 @@ export function CustomerStorefront({
                       onReviews={() => goTab("community")}
                       onLeaveFeedback={() => goTab("community")}
                       isOwner={Boolean(isStoreOwner)}
+                      whiteLabel={whiteLabel}
                     />
+                    {/*
+                      Home reviews sit above the fixed nav and the floating cart
+                      pill. The old 112px of padding left the last card under
+                      the bar on phones with a home indicator.
+                    */}
                     {s.id && (
-                      <div className={cn("py-16 px-4 pb-28", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
+                      <div className={cn("px-4 pt-16 pb-[calc(160px+env(safe-area-inset-bottom,0px))]", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
                         <div className="max-w-3xl mx-auto">
                           <StorefrontReviews
                             storeId={s.id}
@@ -1256,7 +1622,15 @@ export function CustomerStorefront({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
-                      className="fixed inset-0 z-[100] flex flex-col sf-surface overflow-y-auto custom-scrollbar"
+                      /*
+                        The storefront navigation is `fixed bottom-0` and 75px
+                        tall (plus the iOS safe area), so it covers the end of
+                        any full-height overlay. That put the cart's checkout
+                        block and the product screen's buttons *under* the bar,
+                        where they could be seen but not tapped. The padding is
+                        on the scroller, so the last element clears the bar.
+                      */
+                      className="fixed inset-0 z-[100] flex flex-col sf-surface overflow-y-auto custom-scrollbar pb-[calc(75px+env(safe-area-inset-bottom,0px))] md:pb-28"
                     >
                         {screen === "product" && selectedProduct && (
                             <div className="w-full md:flex md:items-stretch md:min-h-screen sf-surface sf-ink">
@@ -1280,23 +1654,80 @@ export function CustomerStorefront({
                                         );
                                     })()}
                                 </div>
-                                <div className="p-6 md:p-12 md:w-1/2 flex flex-col justify-center">
-                                    <div className="flex items-start justify-between">
-                                        <h1 className="text-2xl md:text-4xl font-black sf-ink leading-tight">{selectedProduct.name}</h1>
-                                        <p className="text-2xl md:text-4xl font-black sf-accent-text">{s.currency}{Number(selectedProduct.price).toLocaleString()}</p>
+                                <div className="flex flex-col p-6 md:w-1/2 md:p-12 md:justify-center">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <h1 className="text-2xl font-black leading-tight sf-ink md:text-4xl">{selectedProduct.name}</h1>
+                                        <p className="shrink-0 text-2xl font-black sf-accent-text md:text-4xl">
+                                          {formatProductPrice(s.currency, selectedProduct)}
+                                        </p>
                                     </div>
-                                    <p className="text-xs md:text-base sf-muted mt-6 md:mt-10 leading-relaxed max-w-md">{selectedProduct.description || `Premium quality product.`}</p>
-                                    <div className="mt-10 md:mt-16 space-y-3 md:space-y-4 max-w-md">
-                                        {qty(selectedProduct.id) === 0 ? (
-                                            <button disabled={selectedProduct.outOfStock} onClick={() => updateCart(selectedProduct.id, 1)} className="w-full py-4 md:py-6 sf-inverse text-white rounded-2xl md:rounded-3xl text-xs md:text-sm font-black flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all"><ShoppingCart size={18} /> ADD TO CART</button>
-                                        ) : (
-                                            <div className="flex items-center justify-between sf-surface-alt rounded-2xl md:rounded-3xl px-8 py-4 md:py-6 sf-ink">
-                                                <button onClick={() => updateCart(selectedProduct.id, -1)} className="active:scale-90"><Minus size={20} /></button>
-                                                <span className="text-lg md:text-xl font-black">{qty(selectedProduct.id)}</span>
-                                                <button onClick={() => updateCart(selectedProduct.id, 1)} className="active:scale-90 sf-accent-text"><Plus size={20} /></button>
+                                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] sf-muted">
+                                        {selectedProduct.category || "Product"}
+                                        {" · "}
+                                        {isPriceOnRequest(selectedProduct)
+                                          ? "Price on request"
+                                          : selectedProduct.outOfStock
+                                            ? "Sold out"
+                                            : "In stock"}
+                                    </p>
+
+                                    {/*
+                                      Everything the store knows about the product,
+                                      in the open. This is the buyer's page, not an
+                                      editor: a disclosure here made them tap to
+                                      read a description they came for.
+                                    */}
+                                    <div className="mt-6 max-w-md space-y-4 border-t border-black/10 pt-5 text-xs leading-relaxed sf-muted dark:border-white/10">
+                                        <p>{selectedProduct.description || "Premium quality product."}</p>
+                                        {(selectedProduct.attributes?.length || 0) > 0 && (
+                                            <dl className="space-y-1.5">
+                                                {selectedProduct.attributes!.map((attribute) => (
+                                                    <div key={`${attribute.label}-${attribute.value}`} className="flex gap-2">
+                                                        <dt className="font-semibold sf-ink">{attribute.label}:</dt>
+                                                        <dd>{attribute.value}</dd>
+                                                    </div>
+                                                ))}
+                                            </dl>
+                                        )}
+
+                                        {hasDeliveryInfo && (
+                                            <div>
+                                                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest sf-ink">
+                                                  <Truck size={14} /> Delivery
+                                                </p>
+                                                {s.deliveryAreas ? (
+                                                    <p className="mt-1.5">
+                                                        <span className="font-semibold sf-ink">We deliver to: </span>
+                                                        {s.deliveryAreas}
+                                                    </p>
+                                                ) : null}
+                                                {s.deliveryFee ? (
+                                                    <p className="mt-1.5">
+                                                        <span className="font-semibold sf-ink">Delivery fee: </span>
+                                                        {s.deliveryFee}
+                                                    </p>
+                                                ) : null}
+                                                {Number(s.minOrder) > 0 ? (
+                                                    <p className="mt-1.5">
+                                                        <span className="font-semibold sf-ink">Minimum order: </span>
+                                                        {s.currency}{Number(s.minOrder).toLocaleString()}
+                                                    </p>
+                                                ) : null}
                                             </div>
                                         )}
+
+                                        {s.returnPolicy ? (
+                                            <div>
+                                                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest sf-ink">
+                                                  <Shield size={14} /> Returns
+                                                </p>
+                                                <p className="mt-1.5">{s.returnPolicy}</p>
+                                            </div>
+                                        ) : null}
                                     </div>
+
+                                    {/* Desktop: the controls sit in the column. */}
+                                    <div className="mt-10 hidden max-w-md md:block">{productActions(selectedProduct)}</div>
                                 </div>
                             </div>
                         )}
@@ -1311,7 +1742,7 @@ export function CustomerStorefront({
                                 </div>
                                 <div className="p-6 space-y-4">
                                     {searchQuery && filteredProducts.map(p => (
-                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 sf-surface p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black sf-ink">{p.name}</p><p className="text-sm font-black sf-accent-text">{s.currency}{Number(p.price).toLocaleString()}</p></div></button>
+                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 sf-surface p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black sf-ink">{p.name}</p><p className="text-sm font-black sf-accent-text">{formatProductPrice(s.currency, p)}</p></div></button>
                                     ))}
                                 </div>
                             </div>
@@ -1354,8 +1785,11 @@ export function CustomerStorefront({
                                 </div>
                             </div>
                         )}
+                        {/* Extra clearance, not the bare nav height: this screen
+                            also has the floating cart pill above the bar, and its
+                            last review row was covered. */}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface pb-28">
+                            <div className="w-full flex flex-col min-h-screen sf-surface pb-[calc(180px+env(safe-area-inset-bottom,0px))]">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex justify-between items-center gap-4">
                                     <div className="flex items-center gap-4">
                                         <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
@@ -1433,28 +1867,159 @@ export function CustomerStorefront({
           not the chosen template's, so a store on a dark template used to get a
           white bar pasted across the bottom of it.
         */}
-        <nav
-          aria-label="Storefront navigation"
-          className="fixed bottom-0 left-0 right-0 z-[100] flex items-center justify-center border-t border-t-border px-4 backdrop-blur-md md:border-none md:px-0 md:pb-8"
-          style={{ height: 75, backgroundColor: "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 94%, transparent)" }}
-        >
-          <div className="flex items-center w-full max-w-screen-lg mx-auto md:px-8 md:py-2 md:w-fit md:gap-12">
-            {[
-              { id: "home", icon: Home, label: "Store" },
-              { id: "search", icon: Search, label: "Search" },
-              { id: "community", icon: MessageCircle, label: "Reviews" },
-              { id: "cart", icon: ShoppingCart, label: "Cart", badge: cartItemCount },
-            ].map(({ id, icon: Icon, label, badge }) => (
-              <button key={id} onClick={() => goTab(id as any)} aria-current={activeTab === id ? "page" : undefined} className={`flex-1 md:flex-initial flex flex-col items-center gap-1 py-2 relative active:scale-90 transition-all ${activeTab === id ? "sf-ink" : "sf-muted opacity-70 hover:opacity-100"}`}>
-                <div className="relative">
-                  <Icon className="w-[18px] h-[18px] md:w-[22px] md:h-[22px]" strokeWidth={activeTab === id ? 2.5 : 1.5} />
-                  {badge != null && badge > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 sf-accent-bg text-white text-[7px] font-black rounded-full flex items-center justify-center">{badge}</span>}
-                </div>
-                <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
-              </button>
-            ))}
+        <StorefrontNav
+          variant={navVariant}
+          activeTab={activeTab}
+          onTab={goTab}
+          cartCount={cartItemCount}
+        />
+
+        {/*
+          Mobile buy bar. Fixed to the viewport (not `sticky` inside the detail
+          column, which had a containing block exactly as tall as its content and
+          therefore could never stick) and pinned just above the navigation.
+          Desktop keeps the inline controls, so this is hidden from `md` up.
+        */}
+        {screen === "product" && selectedProduct && (
+          <div
+            className="fixed bottom-[calc(75px+env(safe-area-inset-bottom,0px))] left-0 right-0 border-t border-t-border px-4 py-3 backdrop-blur-md md:hidden"
+            style={{
+              // Above the product overlay (z-100) and below the quote sheet.
+              // Inline on purpose: an arbitrary `z-[105]` is a class the CSS
+              // build may not carry, and a control that paints under the page
+              // cannot be tapped at all.
+              zIndex: 105,
+              backgroundColor: "color-mix(in srgb, var(--t-bg, var(--bg-color, #f2f2f7)) 96%, transparent)",
+            }}
+          >
+            <div className="mx-auto max-w-md">{productActions(selectedProduct)}</div>
           </div>
-        </nav>
+        )}
+
+        {/* Price-request sheet for a quote-priced service. */}
+        {quoteOpen && selectedProduct && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quote-title"
+            className="fixed inset-0 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm md:items-center md:p-6"
+            style={{ zIndex: 130 }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setQuoteOpen(false);
+            }}
+          >
+            <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-black/10 sf-surface p-5 sf-ink shadow-2xl md:p-6 dark:border-white/10">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="quote-title" className="text-lg font-black">
+                    {quoteSent ? "Request sent" : "Ask about this service"}
+                  </h2>
+                  <p className="mt-1 text-xs sf-muted">
+                    {quoteSent
+                      ? "Your message is in the store's WhatsApp. They will reply there with a price."
+                      : `Tell ${s.bizName || "the store"} what you need and they will reply with a price.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setQuoteOpen(false)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/10 text-lg leading-none sf-muted dark:border-white/15"
+                >
+                  ×
+                </button>
+              </div>
+
+              {quoteSent ? (
+                <div className="mt-5 space-y-4">
+                  <div className="flex items-center gap-3 rounded-2xl sf-surface-alt p-4">
+                    <CheckCircle2 size={22} className="shrink-0 sf-accent-text" />
+                    <p className="text-xs leading-relaxed">
+                      {selectedProduct.name} — your request was handed to the store. If the chat did
+                      not open, allow pop-ups for this page and try again.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQuoteOpen(false)}
+                    className="w-full rounded-2xl sf-inverse py-3 text-xs font-black text-white"
+                  >
+                    DONE
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className="mt-5 space-y-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitQuoteRequest();
+                  }}
+                >
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="block text-[11px] font-semibold">
+                      Your name
+                      <input
+                        type="text"
+                        value={quoteForm.name}
+                        onChange={(event) =>
+                          setQuoteForm((prev) => ({ ...prev, name: event.target.value }))
+                        }
+                        autoComplete="name"
+                        className="mt-1 w-full rounded-xl border border-black/10 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/15"
+                      />
+                    </label>
+                    <label className="block text-[11px] font-semibold">
+                      WhatsApp number
+                      <input
+                        type="tel"
+                        value={quoteForm.phone}
+                        onChange={(event) =>
+                          setQuoteForm((prev) => ({ ...prev, phone: event.target.value }))
+                        }
+                        autoComplete="tel"
+                        placeholder="+234…"
+                        className="mt-1 w-full rounded-xl border border-black/10 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/15"
+                      />
+                    </label>
+                  </div>
+
+                  {/*
+                    The merchant writes these questions per service (see the
+                    product editor), so the form asks what this particular
+                    business needs to quote the job.
+                  */}
+                  {resolveRequestQuestions(selectedProduct.requestQuestions).map((question) => (
+                    <label key={question.id} className="block text-[11px] font-semibold">
+                      {question.label}
+                      {question.required ? " *" : ""}
+                      <textarea
+                        required={question.required}
+                        rows={2}
+                        value={quoteAnswers[question.id] ?? ""}
+                        onChange={(event) =>
+                          setQuoteAnswers((prev) => ({ ...prev, [question.id]: event.target.value }))
+                        }
+                        className="mt-1 w-full rounded-xl border border-black/10 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/15"
+                      />
+                    </label>
+                  ))}
+
+                  <button
+                    type="submit"
+                    disabled={quoteBusy}
+                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl sf-inverse py-3.5 text-xs font-black text-white disabled:opacity-60"
+                  >
+                    {quoteBusy ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />}
+                    SEND ON WHATSAPP
+                  </button>
+                  <p className="text-center text-[10px] sf-muted">
+                    Opens WhatsApp with your request already written out.
+                  </p>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1502,7 +2067,11 @@ export function CustomerStorefrontPreview({
         <AboutTemplate state={state} templateId={templateId} />
       )}
       {type === "footer" && (
-        <FooterTemplate state={state} templateId={templateId} />
+        <FooterTemplate
+          state={state}
+          templateId={templateId}
+          whiteLabel={state.plan === "business"}
+        />
       )}
     </div>
   );

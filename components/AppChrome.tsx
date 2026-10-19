@@ -66,7 +66,15 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     setSocialHubOpen
   } = useSwiftLink();
 
-  const showOverlay = loadingOverlay && pathname !== "/";
+  /*
+   * The boot screen is the *console's* ("Getting your workspace ready…"), and it
+   * is branded. It must never cover a shopper: a storefront — Business or not —
+   * is the merchant's shop, not our app, so a customer opening a link saw the
+   * SwiftLink logo for two seconds before the store appeared. `isOwner` is false
+   * on any customer-facing route, so this shows only on the merchant's own
+   * screens.
+   */
+  const showOverlay = loadingOverlay && pathname !== "/" && isOwner;
   const showCustomerCart = !isLandingRoute && !isOwner && !loadingOverlay && !tourOpen;
 
   return (

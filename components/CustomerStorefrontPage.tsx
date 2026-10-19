@@ -15,6 +15,7 @@ export function CustomerStorefrontPage({
   shopId,
   initialState = null,
   viewerIsOwner = false,
+  whiteLabel = false,
 }: {
   shopId: string;
   initialState?: ShopState | null;
@@ -23,12 +24,19 @@ export function CustomerStorefrontPage({
    * boolean on purpose: the owner id it was derived from stays on the server.
    */
   viewerIsOwner?: boolean;
+  /**
+   * Business stores hide the platform credit on their storefront. Decided on the
+   * server from `stores.plan`, so it cannot be switched on by editing store
+   * content.
+   */
+  whiteLabel?: boolean;
 }) {
   return (
     <CustomerStorefront
       shopId={shopId}
       initialState={initialState}
       viewerIsOwner={viewerIsOwner}
+      whiteLabel={whiteLabel}
     />
   );
 }

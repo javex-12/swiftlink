@@ -24,6 +24,7 @@
 import type { ShopState } from "./schema";
 import {
   accountPlanFor,
+  type Plan,
   clampProductVisibility,
   effectiveProductLimitFor,
   effectiveStoreLimitFor,
@@ -88,8 +89,16 @@ export function runningStoreIdFor(stores: readonly ShopState[], plan: unknown): 
 export function repairAccountToPlan(
   stores: readonly ShopState[],
   runningStoreId?: string | null,
+  /**
+   * The account's *entitlement*, when it differs from the rows (an
+   * administrator is entitled to Business without any row saying so). Passed in
+   * rather than persisted, so a cap is never applied to a plan the account is
+   * entitled to — the free tier's six-product clamp used to run against an
+   * admin's catalogue on every load.
+   */
+  planOverride?: Plan,
 ): PlanRepairResult {
-  const plan = accountPlanFor(stores);
+  const plan = planOverride ?? accountPlanFor(stores);
   const productLimit = effectiveProductLimitFor(plan);
   const storeLimit = effectiveStoreLimitFor(plan);
 

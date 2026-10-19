@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ProLayout } from "@/components/ProLayout";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
@@ -18,7 +19,40 @@ import {
   X,
   Banknote,
   TicketPercent,
+  Download,
+  Lock,
+  Eye,
+  MousePointerClick,
 } from "lucide-react";
+import { csvFilename, downloadCsv, toCsv, type CsvColumn } from "@/lib/csv";
+import { normalizePlan } from "@/lib/plans";
+import { ProGate } from "@/components/billing/ProGate";
+import {
+  groupVisitors,
+  visitorLabel,
+  visitorTotals,
+  type VisitorEventRow,
+} from "@/lib/visitors";
+
+/**
+ * How far back the visitor list looks.
+ *
+ * Thirty days matches the analytics window, so "400 views this month" on the
+ * dashboard and the sessions listed here describe the same period.
+ */
+const VISITOR_WINDOW_DAYS = 30;
+
+/** Short, human age for a timestamp — this column is read at a glance. */
+function describeWhen(iso: string): string {
+  const minutes = Math.round((Date.now() - Date.parse(iso)) / 60_000);
+  if (!Number.isFinite(minutes)) return "";
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return days <= 1 ? "yesterday" : `${days}d ago`;
+}
 
 /**
  * Inquiries & Orders.
@@ -44,6 +78,8 @@ interface Inquiry {
   currency: string;
   product_price_minor: number;
   selected_option: string | null;
+  /** The anonymous browser id, which is how a visitor row finds its order. */
+  device_hash?: string | null;
   final_amount_minor: number | null;
   sold_at: string | null;
   buyer_name: string | null;
@@ -92,8 +128,9 @@ export default function InquiriesPage() {
   const { state, addToast } = useSwiftLink();
   const storeId = state.id;
   const currency = state.currency || "NGN";
+  const plan = normalizePlan(state.plan);
 
-  const [activeTab, setActiveTab] = useState<"all" | "sales" | "customers">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "sales" | "customers" | "visitors">("all");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -105,6 +142,16 @@ export default function InquiriesPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   /** The order text is collapsed by default: most rows the merchant reads are not it. */
   const [openMessageId, setOpenMessageId] = useState<string | null>(null);
+
+  /*
+   * Visitors are loaded on demand, when their tab is actually opened. A free
+   * account never reaches the tab (it shows the upgrade panel), so it never pays
+   * for the query either.
+   */
+  const [events, setEvents] = useState<VisitorEventRow[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsNotice, setEventsNotice] = useState<string | null>(null);
+  const [eventsLoadedFor, setEventsLoadedFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!storeId || !isSupabaseConfigured()) {
@@ -124,7 +171,7 @@ export default function InquiriesPage() {
       supabase
         .from("inquiries")
         .select(
-          "id, product_id, product_name, currency, product_price_minor, selected_option, final_amount_minor, sold_at, buyer_name, buyer_phone, status, source, created_at, order_ref, discount_code, discount_minor, message",
+          "id, product_id, product_name, currency, product_price_minor, selected_option, final_amount_minor, sold_at, buyer_name, buyer_phone, device_hash, status, source, created_at, order_ref, discount_code, discount_minor, message",
         )
         .eq("store_id", storeId)
         .order("created_at", { ascending: false })
@@ -152,6 +199,42 @@ export default function InquiriesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadVisitors = useCallback(async () => {
+    if (!storeId || !isSupabaseConfigured()) {
+      setEvents([]);
+      setEventsNotice(!storeId ? "No store selected yet." : "Connect Supabase to see live visitors.");
+      setEventsLoadedFor(storeId ?? null);
+      return;
+    }
+
+    setEventsLoading(true);
+    setEventsNotice(null);
+
+    const since = new Date(Date.now() - VISITOR_WINDOW_DAYS * 86_400_000).toISOString();
+    const { data, error } = await supabase
+      .from("store_events")
+      .select("event_type, created_at, product_id, metadata")
+      .eq("store_id", storeId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(2000);
+
+    if (error) {
+      console.warn("[visitors] load failed:", error.message);
+      setEventsNotice(`Could not load visitors: ${error.message}`);
+    }
+
+    setEvents((data as VisitorEventRow[] | null) ?? []);
+    setEventsLoading(false);
+    setEventsLoadedFor(storeId);
+  }, [storeId]);
+
+  useEffect(() => {
+    if (activeTab !== "visitors" || plan === "free") return;
+    if (!storeId || eventsLoadedFor === storeId) return;
+    void loadVisitors();
+  }, [activeTab, plan, storeId, eventsLoadedFor, loadVisitors]);
 
   const setStatus = useCallback(
     async (inquiry: Inquiry, status: InquiryStatus, amountMajor?: number) => {
@@ -235,6 +318,67 @@ export default function InquiriesPage() {
     return byTab.filter((row) => (row.source || "direct") === sourceFilter);
   }, [activeTab, inquiries, sourceFilter]);
 
+  /**
+   * Export what is on screen, not the whole table.
+   *
+   * The merchant has already filtered by tab and channel to answer a question
+   * ("what sold on Instagram this week?"); exporting the unfiltered rows would
+   * answer a different one. Amounts are written in major units so a spreadsheet
+   * can total them, with the currency in its own column — the minor-unit values
+   * the database stores would read as 100× too large.
+   */
+  const exportCsv = () => {
+    if (!visibleInquiries.length) {
+      addToast("There is nothing to export in this view.", "info");
+      return;
+    }
+    const major = (minor: number | null | undefined) =>
+      typeof minor === "number" ? (minor / 100).toFixed(2) : "";
+
+    const columns: CsvColumn<Inquiry>[] = [
+      { header: "Order ref", value: (row) => row.order_ref ?? "" },
+      { header: "Date", value: (row) => row.created_at },
+      { header: "Customer", value: (row) => row.buyer_name ?? "" },
+      { header: "Phone", value: (row) => row.buyer_phone ?? "" },
+      { header: "Product", value: (row) => row.product_name },
+      { header: "Option", value: (row) => row.selected_option ?? "" },
+      { header: "Channel", value: (row) => inquirySourceLabel(row.source) },
+      { header: "Status", value: (row) => row.status },
+      { header: "Listed price", value: (row) => major(row.product_price_minor) },
+      { header: "Discount code", value: (row) => row.discount_code ?? "" },
+      { header: "Discount", value: (row) => major(row.discount_minor) },
+      { header: "Amount paid", value: (row) => major(row.final_amount_minor) },
+      { header: "Currency", value: (row) => row.currency || currency },
+      { header: "Sold at", value: (row) => row.sold_at ?? "" },
+      { header: "Order message", value: (row) => row.message ?? "" },
+    ];
+
+    downloadCsv(csvFilename("orders"), toCsv(visibleInquiries, columns));
+    addToast(`Exported ${visibleInquiries.length} row${visibleInquiries.length === 1 ? "" : "s"}.`, "success");
+  };
+
+  /*
+   * One row per anonymous browser, newest activity first. The order list is what
+   * turns a session into a person — and only for a visitor who actually ordered,
+   * because the name and phone come from the order they typed themselves.
+   */
+  const visitorSessions = useMemo(
+    () =>
+      groupVisitors(events, {
+        productName: (id) =>
+          id === null ? null : state.products.find((product) => product.id === id)?.name ?? null,
+        orders: inquiries.map((row) => ({
+          device_hash: row.device_hash ?? null,
+          buyer_name: row.buyer_name ?? null,
+          buyer_phone: row.buyer_phone ?? null,
+          created_at: row.created_at,
+          status: row.status,
+        })),
+      }),
+    [events, inquiries, state.products],
+  );
+  const visitorSummary = useMemo(() => visitorTotals(visitorSessions), [visitorSessions]);
+
   const soldRevenueMinor = useMemo(
     () =>
       inquiries
@@ -247,6 +391,7 @@ export default function InquiriesPage() {
     { key: "all" as const, label: "All Inquiries", icon: Clock, count: inquiries.length },
     { key: "sales" as const, label: "Confirmed Sales", icon: CheckCircle2, count: inquiries.filter((r) => r.status === "sold").length },
     { key: "customers" as const, label: "Customers", icon: UserCheck, count: customers.length },
+    { key: "visitors" as const, label: "Visitors", icon: Eye, count: visitorSummary.visitors },
   ];
 
   return (
@@ -259,15 +404,42 @@ export default function InquiriesPage() {
               Every tap on &ldquo;Order on WhatsApp&rdquo; in {state.bizName || "your store"}, and the sales you confirmed.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:border-[#19C37D] disabled:opacity-60"
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            <span className="hidden sm:inline">{loading ? "Loading" : "Refresh"}</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {/*
+              Export is a Pro feature on the pricing page, so a free account gets
+              a link to the plans section instead of a working button. Rendering
+              it disabled without saying why would look like a broken build.
+            */}
+            {plan === "free" ? (
+              <Link
+                href="/account#plans"
+                title="Exporting orders is a Pro feature"
+                className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#E8B93A]/40 bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8B93A] transition hover:border-[#E8B93A]"
+              >
+                <Lock className="h-4 w-4" />
+                <span className="hidden sm:inline">Export CSV · Pro</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={exportCsv}
+                disabled={loading || visibleInquiries.length === 0}
+                className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:border-[#19C37D] disabled:opacity-40"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:border-[#19C37D] disabled:opacity-60"
+            >
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+              <span className="hidden sm:inline">{loading ? "Loading" : "Refresh"}</span>
+            </button>
+          </div>
         </header>
 
         {notice && (
@@ -276,7 +448,7 @@ export default function InquiriesPage() {
           </div>
         )}
 
-        {inquiries.length > 0 && (
+        {inquiries.length > 0 && activeTab !== "visitors" && (
           <div className="rounded-[16px] border border-[#1E2D27] bg-[#111C18] px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
             <span className="text-xs text-[#9DB3A8]">
               <strong className="text-[#E8F1EC] tabular-nums">{inquiries.length}</strong> inquiries
@@ -323,7 +495,7 @@ export default function InquiriesPage() {
           Channel filter. Only channels that actually have orders are offered, so
           the merchant never taps a tab that cannot have anything in it.
         */}
-        {inquiries.length > 0 && sources.length > 1 && (
+        {activeTab !== "visitors" && inquiries.length > 0 && sources.length > 1 && (
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -356,7 +528,130 @@ export default function InquiriesPage() {
         )}
 
         {/* Customers list */}
-        {activeTab === "customers" ? (
+        {activeTab === "visitors" ? (
+          <section className="space-y-4">
+            {plan === "free" ? (
+              <ProGate
+                feature="Store visitors"
+                description="See who came to your store, which products they tapped, and who reached checkout or placed an order — one row per anonymous visitor, for the last 30 days."
+              />
+            ) : (
+              <>
+                <div className="rounded-[16px] border border-[#1E2D27] bg-[#111C18] px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+                  <span className="text-xs text-[#9DB3A8]">
+                    <strong className="text-[#E8F1EC] tabular-nums">{visitorSummary.visitors}</strong> visitors
+                  </span>
+                  <span className="text-xs text-[#9DB3A8]">
+                    <strong className="text-[#E8F1EC] tabular-nums">{visitorSummary.views}</strong> store views
+                  </span>
+                  <span className="text-xs text-[#9DB3A8]">
+                    <strong className="text-[#E8F1EC] tabular-nums">{visitorSummary.productClicks}</strong> product taps
+                  </span>
+                  <span className="text-xs text-[#9DB3A8]">
+                    <strong className="text-[#E8F1EC] tabular-nums">{visitorSummary.checkouts}</strong> checkouts
+                  </span>
+                  <span className="text-xs text-[#9DB3A8]">
+                    <strong className="text-[#19C37D] tabular-nums">{visitorSummary.ordered}</strong> ordered
+                  </span>
+                </div>
+
+                {eventsNotice && (
+                  <div role="status" className="rounded-[14px] border border-[#E8B93A]/30 bg-[#E8B93A]/10 px-4 py-3 text-xs text-[#E8F1EC]">
+                    {eventsNotice}
+                  </div>
+                )}
+
+                {eventsLoading && visitorSessions.length === 0 && (
+                  <p className="rounded-[16px] border border-[#1E2D27] bg-[#111C18] px-4 py-6 text-center text-xs text-[#9DB3A8]">
+                    Loading visitor activity…
+                  </p>
+                )}
+
+                {!eventsLoading && visitorSessions.length === 0 && (
+                  <div className="rounded-[16px] border border-[#1E2D27] bg-[#111C18] px-4 py-8 text-center">
+                    <p className="text-sm font-semibold text-[#E8F1EC]">No visitors in the last {VISITOR_WINDOW_DAYS} days</p>
+                    <p className="mx-auto mt-2 max-w-md text-xs text-[#9DB3A8]">
+                      Activity appears here as soon as someone opens your storefront link — shares on
+                      WhatsApp, Instagram or anywhere else all count.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {visitorSessions.map((session) => (
+                    <article
+                      key={session.id}
+                      className="rounded-[16px] border border-[#1E2D27] bg-[#111C18] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2 text-sm font-semibold text-[#E8F1EC]">
+                            <Eye className="h-4 w-4 shrink-0 text-[#9DB3A8]" />
+                            {visitorLabel(session.id)}
+                            {session.ordered && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#19C37D]/40 bg-[#19C37D]/10 px-2 py-0.5 text-[10px] font-semibold text-[#19C37D]">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {session.orders === 1 ? "Ordered" : `${session.orders} orders`}
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                            {session.lastAction} · {describeWhen(session.lastSeen)}
+                            {session.firstSeen !== session.lastSeen && (
+                              <> · first seen {describeWhen(session.firstSeen)}</>
+                            )}
+                          </p>
+                          {session.ordered && (session.name || session.phone) && (
+                            <p className="mt-1 text-[11px] text-[#E8F1EC]">
+                              {session.name || "Name not given"}
+                              {session.phone ? ` · ${session.phone}` : ""}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2 text-[11px]">
+                          <span className="rounded-full border border-[#24382F] bg-[#14231D] px-2 py-0.5 text-[#9DB3A8]">
+                            {session.views} view{session.views === 1 ? "" : "s"}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#24382F] bg-[#14231D] px-2 py-0.5 text-[#9DB3A8]">
+                            <MousePointerClick className="h-3 w-3" />
+                            {session.productClicks}
+                          </span>
+                          <span className="rounded-full border border-[#24382F] bg-[#14231D] px-2 py-0.5 text-[#9DB3A8]">
+                            {session.checkouts} checkout{session.checkouts === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {session.products.length > 0 && (
+                        <p className="mt-3 text-[11px]">
+                          <span className="text-[#9DB3A8]">Tapped: </span>
+                          {session.products.map((product, index) => (
+                            <span key={`${product.id}-${index}`} className="text-[#E8F1EC]">
+                              {index > 0 ? ", " : ""}
+                              {product.name ?? (product.id === null ? "Unknown product" : `Product #${product.id}`)}
+                              {product.clicks > 1 ? ` ×${product.clicks}` : ""}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+
+                      {session.channels.length > 0 && (
+                        <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                          Checkout via {session.channels.join(", ")}
+                        </p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+
+                <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
+                  Visitors are anonymous browser ids — no IP address, device or location is stored.
+                  A name and phone appear only for someone who placed an order and typed them in.
+                </p>
+              </>
+            )}
+          </section>
+        ) : activeTab === "customers" ? (
           customers.length > 0 ? (
             <div className="space-y-2">
               {customers.map((customer) => (

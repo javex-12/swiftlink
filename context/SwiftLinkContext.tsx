@@ -25,7 +25,9 @@ import {
   canSwitchStore,
   effectiveProductLimitFor,
   effectiveStoreLimitFor,
+  entitledPlanFor,
   isUnlimited,
+  normalizePlan,
   PLAN_DETAILS,
   productLimitBlockedMessage,
   reconcileAccountPlan,
@@ -33,6 +35,7 @@ import {
   visibleProductCount,
 } from "@/lib/plans";
 import { repairAccountToPlan, repairNotice, repairWrites } from "@/lib/plan-enforcement";
+import type { Plan } from "@/lib/plans";
 import { clearEditorDraft, writeEditorDraft, type EditorDraft } from "@/lib/draft-store";
 import { deleteStoreDraft, storeDraftKey, writeStoreDraft } from "@/lib/store-drafts";
 import { recordOrderIntent, toMinorUnits, type OrderIntentItem } from "@/lib/inquiry-write";
@@ -47,6 +50,7 @@ import {
   type PlacedOrder,
 } from "@/lib/checkout-channels";
 import { cartTotalsFrom, evaluateDiscount, sanitizeDiscountCodes, type CartTotals } from "@/lib/discounts";
+import { getDeviceHash } from "@/lib/inquiries";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
 
 type CartMap = Record<number, number>;
@@ -92,6 +96,12 @@ type SwiftLinkContextValue = {
   cart: CartMap;
   user: User | null;
   isAdmin: boolean;
+  /**
+   * Whether the plan has been resolved from the server. Screens that name a
+   * tier show a placeholder until this is true, so a stale local blob cannot
+   * paint the wrong plan for a moment before the real one arrives.
+   */
+  planReady: boolean;
   isSupabaseActive: boolean;
   isOwner: boolean;
   tourOpen: boolean;
@@ -179,6 +189,35 @@ type SwiftLinkContextValue = {
   logEvent: (type: string, metadata?: any) => Promise<void>;
 };
 
+/**
+ * The account's entitlement, as the server resolves it.
+ *
+ * Returns `null` for the plan when the function is unavailable (a backend that
+ * has not had `20261017120000_account_entitlement.sql` applied yet), so the
+ * caller can fall back to the store rows and keep working. The boolean is
+ * always usable, so an administrator is never capped while that happens.
+ */
+async function readAccountEntitlement(
+  fallbackIsAdmin: boolean,
+): Promise<{ plan: Plan | null; isAdmin: boolean }> {
+  try {
+    const { data, error } = await supabase.rpc("get_account_entitlement");
+    if (error) {
+      console.warn("Account entitlement query failed:", error.message);
+      return { plan: null, isAdmin: fallbackIsAdmin };
+    }
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { plan?: unknown; is_admin?: unknown }
+      | null;
+    if (row && typeof row.is_admin === "boolean") {
+      return { plan: normalizePlan(row.plan), isAdmin: row.is_admin };
+    }
+  } catch (e) {
+    console.warn("Account entitlement query threw:", e);
+  }
+  return { plan: null, isAdmin: fallbackIsAdmin };
+}
+
 const SwiftLinkContext = createContext<SwiftLinkContextValue | null>(null);
 
 
@@ -219,7 +258,20 @@ export function SwiftLinkProvider({
            * created by `createNewStore` used to be inserted as `plan: 'free'`,
            * and this load treats the column as authoritative.
            */
-          const { accountPlan, staleIds } = reconcileAccountPlan(data as any[]);
+          const { accountPlan: dbPlan, staleIds } = reconcileAccountPlan(data as any[]);
+
+          /*
+           * Entitlement comes from the server, not from one row: an
+           * administrator is entitled to Business whatever `stores.plan` says,
+           * and a paying account is the most privileged plan among its stores.
+           * The reserve is the fallback for a backend without the function.
+           */
+          const entitlement = await readAccountEntitlement(adminRef.current);
+          const accountPlan =
+            entitlement.plan ??
+            entitledPlanFor(data as any[], { isAdmin: entitlement.isAdmin });
+          accountPlanRef.current = accountPlan;
+          setPlanReady(true);
 
           const loadedStores = data.map((s: any) => {
             return normalizeShopState({
@@ -240,7 +292,10 @@ export function SwiftLinkProvider({
             void (async () => {
               const { error: repairError } = await supabase
                 .from('stores')
-                .update({ plan: accountPlan })
+                // The rows are aligned with each other, never with an admin
+                // override: the entitlement follows the person, and writing it
+                // to `plan` would leave a paid tier behind after a demotion.
+                .update({ plan: dbPlan })
                 .in('id', staleIds);
               if (repairError) console.warn("Store plan reconciliation failed:", repairError);
             })();
@@ -321,6 +376,10 @@ export function SwiftLinkProvider({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [socialHubOpen, setSocialHubOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  /** See `SwiftLinkContextValue.planReady`. */
+  const [planReady, setPlanReady] = useState(false);
+  const adminRef = useRef(false);
+  const accountPlanRef = useRef<Plan | null>(null);
 
   const checkAdminStatus = useCallback(async (userId: string) => {
     if (!isSupabaseConfigured()) {
@@ -336,10 +395,14 @@ export function SwiftLinkProvider({
         .maybeSingle();
       const isAdminUser = !!(data && !error);
       setIsAdmin(isAdminUser);
-      // Admins always get Business tier — upgrade state immediately
-      if (isAdminUser) {
-        setState(prev => ({ ...prev, plan: 'business' }));
-      }
+      /*
+       * The Business entitlement an administrator has is applied by
+       * `fetchStores`, from `get_account_entitlement` — not here. Upgrading
+       * `state.plan` in this callback was overwritten a moment later by the
+       * store rows, which is the flicker merchants reported: Business for one
+       * render, then Free for the rest of the session.
+       */
+      adminRef.current = isAdminUser;
     } catch (e) {
       console.warn("Failed to query system_admins table:", e);
       setIsAdmin(false);
@@ -389,7 +452,7 @@ export function SwiftLinkProvider({
      * created stores on any plan. The live database showed the result: a free
      * account holding three stores.
      */
-    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
     if (!canCreateStore(currentPlan, stores.length)) {
       addToast(storeActionBlockedMessage(currentPlan, stores.length), "error");
       return;
@@ -453,7 +516,7 @@ export function SwiftLinkProvider({
      * already owns extra rows keeps them — the data is never deleted — and gets
      * them back on upgrade.
      */
-    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
     if (!canSwitchStore(currentPlan)) {
       addToast(storeActionBlockedMessage(currentPlan, stores.length), "error");
       return;
@@ -478,7 +541,7 @@ export function SwiftLinkProvider({
     const target = stores.find(s => s.id === id);
     if (!target) return false;
 
-    const currentPlan = accountPlanFor(stores.length ? stores : [state]);
+    const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
     if (isUnlimited(effectiveStoreLimitFor(currentPlan))) {
       await switchStore(id);
       return true;
@@ -773,16 +836,37 @@ export function SwiftLinkProvider({
     const sid = metadata.shopId || stateRef.current.id;
     if (!sid || !isSupabaseConfigured()) return;
 
-    void supabase.from('store_events').insert({
+    /*
+     * `visitor_id` is what turns a flat event log into a list of visitors: the
+     * console groups by it to answer "who viewed, who tapped, who checked out".
+     * It is the same anonymous per-browser value the storefront already uses to
+     * collapse repeat order taps (`swiftlink_device_hash`) — random, stored in
+     * localStorage, and carrying no IP address, user agent or location. Written
+     * after the spread so a caller cannot spoof someone else's id.
+     */
+    /*
+     * Awaited, not fired and forgotten.
+     *
+     * This was `void supabase.from('store_events').insert({...})` — and a
+     * PostgREST builder is lazy: it sends nothing until it is awaited, so `void`
+     * built the request and threw it away. The live table proved it: a store with
+     * hundreds of visits had written **one** event, ever, and every "store
+     * views" figure in the console was structurally zero. The error is logged
+     * rather than swallowed for the same reason.
+     */
+    const { error } = await supabase.from('store_events').insert({
         store_id: sid,
         event_type,
         product_id: metadata.productId || null,
         metadata: {
             ...metadata,
+            visitor_id: getDeviceHash(),
             url: window.location.href,
             referrer: document.referrer
         }
     });
+
+    if (error) console.warn('[analytics] event not recorded:', event_type, error.message);
   }, []);
 
   useEffect(() => {
@@ -793,7 +877,9 @@ export function SwiftLinkProvider({
     // Instead, we wait for the session check in initAuth() or handle it here.
     if (isSupabaseConfigured()) {
       void supabase.auth.getSession().then(({ data: { session } }) => {
-        setState(session ? loadStateLocal() : defaultShopState());
+        // The local mirror never carries a plan: an old blob could otherwise
+        // paint a tier the account does not hold. The server answers below.
+        setState(session ? { ...loadStateLocal(), plan: undefined } : defaultShopState());
       });
       setIsSupabaseActive(true);
     } else {
@@ -890,7 +976,11 @@ export function SwiftLinkProvider({
                         const preferredId = readPersistedActiveStoreId();
                         const runningId =
                           storesList.find((store) => store.id && store.id === preferredId)?.id ?? null;
-                        const repaired = repairAccountToPlan(storesList, runningId);
+                        const repaired = repairAccountToPlan(
+                          storesList,
+                          runningId,
+                          accountPlanRef.current ?? undefined,
+                        );
                         const writes = repairWrites(storesList, repaired);
                         if (writes.length) {
                           setStores(repaired.stores);
@@ -913,8 +1003,13 @@ export function SwiftLinkProvider({
                         setState(nextState);
                         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
                     } else {
-                        const nextState = normalizeShopState({ id: u.id, ownerId: u.id, plan: 'free' });
+                        const nextState = normalizeShopState({
+                          id: u.id,
+                          ownerId: u.id,
+                          plan: accountPlanRef.current ?? 'free',
+                        });
                         setState(nextState);
+                        setPlanReady(true);
                     }
                 }
             });
@@ -924,6 +1019,9 @@ export function SwiftLinkProvider({
             // by a signed-out auth event (canonical `/<handle>` route).
             if (isOwnerRef.current) setState(defaultShopState());
             setIsAdmin(false);
+            adminRef.current = false;
+            accountPlanRef.current = null;
+            setPlanReady(false);
             if (typeof window !== "undefined") {
               localStorage.removeItem("swiftlink_state");
             }
@@ -1674,6 +1772,7 @@ export function SwiftLinkProvider({
     cart,
     user,
     isAdmin,
+    planReady,
     isSupabaseActive,
     isOwner,
     tourOpen,

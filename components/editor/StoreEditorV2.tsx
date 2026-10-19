@@ -17,10 +17,12 @@ import {
   isTemplateAllowedOnPlan,
   templateUpgradeRequiredMessage,
   FREE_TEMPLATE_IDS,
+  normalizePlan,
 } from "@/lib/plans";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { DEFAULT_WA_TEMPLATE, renderWhatsAppOrderMessage, ALLOWED_TEMPLATE_VARIABLES, validateWhatsAppTemplate } from "@/lib/whatsapp-template";
 import { DiscountCodesSection } from "@/components/editor/DiscountCodesSection";
+import { ProGate } from "@/components/billing/ProGate";
 import { sanitizeDiscountCodes } from "@/lib/discounts";
 import { TemplateFrame } from "@/components/storefront/template-frames";
 import { TemplatePreviewModal } from "@/components/storefront/TemplatePreviewModal";
@@ -30,6 +32,8 @@ import { compressImageBeforeUpload } from "@/lib/image-compress";
 import { STOCK_PRODUCT_IDEAS, type StockProductIdea } from "@/lib/stock-ideas";
 import { describeDraftAge, hasDraftChanges, readEditorDraft } from "@/lib/draft-store";
 import { pickNewestDraft, storeDraftKey } from "@/lib/store-drafts";
+import { DEFAULT_QUOTE_QUESTIONS } from "@/lib/product-pricing";
+import type { ProductRequestQuestion } from "@/lib/schema";
 
 /** Idle time before the draft autosaves. Short enough to feel instant, long
  *  enough that typing a product name doesn't fire a write per keystroke. */
@@ -65,6 +69,7 @@ import {
   Sun,
   Moon,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 
 interface OptionRow {
@@ -1141,13 +1146,26 @@ export function StoreEditorV2() {
               </div>
             </section>
 
-            {/* Section: Discount codes */}
-            <DiscountCodesSection
-              codes={sanitizeDiscountCodes(localState.discountCodes)}
-              currency={localState.currency || "₦"}
-              storeId={localState.id ?? null}
-              onChange={(next) => updateField("discountCodes", next)}
-            />
+            {/*
+              Section: Discount codes.
+
+              Sold as a Pro feature, so the section is a locked panel on Free —
+              the codes a free store already saved keep working on the storefront
+              (never take away what was given), but no new ones can be added.
+            */}
+            {normalizePlan(localState.plan) === "free" ? (
+              <ProGate
+                feature="Discount codes"
+                description="Create percentage or fixed-amount codes, set minimum order values and expiry dates, and see redemptions per code. Available on Pro and Business."
+              />
+            ) : (
+              <DiscountCodesSection
+                codes={sanitizeDiscountCodes(localState.discountCodes)}
+                currency={localState.currency || "₦"}
+                storeId={localState.id ?? null}
+                onChange={(next) => updateField("discountCodes", next)}
+              />
+            )}
 
             {/* Section: Frequently Asked Questions (FAQ) */}
             <section
@@ -2095,6 +2113,7 @@ export function StoreEditorV2() {
                       onSearch={() => addToast("Search filter is active in catalog!", "info")}
                       onCart={() => addToast(`Preview Cart: ${previewCartCount} item(s)`, "info")}
                       onReviews={() => {}}
+                      whiteLabel={normalizePlan(localState.plan) === "business"}
                     />
                   </div>
                 </div>
@@ -2121,6 +2140,7 @@ export function StoreEditorV2() {
                     onSearch={() => addToast("Search filter is active in catalog!", "info")}
                     onCart={() => addToast(`Preview Cart: ${previewCartCount} item(s)`, "info")}
                     onReviews={() => {}}
+                      whiteLabel={normalizePlan(localState.plan) === "business"}
                   />
                 </div>
               ) : (
@@ -2146,6 +2166,7 @@ export function StoreEditorV2() {
                     onSearch={() => addToast("Search filter is active in catalog!", "info")}
                     onCart={() => addToast(`Preview Cart: ${previewCartCount} item(s)`, "info")}
                     onReviews={() => {}}
+                      whiteLabel={normalizePlan(localState.plan) === "business"}
                   />
                 </div>
               )}
@@ -2205,6 +2226,66 @@ export function StoreEditorV2() {
 // PRODUCT EDIT MODAL COMPONENT (RESPONSIVE WITH MEDIA & WHATSAPP BUILDER)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * One collapsible block in the product editor.
+ *
+ * The form used to print every field — photos, stock ideas, pricing, options and
+ * the WhatsApp template — in a single column, so editing one price meant
+ * scrolling past three screens of media first. Each block now opens on its own,
+ * with a one-line summary of what is inside it when closed.
+ */
+function ProductFormSection({
+  id,
+  title,
+  icon: Icon,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  summary?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210]">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={`${id}-body`}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-[#14231D]/60"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Icon className="h-4 w-4 shrink-0 text-[#19C37D]" />
+          <span className="truncate text-xs font-bold uppercase tracking-wider text-[#E8F1EC]">
+            {title}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {summary ? (
+            <span className="max-w-[9rem] truncate text-[10px] font-medium text-[#9DB3A8] sm:max-w-[16rem]">
+              {summary}
+            </span>
+          ) : null}
+          <ChevronDown
+            className={cn("h-4 w-4 text-[#9DB3A8] transition-transform", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open && (
+        <div id={`${id}-body`} className="border-t border-[#1E2D27] p-4">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
 interface ProductEditModalProps {
   productId: number | null;
   currentProducts: Product[];
@@ -2258,6 +2339,21 @@ function ProductEditModal({
   const [name, setName] = useState(existing?.name || "");
   const [description, setDescription] = useState(existing?.description || "");
   const [price, setPrice] = useState<number | string>(existing?.price ?? "");
+  /**
+   * Services have no fixed amount: the storefront prints "Ask for price" and
+   * opens a request form instead of the cart. Defaulting to `fixed` keeps every
+   * existing product exactly as it was.
+   */
+  const [priceType, setPriceType] = useState<"fixed" | "quote">(
+    existing?.priceType === "quote" ? "quote" : "fixed",
+  );
+  /**
+   * The request-form questions, in the merchant's words. `undefined` on the
+   * product means the defaults; an empty array means they removed every one.
+   */
+  const [requestQuestions, setRequestQuestions] = useState<ProductRequestQuestion[]>(
+    existing?.requestQuestions ?? [...DEFAULT_QUOTE_QUESTIONS],
+  );
   const [category, setCategory] = useState(existing?.category || categories[1] || "");
   const [outOfStock, setOutOfStock] = useState(existing?.outOfStock || false);
   const [stockToast, setStockToast] = useState<string | null>(null);
@@ -2293,13 +2389,6 @@ function ProductEditModal({
 
   const [options, setOptions] = useState<OptionRow[]>(initialOptions);
   const modalScrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
 
   // Upload photo handler with client-side compression and offline fallback
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2425,8 +2514,30 @@ function ProductEditModal({
    * explains itself, and "did that stick?" is the question the colour answers.
    */
   const formSignature = useMemo(
-    () => JSON.stringify({ name, description, price, category, outOfStock, images, options, waTemplateMessage }),
-    [name, description, price, category, outOfStock, images, options, waTemplateMessage],
+    () => JSON.stringify(    {
+      name,
+      description,
+      price,
+      priceType,
+      requestQuestions,
+      category,
+      outOfStock,
+      images,
+      options,
+      waTemplateMessage,
+    }),
+    [
+      name,
+      description,
+      price,
+      priceType,
+      requestQuestions,
+      category,
+      outOfStock,
+      images,
+      options,
+      waTemplateMessage,
+    ],
   );
   const initialSignature = useRef(formSignature);
   const isDirty = formSignature !== initialSignature.current;
@@ -2441,7 +2552,12 @@ function ProductEditModal({
       return;
     }
 
-    const numericPrice = typeof price === "string" ? parseFloat(price) || 0 : price;
+    const numericPrice =
+      priceType === "quote"
+        ? 0
+        : typeof price === "string"
+          ? parseFloat(price) || 0
+          : price;
 
     const attributes: ProductAttribute[] = options
       .filter((opt) => opt.name.trim() && opt.choices.trim())
@@ -2455,6 +2571,13 @@ function ProductEditModal({
       name: name.trim(),
       description: description.trim(),
       price: numericPrice,
+      priceType,
+      requestQuestions:
+        priceType === "quote"
+          ? requestQuestions
+              .map((question) => ({ ...question, label: question.label.trim() }))
+              .filter((question) => question.label)
+          : undefined,
       image: images[0] || "",
       images: images,
       outOfStock,
@@ -2507,42 +2630,6 @@ function ProductEditModal({
           </button>
         </div>
 
-        {/* Section Quick Jump Bar */}
-        <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#1E2D27] bg-[#0A1210] px-4 sm:px-6 py-2 text-[11px] font-semibold text-[#9DB3A8] scrollbar-none">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#19C37D] shrink-0">Jump:</span>
-          <button
-            type="button"
-            onClick={() => scrollToSection("modal-media")}
-            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
-          >
-            1. Media & Ideas
-          </button>
-          <span className="text-[#24382F]">·</span>
-          <button
-            type="button"
-            onClick={() => scrollToSection("modal-details")}
-            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
-          >
-            2. Details & Price
-          </button>
-          <span className="text-[#24382F]">·</span>
-          <button
-            type="button"
-            onClick={() => scrollToSection("modal-options")}
-            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
-          >
-            3. Options
-          </button>
-          <span className="text-[#24382F]">·</span>
-          <button
-            type="button"
-            onClick={() => scrollToSection("modal-whatsapp")}
-            className="shrink-0 rounded-lg px-2.5 py-1 transition hover:bg-[#14231D] hover:text-[#E8F1EC]"
-          >
-            4. WhatsApp Order
-          </button>
-        </div>
-
         {/* Scrollable Form Body with contained scroll */}
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div ref={modalScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6 overscroll-contain">
@@ -2557,19 +2644,21 @@ function ProductEditModal({
             )}
 
             {/* 1. PRODUCT PICTURE & MEDIA */}
-            <div id="modal-media" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
+            <ProductFormSection
+              id="modal-media"
+              title="Photos"
+              icon={ImageIcon}
+              summary={
+                images.length > 0
+                  ? `${images.length} photo${images.length === 1 ? "" : "s"}`
+                  : "No photo yet"
+              }
+              defaultOpen={!existing}
+            >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1E2D27] pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4 text-[#19C37D]" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#E8F1EC]">
-                      Product Picture & Stock Ideas
-                    </h3>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-[#9DB3A8]">
-                    Pick a ready-to-sell stock idea, upload photos, or paste an image URL.
-                  </p>
-                </div>
+                <p className="text-[11px] text-[#9DB3A8]">
+                  Pick a ready-to-sell stock idea, upload photos, or paste an image URL.
+                </p>
 
                 {/* Picture input mode switcher */}
                 <div className="flex items-center rounded-xl border border-[#24382F] bg-[#14231D] p-1">
@@ -2784,10 +2873,23 @@ function ProductEditModal({
                   )}
                 </div>
               </div>
-            </div>
+            </ProductFormSection>
 
-            {/* 2. PRODUCT NAME & PRICE */}
-            <div id="modal-details" className="scroll-mt-4 grid gap-4 sm:grid-cols-3">
+            {/* 2. NAME, PRICE & DETAILS */}
+            <ProductFormSection
+              id="modal-details"
+              title="Name, price & details"
+              icon={Tag}
+              summary={
+                priceType === "quote"
+                  ? "Price on request"
+                  : price
+                    ? `${currency}${Number(price).toLocaleString()}`
+                    : "No price yet"
+              }
+              defaultOpen={!existing}
+            >
+              <div className="grid gap-4 sm:grid-cols-3">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-[#E8F1EC]">Product Name *</label>
                 <input
@@ -2801,7 +2903,36 @@ function ProductEditModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#E8F1EC]">Price ({currency}) *</label>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">Pricing</label>
+                <div className="mt-1.5 flex h-[44px] items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] p-1">
+                  {([
+                    { id: "fixed" as const, label: "Fixed price" },
+                    { id: "quote" as const, label: "On request" },
+                  ]).map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={priceType === option.id}
+                      onClick={() => setPriceType(option.id)}
+                      className={cn(
+                        "flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition",
+                        priceType === option.id
+                          ? "bg-[#19C37D] text-[#04140D]"
+                          : "text-[#9DB3A8] hover:text-[#E8F1EC]",
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              </div>
+
+            {priceType === "fixed" ? (
+              <div>
+                <label className="block text-xs font-semibold text-[#E8F1EC]">
+                  Price ({currency}) *
+                </label>
                 <input
                   type="number"
                   required
@@ -2813,9 +2944,92 @@ function ProductEditModal({
                   className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm font-semibold tabular-nums text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
                 />
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 rounded-xl border border-[#19C37D]/30 bg-[#19C37D]/5 px-3.5 py-3">
+                <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
+                  Buyers see <strong className="text-[#E8F1EC]">Ask for price</strong> and answer the
+                  questions you write here. The request opens in your WhatsApp and is saved in
+                  Inquiries.
+                </p>
 
-            {/* 3. CATEGORY & STOCK */}
+                <div>
+                  <p className="text-[11px] font-semibold text-[#E8F1EC]">Questions buyers answer</p>
+                  <p className="mt-0.5 text-[10px] leading-relaxed text-[#9DB3A8]">
+                    Ask whatever you need to quote the job — quantity, size, material, delivery
+                    area. Name and WhatsApp number are always asked.
+                  </p>
+
+                  <div className="mt-2 space-y-2">
+                    {requestQuestions.map((question, index) => (
+                      <div key={question.id} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={question.label}
+                          aria-label={`Request question ${index + 1}`}
+                          onChange={(event) =>
+                            setRequestQuestions((prev) =>
+                              prev.map((entry, entryIndex) =>
+                                entryIndex === index ? { ...entry, label: event.target.value } : entry,
+                              ),
+                            )
+                          }
+                          placeholder="e.g. How many do you need?"
+                          className="min-w-0 flex-1 rounded-lg border border-[#5C7C6D] bg-[#14231D] px-2.5 py-1.5 text-[11px] text-[#E8F1EC] outline-none focus:border-[#19C37D]"
+                        />
+                        <label className="flex shrink-0 items-center gap-1 text-[10px] text-[#9DB3A8]">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(question.required)}
+                            onChange={(event) =>
+                              setRequestQuestions((prev) =>
+                                prev.map((entry, entryIndex) =>
+                                  entryIndex === index
+                                    ? { ...entry, required: event.target.checked }
+                                    : entry,
+                                ),
+                              )
+                            }
+                            className="h-3.5 w-3.5 rounded border-[#1E2D27] text-[#19C37D] focus:ring-[#19C37D]"
+                          />
+                          Required
+                        </label>
+                        <button
+                          type="button"
+                          aria-label={`Remove question ${index + 1}`}
+                          onClick={() =>
+                            setRequestQuestions((prev) => prev.filter((_, entryIndex) => entryIndex !== index))
+                          }
+                          className="shrink-0 rounded p-1 text-[#9DB3A8] transition hover:text-[#FF8A8A]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {requestQuestions.length === 0 && (
+                      <p className="text-[10px] text-[#9DB3A8]">
+                        No questions. Buyers will only leave a name and WhatsApp number.
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRequestQuestions((prev) => [
+                        ...prev,
+                        { id: `q-${Date.now().toString(36)}`, label: "" },
+                      ])
+                    }
+                    className="mt-2 flex min-h-[32px] items-center gap-1 rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-[10px] font-semibold text-[#19C37D] transition hover:border-[#19C37D]"
+                  >
+                    <Plus className="h-3 w-3" /> Add question
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* CATEGORY & STOCK */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-[#E8F1EC]">Category</label>
@@ -2852,7 +3066,7 @@ function ProductEditModal({
               </div>
             </div>
 
-            {/* 4. DESCRIPTION */}
+            {/* DESCRIPTION */}
             <div>
               <label className="block text-xs font-semibold text-[#E8F1EC]">Product Description</label>
               <textarea
@@ -2863,16 +3077,23 @@ function ProductEditModal({
                 className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
               />
             </div>
+            </ProductFormSection>
 
-            {/* 5. OPTIONS (VARIANTS) */}
-            <div id="modal-options" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4">
+            {/* OPTIONS (VARIANTS) */}
+            <ProductFormSection
+              id="modal-options"
+              title="Options & sizes"
+              icon={FolderPlus}
+              summary={
+                options.length > 0
+                  ? `${options.length} option${options.length === 1 ? "" : "s"}`
+                  : "None"
+              }
+            >
               <div className="flex items-center justify-between border-b border-[#1E2D27] pb-2.5">
-                <div>
-                  <span className="text-xs font-bold text-[#E8F1EC]">Product Options & Sizes</span>
-                  <p className="text-[11px] text-[#9DB3A8]">
-                    e.g. Size (Small, Medium, Large) or Color (Black, Tan)
-                  </p>
-                </div>
+                <p className="text-[11px] text-[#9DB3A8]">
+                  e.g. Size (Small, Medium, Large) or Color (Black, Tan)
+                </p>
                 <button
                   type="button"
                   onClick={addOptionRow}
@@ -2917,17 +3138,21 @@ function ProductEditModal({
                   ))
                 )}
               </div>
-            </div>
+            </ProductFormSection>
 
-            {/* 6. WHATSAPP ORDER MESSAGE (EDITABLE & LIVE PREVIEW) */}
-            <div id="modal-whatsapp" className="scroll-mt-4 rounded-xl border border-[#1E2D27] bg-[#0A1210] p-4 space-y-3">
+            {/* WHATSAPP ORDER MESSAGE (EDITABLE & LIVE PREVIEW) */}
+            <ProductFormSection
+              id="modal-whatsapp"
+              title="WhatsApp order message"
+              icon={MessageSquare}
+              summary={
+                waTemplateMessage === DEFAULT_WA_TEMPLATE ? "Default message" : "Customised"
+              }
+            >
               <div className="flex items-center justify-between border-b border-[#1E2D27] pb-2">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-[#19C37D]" />
-                  <span className="text-xs font-bold text-[#E8F1EC]">
-                    WhatsApp Order Message Customization
-                  </span>
-                </div>
+                <p className="text-[11px] text-[#9DB3A8]">
+                  What the buyer&apos;s WhatsApp message says for this product.
+                </p>
                 <button
                   type="button"
                   onClick={() => setWaTemplateMessage(DEFAULT_WA_TEMPLATE)}
@@ -2977,7 +3202,7 @@ function ProductEditModal({
                   </p>
                 </div>
               </div>
-            </div>
+            </ProductFormSection>
           </div>
 
           {/* Fixed Footer Actions - Always visible across mobile, tablet, and desktop */}

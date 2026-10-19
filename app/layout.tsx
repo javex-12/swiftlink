@@ -8,7 +8,6 @@ import {
   Bricolage_Grotesque,
 } from "next/font/google";
 import { AppChrome } from "@/components/AppChrome";
-import { buildSiteJsonLd } from "@/lib/seo";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
@@ -159,32 +158,17 @@ export const metadata: Metadata = {
   },
 };
 
-const softwareJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: siteName,
-  applicationCategory: "BusinessApplication",
-  operatingSystem: "Web",
-  url: site,
-  image: `${site}/logo.png`,
-  description,
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "WhatsApp storefront builder",
-    "Free online store on your own link",
-    "Product catalog management",
-    "Customer cart and WhatsApp ordering",
-    "Storefront visual editor",
-    "Public store directory",
-  ],
-};
-
-/** `WebSite` + `Organization`: powers the sitelinks search box and brand card. */
-const siteJsonLd = buildSiteJsonLd(siteName, description);
+/*
+ * There is deliberately no platform JSON-LD here.
+ *
+ * It used to be emitted in the root layout, which meant every page — including
+ * every merchant's storefront — shipped a `SoftwareApplication` for SwiftLink
+ * describing *us* to search engines. A store page already carries its own
+ * `Store`/`Product` graph (`buildStoreJsonLd`), and the marketing pages that
+ * need the platform described (`app/page.tsx`) declare it themselves. Keeping it
+ * out of the layout is what stops a Business storefront advertising the
+ * platform in its structured data.
+ */
 
 export default function RootLayout({
   children,
@@ -197,14 +181,6 @@ export default function RootLayout({
       className={`dark ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} ${instrumentSerif.variable} ${cinzel.variable}`}
     >
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
-        />
         {/* Fonts are self-hosted by next/font — no third-party stylesheet here.
             The manifest <link> is injected automatically from app/manifest.ts. */}
         <meta name="theme-color" content="#0a1210" />

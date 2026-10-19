@@ -46,8 +46,19 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
     return pathname.startsWith(item.href);
   };
 
+  /*
+   * `overflow-x-clip`, not `overflow-hidden`.
+   *
+   * `overflow-hidden` makes this a scroll container, so every `sticky top-0`
+   * inside it stops sticking: the element is pinned to a box that never
+   * scrolls, so it slides away with the page. That is what happened to the
+   * editor's Save header — it had `sticky top-0` all along and still scrolled
+   * off, which is why the only way to save was to scroll back up. `clip`
+   * contains horizontal overflow without creating a scroll container, so the
+   * header pins again. (`CustomerStorefront` documents the same trap.)
+   */
   return (
-    <div className="min-h-screen overflow-hidden bg-[#0A1210] text-[#E8F1EC] flex flex-col md:flex-row font-sans selection:bg-[#19C37D]/30">
+    <div className="min-h-screen overflow-x-clip bg-[#0A1210] text-[#E8F1EC] flex flex-col md:flex-row font-sans selection:bg-[#19C37D]/30">
       {/* Onboarding Wizard Modal */}
       <OnboardingModal />
 
