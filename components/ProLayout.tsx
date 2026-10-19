@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { effectiveStoreLimitFor } from "@/lib/plans";
+import { rememberConsolePath } from "@/lib/console-history";
 
 export function ProLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,6 +24,14 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
   // Close sidebar drawer on route change
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  /*
+   * Remember where the merchant is, so the installed app reopens here instead of
+   * on the landing page (`lib/console-history.ts`, `app/launch/page.tsx`).
+   */
+  useEffect(() => {
+    if (pathname) rememberConsolePath(pathname + (typeof window !== "undefined" ? window.location.search : ""));
   }, [pathname]);
 
   // Admins get a sixth tab so the console is reachable from a phone too; every
@@ -66,7 +75,7 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
       <ProSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       {/* Main Content Area: Padding bottom accounts for bottom bar height + safe area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         {/* Mobile Header (<768px) with shared Logo */}
         <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#1E2D27] bg-[#111C18]/95 px-4 backdrop-blur-md">
           <Link href="/pro" className="flex shrink-0 items-center gap-2">

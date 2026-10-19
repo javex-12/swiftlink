@@ -25,7 +25,7 @@ import { SubscriptionPanel } from "@/components/billing/SubscriptionPanel";
 import { DomainSettings } from "@/components/domains/DomainSettings";
 
 export default function AccountPage() {
-  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores, chooseStore, planReady } =
+  const { user, isSupabaseActive, authSignOut, handleSignOut, state, updateState, addToast, setFeedbackOpen, stores, chooseStore, setStoreLive, planReady } =
     useSwiftLink();
 
   const [actionLoading, setActionLoading] = useState<"deactivate" | "delete" | null>(null);
@@ -425,7 +425,7 @@ export default function AccountPage() {
                   </h4>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-[#9DB3A8]">
                     The {planDetail.name} plan includes {formatLimit(productLimit)} and{" "}
-                    {formatLimit(storeLimit)} store. {hiddenProducts.length > 0 && `${hiddenProducts.length} hidden from your storefront. `}
+                    {formatLimit(storeLimit)} {storeLimit === 1 ? "store" : "stores"}. {hiddenProducts.length > 0 && `${hiddenProducts.length} hidden from your storefront. `}
                     Nothing has been deleted — pick again here any time, or upgrade for more.
                   </p>
 
@@ -486,39 +486,60 @@ export default function AccountPage() {
                     </div>
                   )}
 
-                  {stores.length > storeLimit && (
+                  {stores.length > 1 && (
                     <div className="mt-5 border-t border-[#E8B93A]/20 pt-4">
-                      <p className="text-[11px] font-semibold text-[#E8F1EC]">
-                        Store you run: {state.bizName || "Untitled"}
-                      </p>
+                      <p className="text-[11px] font-semibold text-[#E8F1EC]">Your stores</p>
                       <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                        One store can be live on {planDetail.name}. Picking another pauses the rest.
+                        You are editing <strong className="text-[#E8F1EC]">{state.bizName || "Untitled"}</strong>. Up
+                        to {formatLimit(storeLimit)} {storeLimit === 1 ? "store can" : "stores can"} be live at
+                        once on {planDetail.name}. Pausing a store takes it offline and keeps everything in it.
                       </p>
                       <div className="mt-2 space-y-1.5">
                         {stores.map((store) => {
-                          const running = store.id === state.id;
+                          const editing = store.id === state.id;
+                          const live = store.isLive !== false;
                           return (
                             <div
                               key={store.id}
-                              className="flex items-center justify-between gap-3 rounded-[10px] border border-[#1E2D27] bg-[#0E1714] px-3 py-2"
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#1E2D27] bg-[#0E1714] px-3 py-2"
                             >
                               <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[#E8F1EC]">
                                 {store.bizName || "Untitled store"}
-                                {running ? (
-                                  <span className="ml-2 text-[10px] font-semibold text-[#19C37D]">running</span>
-                                ) : (
-                                  <span className="ml-2 text-[10px] font-semibold text-[#9DB3A8]">paused</span>
+                                <span
+                                  className={
+                                    live
+                                      ? "ml-2 text-[10px] font-semibold text-[#19C37D]"
+                                      : "ml-2 text-[10px] font-semibold text-[#9DB3A8]"
+                                  }
+                                >
+                                  {live ? "live" : "paused"}
+                                </span>
+                                {editing && (
+                                  <span className="ml-2 text-[10px] font-semibold text-[#E8B93A]">editing</span>
                                 )}
                               </span>
-                              {!running && (
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                {!editing && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void chooseStore(store.id as string)}
+                                    className="rounded-lg border border-[#24382F] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#E8F1EC] transition hover:border-[#19C37D]/50 hover:text-[#19C37D]"
+                                  >
+                                    Open
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => void chooseStore(store.id as string)}
-                                  className="shrink-0 rounded-lg border border-[#24382F] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#E8F1EC] transition hover:border-[#19C37D]/50 hover:text-[#19C37D]"
+                                  onClick={() => void setStoreLive(store.id as string, !live)}
+                                  className={
+                                    live
+                                      ? "rounded-lg border border-[#24382F] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9DB3A8] transition hover:border-[#FF8A8A]/50 hover:text-[#FF8A8A]"
+                                      : "rounded-lg border border-[#19C37D]/40 bg-[#19C37D]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#19C37D] transition hover:bg-[#19C37D]/20"
+                                  }
                                 >
-                                  Run this store
+                                  {live ? "Pause" : "Go live"}
                                 </button>
-                              )}
+                              </div>
                             </div>
                           );
                         })}

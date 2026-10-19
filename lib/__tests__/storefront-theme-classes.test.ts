@@ -22,6 +22,7 @@ const read = (relativePath: string): string =>
 const GLOBALS_CSS = read("app/globals.css");
 const CUSTOMER_STOREFRONT = read("components/CustomerStorefront.tsx");
 const TEMPLATE_SITES = read("components/storefront/template-sites.tsx");
+const EDITOR = read("components/editor/StoreEditorV2.tsx");
 
 /** Every class the old bridge repainted, and the classes that replaced them. */
 const REPLACEMENTS: Record<string, string> = {
@@ -133,15 +134,57 @@ describe("the shopper chrome follows the template", () => {
     // overlay screens reserved no space for the bar at all, so the cart's
     // checkout block and the product sheet's buttons sat underneath it.
     expect(TEMPLATE_SITES).not.toContain('aria-label="Store navigation dock"');
-    expect(CUSTOMER_STOREFRONT).toContain("pb-[calc(75px+env(safe-area-inset-bottom,0px))]");
+    /*
+     * The reserved space has to be a *valid* `calc()`: whitespace around `+` is
+     * mandatory in CSS, so `pb-[calc(75px+env(...))]` is dropped by the browser
+     * and reserves nothing — which is why the reviews and cart screens still ran
+     * under the bar after the padding was added. Tailwind wants underscores here,
+     * which it turns into spaces.
+     */
+    const reserved = Array.from(
+      CUSTOMER_STOREFRONT.matchAll(/pb-\[calc\(([^\]]*)\)\]/g),
+      (match) => match[1],
+    );
+    expect(reserved.length).toBeGreaterThan(0);
+    reserved.forEach((value) => {
+      expect(value, `pb-[calc(${value})] is missing its spaces`).not.toMatch(/\d\+env|px\)\+/);
+      expect(value).toContain("_+_");
+    });
+    expect(CUSTOMER_STOREFRONT).toContain("pb-[calc(75px_+_env(safe-area-inset-bottom,0px))]");
     expect(CUSTOMER_STOREFRONT).toContain(
       'height: "calc(75px + env(safe-area-inset-bottom, 0px))"',
     );
     // The reviews screen has the floating cart pill above the nav as well, so it
     // reserves more than the bare bar height — its last review row was hidden.
     expect(CUSTOMER_STOREFRONT).toContain(
-      "pb-[calc(180px+env(safe-area-inset-bottom,0px))]",
+      "pb-[calc(180px_+_env(safe-area-inset-bottom,0px))]",
     );
+  });
+
+  it("opens the product description at the top of its desktop column", () => {
+    // `md:justify-center` clipped the top of the column when its content was
+    // taller than the viewport, which hid the description and the title.
+    expect(CUSTOMER_STOREFRONT).toContain("flex flex-col p-6 md:w-1/2 md:py-16 md:px-12");
+    expect(CUSTOMER_STOREFRONT).not.toContain("md:justify-center");
+    expect(CUSTOMER_STOREFRONT).toContain("{selectedProduct.description ||");
+  });
+
+  it("puts the hero photo and the logo on separate fields", () => {
+    // The banner used to be whichever image the merchant had, so changing the
+    // logo changed the hero too. Templates read `heroImage` first now, and the
+    // editor uploads it to its own storage path.
+    expect(TEMPLATE_SITES).toContain("state.heroImage ||");
+    expect(EDITOR).toContain('updateField("heroImage", data.publicUrl)');
+    expect(EDITOR).toContain("branding/hero_");
+    expect(EDITOR).toContain("handleHeroUpload");
+  });
+
+  it("gives every template a phone menu instead of a squeezed header", () => {
+    const menus = TEMPLATE_SITES.match(/<StorefrontMenu\s/g) || [];
+    expect(menus.length).toBe(10);
+    // The panel is portalled, so a template that wraps its header in
+    // `overflow-hidden` (Coast's hero) cannot clip it.
+    expect(TEMPLATE_SITES).toContain("createPortal(menu, document.body)");
   });
 
   it("gives each template family its own bottom-nav layout", () => {

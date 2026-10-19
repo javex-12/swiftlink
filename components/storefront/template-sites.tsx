@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Product, ShopState } from "@/lib/schema";
 import {
   DEFAULT_WEBSITE_TEMPLATE_ID,
@@ -40,6 +41,7 @@ import {
   Settings,
   Minus,
   Package,
+  Menu as MenuIcon,
 } from "lucide-react";
 import { getCleanWhatsAppDigits, formatDisplayPhone } from "@/lib/phone";
 import { hasDeliveryDetails } from "@/components/storefront/ProductDisclosure";
@@ -112,6 +114,158 @@ function shopNow() {
     behavior: reduce ? "auto" : "smooth",
     block: "start",
   });
+}
+
+/**
+ * The store page's header menu, shown on phones only.
+ *
+ * Every template keeps its header to the logo, the name and one or two icons on
+ * a narrow screen, which left secondary destinations (Reviews, the story, the
+ * WhatsApp line) unreachable on a phone. This puts them behind one button
+ * instead of squeezing more into the row.
+ *
+ * The panel is rendered in a portal and positioned from the trigger's own
+ * rectangle: some templates wrap their header in `overflow-hidden` (Coast's
+ * hero), so an `absolute` panel would be clipped, and on a 320px screen a
+ * right-aligned panel hung off the edge.
+ */
+type StorefrontMenuTone = "surface" | "onDark" | "noir" | "oasis";
+
+type StorefrontMenuEntry = { label: string; onClick?: () => void; href?: string };
+
+const MENU_TRIGGER_TONE: Record<StorefrontMenuTone, string> = {
+  surface: "border-t-border bg-t-surface text-t-text hover:border-t-accent",
+  onDark: "border-white/20 bg-white/10 text-white backdrop-blur-md hover:bg-white/20",
+  noir: "border-[#2a303c] bg-[#13161c] text-zinc-300 hover:text-white",
+  oasis:
+    "border-[#e6ded5] dark:border-[#2b221c] bg-white/70 dark:bg-[#201915] text-[#6e584c] dark:text-[#bda495]",
+};
+
+const MENU_PANEL_TONE: Record<StorefrontMenuTone, string> = {
+  surface: "border-t-border bg-t-surface text-t-text",
+  onDark: "border-white/20 bg-black/85 text-white backdrop-blur-xl",
+  noir: "border-[#2a303c] bg-[#13161c] text-zinc-200",
+  oasis: "border-[#e6ded5] dark:border-[#2b221c] bg-[#faf6f1] dark:bg-[#201915] text-[#33261f] dark:text-[#ede4dc]",
+};
+
+function StorefrontMenu({
+  entries,
+  tone = "surface",
+}: {
+  entries: StorefrontMenuEntry[];
+  tone?: StorefrontMenuTone;
+}) {
+  const [open, setOpen] = useState(false);
+  const [panel, setPanel] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const measure = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const gutter = 10;
+    const width = Math.min(240, window.innerWidth - gutter * 2);
+    /* Clamp to the right edge so the panel never hangs off a small screen. */
+    const left = Math.min(
+      Math.max(gutter, rect.right - width),
+      Math.max(gutter, window.innerWidth - gutter - width),
+    );
+    const top = Math.max(gutter, Math.min(rect.bottom + 8, window.innerHeight - 120));
+    setPanel({ top, left, width });
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setPanel(null);
+      return;
+    }
+    measure();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, measure]);
+
+  const visible = entries.filter((entry) => Boolean(entry.onClick || entry.href));
+  if (visible.length === 0) return null;
+
+  const menu =
+    open && panel ? (
+      <>
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-[110] cursor-default"
+          onClick={() => setOpen(false)}
+        />
+        <div
+          role="menu"
+          style={{ top: panel.top, left: panel.left, width: panel.width }}
+          className={cn(
+            "fixed z-[120] overflow-hidden rounded-2xl border p-1.5 shadow-2xl",
+            MENU_PANEL_TONE[tone],
+          )}
+        >
+          {visible.map((entry) => {
+            const className =
+              "flex min-h-[40px] w-full items-center rounded-xl px-3 text-sm font-medium transition hover:opacity-70 text-left";
+            return entry.href ? (
+              <a
+                key={entry.label}
+                role="menuitem"
+                href={entry.href}
+                target={entry.href.startsWith("http") ? "_blank" : undefined}
+                rel={entry.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                onClick={() => setOpen(false)}
+                className={className}
+              >
+                {entry.label}
+              </a>
+            ) : (
+              <button
+                key={entry.label}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  entry.onClick?.();
+                }}
+                className={className}
+              >
+                {entry.label}
+              </button>
+            );
+          })}
+        </div>
+      </>
+    ) : null;
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Store menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition md:hidden",
+          focusRing,
+          MENU_TRIGGER_TONE[tone],
+        )}
+      >
+        {open ? <X className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
+      </button>
+      {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
+    </>
+  );
 }
 
 function ProductMedia({ product, className }: { product: Product; className?: string }) {
@@ -754,6 +908,19 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Our story", href: "#story" },
+                { label: "Feedback & reviews", onClick: handleFeedbackClick },
+                {
+                  label: "Chat on WhatsApp",
+                  href: state.phone
+                    ? `https://wa.me/${getCleanWhatsAppDigits(state.phone)}`
+                    : undefined,
+                },
+              ]}
+            />
             <button
               type="button"
               onClick={props.onSearch}
@@ -1179,6 +1346,13 @@ function BoutiqueSite(props: TemplateSiteProps & { template: WebsiteTemplate }) 
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews & feedback", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -1558,6 +1732,13 @@ function BoldSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -1919,6 +2100,13 @@ function MarketplaceSite(props: TemplateSiteProps & { template: WebsiteTemplate 
           </button>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -2278,6 +2466,13 @@ function StudioSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </button>
 
           <div className="flex items-center gap-3">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -2588,6 +2783,14 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </button>
 
           <div className="flex items-center gap-3">
+            <StorefrontMenu
+              tone="onDark"
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Search", onClick: props.onSearch },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -2840,46 +3043,14 @@ function CoastSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
         {hasMore && <LoadMoreButton remaining={remaining} onClick={loadMore} />}
       </section>
 
-      {/* ─── SECTION 5: SOME EXPERIENCES FROM CLIMBERS ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 mx-auto max-w-5xl text-center border-t border-t-border/60">
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-t-accent">
-          TESTIMONIALS
-        </span>
-        <h2 className="mt-3 font-t-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-t-text">
-          SOME EXPERIENCES FROM CLIMBERS
-        </h2>
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          {[
-            {
-              name: "Alex Thorne",
-              role: "Summit Mountaineer",
-              quote: "The expedition logistics, guidance, and doorstep gear dispatch were absolute perfection. Unmatched experience.",
-            },
-            {
-              name: "Elena Rostova",
-              role: "Trail Explorer",
-              quote: "Booking and inquiring directly through WhatsApp made the preparation effortless. Every detail was curated with care.",
-            },
-            {
-              name: "Marcus Vance",
-              role: "Alpine Adventurer",
-              quote: "Quality and authenticity were 100% verified. Easily the most reliable travel storefront I have ever used.",
-            },
-          ].map((item, i) => (
-            <div key={i} className="rounded-3xl border border-t-border bg-t-surface p-6 shadow-sm flex flex-col justify-between">
-              <Quote className="h-6 w-6 text-t-accent/40 mb-3" />
-              <p className="text-xs sm:text-sm leading-relaxed text-t-text-muted italic">
-                &ldquo;{item.quote}&rdquo;
-              </p>
-              <div className="mt-6 pt-4 border-t border-t-border/50">
-                <p className="text-xs font-bold text-t-text">{item.name}</p>
-                <p className="text-[10px] text-t-accent font-semibold">{item.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/*
+        Three invented reviews used to sit here — "Alex Thorne, Summit
+        Mountaineer", "Elena Rostova", "Marcus Vance" — with a "TESTIMONIALS"
+        heading and no reviews in the store. They were presented as the
+        merchant's customers, which is a false claim about a real business. The
+        section is deleted rather than hidden: the merchant's own reviews render
+        through `TestimonialsSection` above, and nothing else should.
+      */}
 
       {/* Footer */}
       <footer className="border-t border-t-border px-4 py-12 text-center text-xs tracking-wider text-t-text-muted">
@@ -2970,6 +3141,16 @@ function BloomSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </div>
 
           <div className="flex items-center gap-2">
+            <StorefrontMenu
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                {
+                  label: "Reviews & feedback",
+                  onClick: () => (props.isOwner ? props.onReviews() : setFeedbackOpen(true)),
+                },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               // The merchant gets the review wall, where they can reply to their
@@ -3424,6 +3605,14 @@ function NoirSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </button>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <StorefrontMenu
+              tone="noir"
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -3733,6 +3922,14 @@ function ForgeSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
+            <StorefrontMenu
+              tone="noir"
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}
@@ -4004,6 +4201,14 @@ function OasisSite(props: TemplateSiteProps & { template: WebsiteTemplate }) {
           </button>
 
           <div className="flex shrink-0 items-center gap-2">
+            <StorefrontMenu
+              tone="oasis"
+              entries={[
+                { label: "Shop catalog", onClick: shopNow },
+                { label: "Reviews", onClick: handleFeedbackClick },
+                { label: "Chat on WhatsApp", href: waDigits ? `https://wa.me/${waDigits}` : undefined },
+              ]}
+            />
             <button
               type="button"
               onClick={handleFeedbackClick}

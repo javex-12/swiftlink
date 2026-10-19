@@ -12,8 +12,11 @@ import type { MetadataRoute } from "next";
  *   3. `start_url: "/pro"` is behind auth middleware, so a cold launch of the
  *      installed app bounced to `/signup` and lost the entry in history.
  *
- * `start_url` now points at the landing route, which routes an authenticated
- * merchant straight into the console and offers sign-in to everyone else.
+ * The fix for (3) was to point at the landing route — which then sent every
+ * launch to the marketing page, including for a merchant who only ever uses the
+ * console. `start_url` is now `/launch`: a tiny route that reopens the last
+ * console screen the merchant used (`lib/console-history.ts`), or the console
+ * home, and lets middleware handle anyone without a session.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -22,7 +25,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "SwiftLink Pro",
     description:
       "Build a storefront for your business in minutes. Publish a fast, mobile-first catalog, manage your products and branding, and take orders straight to WhatsApp.",
-    start_url: "/",
+    start_url: "/launch?source=pwa",
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui"],

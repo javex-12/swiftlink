@@ -30,9 +30,9 @@ import { TemplateSite } from "@/components/storefront/template-sites";
 import { CountrySelector } from "@/components/CountrySelector";
 import { compressImageBeforeUpload } from "@/lib/image-compress";
 import { STOCK_PRODUCT_IDEAS, type StockProductIdea } from "@/lib/stock-ideas";
-import { describeDraftAge, hasDraftChanges, readEditorDraft } from "@/lib/draft-store";
+import { describeDraftAge, hasDraftChanges, readEditorDraft, writeEditorDraft } from "@/lib/draft-store";
 import { pickNewestDraft, storeDraftKey } from "@/lib/store-drafts";
-import { DEFAULT_QUOTE_QUESTIONS } from "@/lib/product-pricing";
+import { NO_REQUEST_QUESTIONS } from "@/lib/product-pricing";
 import type { ProductRequestQuestion } from "@/lib/schema";
 
 /** Idle time before the draft autosaves. Short enough to feel instant, long
@@ -181,18 +181,6 @@ export function StoreEditorV2() {
     }
   }, [globalState, isDirty]);
 
-  // Warn on unmount or navigation if dirty
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
-
   // Helper updater
   const updateField = useCallback(<K extends keyof ShopState>(field: K, value: ShopState[K]) => {
     setLocalState((prev) => ({ ...prev, [field]: value }));
@@ -243,6 +231,74 @@ export function StoreEditorV2() {
     return () => clearTimeout(timer);
   }, [localState, isDirty, isSaving, saveDraft]);
 
+  /*
+   * Leaving with unsaved work.
+   *
+   * This used to be a browser dialog ("Leave site? Changes you made may not be
+   * saved") on every in-app navigation, and nothing at all when the tab was
+   * closed from a task switcher — the one gesture no dialog can be answered for.
+   *
+   * Instead the draft is flushed on the way out: synchronously to this device
+   * (so a hard quit, where no async work ever completes, still keeps the work)
+   * and best-effort to the merchant's private draft row. The live store is never
+   * written here — customers must not see unfinished edits — and the editor
+   * offers the draft back on the next visit.
+   */
+  const latestDraftRef = useRef({ state: localState, dirty: isDirty });
+  latestDraftRef.current = { state: localState, dirty: isDirty };
+  /*
+   * `handleSave` is defined below this effect, so the exit path reaches it
+   * through a ref rather than a dependency. Assigned right after it is created.
+   */
+  const saveOnExitRef = useRef<(() => Promise<void>) | null>(null);
+
+  /** Keep the work: this device first (synchronous), then the private row. */
+  const flushDraftOnExit = useCallback(() => {
+    const { state: pending, dirty } = latestDraftRef.current;
+    if (!dirty) return;
+    writeEditorDraft(storeKey, pending);
+    void saveDraft(pending);
+  }, [storeKey, saveDraft]);
+
+  /**
+   * Leaving the editor. The draft is written first, so the work survives even if
+   * the publish below never gets a response, then the pending changes are saved
+   * to the live store — which is what the merchant expects: they edited, they
+   * navigated away, and the store should show it. `persistState` clears the
+   * draft only after the live write succeeds, so a failed save leaves the safety
+   * net in place.
+   */
+  const saveAndKeepOnExit = useCallback(() => {
+    const { dirty } = latestDraftRef.current;
+    if (!dirty) return;
+    flushDraftOnExit();
+    void saveOnExitRef.current?.();
+  }, [flushDraftOnExit]);
+
+  useEffect(() => {
+    const onPageHide = () => saveAndKeepOnExit();
+    const onVisibilityChange = () => {
+      /*
+       * Backgrounding the app keeps a draft but does not publish: switching tabs
+       * mid-edit is not leaving, and a half-typed price should not go live. This
+       * is also the path a phone takes when it reclaims the process without ever
+       * firing `pagehide`, which is the case the draft exists for.
+       */
+      if (document.visibilityState === "hidden") flushDraftOnExit();
+    };
+
+    window.addEventListener("beforeunload", onPageHide);
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", onPageHide);
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      saveAndKeepOnExit();
+    };
+  }, [saveAndKeepOnExit, flushDraftOnExit]);
+
   // Keep the "saved N min ago" label honest without re-rendering on every edit.
   useEffect(() => {
     if (!draftSavedAt || !isDirty) return;
@@ -272,6 +328,9 @@ export function StoreEditorV2() {
       setIsSaving(false);
     }
   }, [isSaving, localState, saveFullState, addToast, handleStatus]);
+
+  // The exit path (above) publishes through this ref once the handler exists.
+  saveOnExitRef.current = handleSave;
 
   // Direct auto-save action whenever a merchant selects a template
   const handleAutoSaveTemplate = useCallback(
@@ -382,6 +441,34 @@ export function StoreEditorV2() {
       addToast(`Logo upload failed: ${err.message}`, "error");
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  /*
+   * The big photo on the storefront's hero section, kept separate from the
+   * logo. Templates that have a hero photo (Coast, Noir, Atelier) fall back to
+   * the logo or a product photo when this is empty, which is why choosing one
+   * here changes the banner without touching the mark in the header.
+   */
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const handleHeroUpload = async (file: File) => {
+    if (!user) {
+      addToast("Please sign in to upload images.", "error");
+      return;
+    }
+    setIsUploadingHero(true);
+    try {
+      const { file: compressedFile } = await compressImageBeforeUpload(file, 1600, 0.85);
+      const path = `${user.id}/branding/hero_${Date.now()}_${compressedFile.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const { error } = await supabase.storage.from("branding").upload(path, compressedFile);
+      if (error) throw error;
+      const { data } = supabase.storage.from("branding").getPublicUrl(path);
+      updateField("heroImage", data.publicUrl);
+      addToast("Hero photo uploaded successfully.", "success");
+    } catch (err: any) {
+      addToast(`Hero photo upload failed: ${err.message}`, "error");
+    } finally {
+      setIsUploadingHero(false);
     }
   };
 
@@ -1781,7 +1868,82 @@ export function StoreEditorV2() {
               </div>
             </section>
 
-            {/* Section 2: Appearance & Colors */}
+            {/* Section 2: Hero photo */}
+            <section
+              aria-labelledby="hero-photo-heading"
+              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+            >
+              <div className="border-b border-[#1E2D27] pb-4">
+                <h2 id="hero-photo-heading" className="text-base font-semibold text-[#E8F1EC]">
+                  Hero photo
+                </h2>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  The large banner photo on templates that have one. It is separate from your logo —
+                  changing it leaves the logo in the header alone.
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] sm:items-start">
+                <div className="relative aspect-[16/9] overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210]">
+                  {localState.heroImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={localState.heroImage}
+                      alt="Storefront hero"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+                      <ImageIcon className="h-6 w-6 text-[#5C7C6D]" />
+                      <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
+                        No hero photo yet. Coast, Noir and Atelier use your logo or first product photo
+                        instead.
+                      </p>
+                    </div>
+                  )}
+                  {isUploadingHero && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                      <Loader2 className="h-5 w-5 animate-spin text-[#19C37D]" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="flex min-h-[40px] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#24382F] bg-[#14231D] px-3 py-2 text-xs font-medium text-[#E8F1EC] transition hover:bg-[#1E2D27]">
+                    <Upload className="h-3.5 w-3.5 text-[#19C37D]" />
+                    <span>{localState.heroImage ? "Replace hero photo" : "Upload hero photo"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingHero}
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleHeroUpload(e.target.files[0]);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {localState.heroImage && (
+                    <button
+                      type="button"
+                      onClick={() => updateField("heroImage", "")}
+                      className="flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-[#24382F] px-3 py-1.5 text-xs text-[#9DB3A8] transition hover:border-[#FF8A8A]/50 hover:text-[#FF8A8A]"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove hero photo
+                    </button>
+                  )}
+                  <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
+                    Wide photos work best (about 1600px across). The hero is cropped to fill the
+                    banner, not squashed.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 3: Appearance & Colors */}
             <section
               aria-labelledby="accent-color-heading"
               className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
@@ -2352,7 +2514,9 @@ function ProductEditModal({
    * product means the defaults; an empty array means they removed every one.
    */
   const [requestQuestions, setRequestQuestions] = useState<ProductRequestQuestion[]>(
-    existing?.requestQuestions ?? [...DEFAULT_QUOTE_QUESTIONS],
+    // Starts empty on purpose: the questions a buyer is asked are the merchant's
+    // own, and the platform adds none of its own.
+    existing?.requestQuestions ?? [...NO_REQUEST_QUESTIONS],
   );
   const [category, setCategory] = useState(existing?.category || categories[1] || "");
   const [outOfStock, setOutOfStock] = useState(existing?.outOfStock || false);
@@ -2945,18 +3109,17 @@ function ProductEditModal({
                 />
               </div>
             ) : (
-              <div className="space-y-3 rounded-xl border border-[#19C37D]/30 bg-[#19C37D]/5 px-3.5 py-3">
-                <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
-                  Buyers see <strong className="text-[#E8F1EC]">Ask for price</strong> and answer the
-                  questions you write here. The request opens in your WhatsApp and is saved in
-                  Inquiries.
-                </p>
+              <div className="space-y-3 rounded-xl border border-[#19C37D]/30 bg-[#19C37D]/5 px-3.5 py-3">                  <p className="text-[11px] leading-relaxed text-[#9DB3A8]">
+                    Buyers see <strong className="text-[#E8F1EC]">Ask for price</strong> and answer the
+                    questions you write here — nothing else is asked. The request opens in your
+                    WhatsApp and is saved in Inquiries.
+                  </p>
 
                 <div>
                   <p className="text-[11px] font-semibold text-[#E8F1EC]">Questions buyers answer</p>
                   <p className="mt-0.5 text-[10px] leading-relaxed text-[#9DB3A8]">
-                    Ask whatever you need to quote the job — quantity, size, material, delivery
-                    area. Name and WhatsApp number are always asked.
+                    Write what you need to quote the job — quantity, size, material, delivery area.
+                    The buyer only sees these, so add a question for anything you must know.
                   </p>
 
                   <div className="mt-2 space-y-2">
@@ -3008,7 +3171,8 @@ function ProductEditModal({
 
                     {requestQuestions.length === 0 && (
                       <p className="text-[10px] text-[#9DB3A8]">
-                        No questions. Buyers will only leave a name and WhatsApp number.
+                        No questions yet. The request will just open your WhatsApp chat with the
+                        service named, and the buyer writes there.
                       </p>
                     )}
                   </div>

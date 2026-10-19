@@ -65,12 +65,15 @@ describe("plan limits — single source of truth", () => {
     }
   });
 
-  it("allows multiple stores only on business", () => {
+  it("gives free one store, pro three, and business the per-account cap", () => {
     expect(storeLimitFor("free")).toBe(1);
-    expect(storeLimitFor("pro")).toBe(1); // pro is the catalogue tier: ONE store
+    expect(storeLimitFor("pro")).toBe(3);
     expect(storeLimitFor("business")).toBe(MAX_STORES_PER_USER);
     expect(isUnlimited(storeLimitFor("business"))).toBe(false);
-    expect(storeLimitMessage("pro", 1)).not.toBe("");
+    // Allowed below the limit, refused at it.
+    expect(storeLimitMessage("free", 1)).not.toBe("");
+    expect(storeLimitMessage("pro", 2)).toBe("");
+    expect(storeLimitMessage("pro", 3)).not.toBe("");
     expect(storeLimitMessage("business", 5)).toBe("");
   });
 
@@ -139,24 +142,28 @@ describe("plan limits — single source of truth", () => {
    * These pin the predicates the context now refuses on.
    */
   describe("store actions the plan gates", () => {
-    it("free and pro may not create a second store; business can, up to the account cap", () => {
+    it("free has one store, pro three, business up to the account cap", () => {
       expect(canCreateStore("free", 0)).toBe(true);
       expect(canCreateStore("free", 1)).toBe(false);
-      expect(canCreateStore("pro", 1)).toBe(false);
+      expect(canCreateStore("pro", 2)).toBe(true);
+      expect(canCreateStore("pro", 3)).toBe(false);
       expect(canCreateStore("business", 1)).toBe(true);
       expect(canCreateStore("business", MAX_STORES_PER_USER - 1)).toBe(true);
       expect(canCreateStore("business", MAX_STORES_PER_USER)).toBe(false);
     });
 
-    it("only business may move between stores it owns", () => {
+    it("every plan that can hold more than one store may switch between them", () => {
       expect(canSwitchStore("free")).toBe(false);
-      expect(canSwitchStore("pro")).toBe(false);
+      expect(canSwitchStore("pro")).toBe(true);
       expect(canSwitchStore("business")).toBe(true);
     });
 
-    it("explains the refusal in terms of the upgrade, and says nothing when allowed", () => {
-      expect(storeActionBlockedMessage("free", 1)).toContain("Business");
-      expect(storeActionBlockedMessage("free", 3)).toContain("Business");
+    it("names the plan's own store allowance, and says nothing when allowed", () => {
+      // Names the number the merchant has, not another tier: Pro holds three
+      // stores now, so "multiple stores are a Business feature" would be wrong.
+      expect(storeActionBlockedMessage("free", 1)).toContain("1 store");
+      expect(storeActionBlockedMessage("pro", 3)).toContain("3 stores");
+      expect(storeActionBlockedMessage("pro", 2)).toBe("");
       expect(storeActionBlockedMessage("business", 9)).toBe("");
     });
   });
@@ -255,7 +262,7 @@ describe("per-store ceilings — no single account can take all the space", () =
     expect(effectiveProductLimitFor("pro")).toBe(MAX_PRODUCTS_PER_STORE);
     expect(effectiveProductLimitFor("business")).toBe(MAX_PRODUCTS_PER_STORE);
     expect(effectiveStoreLimitFor("free")).toBe(1);
-    expect(effectiveStoreLimitFor("pro")).toBe(1);
+    expect(effectiveStoreLimitFor("pro")).toBe(3);
     expect(effectiveStoreLimitFor("business")).toBe(MAX_STORES_PER_USER);
   });
 

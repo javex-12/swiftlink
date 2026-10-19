@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_QUOTE_QUESTIONS,
+  NO_REQUEST_QUESTIONS,
   buildQuoteRequestMessage,
   formatProductPrice,
   isPriceOnRequest,
@@ -38,9 +38,12 @@ describe("formatProductPrice", () => {
 });
 
 describe("resolveRequestQuestions", () => {
-  it("falls back to the default questions when the merchant wrote none", () => {
-    expect(resolveRequestQuestions(undefined)).toEqual([...DEFAULT_QUOTE_QUESTIONS]);
-    expect(resolveRequestQuestions(null)).toEqual([...DEFAULT_QUOTE_QUESTIONS]);
+  it("asks nothing the merchant did not write", () => {
+    // The platform used to ship three of its own questions ("What do you need?",
+    // "Budget", "When do you need it?") and ask for name and number on top.
+    expect(resolveRequestQuestions(undefined)).toEqual([]);
+    expect(resolveRequestQuestions(null)).toEqual([]);
+    expect(NO_REQUEST_QUESTIONS).toEqual([]);
   });
 
   it("uses the merchant's own labels, in the order they wrote them", () => {
@@ -60,7 +63,7 @@ describe("resolveRequestQuestions", () => {
     expect(questions).toHaveLength(1);
   });
 
-  it("respects a deliberately empty list — buyer is asked only for their details", () => {
+  it("keeps an empty list empty rather than filling it in", () => {
     expect(resolveRequestQuestions([])).toEqual([]);
   });
 });
@@ -69,28 +72,26 @@ describe("buildQuoteRequestMessage", () => {
   const base = {
     storeName: "Adaeze Tailors",
     productName: "Custom Aso-Ebi Set",
-    details: "Six sets, teal lace, ready in three weeks.",
   };
 
   it("names the store and the service first", () => {
     const message = buildQuoteRequestMessage(base);
     expect(message).toContain("Adaeze Tailors");
     expect(message).toContain("Custom Aso-Ebi Set");
-    expect(message).toContain("Six sets, teal lace");
   });
 
-  it("carries every optional answer the merchant would need", () => {
+  it("carries exactly the merchant's answers, and nothing invented", () => {
     const message = buildQuoteRequestMessage({
       ...base,
-      buyerName: "Chika",
-      buyerPhone: "+234 801 234 5678",
-      budget: "₦120,000",
-      deadline: "next Friday",
+      answers: [{ label: "Fabric", value: "Teal lace" }],
     });
-    expect(message).toContain("Chika");
-    expect(message).toContain("+234 801 234 5678");
-    expect(message).toContain("₦120,000");
-    expect(message).toContain("next Friday");
+    expect(message).toContain("Teal lace");
+    // No built-in name/phone/budget/deadline fields are added on the merchant's
+    // behalf, and the shopper is never asked for a WhatsApp number.
+    expect(message).not.toContain("Name:");
+    expect(message).not.toContain("WhatsApp:");
+    expect(message).not.toContain("Budget");
+    expect(message).not.toContain("Needed by");
   });
 
   it("prints the merchant's own questions and answers, in order", () => {
@@ -102,7 +103,7 @@ describe("buildQuoteRequestMessage", () => {
         { label: "Deadline", value: "Three weeks" },
       ],
     });
-    expect(message).toContain("Buyer's answers:");
+    expect(message).toContain("*Details:*");
     const six = message.indexOf("How many sets?");
     const fabric = message.indexOf("Fabric");
     const deadline = message.indexOf("Deadline");
@@ -123,11 +124,11 @@ describe("buildQuoteRequestMessage", () => {
     expect(message).toContain("Quantity");
   });
 
-  it("omits unanswered optional fields instead of printing blanks", () => {
+  it("is still a usable request when the merchant wrote no questions", () => {
     const message = buildQuoteRequestMessage(base);
-    expect(message).not.toContain("Budget:");
-    expect(message).not.toContain("Needed by:");
-    expect(message).not.toContain("Name:");
+    expect(message).toContain("Adaeze Tailors");
+    expect(message).toContain("Custom Aso-Ebi Set");
+    expect(message).toContain("send me a price");
   });
 
   it("only includes a product URL that WhatsApp could preview", () => {
@@ -142,10 +143,12 @@ describe("buildQuoteRequestMessage", () => {
   it("collapses whitespace and caps runaway input", () => {
     const message = buildQuoteRequestMessage({
       ...base,
-      details: `   six   sets\n\nplease  `,
-      buyerName: "A".repeat(300),
+      answers: [
+        { label: "What do you need?", value: `   six   sets\n\nplease  ` },
+        { label: "Notes", value: "A".repeat(3000) },
+      ],
     });
     expect(message).toContain("six sets please");
-    expect(message).not.toContain("A".repeat(100));
+    expect(message).not.toContain("A".repeat(1201));
   });
 });

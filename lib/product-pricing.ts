@@ -18,30 +18,31 @@ import type { Product, ProductRequestQuestion } from "./schema";
 export type ProductPriceType = "fixed" | "quote";
 
 /**
- * The request-form questions used until a merchant writes their own. A plumber
- * and a tailor need different details from a buyer, which is why these are
- * editable per product rather than baked into the form.
+ * The questions a request form starts with: **none**.
+ *
+ * The form used to arrive with three of our own questions ("What do you
+ * need?", "Budget", "When do you need it?") plus the buyer's name and WhatsApp
+ * number. A merchant selling made-to-measure suits and one selling generator
+ * repairs need completely different answers, so the only questions a buyer is
+ * asked are the ones the merchant wrote for that service — nothing else is
+ * added on their behalf.
  */
-export const DEFAULT_QUOTE_QUESTIONS: readonly ProductRequestQuestion[] = [
-  { id: "details", label: "What do you need?", required: true },
-  { id: "budget", label: "Budget" },
-  { id: "deadline", label: "When do you need it?" },
-];
+export const NO_REQUEST_QUESTIONS: readonly ProductRequestQuestion[] = [];
 
 type Priceable = Pick<Product, "price"> & { priceType?: ProductPriceType | null };
 
 /**
  * The questions a buyer will actually see for a product.
  *
- * The merchant writes these in the product editor; blank rows are dropped (the
- * editor keeps an empty one while they type), and a product with no questions
- * at all falls back to the defaults. An explicitly empty list means "ask only
- * for name and WhatsApp", so it is respected rather than replaced.
+ * Exactly what the merchant wrote, minus blank rows (the editor keeps an empty
+ * one while they type). No question and no field is added by the platform: a
+ * service with nothing configured opens the store's WhatsApp chat with the
+ * service named, and the shopper writes there.
  */
 export function resolveRequestQuestions(
   questions?: readonly ProductRequestQuestion[] | null,
 ): ProductRequestQuestion[] {
-  if (!questions) return [...DEFAULT_QUOTE_QUESTIONS];
+  if (!questions || questions.length === 0) return [];
 
   return questions
     .map((question, index) => ({
@@ -72,18 +73,12 @@ export interface QuoteRequestInput {
   productName: string;
   /** Public product page URL, when one can be built. Only http(s) is included. */
   productUrl?: string | null;
-  buyerName?: string;
-  buyerPhone?: string;
   /**
-   * The merchant's own questions and the buyer's answers, in form order. This
-   * is the current shape; the named fields below are the original fixed set and
-   * are kept for callers/tests that predate editable questions.
+   * The merchant's questions and the buyer's answers, in form order — the only
+   * content of the request. There is no built-in name, phone, budget or deadline
+   * field: if a merchant wants them, they add them as questions.
    */
   answers?: { label: string; value: string }[];
-  /** The buyer's description of the job. */
-  details?: string;
-  budget?: string;
-  deadline?: string;
   currency?: string;
 }
 
@@ -96,8 +91,11 @@ function clean(value: string | null | undefined, max = 500): string {
  *
  * Kept plain text with `*bold*` markers so it reads as a normal WhatsApp message
  * rather than a machine dump — the merchant may receive this on a phone with no
- * app installed. Empty optional answers are omitted rather than printed as
- * "Budget: -", which would look like the buyer refused to answer.
+ * app installed. Only the merchant's questions appear; a blank answer is dropped
+ * rather than printed as "Budget: -", which would look like a refusal.
+ *
+ * With no questions configured the message is still useful: it names the store,
+ * the service and the link, and the shopper types their request in the chat.
  */
 export function buildQuoteRequestMessage(input: QuoteRequestInput): string {
   const lines: string[] = [
@@ -110,29 +108,15 @@ export function buildQuoteRequestMessage(input: QuoteRequestInput): string {
   const url = (input.productUrl ?? "").trim();
   if (/^https?:\/\//i.test(url)) lines.push(url);
 
-  lines.push("");
-
-  const name = clean(input.buyerName, 80);
-  const phone = clean(input.buyerPhone, 40);
-  if (name) lines.push(`👤 Name: ${name}`);
-  if (phone) lines.push(`📱 WhatsApp: ${phone}`);
-
   const answers = (input.answers ?? [])
     .map((entry) => ({ label: clean(entry.label, 120), value: clean(entry.value, 1200) }))
     .filter((entry) => entry.label && entry.value);
 
   if (answers.length > 0) {
-    lines.push("", "*Buyer's answers:*");
+    lines.push("", "*Details:*");
     for (const entry of answers) lines.push(`• *${entry.label}*: ${entry.value}`);
   } else {
-    lines.push("");
-    lines.push("*What they need:*");
-    lines.push(clean(input.details, 1200) || "(not described)");
-
-    const budget = clean(input.budget, 80);
-    const deadline = clean(input.deadline, 80);
-    if (budget) lines.push("", `💰 Budget: ${budget}`);
-    if (deadline) lines.push(`🗓️ Needed by: ${deadline}`);
+    lines.push("", "Please send me a price for this.");
   }
 
   lines.push("", "━━━━━━━━━━", "_Sent from the store's price request form._");

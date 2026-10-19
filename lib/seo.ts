@@ -57,25 +57,99 @@ function absoluteImage(url: string | undefined, fallback = `${SEO_SITE}/logo.png
   return fallback;
 }
 
+/**
+ * The public origin for a store: its own verified domain, else `/<handle>`.
+ *
+ * A Business merchant who has pointed their domain at us must be indexed on
+ * *that* URL — canonicalising their homepage to `swiftlink.app/<handle>` would
+ * hand the ranking to a URL their customers never see, and split the two host
+ * names across two pages of the same content.
+ */
+export function storeOrigin(handle: string, domain?: string | null): string {
+  const host = String(domain || "")
+    .trim()
+    .toLowerCase();
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(host)) {
+    return `https://${host}`;
+  }
+  return `${SEO_SITE}/${handle}`;
+}
+
+/**
+ * Title for a store page.
+ *
+ * It contains the merchant's name and the word "store" because that is what a
+ * shopper actually types: looking for Cyd, they search "cyd store". The old
+ * default — "Cyd — Shop Online" — gave a search engine no "store" token on the
+ * page that owns the name.
+ */
+export function storeTitle(bizName: string, tagline?: string | null): string {
+  const name = String(bizName || "SwiftLink Store").trim();
+  const trimmedTagline = String(tagline || "").trim();
+  // A merchant's own tagline is more useful than the generic suffix, and long
+  // ones get truncated in a result anyway.
+  if (trimmedTagline && trimmedTagline.length <= 45) return `${name} — ${trimmedTagline} | Online Store`;
+  return `${name} — Online Store`;
+}
+
+/**
+ * Search terms a store should be findable by, derived from its own state.
+ *
+ * Built from what the merchant named rather than a fixed list, so "cyd store",
+ * "cyd shop", "@cyd-store" and "sneakers Lagos" all describe the same page.
+ */
+export function storeKeywords(
+  state: Partial<ShopState>,
+  handle: string,
+): string[] {
+  const name = String(state.bizName || "").trim();
+  const location = String(state.location || "").trim();
+  const categories = (state.categories || []).map(String).slice(0, 10);
+  const terms = [
+    name,
+    `${name} store`,
+    `${name} online store`,
+    `${name} shop`,
+    `shop ${name}`,
+    `buy from ${name}`,
+    handle,
+    `@${handle}`,
+    location ? `${name} ${location}` : "",
+    location ? `${name} store ${location}` : "",
+    ...categories,
+    ...categories.map((category) => (location ? `${category} ${location}` : "")),
+  ];
+
+  return Array.from(new Set(terms.map((term) => term.trim()).filter(Boolean)));
+}
+
 /** Public product rows only — hidden/downgraded items must not be advertised. */
 export function visibleProducts(products: Product[] | undefined): Product[] {
   return (products || []).filter((p) => p && p.visible !== false);
 }
 
-function offerNode(product: Product, currency: string) {
+function offerNode(product: Product, currency: string, brand?: string, url?: string) {
+  const amount = Number(product.price) || 0;
+  /*
+   * A quote-priced service has no amount to publish: a `price: 0` offer would
+   * put a false "0" in a rich result for a service the merchant quotes by hand.
+   * The card tells the shopper to ask for a price, and so does the markup.
+   */
+  const isQuote = product.priceType === "quote";
   return {
     "@type": "Offer",
-    price: Number(product.price) || 0,
-    priceCurrency: currency || "NGN",
+    ...(isQuote ? {} : { price: amount, priceCurrency: currency || "NGN" }),
     availability: product.outOfStock
       ? "https://schema.org/OutOfStock"
       : "https://schema.org/InStock",
+    url,
     itemOffered: {
       "@type": "Product",
       name: product.name,
       description: (product.description || "").slice(0, 300) || undefined,
       image: product.image && !product.image.startsWith("data:") ? product.image : undefined,
       category: product.category || undefined,
+      brand: brand ? { "@type": "Brand", name: brand } : undefined,
     },
   };
 }
@@ -90,6 +164,12 @@ export type StoreSeoSchemaInput = {
    * marketing pages still describe the platform; a store page should not.
    */
   includePlatformInBreadcrumb?: boolean;
+  /**
+   * The store's public origin — its verified custom domain for a Business
+   * merchant, otherwise `/<handle>` (see `storeOrigin`). Every absolute URL in
+   * the graph follows it so the markup matches the canonical the page emits.
+   */
+  origin?: string;
 };
 
 /**
@@ -103,25 +183,54 @@ export function buildStoreJsonLd({
   state,
   description,
   includePlatformInBreadcrumb = true,
+  origin,
 }: StoreSeoSchemaInput) {
-  const url = `${SEO_SITE}/${handle}`;
+  const url = origin || `${SEO_SITE}/${handle}`;
   const products = visibleProducts(state.products);
   const sameAs = Object.entries(state.socials || {})
     .filter(([key, value]) => Boolean(value) && Boolean(SOCIAL_HOST_LABELS[key]))
     .map(([, value]) => String(value))
     .filter((value) => value.startsWith("http"));
 
+  const bizName = state.bizName || "SwiftLink Store";
+  const postedPrices = products
+    .filter((product) => product.priceType !== "quote")
+    .map((product) => Number(product.price) || 0)
+    .filter((amount) => amount > 0);
+
   const store: Record<string, unknown> = {
     "@type": "Store",
     "@id": `${url}#store`,
-    name: state.bizName || "SwiftLink Store",
+    name: bizName,
     url,
     description: description.slice(0, 400),
     image: absoluteImage(state.bizImage || state.heroImage),
     logo: absoluteImage(state.bizImage),
     currenciesAccepted: state.currency || "NGN",
     paymentAccepted: state.orderMethod === "whatsapp" ? "Cash, Mobile Money" : "Card, Cash",
+    /*
+     * Names the same shop can also be found by: its handle (`@cyd-store`) and
+     * the plain "<name> store" / "<name> shop" a shopper types. Both are
+     * strings the merchant already publishes, and a name that already contains
+     * the word is not doubled up (an "Ada Threads Store store").
+     */
+    alternateName: alternateNames(bizName, handle),
   };
+
+  // The catalogue's actual span tells a crawler this is a real, priced shop.
+  if (postedPrices.length) {
+    const currency = state.currency || "NGN";
+    const min = Math.min(...postedPrices);
+    const max = Math.max(...postedPrices);
+    store.priceRange =
+      min === max
+        ? `${currency}${min.toLocaleString()}`
+        : `${currency}${min.toLocaleString()}–${currency}${max.toLocaleString()}`;
+  }
+
+  if (state.location) {
+    store.areaServed = { "@type": "Place", name: String(state.location) };
+  }
 
   if (state.phone) store.telephone = String(state.phone);
   if (state.contactEmail) store.email = String(state.contactEmail);
@@ -135,7 +244,30 @@ export function buildStoreJsonLd({
   }
   if (sameAs.length) store.sameAs = sameAs;
   if (state.tagline) store.slogan = String(state.tagline);
-  if (products.length) store.hasOfferCatalog = offerCatalog(products, state.currency || "NGN");
+  if (products.length) {
+    store.hasOfferCatalog = offerCatalog(products, state.currency || "NGN", bizName, url);
+  }
+
+  /*
+   * How the shop takes an order. A shopper searching the shop's name is most of
+   * the way to buying, so the action points at the same channel the storefront
+   * uses (WhatsApp for most stores) rather than at a generic contact page.
+   */
+  const whatsappDigits = String(state.phone || "").replace(/\D/g, "");
+  if (whatsappDigits && state.orderMethod !== "paystack") {
+    store.potentialAction = {
+      "@type": "OrderAction",
+      deliveryMethod: "https://schema.org/ParcelService",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `https://wa.me/${whatsappDigits}`,
+        actionPlatform: [
+          "https://schema.org/DesktopWebPlatform",
+          "https://schema.org/MobileWebPlatform",
+        ],
+      },
+    };
+  }
 
   const graph: Record<string, unknown>[] = [store];
 
@@ -156,7 +288,7 @@ export function buildStoreJsonLd({
           url: `${url}?product=${encodeURIComponent(p.name)}`,
           image: p.image && !p.image.startsWith("data:") ? p.image : undefined,
           description: (p.description || "").slice(0, 200) || undefined,
-          offers: offerNode(p, state.currency || "NGN"),
+          offers: offerNode(p, state.currency || "NGN", bizName, `${url}?product=${encodeURIComponent(p.name)}`),
         },
       })),
     });
@@ -180,11 +312,21 @@ export function buildStoreJsonLd({
   return { "@context": "https://schema.org", "@graph": graph };
 }
 
-function offerCatalog(products: Product[], currency: string) {
+/** The names one shop answers to, without duplicating a word it already has. */
+function alternateNames(bizName: string, handle: string): string[] {
+  const names = new Set<string>([handle, `@${handle}`]);
+  if (!/\bstore\b/i.test(bizName)) names.add(`${bizName} store`);
+  if (!/\bshop\b/i.test(bizName)) names.add(`${bizName} shop`);
+  return Array.from(names);
+}
+
+function offerCatalog(products: Product[], currency: string, brand?: string, url?: string) {
   return {
     "@type": "OfferCatalog",
     name: "Products",
-    itemListElement: products.slice(0, 100).map((product) => offerNode(product, currency)),
+    itemListElement: products
+      .slice(0, 100)
+      .map((product) => offerNode(product, currency, brand, url ? `${url}?product=${encodeURIComponent(product.name)}` : undefined)),
   };
 }
 

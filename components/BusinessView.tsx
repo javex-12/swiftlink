@@ -195,10 +195,10 @@ export function BusinessView() {
   const handleCreateNew = async () => {
     if (!user) return;
     
-    // Multi-store is the Business differentiator; free and pro are single-store
-    // (lib/plans.ts owns the numbers).
+    // Plans differ by how many stores they may run; lib/plans.ts owns the
+    // numbers, so this only asks whether another one fits.
     if (stores.length >= effectiveStoreLimitFor(globalState.plan)) {
-        addSystemNotification("Business Feature", storeLimitMessage(globalState.plan, stores.length), "feedback");
+        addSystemNotification("Store limit", storeLimitMessage(globalState.plan, stores.length), "feedback");
         return;
     }
     const name = await (window as any).customPrompt("New Store", "Enter brand name:");

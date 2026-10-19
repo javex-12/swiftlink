@@ -10,7 +10,7 @@
  *
  * Tiers (confirmed with the owner, see the plan §6):
  *   free      — 6 products, 1 store
- *   pro       — 1,000 products, 1 store
+ *   pro       — 1,000 products, up to 3 stores
  *   business  — 1,000 products, up to 10 stores
  *
  * **No tier is unlimited, and no copy says it is.** "Unlimited products" used
@@ -37,6 +37,12 @@ export const FREE_PRODUCT_LIMIT = 6;
 
 /** The hard ceiling on published products in one store, on every plan. */
 export const MAX_PRODUCTS_PER_STORE = 1000;
+
+/** Stores a free account may run. */
+export const FREE_STORE_LIMIT = 1;
+
+/** Stores a Pro account may run. */
+export const PRO_STORE_LIMIT = 3;
 
 /** Hard ceiling on how many stores one account may own, on any plan. */
 export const MAX_STORES_PER_USER = 10;
@@ -192,11 +198,14 @@ export function effectiveProductLimitFor(plan: unknown): number {
 }
 
 /**
- * Maximum number of stores a plan may own. Only Business may exceed one; free
- * and pro are both single-store, and Business stops at the per-account cap.
+ * Maximum number of stores a plan may run. Free is single-store, Pro runs 3
+ * brands, and Business stops at the per-account cap.
  */
 export function storeLimitFor(plan: unknown): number {
-  return normalizePlan(plan) === "business" ? MAX_STORES_PER_USER : 1;
+  const normalized = normalizePlan(plan);
+  if (normalized === "business") return MAX_STORES_PER_USER;
+  if (normalized === "pro") return PRO_STORE_LIMIT;
+  return FREE_STORE_LIMIT;
 }
 
 /** The store limit actually enforced. */
@@ -226,9 +235,10 @@ export function canCreateStore(plan: unknown, storeCount: number): boolean {
 /**
  * Whether the account may move between stores it already owns.
  *
- * Single-store plans keep every row they own (nothing is ever deleted), but may
- * only *run* one store. Extra rows are data, not entitlement, so they stay
- * readable and exportable and come back the moment the account upgrades.
+ * A plan keeps every row it owns (nothing is ever deleted), but may only *run*
+ * as many stores as it is entitled to. Extra rows are data, not entitlement, so
+ * they stay readable and exportable and come back the moment the account
+ * upgrades.
  */
 export function canSwitchStore(plan: unknown): boolean {
   return effectiveStoreLimitFor(plan) > 1;
@@ -239,7 +249,7 @@ export function storeActionBlockedMessage(plan: unknown, storeCount: number): st
   return canCreateStore(plan, storeCount)
     ? ""
     : storeLimitMessage(plan, storeCount) ||
-        "Multiple stores are a Business feature. Upgrade to Business to run more than one brand.";
+        "Upgrade your plan to run more than one brand.";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -268,7 +278,7 @@ export const PLAN_DETAILS: Record<Plan, PlanDetail> = {
     summary: "Run one store with a full storefront.",
     features: [
       `Up to ${FREE_PRODUCT_LIMIT} products`,
-      "1 store",
+      `${FREE_STORE_LIMIT} store`,
       "WhatsApp checkout",
       "Price requests for services",
       /*
@@ -284,11 +294,11 @@ export const PLAN_DETAILS: Record<Plan, PlanDetail> = {
     id: "pro",
     name: "Pro",
     price: `₦${PLAN_PRICE_NGN.pro.toLocaleString()} / month`,
-    summary: `One store with up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products.`,
+    summary: `Up to ${PRO_STORE_LIMIT} stores with ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products each.`,
     features: [
       "Everything in Free",
       `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products`,
-      "1 store",
+      `Up to ${PRO_STORE_LIMIT} stores`,
       "All storefront templates",
       "Discount codes",
       "Detailed analytics",
@@ -352,7 +362,9 @@ export function storeLimitMessage(plan: unknown, storeCount: number): string {
   if (limit === MAX_STORES_PER_USER) {
     return `You have reached the ${MAX_STORES_PER_USER}-store limit for one account.`;
   }
-  return "Multiple stores are a Business feature. Upgrade to Business to run more than one brand.";
+  return `Your ${normalizePlan(plan).toUpperCase()} plan allows up to ${limit} store${
+    limit === 1 ? "" : "s"
+  }. Upgrade to run more brands.`;
 }
 
 /* -------------------------------------------------------------------------- */

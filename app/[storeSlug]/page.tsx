@@ -6,7 +6,15 @@ import type { ShopState } from "@/lib/schema";
 import { CustomerStorefrontPage } from "@/components/CustomerStorefrontPage";
 import { getPublicStoreByHandle } from "@/lib/store-lookup";
 import { viewerOwnsStore } from "@/lib/store-ownership";
-import { buildStoreJsonLd, resolveMerchantOgImage, SEO_SITE } from "@/lib/seo";
+import {
+  buildStoreJsonLd,
+  resolveMerchantOgImage,
+  SEO_SITE,
+  storeKeywords,
+  storeOrigin,
+  storeTitle,
+} from "@/lib/seo";
+import { getVerifiedDomainForStore } from "@/lib/domains-server";
 
 /**
  * Canonical storefront: `/<handle>`.
@@ -83,7 +91,20 @@ export async function generateMetadata({
   const state = store.state || {};
   const bizName = store.bizName || state.bizName || "SwiftLink Store";
   const productCount = (state.products || []).filter((p) => p?.visible !== false).length;
-  const title = state.seoTitle || `${bizName} — Shop Online`;
+  /*
+   * A merchant who has written their own SEO title keeps it verbatim. The
+   * default names the shop and says it is a store, because "<name> store" is
+   * the query a shopper types and the page has to own it.
+   */
+  const title = state.seoTitle || storeTitle(bizName, state.tagline);
+
+  /*
+   * A verified custom domain is the canonical URL for a Business store: it is
+   * the address the merchant hands out, so indexing that instead of the
+   * platform path name keeps one page and one address per shop.
+   */
+  const customDomain = store.plan === "business" ? await getVerifiedDomainForStore(store.id) : null;
+  const storeUrl = storeOrigin(store.handle, customDomain);
 
   /*
    * A Business store opts the platform out of every piece of metadata: title
@@ -96,9 +117,9 @@ export async function generateMetadata({
   const description =
     state.ogDescription ||
     state.tagline ||
-    `Shop ${bizName} online${whiteLabel ? "" : " on SwiftLink Pro"}${
+    `Browse ${bizName}'s online store${whiteLabel ? "" : " on SwiftLink Pro"}${
       productCount ? ` — ${productCount} products` : ""
-    }${state.location ? ` in ${state.location}` : ""}. Browse the catalog and place your order on WhatsApp.`;
+    }${state.location ? ` in ${state.location}` : ""}. Order on WhatsApp from @${store.handle}.`;
 
   /*
    * A store page has always been indexable in principle, but the HTML it shipped
@@ -107,27 +128,28 @@ export async function generateMetadata({
    * read. `StoreByHandlePage` now seeds the storefront with the server row, so
    * this metadata and the body finally describe the same thing.
    */
-  const keywords = [
-    bizName,
-    `${bizName} store`,
-    `buy from ${bizName}`,
-    `${bizName} ${state.location || ""}`.trim(),
-    ...(state.categories || []).slice(0, 10),
-  ].filter(Boolean) as string[];
+  // Derived from the store's own state (`lib/seo.ts`): name, "<name> store",
+  // "<name> shop", the handle, categories, and each of those with the city.
+  const keywords = storeKeywords({ ...state, bizName }, store.handle);
 
   // One URL for every crawler, rendered natively by Next.js — no Supabase
   // headers, no robot blocking. The route serves the merchant's own uploaded
   // social image when they set one in SEO settings, and the generated 1200x630
   // card otherwise. The `v` param is the store's last write, so each save
   // invalidates the cached preview automatically.
+  /*
+   * The OG card route lives on the platform origin even for a custom domain:
+   * it is our own renderer reading the store row, and pointing at a hostname
+   * whose DNS may still be propagating would break every share preview.
+   */
   const dynamicOgImage = `${site}/${store.handle}/opengraph-image?v=${store.updatedAt}`;
   const ogImage = dynamicOgImage;
   const merchantOgImage = resolveMerchantOgImage(state);
 
-  const url = `${site}/${store.handle}`;
+  const url = storeUrl;
 
   return {
-    metadataBase: new URL(site),
+    metadataBase: new URL(customDomain ? `https://${customDomain}` : site),
     // Browser/OS metadata ("Add to Home Screen", reader mode) names the shop,
     // not us, on a white-label store.
     applicationName: whiteLabel ? bizName : "SwiftLink",
@@ -142,7 +164,20 @@ export async function generateMetadata({
     title: whiteLabel ? { absolute: title } : title,
     description,
     keywords,
-    alternates: { canonical: `/${store.handle}` },
+    alternates: { canonical: customDomain ? `https://${customDomain}` : `/${store.handle}` },
+    /*
+     * Explicit rather than inherited: a large image preview and an uncapped
+     * snippet are what make a store result look like a shop in search, and a
+     * store page is indexable by design (unknown handles 404 in middleware, so
+     * there is no soft-404 to guard against here).
+     */
+    robots: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
     openGraph: {
       type: "website",
       title,
@@ -186,6 +221,11 @@ export default async function StoreByHandlePage({
   const viewerId = await currentViewerId();
   const viewerIsOwner = viewerOwnsStore(store.id, viewerId, [store.ownerId]);
 
+  // Same origin `generateMetadata` canonicalises to, so the graph and the
+  // canonical link cannot point at different URLs for one store.
+  const customDomain = store.plan === "business" ? await getVerifiedDomainForStore(store.id) : null;
+  const storeUrl = storeOrigin(store.handle, customDomain);
+
   // Seed the (client) storefront with the row we just read, so its content is in
   // the server HTML rather than arriving after a browser-side fetch.
   const initialState = { ...store.state, id: store.id } as ShopState;
@@ -193,10 +233,11 @@ export default async function StoreByHandlePage({
     handle: store.handle,
     state: store.state,
     includePlatformInBreadcrumb: store.plan !== "business",
+    origin: storeUrl,
     description:
       store.state.ogDescription ||
       store.state.tagline ||
-      `Shop ${store.bizName} online on SwiftLink Pro. WhatsApp ordering and live catalog.`,
+      `Browse ${store.bizName}'s online store. WhatsApp ordering and a live catalog.`,
   });
 
   return (

@@ -133,6 +133,40 @@ export type DirectoryStore = {
 };
 
 /**
+ * Words people add to a store name when searching, and which no store name
+ * contains: nobody can find "Cyd" by typing "cyd store" if the query has to
+ * appear verbatim in the name.
+ */
+const SEARCH_FILLER = new Set(["store", "stores", "shop", "shopping", "online", "official", "the"]);
+
+/**
+ * Whether a directory row matches a search.
+ *
+ * Every meaningful word must appear somewhere in the row (name, handle,
+ * tagline, city, categories), so "cyd store" matches Cyd while "ada lagos"
+ * does not match a Lagos store that is not Ada's. The filler words above are
+ * ignored rather than required.
+ */
+export function storeMatchesQuery(
+  store: Pick<DirectoryStore, "bizName" | "handle" | "tagline" | "location" | "categories">,
+  query: string,
+): boolean {
+  const terms = String(query || "")
+    .toLowerCase()
+    .split(/[^a-z0-9@]+/)
+    .filter((term) => term && !SEARCH_FILLER.has(term));
+
+  if (terms.length === 0) return true;
+
+  const haystack = [store.bizName, store.handle, store.tagline, store.location, ...(store.categories || [])]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return terms.every((term) => haystack.includes(term));
+}
+
+/**
  * Public storefront rows for the `/stores` directory.
  *
  * This is the one page that lets a visitor (and a crawler) find a store by the
@@ -140,15 +174,14 @@ export type DirectoryStore = {
  * the handle or the link. The same visibility rules as the sitemap apply — no
  * banned stores, no stores left unpublished by a downgrade.
  *
- * `query` filters on business name, handle, tagline and location, so
- * `/stores?q=cyd` is a real, shareable, crawlable URL rather than a client-only
- * filter.
+ * `query` filters on business name, handle, tagline, location and categories,
+ * and ignores the filler words a shopper types ("store", "shop", "online"), so
+ * `/stores?q=cyd+store` is a real, shareable, crawlable URL that finds Cyd —
+ * rather than a client-only filter that matches nothing.
  */
 export async function getPublicStoresForDirectory(query = ""): Promise<DirectoryStore[]> {
   const supabase = publicClient();
   if (!supabase) return [];
-
-  const needle = query.trim().toLowerCase();
 
   try {
     const { data, error } = await supabase
@@ -183,26 +216,30 @@ export async function getPublicStoresForDirectory(query = ""): Promise<Directory
         };
       })
       .filter((store) => Boolean(store.handle))
-      .filter((store) => {
-        if (!needle) return true;
-        const haystack = [store.bizName, store.handle, store.tagline, store.location]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(needle);
-      })
+      .filter((store) => storeMatchesQuery(store, query))
       .sort((a, b) => a.bizName.localeCompare(b.bizName));
   } catch {
     return [];
   }
 }
 
-export type SitemapStore = { handle: string; updatedAt: string | null };
+export type SitemapStore = {
+  handle: string;
+  updatedAt: string | null;
+  /** Used only to decide whether a verified custom domain is looked up. */
+  id?: string;
+  plan?: string;
+};
 
 /**
  * Every store that should appear in the sitemap: has a handle, is not banned,
  * and is not paused (`isLive === false`). Unpublished stores (extra stores left
  * over from a downgrade) are deliberately excluded.
+ *
+ * `plan` is included so the sitemap can add a Business merchant's verified
+ * custom domain next to the platform URL — both resolve to the same storefront,
+ * and a crawler that only ever sees the platform path would keep the ranking
+ * away from the address the merchant actually advertises.
  */
 export async function getLiveStoresForSitemap(): Promise<SitemapStore[]> {
   const supabase = publicClient();
@@ -211,7 +248,7 @@ export async function getLiveStoresForSitemap(): Promise<SitemapStore[]> {
   try {
     const { data, error } = await supabase
       .from("stores")
-      .select("store_username, updated_at, state_json, account_status")
+      .select("id, store_username, updated_at, state_json, account_status, plan")
       .not("store_username", "is", null);
 
     if (error || !data) return [];
@@ -220,7 +257,9 @@ export async function getLiveStoresForSitemap(): Promise<SitemapStore[]> {
       .filter((row: any) => row.account_status !== "banned")
       .filter((row: any) => (row.state_json?.isLive ?? true) !== false)
       .map((row: any) => ({
+        id: String(row.id ?? ""),
         handle: normalizeStoreUsername(String(row.store_username)),
+        plan: String(row.plan ?? "free"),
         updatedAt: (row.updated_at as string) ?? null,
       }))
       .filter((row) => Boolean(row.handle));

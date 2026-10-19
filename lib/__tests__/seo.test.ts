@@ -4,6 +4,9 @@ import {
   buildStoreDirectoryJsonLd,
   buildStoreJsonLd,
   SEO_SITE,
+  storeKeywords,
+  storeOrigin,
+  storeTitle,
 } from "../seo";
 import type { ShopState } from "../schema";
 
@@ -52,6 +55,86 @@ describe("buildStoreJsonLd", () => {
       description: "",
     });
     expect(JSON.stringify(json)).toContain("OutOfStock");
+  });
+});
+
+describe("findability — the store page has to own its own name", () => {
+  it("titles the page '<name> — … Online Store', not 'Shop Online'", () => {
+    // A shopper looking for Cyd types "cyd store". "Cyd — Shop Online" has no
+    // "store" token for a search engine to match on the page that owns the name.
+    expect(storeTitle("Cyd")).toContain("Cyd");
+    expect(storeTitle("Cyd")).toContain("Store");
+    expect(storeTitle("Cyd", "Sneakers and streetwear")).toContain("Sneakers and streetwear");
+    // A long tagline is dropped rather than truncated mid-word in a result.
+    expect(storeTitle("Cyd", "x".repeat(60))).toBe("Cyd — Online Store");
+  });
+
+  it("keywords cover the name plus the words people add to it", () => {
+    const keywords = storeKeywords(
+      { bizName: "Cyd", location: "Lagos", categories: ["Sneakers"] },
+      "cyd-store",
+    );
+    expect(keywords).toContain("Cyd store");
+    expect(keywords).toContain("Cyd shop");
+    expect(keywords).toContain("Cyd store Lagos");
+    expect(keywords).toContain("@cyd-store");
+    expect(keywords).toContain("Sneakers Lagos");
+  });
+
+  it("canonicalises to a verified custom domain, else the platform path", () => {
+    expect(storeOrigin("cyd-store")).toBe(`${SEO_SITE}/cyd-store`);
+    expect(storeOrigin("cyd-store", "shop.cyd.com")).toBe("https://shop.cyd.com");
+    // Junk in the domain column must not produce a broken canonical.
+    expect(storeOrigin("cyd-store", "not a domain")).toBe(`${SEO_SITE}/cyd-store`);
+    expect(storeOrigin("cyd-store", "")).toBe(`${SEO_SITE}/cyd-store`);
+  });
+
+  it("publishes the names the shop answers to and how to order", () => {
+    const json = buildStoreJsonLd({
+      handle: "cyd-store",
+      state: storeState({ bizName: "Cyd", phone: "+2348012345678", orderMethod: "whatsapp" }),
+      description: "Shop Cyd",
+    });
+    const store = (json["@graph"] as Record<string, unknown>[])[0] as any;
+    expect(store.alternateName).toContain("Cyd store");
+    expect(store.alternateName).toContain("Cyd shop");
+    expect(store.alternateName).toContain("@cyd-store");
+    // A name that already says "store" is not doubled up.
+    const named = buildStoreJsonLd({ handle: "ada", state: storeState({ bizName: "Ada Store" }), description: "" });
+    expect((named["@graph"] as any[])[0].alternateName).not.toContain("Ada Store store");
+    expect(store.areaServed).toMatchObject({ name: "Lagos" });
+    // The catalogue's real span, so a crawler sees a genuinely priced shop.
+    expect(String(store.priceRange)).toContain("140,000");
+    expect(store.potentialAction.target.urlTemplate).toBe("https://wa.me/2348012345678");
+  });
+
+  it("never publishes a zero price for a quote-priced service", () => {
+    const json = buildStoreJsonLd({
+      handle: "ada-tailors",
+      state: storeState({
+        products: [
+          { id: 4, name: "Aso-Ebi set", price: 0, description: "", image: "", outOfStock: false, priceType: "quote" },
+        ],
+      }),
+      description: "",
+    });
+    const catalog = JSON.stringify(json);
+    expect(catalog).toContain("Aso-Ebi set");
+    expect(catalog).not.toContain('"price":0');
+  });
+
+  it("follows the custom origin when one is given", () => {
+    const json = buildStoreJsonLd({
+      handle: "cyd-store",
+      state: storeState(),
+      description: "Shop Cyd",
+      origin: "https://shop.cyd.com",
+    });
+    const graph = json["@graph"] as Record<string, unknown>[];
+    expect((graph[0] as any).url).toBe("https://shop.cyd.com");
+    expect((graph.find((node) => (node as any)["@type"] === "BreadcrumbList") as any).itemListElement[1].item).toBe(
+      "https://shop.cyd.com",
+    );
   });
 });
 

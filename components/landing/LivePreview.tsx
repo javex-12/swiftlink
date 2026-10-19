@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, Heart, Search, Star, ChevronLeft,
+  ShoppingCart, Heart, Search, ChevronLeft,
   CheckCircle2, MessageCircle, Plus, Minus, ArrowRight,
   ShoppingBag, Package, Home, User,
 } from "lucide-react";
@@ -301,13 +301,12 @@ export const LivePreview = () => {
                     <p className="text-[12px] font-black ml-2" style={{ color: ACCENT }}>{selected.price}</p>
                   </div>
 
-                  {/* Star rating */}
-                  <div className="flex items-center gap-0.5 mb-2.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={7} style={i < 4 ? { fill: "#f59e0b", color: "#f59e0b" } : { color: "#e5e7eb", fill: "#e5e7eb" }} />
-                    ))}
-                    <span className="text-[7px] text-gray-400 font-bold ml-1">4.8 (124)</span>
-                  </div>
+                  {/*
+                    This mock drew five stars and "4.8 (124)" next to them. The
+                    number was invented — there is no rating behind it — so it is
+                    gone, like the fabricated review blocks in the templates. A
+                    demo of a product page should not show a score nobody earned.
+                  */}
 
                   <p className="text-[8px] text-gray-400 leading-relaxed mb-3">{selected.desc}</p>
 

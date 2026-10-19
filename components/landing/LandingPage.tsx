@@ -33,6 +33,7 @@ import {
   MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
   PLAN_PRICE_NGN,
+  PRO_STORE_LIMIT,
 } from "@/lib/plans";
 
 /**
@@ -727,7 +728,7 @@ function Pricing() {
         // sold something the product does not do.
         { label: "Everything in Free" },
         { label: `Up to ${MAX_PRODUCTS_PER_STORE.toLocaleString()} products` },
-        { label: "1 store" },
+        { label: `Up to ${PRO_STORE_LIMIT} stores` },
         { label: "All storefront templates" },
         { label: "Discount codes" },
         { label: "Detailed analytics" },

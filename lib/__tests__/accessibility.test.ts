@@ -109,7 +109,10 @@ describe("Console Shell & Overview View Integrity", () => {
     expect(layoutFile).toContain("absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-[#19C37D]");
 
     // Safe area bottom padding
-    expect(layoutFile).toContain("calc(6rem+env(safe-area-inset-bottom,0px))");
+    // Underscores, because Tailwind turns them into the spaces `calc()` requires
+    // around `+` — the old `calc(6rem+env(...))` was invalid CSS and reserved
+    // nothing, so console pages ran under the mobile nav.
+    expect(layoutFile).toContain("calc(6rem_+_env(safe-area-inset-bottom,0px))");
   });
 
   it("Console theme is enforced dark-only with no console moon toggle", () => {

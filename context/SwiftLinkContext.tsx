@@ -32,6 +32,7 @@ import {
   productLimitBlockedMessage,
   reconcileAccountPlan,
   storeActionBlockedMessage,
+  storeLimitMessage,
   visibleProductCount,
 } from "@/lib/plans";
 import { repairAccountToPlan, repairNotice, repairWrites } from "@/lib/plan-enforcement";
@@ -86,11 +87,17 @@ type SwiftLinkContextValue = {
   stores: ShopState[];
   switchStore: (id: string) => Promise<void>;
   /**
-   * Pick which single store the account runs when it owns more than its plan
-   * allows. The chosen store is published and the others are paused — never
-   * deleted, and automatically usable again on Business.
+   * Pick which store the account runs when it owns more than its plan allows.
+   * When the plan can hold every store this is just a switch; only the
+   * over-limit case pauses the extra rows — never deletes them.
    */
   chooseStore: (id: string) => Promise<boolean>;
+  /**
+   * Open or close one store independently of the others, so a merchant with
+   * several brands decides which are live instead of the newest one silently
+   * replacing the rest.
+   */
+  setStoreLive: (id: string, live: boolean) => Promise<boolean>;
   createNewStore: (name: string) => Promise<void>;
   transferStore: (targetEmail: string) => Promise<boolean>;
   cart: CartMap;
@@ -542,7 +549,13 @@ export function SwiftLinkProvider({
     if (!target) return false;
 
     const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
-    if (isUnlimited(effectiveStoreLimitFor(currentPlan))) {
+    /*
+     * Plans that can hold every store they own (Pro and Business) must not
+     * pause anything here: choosing a store is then only a switch. This used
+     * to test `isUnlimited`, which is false for every plan now that all limits
+     * are finite — so even Business paused nine stores when opening one.
+     */
+    if (effectiveStoreLimitFor(currentPlan) >= stores.length) {
       await switchStore(id);
       return true;
     }
@@ -563,12 +576,55 @@ export function SwiftLinkProvider({
 
     addToast(
       paused > 0
-        ? `Now running ${chosenStore.bizName}. ${paused} other ${paused === 1 ? "store is" : "stores are"} paused — nothing was deleted, and they come back on Business.`
+        ? `Now running ${chosenStore.bizName}. ${paused} other ${paused === 1 ? "store is" : "stores are"} paused — nothing was deleted, and they come back when your plan has room.`
         : `Now running ${chosenStore.bizName}.`,
       "success",
     );
     return true;
   }, [stores, state, switchStore, persistRepairedRows, addToast]);
+
+  /**
+   * Open or close one store, leaving the others exactly as they are.
+   *
+   * Before this, the only lever was "run this store", which paused every other
+   * brand — so a merchant with three stores could not keep two live, and the
+   * act of creating a new store took the previous one offline. Closing is
+   * always allowed; opening is capped by the plan (free 1, pro 3, business 10)
+   * so the entitlement cannot be exceeded through this path either.
+   */
+  const setStoreLive = useCallback(async (id: string, live: boolean) => {
+    const target = stores.find((store) => store.id === id);
+    if (!target || target.id === null) return false;
+
+    const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
+    if (live) {
+      const liveCount = stores.filter(
+        (store) => store.id !== id && store.isLive !== false,
+      ).length;
+      if (liveCount >= effectiveStoreLimitFor(currentPlan)) {
+        addToast(storeLimitMessage(currentPlan, liveCount), "error");
+        return false;
+      }
+    }
+
+    const updated: ShopState = { ...target, isLive: live };
+    const nextStores = stores.map((store) => (store.id === id ? updated : store));
+
+    setStores(nextStores);
+    if (state.id === id) {
+      setState(updated);
+      localStorage.setItem("swiftlink_state", JSON.stringify(updated));
+    }
+    await persistRepairedRows([{ id, store: updated }]);
+
+    addToast(
+      live
+        ? `"${target.bizName || "Your store"}" is live again.`
+        : `"${target.bizName || "Your store"}" is paused. Nothing was deleted.`,
+      "success",
+    );
+    return true;
+  }, [stores, state, persistRepairedRows, addToast]);
 
   const transferStore = useCallback(async (targetEmail: string) => {
     if (!user || !state.id) return false;
@@ -1767,6 +1823,7 @@ export function SwiftLinkProvider({
     stores,
     switchStore,
     chooseStore,
+    setStoreLive,
     createNewStore,
     transferStore,
     cart,

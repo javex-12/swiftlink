@@ -922,13 +922,14 @@ export function CustomerStorefront({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   /**
-   * Price-request form state. A service has no amount to put in a cart, so the
-   * product page collects what the job is and sends it to the store's WhatsApp.
+   * Price-request state. A service has no amount to put in a cart, so the product
+   * page asks the merchant's own questions and sends the answers to the store's
+   * WhatsApp. Nothing is asked by the platform: not the buyer's name, not their
+   * number, not "what do you need?".
    */
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
   const [quoteBusy, setQuoteBusy] = useState(false);
-  const [quoteForm, setQuoteForm] = useState({ name: "", phone: "" });
   /**
    * One answer per question the merchant wrote. Keyed by question id so a label
    * can be reworded without losing what the buyer already typed.
@@ -1338,8 +1339,6 @@ export function CustomerStorefront({
           typeof window !== "undefined" && window.location.href.startsWith("http")
             ? window.location.href
             : null,
-        buyerName: quoteForm.name,
-        buyerPhone: quoteForm.phone,
         answers,
         currency: effectiveState.currency,
       });
@@ -1359,8 +1358,6 @@ export function CustomerStorefront({
         srcParam,
         channel: "whatsapp",
         message,
-        buyerName: quoteForm.name.trim() || null,
-        buyerPhone: quoteForm.phone.trim() || null,
         items: [
           {
             productId: product.id,
@@ -1485,6 +1482,12 @@ export function CustomerStorefront({
    * `sticky` inside a column that was exactly as tall as its content, so it had
    * no room to stick and scrolled away with the page.
    */
+  /**
+   * The questions this service asks — the merchant's list, or none at all. Read
+   * once per render so the form, the header copy and the empty state agree.
+   */
+  const quoteQuestions = resolveRequestQuestions(selectedProduct?.requestQuestions);
+
   const productActions = (product: Product) => {
     if (isPriceOnRequest(product)) {
       return (
@@ -1599,7 +1602,7 @@ export function CustomerStorefront({
                       the bar on phones with a home indicator.
                     */}
                     {s.id && (
-                      <div className={cn("px-4 pt-16 pb-[calc(160px+env(safe-area-inset-bottom,0px))]", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
+                      <div className={cn("px-4 pt-16 pb-[calc(160px_+_env(safe-area-inset-bottom,0px))]", backgroundIntent === "dark" ? "bg-[#0a0a0a]" : "bg-[#f8fafc]")}>
                         <div className="max-w-3xl mx-auto">
                           <StorefrontReviews
                             storeId={s.id}
@@ -1630,7 +1633,7 @@ export function CustomerStorefront({
                         where they could be seen but not tapped. The padding is
                         on the scroller, so the last element clears the bar.
                       */
-                      className="fixed inset-0 z-[100] flex flex-col sf-surface overflow-y-auto custom-scrollbar pb-[calc(75px+env(safe-area-inset-bottom,0px))] md:pb-28"
+                      className="fixed inset-0 z-[100] flex flex-col sf-surface overflow-y-auto custom-scrollbar pb-[calc(75px_+_env(safe-area-inset-bottom,0px))] md:pb-28"
                     >
                         {screen === "product" && selectedProduct && (
                             <div className="w-full md:flex md:items-stretch md:min-h-screen sf-surface sf-ink">
@@ -1654,7 +1657,14 @@ export function CustomerStorefront({
                                         );
                                     })()}
                                 </div>
-                                <div className="flex flex-col p-6 md:w-1/2 md:p-12 md:justify-center">
+                                {/*
+                                  Top-aligned rather than vertically centred on
+                                  desktop. A centred column clips its own top
+                                  when the content is taller than the viewport
+                                  (image side is `min-h-screen`), which took the
+                                  product description off the screen entirely.
+                                */}
+                                <div className="flex flex-col p-6 md:w-1/2 md:py-16 md:px-12">
                                     <div className="flex items-start justify-between gap-4">
                                         <h1 className="text-2xl font-black leading-tight sf-ink md:text-4xl">{selectedProduct.name}</h1>
                                         <p className="shrink-0 text-2xl font-black sf-accent-text md:text-4xl">
@@ -1789,7 +1799,7 @@ export function CustomerStorefront({
                             also has the floating cart pill above the bar, and its
                             last review row was covered. */}
                         {screen === "community" && (
-                            <div className="w-full flex flex-col min-h-screen sf-surface pb-[calc(180px+env(safe-area-inset-bottom,0px))]">
+                            <div className="w-full flex flex-col min-h-screen sf-surface pb-[calc(180px_+_env(safe-area-inset-bottom,0px))]">
                                 <div className="backdrop-blur-md border-b border-black/[0.06] w-full sf-header p-6 flex justify-between items-center gap-4">
                                     <div className="flex items-center gap-4">
                                         <button onClick={() => changeScreen("home")} className="sf-ink"><ChevronLeft size={24} /></button>
@@ -1882,7 +1892,7 @@ export function CustomerStorefront({
         */}
         {screen === "product" && selectedProduct && (
           <div
-            className="fixed bottom-[calc(75px+env(safe-area-inset-bottom,0px))] left-0 right-0 border-t border-t-border px-4 py-3 backdrop-blur-md md:hidden"
+            className="fixed bottom-[calc(75px_+_env(safe-area-inset-bottom,0px))] left-0 right-0 border-t border-t-border px-4 py-3 backdrop-blur-md md:hidden"
             style={{
               // Above the product overlay (z-100) and below the quote sheet.
               // Inline on purpose: an arbitrary `z-[105]` is a class the CSS
@@ -1917,7 +1927,9 @@ export function CustomerStorefront({
                   <p className="mt-1 text-xs sf-muted">
                     {quoteSent
                       ? "Your message is in the store's WhatsApp. They will reply there with a price."
-                      : `Tell ${s.bizName || "the store"} what you need and they will reply with a price.`}
+                      : quoteQuestions.length > 0
+                        ? `Answer ${s.bizName || "the store"}'s questions and they will reply with a price.`
+                        : "Opens the store's WhatsApp so you can send your request straight away."}
                   </p>
                 </div>
                 <button
@@ -1955,40 +1967,14 @@ export function CustomerStorefront({
                     void submitQuoteRequest();
                   }}
                 >
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label className="block text-[11px] font-semibold">
-                      Your name
-                      <input
-                        type="text"
-                        value={quoteForm.name}
-                        onChange={(event) =>
-                          setQuoteForm((prev) => ({ ...prev, name: event.target.value }))
-                        }
-                        autoComplete="name"
-                        className="mt-1 w-full rounded-xl border border-black/10 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/15"
-                      />
-                    </label>
-                    <label className="block text-[11px] font-semibold">
-                      WhatsApp number
-                      <input
-                        type="tel"
-                        value={quoteForm.phone}
-                        onChange={(event) =>
-                          setQuoteForm((prev) => ({ ...prev, phone: event.target.value }))
-                        }
-                        autoComplete="tel"
-                        placeholder="+234…"
-                        className="mt-1 w-full rounded-xl border border-black/10 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/15"
-                      />
-                    </label>
-                  </div>
-
                   {/*
-                    The merchant writes these questions per service (see the
-                    product editor), so the form asks what this particular
-                    business needs to quote the job.
+                    Only the merchant's own questions appear here. Name and
+                    WhatsApp number used to be asked on their behalf, and the
+                    form shipped with three of our questions — a tailor and a
+                    mechanic need different answers, so the merchant writes them
+                    (see the product editor) and the platform adds none.
                   */}
-                  {resolveRequestQuestions(selectedProduct.requestQuestions).map((question) => (
+                  {quoteQuestions.map((question) => (
                     <label key={question.id} className="block text-[11px] font-semibold">
                       {question.label}
                       {question.required ? " *" : ""}
@@ -2003,6 +1989,13 @@ export function CustomerStorefront({
                       />
                     </label>
                   ))}
+
+                  {quoteQuestions.length === 0 && (
+                    <p className="rounded-xl sf-surface-alt p-3 text-[11px] leading-relaxed sf-muted">
+                      No questions to fill in here — the chat opens with this service already named,
+                      and you can write your request there.
+                    </p>
+                  )}
 
                   <button
                     type="submit"
