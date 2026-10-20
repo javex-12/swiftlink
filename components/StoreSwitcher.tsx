@@ -129,6 +129,10 @@ export function StoreSwitcher() {
                 type="button"
                 role="menuitem"
                 onClick={() => {
+                  if (store.accountStatus === "banned") {
+                    addToast(`${store.bizName || "Store"} has been suspended by administration.`, "error");
+                    return;
+                  }
                   const locked = !canSwitch && store.id !== state.id;
                   if (locked) {
                     addToast(limitMessage, "error");
@@ -157,7 +161,11 @@ export function StoreSwitcher() {
                     {store.currency || "NGN"} • {store.storeUsername ? `@${store.storeUsername}` : "Workspace"}
                   </p>
                 </div>
-                {store.id === state.id ? (
+                {store.accountStatus === "banned" ? (
+                  <span className="shrink-0 rounded-full bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                    Suspended
+                  </span>
+                ) : store.id === state.id ? (
                   <span className="shrink-0 rounded-full bg-[#19C37D]/15 px-2 py-0.5 text-[10px] font-semibold text-[#19C37D]">
                     Current
                   </span>

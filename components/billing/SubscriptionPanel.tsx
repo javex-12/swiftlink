@@ -237,7 +237,7 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3.5 flex flex-col sm:flex-row flex-wrap sm:items-center gap-2.5">
             {upgradeTargets.map((plan) => (
               <button
                 key={plan}
@@ -245,24 +245,24 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
                 onClick={() => void startCheckout(plan)}
                 disabled={busy !== null}
                 className={cn(
-                  "inline-flex min-h-[40px] items-center gap-1.5 rounded-[12px] px-4 text-[11px] font-bold transition disabled:opacity-60",
+                  "inline-flex min-h-[44px] w-full sm:w-auto items-center justify-center sm:justify-start gap-2 rounded-[12px] px-4 py-2 text-xs font-bold transition disabled:opacity-60",
                   plan === "business"
-                    ? "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]"
+                    ? "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070] shadow-md shadow-[#19C37D]/10"
                     : "border border-[#24382F] bg-[#14231D] text-[#E8F1EC] hover:border-[#19C37D]",
                 )}
               >
                 {busy === plan ? (
-                  <Loader2 size={12} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin" />
                 ) : (
-                  <ArrowUpRight size={12} />
+                  <ArrowUpRight size={13} />
                 )}
                 <span>Upgrade to {PLAN_DETAILS[plan].name}</span>
                 {plan === "pro" && (
-                  <span className="rounded-full bg-[#E8B93A]/25 px-1.5 py-0.5 text-[9px] font-extrabold text-[#E8B93A]">
+                  <span className="rounded-full bg-[#E8B93A]/25 border border-[#E8B93A]/40 px-1.5 py-0.5 text-[9px] font-extrabold text-[#E8B93A] whitespace-nowrap">
                     MOST POPULAR
                   </span>
                 )}
-                <span className="opacity-80">
+                <span className="opacity-80 font-medium">
                   — ₦{interval === "yearly"
                     ? `${PLAN_PRICE_YEARLY_NGN[plan].toLocaleString()}/yr`
                     : `${PLAN_PRICE_NGN[plan].toLocaleString()}/mo`}

@@ -37,7 +37,8 @@ import {
   Eye,
   MousePointerClick,
   UserPlus,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 
 // Types matching Supabase schemas
@@ -50,6 +51,8 @@ interface StoreDB {
   sections: any;
   state_json: any;
   updated_at: string;
+  plan?: string;
+  account_status?: "active" | "suspended" | "banned";
 }
 
 interface ProfileDB {
@@ -184,6 +187,11 @@ export function AdminView() {
   };
 
   const handleSetAccountStatus = async (storeId: string, newStatus: "active" | "banned") => {
+    const store = stores.find(s => s.id === storeId);
+    const confirmMsg = newStatus === "banned"
+      ? `Are you sure you want to suspend "${store?.biz_name || "this store"}"?\n\nThis suspends customer access to this specific storefront. The merchant will still be able to access their other stores.`
+      : `Are you sure you want to reactivate "${store?.biz_name || "this store"}"?`;
+    if (!window.confirm(confirmMsg)) return;
     setUpdatingStoreId(storeId);
     try {
       const { error } = await supabase.rpc("set_account_status", { store_id_param: storeId, new_status: newStatus });
@@ -201,6 +209,9 @@ export function AdminView() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [feedbackFilter, setFeedbackFilter] = useState("all");
   const [eventFilter, setEventFilter] = useState("all");
+  const [storePlanFilter, setStorePlanFilter] = useState<"all" | "free" | "pro" | "business">("all");
+  const [storeStatusFilter, setStoreStatusFilter] = useState<"all" | "active" | "banned">("all");
+  const [storeLiveFilter, setStoreLiveFilter] = useState<"all" | "live" | "paused">("all");
 
   // Selected merchant/store for detailed drill-down modal
   const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
@@ -435,14 +446,29 @@ export function AdminView() {
     return stores.filter(s => {
       const matchText = globalSearch.toLowerCase();
       const owner = profiles.find(p => p.id === s.owner_id);
-      return (
+      const matchesSearch =
+        !matchText ||
         s.biz_name.toLowerCase().includes(matchText) ||
         s.store_username.toLowerCase().includes(matchText) ||
         s.phone.includes(matchText) ||
-        (owner && owner.display_name.toLowerCase().includes(matchText))
-      );
+        s.id.toLowerCase().includes(matchText) ||
+        (owner && owner.display_name.toLowerCase().includes(matchText));
+
+      const currentPlan = (s.plan || s.state_json?.plan || "free").toLowerCase();
+      const matchesPlan = storePlanFilter === "all" || currentPlan === storePlanFilter;
+
+      const currentStatus = s.account_status || "active";
+      const matchesStatus = storeStatusFilter === "all" || currentStatus === storeStatusFilter;
+
+      const isLive = s.state_json?.isLive !== false;
+      const matchesLive =
+        storeLiveFilter === "all" ||
+        (storeLiveFilter === "live" && isLive) ||
+        (storeLiveFilter === "paused" && !isLive);
+
+      return matchesSearch && matchesPlan && matchesStatus && matchesLive;
     });
-  }, [stores, profiles, globalSearch]);
+  }, [stores, profiles, globalSearch, storePlanFilter, storeStatusFilter, storeLiveFilter]);
 
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
@@ -462,6 +488,61 @@ export function AdminView() {
       return matchSearch && matchFilter;
     });
   }, [events, globalSearch, eventFilter]);
+
+
+  const exportStoresCsv = () => {
+    const headers = ["ID", "Store Name", "Username", "Owner Name", "Phone", "Plan", "Status", "Live", "Products Count", "Last Updated"];
+    const rows = filteredStores.map(s => {
+      const owner = profiles.find(p => p.id === s.owner_id);
+      const plan = s.plan || s.state_json?.plan || "free";
+      const status = s.account_status || "active";
+      const isLive = s.state_json?.isLive !== false ? "Live" : "Paused";
+      const prodCount = s.state_json?.products?.length || 0;
+      return [
+        `"${s.id}"`,
+        `"${(s.biz_name || "").replace(/"/g, '""')}"`,
+        `"${s.store_username || ""}"`,
+        `"${(owner?.display_name || s.owner_id || "").replace(/"/g, '""')}"`,
+        `"${s.phone || ""}"`,
+        `"${plan}"`,
+        `"${status}"`,
+        `"${isLive}"`,
+        prodCount,
+        `"${s.updated_at}"`,
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `swiftlink_stores_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportMerchantsCsv = () => {
+    const headers = ["ID", "Username", "Display Name", "Verified", "Bio", "Owned Stores Count"];
+    const rows = filteredProfiles.map(p => {
+      const storeCount = stores.filter(s => s.owner_id === p.id).length;
+      return [
+        `"${p.id}"`,
+        `"${p.username || ""}"`,
+        `"${(p.display_name || "").replace(/"/g, '""')}"`,
+        p.is_verified ? "Yes" : "No",
+        `"${(p.bio || "").replace(/"/g, '""')}"`,
+        storeCount,
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `swiftlink_merchants_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Overall Global Statistics
   const globalStats = useMemo(() => {
@@ -580,6 +661,37 @@ export function AdminView() {
         </div>
       </div>
 
+      {/* Plan Distribution Stats */}
+      <div className="bg-[#111C18] p-4 sm:p-6 rounded-2xl border border-[#1E2D27] flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-widest text-[#E8F1EC]">Stores by Plan Tier</h4>
+          <p className="text-[10px] text-[#9DB3A8]">Active subscriber tier distribution across the platform</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-xl bg-[#14231D] border border-[#1E2D27] px-3 py-2">
+            <span className="h-2 w-2 rounded-full bg-zinc-400" />
+            <span className="text-[10px] font-bold text-zinc-400 uppercase">Free</span>
+            <span className="text-xs font-black text-[#E8F1EC] ml-1">
+              {stores.filter(s => (s.plan || s.state_json?.plan || "free").toLowerCase() === "free").length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl bg-[#14231D] border border-[#E8B93A]/30 px-3 py-2">
+            <span className="h-2 w-2 rounded-full bg-[#E8B93A]" />
+            <span className="text-[10px] font-bold text-[#E8B93A] uppercase">Pro</span>
+            <span className="text-xs font-black text-[#E8F1EC] ml-1">
+              {stores.filter(s => (s.plan || s.state_json?.plan || "free").toLowerCase() === "pro").length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl bg-[#14231D] border border-[#19C37D]/30 px-3 py-2">
+            <span className="h-2 w-2 rounded-full bg-[#19C37D]" />
+            <span className="text-[10px] font-bold text-[#19C37D] uppercase">Business</span>
+            <span className="text-xs font-black text-[#E8F1EC] ml-1">
+              {stores.filter(s => (s.plan || s.state_json?.plan || "free").toLowerCase() === "business").length}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Overview Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-[#111C18] p-6 rounded-2xl border border-[#1E2D27] shadow-sm flex flex-col justify-between group hover:shadow-lg transition-all">
@@ -656,12 +768,7 @@ export function AdminView() {
       <div className="border-b border-[#1E2D27] flex flex-wrap gap-1">
         {[
           { id: "overview", label: "Overview", icon: TrendingUp },
-          { id: "timeline", label: "Telemetry Log", icon: Activity },
-          { id: "merchants", label: "Merchants", icon: Users },
-          { id: "stores", label: "Storefronts", icon: Store },
-          { id: "feedback", label: "User Feedback", icon: MessageSquare },
-          { id: "admins", label: "Manage Admins", icon: Shield }
-        ].map((tab) => (
+          ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id as any); setGlobalSearch(""); if (tab.id === "admins") fetchAdmins(); }}
@@ -688,6 +795,58 @@ export function AdminView() {
         ) : (
           <>
             {/* SEARCH AND FILTERS ROW */}
+            
+                {/* Storefronts Filter & Action Bar */}
+                {activeTab === "stores" && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#9DB3A8]">Filters:</span>
+                      {/* Plan Filter */}
+                      <select
+                        value={storePlanFilter}
+                        onChange={(e) => setStorePlanFilter(e.target.value as any)}
+                        className="rounded-xl border border-[#1E2D27] bg-[#14231D] px-2.5 py-1.5 text-[10px] font-bold text-[#E8F1EC] outline-none"
+                      >
+                        <option value="all">All Plans</option>
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                        <option value="business">Business</option>
+                      </select>
+
+                      {/* Status Filter */}
+                      <select
+                        value={storeStatusFilter}
+                        onChange={(e) => setStoreStatusFilter(e.target.value as any)}
+                        className="rounded-xl border border-[#1E2D27] bg-[#14231D] px-2.5 py-1.5 text-[10px] font-bold text-[#E8F1EC] outline-none"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="active">Active Only</option>
+                        <option value="banned">Suspended Only</option>
+                      </select>
+
+                      {/* Live Filter */}
+                      <select
+                        value={storeLiveFilter}
+                        onChange={(e) => setStoreLiveFilter(e.target.value as any)}
+                        className="rounded-xl border border-[#1E2D27] bg-[#14231D] px-2.5 py-1.5 text-[10px] font-bold text-[#E8F1EC] outline-none"
+                      >
+                        <option value="all">All Visibility</option>
+                        <option value="live">Live Only</option>
+                        <option value="paused">Paused Only</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={exportStoresCsv}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#1E2D27] bg-[#14231D] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#19C37D] transition hover:bg-[#1A2D25]"
+                    >
+                      <Download size={12} />
+                      <span>Export Stores CSV ({filteredStores.length})</span>
+                    </button>
+                  </div>
+                )}
+
             {activeTab !== "overview" && (
               <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1 flex items-center bg-[#111C18] border border-[#1E2D27] rounded-2xl px-4 py-3 text-slate-400 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 shadow-sm transition-all">
@@ -967,6 +1126,18 @@ export function AdminView() {
 
             {/* TAB CONTENT: MERCHANTS DIRECTORY */}
             {activeTab === "merchants" && (
+              <div className="flex justify-end mb-4">
+                <button
+                  type="button"
+                  onClick={exportMerchantsCsv}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#1E2D27] bg-[#14231D] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#19C37D] transition hover:bg-[#1A2D25]"
+                >
+                  <Download size={12} />
+                  <span>Export Merchants CSV ({filteredProfiles.length})</span>
+                </button>
+              </div>
+            )}
+            {activeTab === "merchants" && (
               <div className="bg-[#111C18] rounded-2xl border border-[#1E2D27] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -1047,8 +1218,14 @@ export function AdminView() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                      
                       {filteredStores.map((s) => {
                         const ownerObj = profiles.find(p => p.id === s.owner_id);
+                        const storePlan = (s.plan || s.state_json?.plan || "free").toLowerCase();
+                        const isLive = s.state_json?.isLive !== false;
+                        const isBanned = s.account_status === "banned";
+                        const prodCount = s.state_json?.products?.length || 0;
+
                         return (
                           <tr key={s.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
                             <td className="py-5 px-4 sm:px-6">
@@ -1057,7 +1234,26 @@ export function AdminView() {
                                 <span className="text-[8px] font-bold text-slate-400 block font-mono mt-0.5">{s.id}</span>
                               </div>
                             </td>
-                            <td className="py-5 px-4 sm:px-6 text-[10px] font-bold text-emerald-500 font-mono">/{s.store_username}</td>
+                            <td className="py-5 px-4 sm:px-6">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-bold text-emerald-500 font-mono">/{s.store_username}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className={cn(
+                                    "inline-flex items-center px-1.5 py-0.2 rounded-md text-[8px] font-black uppercase tracking-wider border",
+                                    isLive
+                                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                      : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                  )}>
+                                    {isLive ? "Live" : "Paused"}
+                                  </span>
+                                  {isBanned && (
+                                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[8px] font-black uppercase tracking-wider bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                                      Suspended
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
                             <td className="py-5 px-4 sm:px-6">
                               {ownerObj ? (
                                 <button 
@@ -1065,61 +1261,82 @@ export function AdminView() {
                                   className="flex items-center gap-2 hover:underline text-left"
                                 >
                                   <img src={ownerObj.avatar_url} className="w-6 h-6 rounded-lg object-cover" alt="" />
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">{ownerObj.display_name}</span>
+                                  <div>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 block">{ownerObj.display_name}</span>
+                                    <span className="text-[8px] text-slate-400 font-mono">{s.phone}</span>
+                                  </div>
                                 </button>
                               ) : (
-                                <span className="text-[10px] font-bold text-slate-400 font-mono">{s.owner_id}</span>
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 font-mono block">{s.owner_id}</span>
+                                  <span className="text-[8px] text-slate-400 font-mono">{s.phone}</span>
+                                </div>
                               )}
                             </td>
-                            <td className="py-5 px-4 sm:px-6 text-[10px] font-bold text-slate-500 font-mono">{s.phone}</td>
-                            <td className="py-5 px-4 sm:px-6 text-right flex justify-end items-center gap-3">
-                              {/* Plan selector */}
-                              <div className="flex items-center gap-1.5">
-                                <select
-                                  disabled={updatingStoreId === s.id}
-                                  value={(s as any).plan || (s.state_json as any)?.plan || "free"}
-                                  onChange={(e) => handleSetUserPlan(s.id, e.target.value as any)}
-                                  className="bg-[#14231D] border border-[#1E2D27] rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500/50"
-                                >
-                                  <option value="free">Free</option>
-                                  <option value="pro">Pro</option>
-                                  <option value="business">Business</option>
-                                </select>
+                            <td className="py-5 px-4 sm:px-6">
+                              <div className="flex flex-col gap-1">
+                                <span className={cn(
+                                  "inline-flex items-center w-fit px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                                  storePlan === "business"
+                                    ? "bg-[#19C37D]/15 border-[#19C37D]/30 text-[#19C37D]"
+                                    : storePlan === "pro"
+                                    ? "bg-[#E8B93A]/15 border-[#E8B93A]/30 text-[#E8B93A]"
+                                    : "bg-zinc-800 border-zinc-700 text-zinc-400"
+                                )}>
+                                  {storePlan}
+                                </span>
+                                <span className="text-[10px] font-semibold text-[#9DB3A8]">
+                                  {prodCount} products
+                                </span>
                               </div>
+                            </td>
+                            <td className="py-5 px-4 sm:px-6 text-right flex justify-end items-center gap-2">
+                              {/* Plan selector */}
+                              <select
+                                disabled={updatingStoreId === s.id}
+                                value={storePlan}
+                                onChange={(e) => handleSetUserPlan(s.id, e.target.value as any)}
+                                className="bg-[#14231D] border border-[#1E2D27] rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-slate-200 outline-none focus:border-emerald-500/50"
+                              >
+                                <option value="free">Free</option>
+                                <option value="pro">Pro</option>
+                                <option value="business">Business</option>
+                              </select>
 
                               {/* Ban/Unban toggle */}
                               <button
                                 disabled={updatingStoreId === s.id}
-                                onClick={() => handleSetAccountStatus(s.id, (s as any).account_status === "banned" ? "active" : "banned")}
+                                onClick={() => handleSetAccountStatus(s.id, isBanned ? "active" : "banned")}
                                 className={cn(
-                                  "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
-                                  (s as any).account_status === "banned"
-                                    ? "bg-rose-50 dark:bg-rose-500/10 text-rose-500 border-rose-100 dark:border-rose-500/20"
-                                    : "bg-[#14231D] text-slate-400 border-[#1E2D27] hover:border-slate-355"
+                                  "px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
+                                  isBanned
+                                    ? "bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25"
+                                    : "bg-[#14231D] text-slate-300 border-[#1E2D27] hover:border-rose-500/40 hover:text-rose-400"
                                 )}
                               >
-                                {(s as any).account_status === "banned" ? "Banned" : "Ban"}
+                                {isBanned ? "Unban" : "Ban"}
                               </button>
 
                               <a 
                                 href={`/?shop=${s.id}`} 
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-2 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-[#1E2D27] text-slate-500 hover:text-slate-950 dark:hover:text-white transition-all"
+                                className="p-2 rounded-xl bg-[#14231D] border border-[#1E2D27] text-slate-400 hover:text-white transition-all"
                                 title="View Store storefront"
                               >
-                                <ExternalLink size={14} />
+                                <ExternalLink size={13} />
                               </a>
                               <button 
                                 onClick={() => setSelectedMerchantId(s.owner_id)}
-                                className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 text-[9px] font-black uppercase tracking-widest transition-all"
+                                className="px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 text-[9px] font-black uppercase tracking-widest transition-all"
                               >
-                                Owner Drill
+                                Owner
                               </button>
                             </td>
                           </tr>
                         );
-                      })}
+                      })
+}
 
                       {filteredStores.length === 0 && (
                         <tr>

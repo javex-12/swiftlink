@@ -53,6 +53,7 @@ import {
 import { cartTotalsFrom, evaluateDiscount, sanitizeDiscountCodes, type CartTotals } from "@/lib/discounts";
 import { getDeviceHash } from "@/lib/inquiries";
 import { type ToastType, ToastContainer } from "@/components/CustomToast";
+import { UpgradeModal } from "@/components/billing/UpgradeModal";
 
 type CartMap = Record<number, number>;
 
@@ -194,6 +195,7 @@ type SwiftLinkContextValue = {
   setSocialHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   submitFeedback: (type: string, message: string) => Promise<void>;
   logEvent: (type: string, metadata?: any) => Promise<void>;
+  openUpgradeModal: (targetPlan?: "pro" | "business") => void;
 };
 
 /**
@@ -288,6 +290,7 @@ export function SwiftLinkProvider({
               plan: accountPlan,
               planGraceUntil: s.plan_grace_until ?? null,
               planLapsedAt: s.plan_lapsed_at ?? null,
+              accountStatus: s.account_status ?? 'active',
             });
           });
           setStores(loadedStores);
@@ -328,9 +331,9 @@ export function SwiftLinkProvider({
           }
           setDrafts(draftMap);
 
-          // Check if the primary store is banned
-          const primaryStore = data[0];
-          if (primaryStore?.account_status === 'banned') {
+          // Check if all stores are banned (per-store ban enforcement)
+          const allStoresBanned = data.length > 0 && data.every((s: any) => s.account_status === 'banned');
+          if (allStoresBanned) {
             router.replace('/banned');
           }
 
@@ -385,6 +388,13 @@ export function SwiftLinkProvider({
   const [isAdmin, setIsAdmin] = useState(false);
   /** See `SwiftLinkContextValue.planReady`. */
   const [planReady, setPlanReady] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeModalPlan, setUpgradeModalPlan] = useState<"pro" | "business">("pro");
+
+  const openUpgradeModal = useCallback((targetPlan?: "pro" | "business") => {
+    setUpgradeModalPlan(targetPlan ?? "pro");
+    setUpgradeModalOpen(true);
+  }, []);
   const adminRef = useRef(false);
   const accountPlanRef = useRef<Plan | null>(null);
 
@@ -516,6 +526,10 @@ export function SwiftLinkProvider({
     const target = stores.find(s => s.id === id);
     if (!target) return;
     if (target.id === state.id) return;
+    if (target.accountStatus === 'banned') {
+      addToast(`${target.bizName} has been suspended by administration. Switch to an active store to continue.`, "error");
+      return;
+    }
 
     /*
      * Running more than one brand is a Business entitlement, so the switch is
@@ -548,6 +562,10 @@ export function SwiftLinkProvider({
   const chooseStore = useCallback(async (id: string) => {
     const target = stores.find(s => s.id === id);
     if (!target) return false;
+    if (target.accountStatus === 'banned') {
+      addToast(`${target.bizName} has been suspended by administration.`, "error");
+      return false;
+    }
 
     const currentPlan = accountPlanRef.current ?? accountPlanFor(stores.length ? stores : [state]);
     const storeLimit = effectiveStoreLimitFor(currentPlan);
@@ -1065,7 +1083,8 @@ export function SwiftLinkProvider({
                         // The store the merchant was last working in stays the one
                         // that opens, not simply the first row.
                         const active =
-                          repaired.stores.find((store) => store.id && store.id === runningId) ??
+                          repaired.stores.find((store) => store.id && store.id === runningId && store.accountStatus !== 'banned') ??
+                          repaired.stores.filter((store) => store.accountStatus !== 'banned')[0] ??
                           repaired.stores[0];
                         const nextState = normalizeShopState(active);
                         setState(nextState);
@@ -1905,12 +1924,18 @@ export function SwiftLinkProvider({
     setSocialHubOpen,
     submitFeedback,
     logEvent,
+    openUpgradeModal,
   };
 
   return (
     <SwiftLinkContext.Provider value={value}>
       {children}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <UpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        initialPlan={upgradeModalPlan}
+      />
     </SwiftLinkContext.Provider>
   );
 }

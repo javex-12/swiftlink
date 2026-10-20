@@ -127,6 +127,7 @@ export type ShopState = {
   tagline: string;
   aboutUs: string;
   isLive?: boolean;
+  accountStatus?: "active" | "suspended" | "banned";
   onboarding_step?: number;
   ask_buyer_details?: boolean;
 

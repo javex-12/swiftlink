@@ -79,7 +79,7 @@ interface OptionRow {
 }
 
 export function StoreEditorV2() {
-  const { state: globalState, stores, saveFullState, saveDraft, discardDraft, drafts, addToast, user } = useSwiftLink();
+  const { state: globalState, stores, saveFullState, saveDraft, discardDraft, drafts, addToast, user, openUpgradeModal, switchStore } = useSwiftLink();
 
   // Local working copy of store state
   const [localState, setLocalState] = useState<ShopState>(() => JSON.parse(JSON.stringify(globalState)));
@@ -137,6 +137,7 @@ export function StoreEditorV2() {
   const handlePopulateStockIdeas = () => {
     if (totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)) {
       addToast(productLimitBlockedMessage(effectivePlan), "error");
+      openUpgradeModal(effectivePlan === "free" ? "pro" : "business");
       return;
     }
     const isNgn = localState.currency === "NGN";
@@ -351,6 +352,7 @@ export function StoreEditorV2() {
       const templateName = websiteTemplateById(templateId)?.name || templateId;
       if (!isTemplateAllowedOnPlan(templateId, localState.plan)) {
         addToast(templateUpgradeRequiredMessage(templateName), "error");
+        openUpgradeModal("pro");
         return;
       }
       const next = { ...localState, websiteTemplateId: templateId };
@@ -590,6 +592,7 @@ export function StoreEditorV2() {
     // downgrade never block an upgrade back into the catalogue (lib/plans.ts).
     if (totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)) {
       addToast(productLimitBlockedMessage(effectivePlan), "error");
+      openUpgradeModal(effectivePlan === "free" ? "pro" : "business");
       return;
     }
     setEditingProductId(null);
@@ -629,6 +632,7 @@ export function StoreEditorV2() {
       totalVisibleProducts >= effectiveProductLimitFor(effectivePlan)
     ) {
       addToast(productLimitBlockedMessage(effectivePlan), "error");
+      openUpgradeModal(effectivePlan === "free" ? "pro" : "business");
       return;
     }
     updateField(
@@ -680,6 +684,31 @@ export function StoreEditorV2() {
 
   return (
     <div className="min-h-screen bg-[#0A1210] pb-24 text-[#E8F1EC]">
+      {localState.accountStatus === "banned" && (
+        <div className="bg-rose-500/15 border-b border-rose-500/30 px-4 py-3 text-rose-200">
+          <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
+              <div>
+                <p className="text-xs sm:text-sm font-bold">This store has been suspended by administration</p>
+                <p className="text-[11px] text-rose-300/80">Customers cannot visit this storefront. Your other stores remain active and accessible.</p>
+              </div>
+            </div>
+            {stores.filter(s => s.accountStatus !== 'banned' && s.id !== localState.id).length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const alt = stores.find(s => s.accountStatus !== 'banned' && s.id !== localState.id);
+                  if (alt?.id) void switchStore(alt.id);
+                }}
+                className="shrink-0 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 px-3 py-1.5 text-xs font-semibold text-rose-100 transition"
+              >
+                Switch to Active Store →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {/* ─── Sticky Header with Tabs & Save ─── */}
       <header className="sticky top-0 z-30 border-b border-[#1E2D27] bg-[#0A1210]/95 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-3.5 py-2.5 sm:px-6 sm:py-3">
