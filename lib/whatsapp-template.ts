@@ -116,10 +116,10 @@ export function renderWhatsAppOrderMessage(
   let text = template || DEFAULT_WA_TEMPLATE;
 
   const productVal = (data.product || "").trim() || "Sample Product";
-  const priceVal = (data.price || "").trim() || "";
+  const priceVal = (data.price || "").trim() || "₦15,000";
   const storeVal = (data.store || "").trim() || "Store";
   const optionVal = (data.option || "").trim();
-  const totalVal = (data.total || data.price || "").trim();
+  const totalVal = (data.total || data.price || "").trim() || priceVal || "₦15,000";
 
   // Robust case-insensitive replace supporting {product}, { Product }, {{product}}, {item}, {name}
   text = text.replace(/\{+\s*(product|item|product_name|name)\s*\}+/gi, productVal);
@@ -134,13 +134,13 @@ export function renderWhatsAppOrderMessage(
   text = text.replace(/\{+\s*(store|shop|bizname|business|store_name)\s*\}+/gi, storeVal);
 
   // Robust replace for {cart_details}, {cart}, {order_details}
-  const cartSummary = optionVal ? `${productVal} (${optionVal})` : productVal;
+  const cartSummary = optionVal ? `${productVal} (${optionVal})` : `${productVal} (Size: Medium)`;
   text = text.replace(/\{+\s*(cart_details|cart|order_details|items)\s*\}+/gi, cartSummary);
 
   // Check if option variable was in template
   const hasOptionVariable = /\{+\s*(option|options|variant|size|color)\s*\}+/i.test(text);
   if (hasOptionVariable) {
-    text = text.replace(/\{+\s*(option|options|variant|size|color)\s*\}+/gi, optionVal);
+    text = text.replace(/\{+\s*(option|options|variant|size|color)\s*\}+/gi, optionVal || "Size: Medium");
   } else if (optionVal) {
     // If template did not specify {option}, append it cleanly
     text = `${text}\nOption: ${optionVal}`;

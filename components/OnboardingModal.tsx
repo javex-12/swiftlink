@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Eye,
   Check,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prefillMerchantInput, readRememberedInput, rememberMerchantInput } from "@/lib/remembered-input";
@@ -59,18 +60,42 @@ export function OnboardingModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cancel setup and allow configuring later in Settings
+  const handleCancel = () => {
+    setOpen(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("swiftlink_onboarding_dismissed", "true");
+      localStorage.setItem("swiftlink_tour_done", "true");
+    }
+    setStateMerge({ onboarding_step: 5 as any });
+    addToast("Quick setup skipped. You can configure store details anytime in Settings.", "info");
+  };
+
   // Sync state if already partially filled
   useEffect(() => {
     if (!user) return;
+    if (typeof window !== "undefined" && localStorage.getItem("swiftlink_onboarding_dismissed") === "true") {
+      setOpen(false);
+      return;
+    }
+    // If the merchant already provided store info during signup, do not force them to re-input it
+    if (state.bizName && state.phone) {
+      if ((state as any).onboarding_step < 5) {
+        setStateMerge({ onboarding_step: 5 as any });
+      }
+      setOpen(false);
+      return;
+    }
+
     const isComplete = (state as any).onboarding_step >= 5 || (state.isLive && state.bizName && state.phone);
-    if (!isComplete && (!state.bizName || !state.phone || (state as any).onboarding_step < 5)) {
+    if (!isComplete) {
       setOpen(true);
       const currentStep = (state as any).onboarding_step || 1;
       setStep(currentStep <= 4 ? currentStep : 1);
     } else {
       setOpen(false);
     }
-  }, [user, state]);
+  }, [user, state, setStateMerge]);
 
   // Handle change validation
   const handleStoreNameChange = (val: string) => {
@@ -196,8 +221,19 @@ export function OnboardingModal() {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
         <div className="flex w-full max-w-xl flex-col rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-6 text-[#E8F1EC] shadow-2xl">
           <div className="mb-4 flex items-center justify-between border-b border-[#1E2D27] pb-3">
-            <Logo size="sm" showWordmark={true} />
-            <span className="text-[11px] font-medium text-[#9DB3A8]">Quick Store Setup</span>
+            <div className="flex items-center gap-2">
+              <Logo size="sm" showWordmark={true} />
+              <span className="text-[11px] font-medium text-[#9DB3A8]">· Quick Store Setup</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#9DB3A8] transition hover:bg-[#182a22] hover:text-[#E8F1EC] m3-spring-btn"
+              aria-label="Cancel quick setup"
+              title="Cancel & set up later in Settings"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
           {/* Progress Indicators */}
@@ -285,11 +321,18 @@ export function OnboardingModal() {
                 )}
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC] transition underline sm:no-underline"
+                >
+                  Cancel & set up later in Settings
+                </button>
                 <button
                   type="button"
                   onClick={submitStep1}
-                  className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070]"
+                  className="flex min-h-[44px] w-full sm:w-auto justify-center items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070] m3-spring-btn"
                 >
                   Continue to WhatsApp
                   <ArrowRight className="h-4 w-4" />
@@ -353,18 +396,27 @@ export function OnboardingModal() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex min-h-[44px] items-center gap-1.5 text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back
-                </button>
+              <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="flex min-h-[44px] items-center gap-1.5 text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC] transition underline sm:no-underline"
+                  >
+                    Cancel & set up later
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={submitStep2}
-                  className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070]"
+                  className="flex min-h-[44px] w-full sm:w-auto justify-center items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070] m3-spring-btn"
                 >
                   Continue to Store Design
                   <ArrowRight className="h-4 w-4" />
@@ -420,18 +472,27 @@ export function OnboardingModal() {
                 })}
               </div>
 
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="flex min-h-[44px] items-center gap-1.5 text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back
-                </button>
+              <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="flex min-h-[44px] items-center gap-1.5 text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC] transition underline sm:no-underline"
+                  >
+                    Cancel & set up later
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={submitStep3}
-                  className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070]"
+                  className="flex min-h-[44px] w-full sm:w-auto justify-center items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070] m3-spring-btn"
                 >
                   Continue to Socials
                   <ArrowRight className="h-4 w-4" />
@@ -494,18 +555,34 @@ export function OnboardingModal() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => submitStep4(true)}
-                  className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
-                >
-                  Skip for now
-                </button>
+              <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="flex min-h-[44px] items-center gap-1.5 text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC] transition underline sm:no-underline"
+                  >
+                    Cancel & set up later
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitStep4(true)}
+                    className="flex min-h-[44px] items-center text-xs text-[#9DB3A8] hover:text-[#E8F1EC]"
+                  >
+                    Skip for now
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => submitStep4(false)}
-                  className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070]"
+                  className="flex min-h-[44px] w-full sm:w-auto justify-center items-center gap-2 rounded-[12px] bg-[#19C37D] px-6 py-2.5 text-sm font-semibold text-[#04140D] transition hover:bg-[#16B070] m3-spring-btn"
                 >
                   Publish Store
                   <CheckCircle2 className="h-4 w-4" />

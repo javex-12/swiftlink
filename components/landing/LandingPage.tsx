@@ -1,38 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
-  BarChart3,
   Check,
   CheckCircle2,
-  Globe,
+  Clock,
   Layers,
   Layout,
   Menu,
   MessageSquare,
-  Moon,
   Package,
-  Sun,
+  ShoppingBag,
+  Sparkles,
+  TrendingUp,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { TemplateFrame } from "@/components/storefront/template-frames";
 import {
   featuredWebsiteTemplates,
   websiteTemplates,
   type WebsiteTemplateId,
 } from "@/lib/theme/templates";
 import { Logo } from "@/components/Logo";
-import { FEATURE_FLAGS, isFeatureEnabled } from "@/lib/flags";
 import {
   FREE_PRODUCT_LIMIT,
   PRO_PRODUCT_LIMIT,
   BUSINESS_PRODUCT_LIMIT,
-  MAX_PRODUCTS_PER_STORE,
   MAX_STORES_PER_USER,
   PLAN_PRICE_NGN,
   PLAN_PRICE_YEARLY_NGN,
@@ -41,882 +38,881 @@ import {
 } from "@/lib/plans";
 
 /**
- * The marketing page.
- *
- * Rebuilt on design tokens (`docs/03-DECISIONS.md` D12).
- * Hero v2 is gated behind FEATURE_FLAGS.landingV2.
- * Real SwiftLink logo is rendered via shared Logo component.
+ * Marketing Landing Page — Google Material 3 (M3) Expressive Design System
+ * 
+ * Accurately matching /public/assets/aistudio/SwiftLink_Landing_Page___M3_Expressive_853db5e7.html:
+ * - Floating top pill navbar with real SwiftLink Logo
+ * - Hero with "Built for WhatsApp sellers" pulsing pill and wavy headline
+ * - Interactive phone stage with 4 product taps and animated WhatsApp chat order sheet
+ * - 3 Facts curved cards (1 link, 100% revenue money card, ₦0 to start)
+ * - Interactive Storefront Templates browser with Light/Dark toggle and Editorial/Boutique/Bold tabs
+ * - 5-card M3 Bento Grid (Catalog, Templates, Discount code, Order inbox, Channel attribution bars)
+ * - How it works with huge numerals 1, 2, 3
+ * - Pricing with Monthly/Yearly toggle
+ * - Closing CTA with dual morphing blobs
+ * - Real SwiftLink Logo in nav and footer (no manual S letters)
  */
 
-// ─── Motion helpers ───────────────────────────────────────────────────────────
-const FadeUp = ({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
-const InView = ({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 24 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-80px" }}
-    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
-/** Auto-detect a local currency symbol so prices read right on first paint. */
-function useCurrency(): "₦" | "$" {
-  const [currency, setCurrency] = useState<"₦" | "$">("$");
-  useEffect(() => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      setCurrency(tz.includes("Lagos") || tz.includes("Africa") ? "₦" : "$");
-    } catch {
-      setCurrency("$");
-    }
-  }, []);
-  return currency;
-}
-
-const NAV_LINKS = [
-  { href: "#templates", label: "Templates" },
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#pricing", label: "Pricing" },
-];
-
+// ─── Floating Top Pill Navbar ────────────────────────────────────────────────
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // `/` is the landing page for signed-in owners too, so the call to action has
-  // to know about the session — otherwise a merchant sees "Log in" on their own
-  // logged-in site.
   const { user } = useSwiftLink();
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 12);
+    const onScroll = () => setIsScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-sticky transition-colors duration-200",
-        isScrolled ? "glass border-b border-app-border" : "border-b border-transparent",
-      )}
-    >
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <Logo size="sm" showWordmark={true} />
-        </Link>
+    <>
+      <header className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 w-[min(1120px,calc(100%-24px))] z-50">
+        <nav
+          className={cn(
+            "flex items-center justify-between px-3.5 sm:px-5 py-2.5 rounded-full transition-all duration-300",
+            isScrolled
+              ? "bg-[#101d17]/90 backdrop-blur-xl border border-[#182a22] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.8)]"
+              : "bg-[#101d17]/80 backdrop-blur-lg border border-[#182a22]/80"
+          )}
+        >
+          <Link href="#top" className="flex items-center gap-2 m3-spring-btn shrink-0">
+            <Logo size="sm" showWordmark={true} wordmarkClassName="font-extrabold tracking-tight text-xl text-[#e4f0e9]" />
+          </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-app-text-muted transition-colors hover:bg-app-surface-2 hover:text-app-text"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-
-        <div className="hidden items-center gap-3 md:flex">
-          {user ? (
-            <Link
-              href="/pro"
-              className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
-            >
-              Open dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/signup"
-                className="rounded-[10px] border border-[#1E2D27] bg-[#111C18]/60 px-4 py-2 text-sm font-medium text-app-text transition-colors hover:bg-app-surface-2"
+          <div className="hidden md:flex items-center gap-1.5">
+            {[
+              { href: "#templates", label: "Templates" },
+              { href: "#features", label: "Features" },
+              { href: "#how", label: "How it works" },
+              { href: "#pricing", label: "Pricing" },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="px-4 py-1.5 rounded-full text-sm font-semibold text-[#9db4a8] hover:text-[#e4f0e9] hover:bg-[#182a22] transition-colors"
               >
-                Log in
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-3">
+            {user ? (
+              <Link
+                href="/pro"
+                className="h-[44px] px-6 rounded-full bg-[#5be3a0] text-[#00391f] text-sm font-extrabold flex items-center justify-center transition-all m3-spring-btn hover:bg-[#4ad993] shadow-sm"
+              >
+                Open dashboard
               </Link>
+            ) : (
               <Link
                 href="/signup?mode=signup"
-                className="rounded-[10px] bg-app-accent px-5 py-2 text-sm font-semibold text-app-accent-fg shadow-xs transition-colors hover:bg-app-accent-hover"
+                className="h-[44px] px-6 rounded-full bg-[#5be3a0] text-[#00391f] text-sm font-extrabold flex items-center justify-center transition-all m3-spring-btn hover:bg-[#4ad993] shadow-sm"
               >
-                Get started
+                Start free
               </Link>
-            </>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 md:hidden">
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-app-border text-app-text"
-          >
-            {isMenuOpen ? <X width={18} height={18} /> : <Menu width={18} height={18} />}
-          </button>
-        </div>
-      </nav>
+          <div className="flex sm:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((v) => !v)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              className="w-10 h-10 rounded-full border border-[#27402f] bg-[#101d17] flex items-center justify-center text-[#e4f0e9] m3-spring-btn"
+            >
+              {isMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
+        </nav>
+      </header>
 
+      {/* Mobile Drawer Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
-            className="border-t border-app-border bg-app-surface px-5 pb-5 pt-2 md:hidden"
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed top-20 inset-x-4 z-40 bg-[#101d17]/95 backdrop-blur-2xl border border-[#27402f] rounded-[28px] p-6 shadow-2xl md:hidden"
           >
-            <div className="flex flex-col">
-              {NAV_LINKS.map((link) => (
+            <div className="flex flex-col gap-2">
+              {[
+                { href: "#templates", label: "Templates" },
+                { href: "#features", label: "Features" },
+                { href: "#how", label: "How it works" },
+                { href: "#pricing", label: "Pricing" },
+              ].map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="rounded-lg px-3 py-3 text-sm font-medium text-app-text-muted hover:bg-app-surface-2 hover:text-app-text"
+                  className="px-4 py-3 rounded-2xl text-base font-semibold text-[#9db4a8] hover:text-[#e4f0e9] hover:bg-[#182a22]"
                 >
                   {link.label}
                 </a>
               ))}
             </div>
-            <div className="mt-3 flex flex-col gap-2 border-t border-app-border pt-4">
-              {user ? (
-                <Link
-                  href="/pro"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="rounded-lg bg-app-accent px-4 py-3 text-center text-sm font-semibold text-app-accent-fg"
-                >
-                  Open dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    href="/signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="rounded-lg border border-app-border px-4 py-3 text-center text-sm font-medium text-app-text"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    href="/signup?mode=signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="rounded-lg bg-app-accent px-4 py-3 text-center text-sm font-semibold text-app-accent-fg"
-                  >
-                    Get started
-                  </Link>
-                </>
-              )}
+            <div className="mt-4 pt-4 border-t border-[#182a22] flex flex-col gap-2.5">
+              <Link
+                href="/signup?mode=signup"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full py-3.5 rounded-full bg-[#5be3a0] text-[#00391f] text-center font-extrabold text-sm m3-spring-btn"
+              >
+                Start free
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full py-3 rounded-full border border-[#27402f] bg-[#182a22] text-[#e4f0e9] text-center font-semibold text-sm"
+              >
+                Log in
+              </Link>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
 
-// ─── Hero Phone Mockup (Pure CSS/SVG, fictional sample data, no photos) ─────
-function HeroPhoneMockup() {
-  return (
-    <div className="relative mx-auto w-full max-w-[310px] sm:max-w-[340px] pt-4 lg:pt-0">
-      {/* Subtle background glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -inset-4 -z-10 rounded-[44px] bg-[#19C37D]/10 blur-2xl"
-      />
-
-      {/* Phone Shell */}
-      <div className="relative w-full rounded-[42px] border-[3px] border-[#1E2D27] bg-[#0A1210] p-4 sm:p-5 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] select-none">
-        {/* Dynamic Island / Speaker Pill */}
-        <div className="w-24 h-3.5 bg-[#14231D] rounded-full mx-auto mb-4 border border-[#1E2D27] flex items-center justify-end pr-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#1E2D27]" />
-        </div>
-
-        {/* Store Avatar & Info */}
-        <div className="text-center mb-3">
-          <div className="w-14 h-14 rounded-2xl bg-[#14231D] border border-[#24382F] mx-auto mb-2 flex items-center justify-center text-[#19C37D] shadow-inner">
-            <svg
-              className="w-7 h-7"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-              <path d="M3 6h18" />
-              <path d="M16 10a4 4 0 0 1-8 0" />
-            </svg>
-          </div>
-          <h3 className="text-sm sm:text-base font-bold text-[#E8F1EC] tracking-tight">Kemi Studio</h3>
-          <p className="text-[11px] sm:text-xs text-[#9DB3A8] mt-0.5">Clothing, bags, and home goods</p>
-        </div>
-
-        {/* Chat on WhatsApp CTA Button */}
-        <div className="w-full py-2.5 px-4 rounded-[12px] bg-[#19C37D] text-[#04140D] font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
-          <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.979-.275-.1-.475-.15-.675.15-.2.301-.774.98-1.025 1.23-.25.251-.5.276-.801.126-.301-.15-1.272-.469-2.423-1.496-.896-.799-1.5-1.787-1.676-2.088-.175-.301-.019-.464.132-.614.136-.135.301-.351.451-.526.15-.175.2-.301.301-.501.1-.2.05-.376-.025-.526-.075-.15-.676-1.63-.926-2.231-.244-.587-.492-.507-.676-.516l-.576-.01c-.2 0-.526.075-.801.376-.275.301-1.052 1.028-1.052 2.508 0 1.48 1.077 2.909 1.228 3.109.15.2 2.119 3.235 5.132 4.538.717.31 1.277.496 1.713.634.72.229 1.375.197 1.893.12.577-.087 1.78-.727 2.03-1.428.25-.702.25-1.304.175-1.43-.075-.125-.275-.2-.576-.351z" />
-            <path d="M12.004 2C6.48 2 2 6.48 2 12c0 1.83.498 3.545 1.365 5.018L2 22l5.127-1.345A9.954 9.954 0 0 0 12.004 22c5.523 0 10.004-4.48 10.004-10s-4.481-10-10.004-10zm0 18.067c-1.579 0-3.056-.445-4.32-1.217l-.31-.188-3.048.8 1.026-2.973-.203-.326A8.04 8.04 0 0 1 3.937 12c0-4.448 3.619-8.067 8.067-8.067 4.448 0 8.067 3.619 8.067 8.067 0 4.448-3.619 8.067-8.067 8.067z" />
-          </svg>
-          <span>Chat on WhatsApp</span>
-        </div>
-
-        {/* 2x2 Product Grid (CSS/SVG geometric cards, no photos) */}
-        <div className="grid grid-cols-2 gap-2.5 mt-3">
-          {/* Item 1 */}
-          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
-            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />
-              </svg>
-            </div>
-            <div className="mt-2">
-              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Linen Shirt</p>
-              <p className="text-[10px] font-bold text-[#19C37D]">₦18,500</p>
-            </div>
-          </div>
-
-          {/* Item 2 */}
-          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
-            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-            </div>
-            <div className="mt-2">
-              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Leather Tote</p>
-              <p className="text-[10px] font-bold text-[#19C37D]">₦24,000</p>
-            </div>
-          </div>
-
-          {/* Item 3 */}
-          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
-            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M12 2v4" />
-                <path d="M12 18v4" />
-                <path d="m4.93 4.93 2.83 2.83" />
-                <path d="m16.24 16.24 2.83 2.83" />
-              </svg>
-            </div>
-            <div className="mt-2">
-              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Silk Scarf</p>
-              <p className="text-[10px] font-bold text-[#19C37D]">₦9,200</p>
-            </div>
-          </div>
-
-          {/* Item 4 */}
-          <div className="bg-[#14231D] border border-[#1E2D27] rounded-xl p-2.5 aspect-square flex flex-col justify-between">
-            <div className="w-full flex-1 rounded-lg bg-[#111C18] border border-[#1E2D27]/60 flex items-center justify-center text-[#9DB3A8]/70">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect width="16" height="16" x="4" y="4" rx="2" />
-                <path d="M9 9h6v6H9z" />
-              </svg>
-            </div>
-            <div className="mt-2">
-              <p className="text-[11px] font-semibold text-[#E8F1EC] truncate">Amber Candle</p>
-              <p className="text-[10px] font-bold text-[#19C37D]">₦7,500</p>
-            </div>
-          </div>
-        </div>
-
-        {/* WhatsApp Chat Bubble Overlapping Lower-Left Corner without Horizontal Scroll */}
-        <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-6 z-20 w-[240px] sm:w-[270px] max-w-[calc(100vw-3rem)] rounded-2xl border border-[#1E2D27] bg-[#111C18]/95 backdrop-blur-md p-3 sm:p-3.5 shadow-2xl">
-          <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold uppercase tracking-wider text-[#19C37D]">
-            <span className="w-2 h-2 rounded-full bg-[#19C37D] animate-pulse" />
-            <span>WhatsApp Order</span>
-          </div>
-          <p className="text-[11px] sm:text-xs font-medium text-[#E8F1EC] leading-relaxed">
-            &ldquo;Hi, I am interested in Linen Shirt (₦18,500).&rdquo;
-          </p>
-          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-[#9DB3A8]">
-            <span>10:42 AM</span>
-            <svg className="w-3.5 h-3.5 text-[#19C37D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="m18 6-9.5 9.5-4-4" />
-              <path d="m22 10-9.5 9.5L11 18" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Hero v2 (Active redesign) ────────────────────────────────────────────────
-function HeroV2() {
-  return (
-    <section className="relative overflow-x-clip px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
-        style={{
-          background: "radial-gradient(60% 100% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
-        }}
-      />
-
-      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="text-center lg:text-left">
-          <FadeUp>
-            <div className="inline-flex items-center rounded-full border border-[#E8B93A]/30 bg-[#1A1910] px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E8B93A]">
-              BUILT FOR WHATSAPP SELLERS
-            </div>
-          </FadeUp>
-
-          <FadeUp delay={0.08}>
-            <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[62px] font-bold leading-[1.06] tracking-tight text-[#E8F1EC]">
-              Stop sending prices{" "}
-              <span className="text-[#19C37D]">one by one.</span>
-            </h1>
-          </FadeUp>
-
-          <FadeUp delay={0.16}>
-            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#9DB3A8] sm:text-lg lg:mx-0">
-              Put your products on one clean store link. Buyers browse, tap, and land in your WhatsApp chat, ready to order.
-            </p>
-          </FadeUp>
-
-          <FadeUp delay={0.24}>
-            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto justify-center lg:justify-start">
-              <Link
-                href="/signup?mode=signup"
-                className="inline-flex items-center justify-center min-h-[48px] px-7 py-3.5 rounded-[12px] bg-[#19C37D] hover:bg-[#15A86B] text-[#04140D] font-bold text-sm sm:text-base shadow-sm transition-colors"
-              >
-                Create your store free
-              </Link>
-              <a
-                href="#templates"
-                className="inline-flex items-center justify-center min-h-[48px] px-6 py-3.5 rounded-[12px] border border-[#1E2D27] bg-[#111C18]/60 hover:bg-[#14231D] text-[#E8F1EC] font-semibold text-sm sm:text-base transition-colors"
-              >
-                See the templates
-              </a>
-            </div>
-          </FadeUp>
-
-          <FadeUp delay={0.32}>
-            <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
-              {["Free to start", "No card needed", "Live in minutes"].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-xs font-medium text-app-text-muted">
-                  <Check width={14} height={14} className="text-[#19C37D]" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </FadeUp>
-        </div>
-
-        <FadeUp delay={0.2}>
-          <HeroPhoneMockup />
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-// ─── Legacy Hero (Preserved behind feature flag) ───────────────────────────────
-function StorePreviewLegacy() {
-  const currency = useCurrency();
-  const { theme } = useSwiftLink();
-  const appearance = theme === "dark" ? "dark" : "light";
-  const [active, setActive] = useState<WebsiteTemplateId>("editorial");
-
-  return (
-    <div className="relative">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -inset-8"
-        style={{
-          background: "radial-gradient(50% 50% at 50% 50%, var(--app-accent-subtle), transparent 70%)",
-        }}
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-        className="relative"
-      >
-        <TemplateFrame id={active} appearance={appearance} currency={currency} size="stage" />
-      </motion.div>
-    </div>
-  );
-}
-
-function HeroLegacy() {
-  return (
-    <section className="relative px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36">
-      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="text-center lg:text-left">
-          <h1 className="text-4xl font-semibold text-app-text sm:text-5xl">
-            Sell on WhatsApp <span className="text-app-accent-text">like a pro.</span>
-          </h1>
-          <p className="mt-5 text-base text-app-text-muted">
-            Build a storefront, add your products, and share one link.
-          </p>
-          <div className="mt-8 flex gap-3">
-            <Link href="/signup?mode=signup" className="rounded-lg bg-app-accent px-6 py-3.5 text-sm font-semibold text-app-accent-fg">
-              Create your store free
-            </Link>
-          </div>
-        </div>
-        <StorePreviewLegacy />
-      </div>
-    </section>
-  );
-}
-
-// ─── Features ─────────────────────────────────────────────────────────────────
-const FEATURES = [
-  {
-    icon: Package,
-    title: "Product catalog",
-    description: "Add products with photos, variants and stock. The storefront keeps itself organised.",
-  },
-  {
-    icon: Layout,
-    title: "Storefront templates",
-    description: "Pick a look that fits your brand. Each is a whole shop in light and dark, designed for fast browsing.",
-  },
-  {
-    icon: MessageSquare,
-    title: "WhatsApp order inbox",
-    description: "Receive orders directly in chat with product details and customer selections.",
-  },
+// ─── Hero Section with Interactive Phone & Chat Animation ─────────────────────
+const DEMO_PRODUCTS = [
+  { name: "Linen Shirt", price: "₦9,500", gradient: "linear-gradient(135deg,#eadcc2,#cdb48a)" },
+  { name: "Leather Tote", price: "₦14,000", gradient: "linear-gradient(135deg,#b98a62,#7d5336)" },
+  { name: "Silk Scarf", price: "₦6,000", gradient: "linear-gradient(135deg,#f3b9c8,#d9627f)" },
+  { name: "Canvas Sneakers", price: "₦18,000", gradient: "linear-gradient(135deg,#bcd6c9,#6ea58a)" },
 ];
 
-function Features() {
-  return (
-    <section id="features" className="scroll-mt-20 border-t border-app-border px-5 py-20 sm:px-8 sm:py-28">
-      <div className="mx-auto w-full max-w-6xl">
-        <InView className="max-w-2xl">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
-            What you get
-          </span>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-            Everything a small store needs, nothing it doesn&apos;t.
-          </h2>
-        </InView>
+function HeroSection() {
+  const [activeProductIndex, setActiveProductIndex] = useState<number>(-1);
+  const [showChat, setShowChat] = useState<boolean>(false);
+  const [bubble1In, setBubble1In] = useState<boolean>(false);
+  const [bubble2In, setBubble2In] = useState<boolean>(false);
+  const [userTouched, setUserTouched] = useState<boolean>(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {FEATURES.map((feature, index) => (
-            <InView
-              key={feature.title}
-              delay={index * 0.08}
-              className="rounded-2xl border border-app-border bg-app-surface p-6 sm:p-7"
-            >
-              <feature.icon width={22} height={22} className="text-app-accent-text" aria-hidden="true" />
-              <h3 className="mt-4 text-lg font-semibold text-app-text">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-app-text-muted">{feature.description}</p>
-            </InView>
-          ))}
+  const triggerOrderDemo = (index: number) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setActiveProductIndex(index);
+    setBubble1In(false);
+    setBubble2In(false);
+    setShowChat(true);
+
+    setTimeout(() => setBubble1In(true), 400);
+    setTimeout(() => setBubble2In(true), 1300);
+
+    timerRef.current = setTimeout(() => {
+      setShowChat(false);
+      setActiveProductIndex(-1);
+    }, 4500);
+  };
+
+  // Auto-cycle demo when idle
+  useEffect(() => {
+    if (userTouched) return;
+    let step = 0;
+    const interval = setInterval(() => {
+      triggerOrderDemo(step % DEMO_PRODUCTS.length);
+      step++;
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [userTouched]);
+
+  return (
+    <section id="top" className="w-[min(1180px,calc(100%-32px))] mx-auto pt-32 sm:pt-40 pb-16 grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
+      <div>
+        {/* Pill Badge */}
+        <div className="inline-flex items-center gap-2 rounded-full bg-[#0f5133] text-[#bdf3d6] px-4 py-1.5 text-sm font-semibold">
+          <span className="w-2 h-2 rounded-full bg-[#5be3a0] m3-dot" />
+          <span>Built for WhatsApp sellers</span>
+        </div>
+
+        {/* Headline */}
+        <h1 className="mt-5 text-[clamp(44px,7.5vw,94px)] font-extrabold leading-[1.0] tracking-tight text-[#e4f0e9]">
+          Stop sending prices{" "}
+          <em className="text-[#5be3a0] not-italic underline decoration-wavy underline-offset-[8px]">
+            one by one.
+          </em>
+        </h1>
+
+        {/* Lead Subtitle */}
+        <p className="mt-6 text-lg sm:text-xl text-[#9db4a8] max-w-[520px] leading-relaxed">
+          Put your products on one clean store link. Buyers browse, tap, and land in your WhatsApp chat, ready to order.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="mt-8 flex flex-wrap items-center gap-3.5">
+          <Link
+            href="/signup?mode=signup"
+            className="inline-flex items-center justify-center gap-2.5 h-[56px] px-8 rounded-full bg-[#5be3a0] text-[#00391f] font-extrabold text-base transition-all m3-spring-btn hover:bg-[#4ad993] shadow-md hover:rounded-[20px]"
+          >
+            <span>Create your store free</span>
+            <ArrowRight size={18} strokeWidth={2.5} />
+          </Link>
+          <a
+            href="#templates"
+            className="inline-flex items-center justify-center h-[56px] px-7 rounded-full bg-[#182a22] text-[#e4f0e9] border border-[#27402f] font-bold text-base transition-all m3-spring-btn hover:bg-[#203629] hover:rounded-[20px]"
+          >
+            See the templates
+          </a>
+        </div>
+
+        {/* Ticks */}
+        <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-[#9db4a8]">
+          <span className="inline-flex items-center gap-1.5">
+            <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
+            Free to start
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
+            No card needed
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
+            Live in minutes
+          </span>
         </div>
       </div>
-    </section>
-  );
-}
 
-// ─── Storefront Templates (three examples, light + dark) ──────────────────────
-function Templates() {
-  const currency = useCurrency();
-  const [appearance, setAppearance] = useState<"light" | "dark">("light");
+      {/* Stage: Phone + Morphing Blob + Interactive Chat Sheet */}
+      <div className="relative grid place-items-center min-h-[580px] select-none">
+        {/* Morphing Blob Background */}
+        <div
+          aria-hidden="true"
+          className="absolute w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] rounded-full bg-[#0f5133]/60 blur-xl m3-blob"
+        />
 
-  return (
-    <section id="templates" className="scroll-mt-20 border-t border-app-border px-5 py-20 sm:px-8 sm:py-28">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="flex flex-wrap items-end justify-between gap-5">
-          <InView className="max-w-2xl">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
-              Storefront Templates
-            </span>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-              Pick a look that fits your brand.
-            </h2>
-            <p className="mt-3 max-w-lg text-sm leading-relaxed text-app-text-muted sm:text-base">
-              You choose a whole website, not a pile of sections. Showing {" "}
-              {featuredWebsiteTemplates.length} of our {websiteTemplates.length} looks — every one of
-              them ships in light and dark.
-            </p>
-          </InView>
+        {/* Floating Badge 1 */}
+        <div className="absolute left-0 sm:-left-3 top-24 z-20 bg-[#14231c] border border-[#27402f] rounded-[20px] px-4 py-2.5 font-bold text-sm text-[#e4f0e9] shadow-2xl flex items-center gap-2 m3-float">
+          <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
+          <span>Order received</span>
+        </div>
 
-          {/* Light / dark — the same template, not a different one. */}
-          <InView delay={0.1}>
-            <div
-              role="group"
-              aria-label="Template appearance"
-              className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-surface p-1"
-            >
-              {([
-                { value: "light" as const, label: "Light", Icon: Sun },
-                { value: "dark" as const, label: "Dark", Icon: Moon },
-              ]).map(({ value, label, Icon }) => (
+        {/* Floating Badge 2 */}
+        <div className="absolute right-0 sm:-right-3 bottom-28 z-20 bg-[#14231c] border border-[#27402f] rounded-[20px] px-4 py-2.5 font-bold text-sm text-[#e4f0e9] shadow-2xl flex items-center gap-2 m3-float-delayed">
+          <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
+          <span>One link. Whole shop.</span>
+        </div>
+
+        {/* Phone Shell */}
+        <div className="relative w-[292px] h-[590px] bg-[#0b0f0d] rounded-[46px] p-2.5 border-2 border-[#27402f] shadow-[0_40px_80px_-30px_rgba(0,40,20,0.6)] z-10">
+          <div className="bg-[#14231c] rounded-[38px] h-full overflow-hidden relative p-3.5 flex flex-col">
+            {/* Header */}
+            <div className="text-center pt-2 pb-2">
+              <div className="w-12 h-12 rounded-[18px_18px_18px_6px] bg-[#5be3a0] text-[#00391f] grid place-items-center font-extrabold text-lg mx-auto mb-1.5 shadow-sm">
+                K
+              </div>
+              <b className="block text-sm font-bold text-[#e4f0e9]">Kemi Studio</b>
+              <small className="text-[11px] text-[#9db4a8]">Clothing, bags and good goods.</small>
+            </div>
+
+            {/* Chat on WhatsApp bar */}
+            <div className="flex items-center justify-center gap-2 bg-[#5be3a0] text-[#00391f] rounded-full h-10 font-bold text-xs my-2 shadow-sm">
+              <MessageSquare size={14} className="fill-current" />
+              <span>Chat on WhatsApp</span>
+            </div>
+
+            {/* 2x2 Product Grid */}
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {DEMO_PRODUCTS.map((p, i) => (
                 <button
-                  key={value}
+                  key={p.name}
                   type="button"
-                  aria-pressed={appearance === value}
-                  onClick={() => setAppearance(value)}
+                  onClick={() => {
+                    setUserTouched(true);
+                    triggerOrderDemo(i);
+                  }}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
-                    appearance === value
-                      ? "bg-app-accent text-app-accent-fg"
-                      : "text-app-text-muted hover:text-app-text"
+                    "text-left p-2 rounded-[20px] transition-all m3-spring-btn",
+                    activeProductIndex === i
+                      ? "bg-[#0f5133] border border-[#5be3a0] scale-[0.96]"
+                      : "bg-[#101d17] border border-[#182a22] hover:border-[#27402f]"
                   )}
                 >
-                  <Icon width={14} height={14} aria-hidden="true" />
-                  {label}
+                  <i
+                    className="block h-[78px] rounded-[14px] mb-1.5"
+                    style={{ background: p.gradient }}
+                  />
+                  <b className="block text-xs font-bold text-[#e4f0e9] truncate">{p.name}</b>
+                  <small className="text-[11px] font-extrabold text-[#5be3a0]">{p.price}</small>
                 </button>
               ))}
             </div>
-          </InView>
-        </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredWebsiteTemplates.map((template, index) => (
-            <InView
-              key={template.id}
-              delay={index * 0.08}
-              className="overflow-hidden rounded-2xl border border-app-border bg-app-surface"
+            {/* Sliding WhatsApp Chat Sheet */}
+            <div
+              className={cn(
+                "absolute inset-x-0 bottom-0 bg-[#0d2a1c] text-[#e4f0e9] rounded-t-[28px] p-4 pb-5 border-t border-[#182a22] transition-transform duration-500 shadow-2xl",
+                showChat ? "translate-y-0" : "translate-y-[105%]"
+              )}
             >
-              <TemplateFrame
-                key={`${template.id}-${appearance}`}
-                id={template.id}
-                appearance={appearance}
-                currency={currency}
-                size="card"
-              />
-              <div className="border-t border-app-border p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-semibold text-app-text">{template.name}</h3>
-                  <span className="rounded-full bg-app-accent-subtle px-2 py-0.5 text-[10px] font-semibold text-app-accent-text uppercase">
-                    {appearance === "dark" ? "Dark" : "Light"}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-app-text-muted">{template.description}</p>
+              <h6 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-[#bdf3d6]">
+                <MessageSquare size={13} className="fill-current" />
+                <span>WhatsApp · Kemi Studio</span>
+              </h6>
+              {/* Buyer message */}
+              <div
+                className={cn(
+                  "max-w-[88%] p-2.5 px-3 rounded-[16px_16px_4px_16px] bg-[#1f7a52] text-xs font-medium text-white ml-auto transition-all duration-300",
+                  bubble1In ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                )}
+              >
+                {activeProductIndex >= 0
+                  ? `Hi, I am interested in ${DEMO_PRODUCTS[activeProductIndex].name} (${DEMO_PRODUCTS[activeProductIndex].price})`
+                  : "Hi, I would like to order."}
               </div>
-            </InView>
-          ))}
+              {/* Merchant reply */}
+              <div
+                className={cn(
+                  "max-w-[88%] p-2.5 px-3 rounded-[16px_16px_16px_4px] bg-[#1c2b24] text-xs font-medium text-[#e4f0e9] mt-2 transition-all duration-300",
+                  bubble2In ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                )}
+              >
+                Hi! Yes, it’s available. Sending details now.
+              </div>
+            </div>
+          </div>
         </div>
-
-        <p className="mt-6 text-xs text-app-text-muted">
-          Every template is included on every plan — switch whenever you like, and your products stay put.
-        </p>
       </div>
     </section>
   );
 }
 
-// ─── How it works ─────────────────────────────────────────────────────────────
-const STEPS = [
+// ─── Facts Section (3 Curved Cards) ──────────────────────────────────────────
+function FactsSection() {
+  return (
+    <section className="w-[min(1180px,calc(100%-32px))] mx-auto py-8 sm:py-16 grid sm:grid-cols-3 gap-3.5">
+      <div className="bg-[#101d17] border border-[#182a22] p-7 sm:p-8 rounded-[40px] flex flex-col justify-between min-h-[160px]">
+        <b className="text-[clamp(44px,5vw,60px)] font-extrabold text-[#e4f0e9] leading-none tracking-tight">
+          1 link
+        </b>
+        <span className="text-sm font-medium text-[#9db4a8] mt-3">
+          for your whole shop, in every bio and status
+        </span>
+      </div>
+
+      <div className="bg-[#4a3a0f] text-[#ffe3a3] border border-[#ffe3a3]/20 p-7 sm:p-8 rounded-[40px_40px_14px_40px] flex flex-col justify-between min-h-[160px]">
+        <b className="text-[clamp(44px,5vw,60px)] font-extrabold leading-none tracking-tight">
+          100%
+        </b>
+        <span className="text-sm font-semibold opacity-90 mt-3">
+          of your revenue stays with you, on every plan
+        </span>
+      </div>
+
+      <div className="bg-[#101d17] border border-[#182a22] p-7 sm:p-8 rounded-[14px_40px_40px_40px] flex flex-col justify-between min-h-[160px]">
+        <b className="text-[clamp(44px,5vw,60px)] font-extrabold text-[#5be3a0] leading-none tracking-tight">
+          ₦0
+        </b>
+        <span className="text-sm font-medium text-[#9db4a8] mt-3">
+          to start. No card, no trial clock
+        </span>
+      </div>
+    </section>
+  );
+}
+
+// ─── Storefront Templates Section (Light/Dark + Live Preview Browser) ─────────
+const TEMPLATE_PREVIEWS = [
   {
-    title: "Create your store",
-    description: "Sign up, name your store and add the WhatsApp number customers should reach.",
-    icon: Globe,
+    id: "editorial",
+    name: "Editorial",
+    desc: "A spacious editorial layout suited for clothing, accessories and home goods.",
+    headline: "Timeless quality for daily life",
   },
   {
-    title: "Choose a template",
-    description: "Pick a design that fits your brand, then add your products. Your whole shop follows that look.",
-    icon: Layers,
+    id: "boutique",
+    name: "Boutique",
+    desc: "A warm, artisanal boutique layout suited for gifts, beauty and curated goods.",
+    headline: "Something lovely, made for you",
   },
   {
-    title: "Share one link",
-    description: "Post your store link anywhere. Orders open in WhatsApp, ready to confirm.",
-    icon: BarChart3,
+    id: "bold",
+    name: "Bold",
+    desc: "A compact, high-contrast grid suited for electronics and retail goods.",
+    headline: "New drop. No waiting.",
   },
 ];
 
-function HowItWorks() {
-  return (
-    <section
-      id="how-it-works"
-      className="scroll-mt-20 border-t border-app-border bg-app-surface-2 px-5 py-20 sm:px-8 sm:py-28"
-    >
-      <div className="mx-auto w-full max-w-6xl">
-        <InView className="max-w-2xl">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
-            How it works
-          </span>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-            From nothing to a live store in an afternoon.
-          </h2>
-        </InView>
+function TemplatesSection() {
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-        <ol className="mt-12 grid gap-5 md:grid-cols-3">
-          {STEPS.map((step, index) => (
-            <InView key={step.title} delay={index * 0.08} className="relative">
-              <div className="h-full rounded-2xl border border-app-border bg-app-surface p-6 sm:p-7">
-                <div className="flex items-center justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-app-border text-app-text-muted">
-                    <step.icon width={20} height={20} aria-hidden="true" />
-                  </span>
-                  <span className="text-3xl font-semibold tabular-nums text-app-border-strong">
-                    {index + 1}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-lg font-semibold text-app-text">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-app-text-muted">{step.description}</p>
+  const current = TEMPLATE_PREVIEWS[selectedTemplateIndex];
+
+  return (
+    <section id="templates" className="scroll-mt-24 w-[min(1180px,calc(100%-32px))] mx-auto py-16">
+      <div>
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#5be3a0]">
+          Storefront templates
+        </span>
+        <h2 className="mt-2.5 text-[clamp(32px,5.5vw,58px)] font-extrabold tracking-tight text-[#e4f0e9] leading-[1.05]">
+          Pick a look that fits your brand.
+        </h2>
+        <p className="mt-3 text-base sm:text-lg text-[#9db4a8] max-w-xl">
+          You choose a whole website, not a pile of sections. Each one works in light and dark.
+        </p>
+      </div>
+
+      <div className="mt-10 bg-[#101d17] border border-[#182a22] rounded-[clamp(36px,5vw,56px)] p-6 sm:p-10 grid lg:grid-cols-[0.8fr_1.2fr] gap-8 items-center">
+        {/* Left Controls */}
+        <div>
+          {/* Segmented Light / Dark Toggle */}
+          <div className="inline-flex gap-1 bg-[#08110d] p-1 rounded-full border border-[#182a22]">
+            <button
+              type="button"
+              onClick={() => setIsDarkMode(false)}
+              className={cn(
+                "h-10 px-5 rounded-full text-xs font-extrabold transition-all m3-spring-btn",
+                !isDarkMode ? "bg-[#5be3a0] text-[#00391f]" : "text-[#9db4a8] hover:text-[#e4f0e9]"
+              )}
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDarkMode(true)}
+              className={cn(
+                "h-10 px-5 rounded-full text-xs font-extrabold transition-all m3-spring-btn",
+                isDarkMode ? "bg-[#5be3a0] text-[#00391f]" : "text-[#9db4a8] hover:text-[#e4f0e9]"
+              )}
+            >
+              Dark
+            </button>
+          </div>
+
+          {/* Template Choice Tabs */}
+          <div className="flex flex-col gap-3 my-6">
+            {TEMPLATE_PREVIEWS.map((tpl, i) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => setSelectedTemplateIndex(i)}
+                className={cn(
+                  "text-left p-4 sm:p-5 rounded-[24px] transition-all m3-spring-btn",
+                  selectedTemplateIndex === i
+                    ? "bg-[#0f5133] text-[#bdf3d6] rounded-[24px_24px_24px_8px] border border-[#5be3a0]/40"
+                    : "bg-[#08110d] text-[#e4f0e9] border border-[#182a22] hover:border-[#27402f]"
+                )}
+              >
+                <b className="block text-lg font-bold text-inherit">{tpl.name}</b>
+                <span className={cn("text-xs leading-relaxed block mt-1", selectedTemplateIndex === i ? "text-[#bdf3d6]/90" : "text-[#9db4a8]")}>
+                  {tpl.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-[#9db4a8]">
+            Showing {featuredWebsiteTemplates.length} of our {websiteTemplates.length} starter templates, and your products stay put when you switch.
+          </p>
+        </div>
+
+        {/* Right Live Browser Frame (.fr) */}
+        <div
+          className={cn(
+            "rounded-[28px] overflow-hidden border border-[#27402f] shadow-2xl transition-all duration-300",
+            isDarkMode ? "bg-[#0f1a2e] text-[#eef2f8]" : "bg-white text-[#14202b]"
+          )}
+        >
+          {/* Browser Dots Bar */}
+          <div className={cn("flex items-center gap-1.5 px-4 py-3 border-b", isDarkMode ? "bg-[#1b2a42] border-[#223554]" : "bg-[#eef2f6] border-[#dde3ea]")}>
+            <span className="w-2.5 h-2.5 rounded-full bg-red-400 opacity-60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 opacity-60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 opacity-60" />
+          </div>
+
+          {/* Storefront Header */}
+          <div className="flex items-center justify-between px-5 py-3.5">
+            <b className="text-base font-extrabold tracking-tight">Kemi Studio</b>
+            <span className="w-8 h-8 rounded-full bg-[#13b878] text-white grid place-items-center">
+              <ShoppingBag size={15} />
+            </span>
+          </div>
+
+          {/* Storefront Banner */}
+          <div className="px-5 py-3">
+            <p className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+              {current.headline}
+            </p>
+            <small className={cn("text-xs block mt-1", isDarkMode ? "text-[#8c9bb0]" : "text-[#5d6b78]")}>
+              Instant order confirmation on WhatsApp.
+            </small>
+          </div>
+
+          {/* 3 Product Grid */}
+          <div className="grid grid-cols-3 gap-2.5 p-4 pt-1">
+            {DEMO_PRODUCTS.slice(0, 3).map((p) => (
+              <div
+                key={p.name}
+                className={cn("p-2 rounded-[18px]", isDarkMode ? "bg-[#1b2a42]" : "bg-[#eef2f6]")}
+              >
+                <i className="block h-[72px] rounded-[12px] mb-2" style={{ background: p.gradient }} />
+                <b className="block text-xs font-bold truncate">{p.name}</b>
+                <small className={cn("block text-[11px] font-semibold", isDarkMode ? "text-[#8c9bb0]" : "text-[#5d6b78]")}>{p.price}</small>
+                <span className="block text-center mt-2 rounded-[8px] bg-[#13b878] text-white text-[10px] font-bold py-1">
+                  Order on WhatsApp
+                </span>
               </div>
-            </InView>
-          ))}
-        </ol>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ─── Pricing ──────────────────────────────────────────────────────────────────
-type Plan = {
-  name: string;
-  price: string;
-  period?: string;
-  description: string;
-  features: { label: string; soon?: boolean }[];
-  cta: string;
-  featured?: boolean;
-};
+// ─── Features (5-Card M3 Bento Grid) ──────────────────────────────────────────
+function BentoFeaturesSection() {
+  return (
+    <section id="features" className="scroll-mt-24 w-[min(1180px,calc(100%-32px))] mx-auto py-16">
+      <div>
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#5be3a0]">
+          What you get
+        </span>
+        <h2 className="mt-2.5 text-[clamp(32px,5.5vw,58px)] font-extrabold tracking-tight text-[#e4f0e9] leading-[1.05]">
+          Everything a small store needs, nothing it doesn’t.
+        </h2>
+      </div>
 
-function Pricing() {
-  const [interval, setInterval] = useState<BillingInterval>("monthly");
+      <div className="mt-10 grid gap-3.5 md:grid-cols-6">
+        {/* b1: Product Catalog */}
+        <div className="md:col-span-4 bg-[#101d17] border border-[#182a22] rounded-[44px_44px_44px_14px] p-7 sm:p-8 flex flex-col justify-between min-h-[250px]">
+          <div>
+            <h3 className="text-2xl font-extrabold text-[#e4f0e9]">Product catalog</h3>
+            <p className="mt-2 text-sm text-[#9db4a8] max-w-md">
+              Add products with photos, variants and stock. The storefront keeps itself organised.
+            </p>
+          </div>
+          <div className="grid gap-2 mt-6">
+            <div className="bg-[#14231c] border border-[#27402f] rounded-2xl p-3 px-4 flex items-center justify-between text-xs font-semibold text-[#e4f0e9]">
+              <span>Linen Shirt</span>
+              <span className="text-[#9db4a8] font-normal">Size S, M, L · 12 in stock</span>
+            </div>
+            <div className="bg-[#14231c] border border-[#27402f] rounded-2xl p-3 px-4 flex items-center justify-between text-xs font-semibold text-[#e4f0e9]">
+              <span>Leather Tote</span>
+              <span className="text-[#9db4a8] font-normal">5 in stock</span>
+            </div>
+          </div>
+        </div>
 
-  const plans: Plan[] = [
+        {/* b2: Storefront Templates */}
+        <div className="md:col-span-2 md:row-span-2 bg-[#5be3a0] text-[#00391f] rounded-[44px_14px_44px_44px] p-7 sm:p-8 flex flex-col justify-between min-h-[250px]">
+          <div>
+            <h3 className="text-2xl font-extrabold">Storefront templates</h3>
+            <p className="mt-2 text-sm font-medium opacity-90">
+              A whole shop in light and dark, designed for fast browsing.
+            </p>
+          </div>
+          <div className="flex gap-2 mt-8">
+            <i className="flex-1 h-24 rounded-[26px] bg-[#00391f]" />
+            <i className="flex-1 h-24 rounded-full bg-[#d9627f]" />
+            <i className="flex-1 h-24 rounded-[10px] bg-[#ffd23f]" />
+          </div>
+        </div>
+
+        {/* b3: Discount Codes */}
+        <div className="md:col-span-3 bg-[#4a3a0f] text-[#ffe3a3] border border-[#ffe3a3]/20 rounded-[44px] p-7 sm:p-8 flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-2xl font-extrabold">Discount codes</h3>
+            <p className="mt-2 text-sm opacity-90">Give repeat buyers a reason to come back.</p>
+          </div>
+          <div className="mt-6 text-3xl font-extrabold tracking-wider bg-[#14231c] text-[#ffe3a3] rounded-2xl py-3 px-5 text-center border-2 border-dashed border-[#ffe3a3]/50">
+            WELCOME10
+          </div>
+        </div>
+
+        {/* b4: WhatsApp Order Inbox */}
+        <div className="md:col-span-3 bg-[#0f5133] text-[#bdf3d6] rounded-[14px_44px_44px_44px] p-7 sm:p-8 flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-2xl font-extrabold text-[#e4f0e9]">WhatsApp order inbox</h3>
+            <p className="mt-2 text-sm opacity-90">
+              Orders arrive in chat with product details and customer selections.
+            </p>
+          </div>
+          <div className="grid gap-2 mt-6 text-xs font-semibold">
+            <span className="p-2.5 px-3.5 rounded-[16px_16px_16px_4px] bg-[#1c2b24] text-[#e4f0e9] max-w-[85%]">
+              Hi, I would like to order: Linen Shirt (Size M)
+            </span>
+            <span className="p-2.5 px-3.5 rounded-[16px_16px_4px_16px] bg-[#1f7a52] text-white ml-auto">
+              Total: ₦9,500
+            </span>
+          </div>
+        </div>
+
+        {/* b5: Where buyers come from */}
+        <div className="md:col-span-6 bg-[#101d17] border border-[#182a22] rounded-[44px_14px_44px_44px] p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div>
+            <h3 className="text-2xl font-extrabold text-[#e4f0e9]">See where buyers come from</h3>
+            <p className="mt-2 text-sm text-[#9db4a8] max-w-lg">
+              Every channel a buyer picks is counted, so you know whether WhatsApp, Instagram or TikTok pays.
+            </p>
+          </div>
+          <div className="flex items-end gap-2 h-20 shrink-0">
+            {[30, 55, 40, 80, 65, 100].map((h, idx) => (
+              <i
+                key={idx}
+                className="w-4 rounded-full bg-[#5be3a0]"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── How It Works (3 Steps with Huge Numerals) ────────────────────────────────
+function HowItWorksSection() {
+  return (
+    <section id="how" className="scroll-mt-24 w-[min(1180px,calc(100%-32px))] mx-auto py-16">
+      <div>
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#5be3a0]">
+          How it works
+        </span>
+        <h2 className="mt-2.5 text-[clamp(32px,5.5vw,58px)] font-extrabold tracking-tight text-[#e4f0e9] leading-[1.05]">
+          From nothing to a live store in an afternoon.
+        </h2>
+      </div>
+
+      <div className="mt-10 grid gap-3.5 md:grid-cols-3">
+        {/* Step 1 */}
+        <div className="bg-[#101d17] border border-[#182a22] rounded-[44px] p-8 flex flex-col min-h-[290px]">
+          <div className="text-[100px] font-extrabold leading-[0.9] tracking-tighter text-[#5be3a0] mb-auto">
+            1
+          </div>
+          <h3 className="text-2xl font-extrabold text-[#e4f0e9] mt-4 mb-2">Create your store</h3>
+          <p className="text-sm text-[#9db4a8]">
+            Sign up, name your store and add the WhatsApp number customers should reach.
+          </p>
+        </div>
+
+        {/* Step 2 (Highlighted in container green) */}
+        <div className="bg-[#0f5133] text-[#bdf3d6] rounded-[44px_44px_14px_44px] p-8 flex flex-col min-h-[290px]">
+          <div className="text-[100px] font-extrabold leading-[0.9] tracking-tighter text-[#bdf3d6] mb-auto">
+            2
+          </div>
+          <h3 className="text-2xl font-extrabold text-[#e4f0e9] mt-4 mb-2">Choose a template</h3>
+          <p className="text-sm opacity-90">
+            Pick a design that fits your brand, then add your products. Your whole shop follows that look.
+          </p>
+        </div>
+
+        {/* Step 3 */}
+        <div className="bg-[#101d17] border border-[#182a22] rounded-[14px_44px_44px_44px] p-8 flex flex-col min-h-[290px]">
+          <div className="text-[100px] font-extrabold leading-[0.9] tracking-tighter text-[#5be3a0] mb-auto">
+            3
+          </div>
+          <h3 className="text-2xl font-extrabold text-[#e4f0e9] mt-4 mb-2">Share one link</h3>
+          <p className="text-sm text-[#9db4a8]">
+            Post your store link anywhere. Orders open in WhatsApp, ready to confirm.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Pricing Section ──────────────────────────────────────────────────────────
+function PricingSection() {
+  const [isYearly, setIsYearly] = useState(false);
+
+  const plans = [
     {
       name: "Starter",
-      price: "Free",
-      description: "Try the whole workflow. No card required.",
+      badge: "Free",
+      price: "₦0",
+      period: "",
+      desc: "Try the whole workflow. No card required.",
       features: [
-        { label: `Up to ${FREE_PRODUCT_LIMIT} products` },
-        { label: "1 store" },
-        { label: "WhatsApp checkout" },
-        { label: "Price requests for services" },
-        { label: "3 starter templates" },
-        { label: "SwiftLink branding shown" },
+        `Up to ${FREE_PRODUCT_LIMIT} products`,
+        "1 store",
+        "WhatsApp checkout and price requests for services",
+        "3 starter templates",
+        "SwiftLink branding shown",
       ],
       cta: "Start free",
+      isPro: false,
+      shape: "rounded-[44px]",
     },
     {
       name: "Pro",
-      price:
-        interval === "yearly"
-          ? `₦${PLAN_PRICE_YEARLY_NGN.pro.toLocaleString()}`
-          : `₦${PLAN_PRICE_NGN.pro.toLocaleString()}`,
-      period: interval === "yearly" ? "/yr" : "/mo",
-      description: "Everything you need to run a serious store.",
+      badge: "Pro",
+      price: isYearly ? "₦50,000" : "₦5,000",
+      period: isYearly ? "/ year" : "/ month",
+      desc: "Everything you need to run a serious store.",
       features: [
-        { label: "Everything in Free" },
-        { label: `Up to ${PRO_PRODUCT_LIMIT} products` },
-        { label: `Up to ${PRO_STORE_LIMIT} stores` },
-        { label: "All storefront templates" },
-        { label: "Discount codes" },
-        { label: "Detailed analytics" },
-        { label: "CSV export" },
-        { label: "SwiftLink branding shown" },
+        "Everything in Free",
+        `Up to ${PRO_PRODUCT_LIMIT} products`,
+        `Up to ${PRO_STORE_LIMIT} stores`,
+        "All storefront templates",
+        "Discount codes",
+        "Detailed analytics",
+        "CSV export",
+        "SwiftLink branding shown",
       ],
-      cta: "Upgrade to Pro",
-      featured: true,
+      cta: "Go Pro",
+      isPro: true,
+      shape: "rounded-[44px_44px_14px_44px]",
     },
     {
       name: "Business",
-      price:
-        interval === "yearly"
-          ? `₦${PLAN_PRICE_YEARLY_NGN.business.toLocaleString()}`
-          : `₦${PLAN_PRICE_NGN.business.toLocaleString()}`,
-      period: interval === "yearly" ? "/yr" : "/mo",
-      description: "For established brands and scaling teams.",
+      badge: "Business",
+      price: isYearly ? "₦120,000" : "₦12,000",
+      period: isYearly ? "/ year" : "/ month",
+      desc: "For established brands and scaling teams.",
       features: [
-        { label: "Everything in Pro" },
-        { label: `Up to ${BUSINESS_PRODUCT_LIMIT.toLocaleString()} products` },
-        { label: `Up to ${MAX_STORES_PER_USER} stores` },
-        { label: "Connect your own domain" },
-        { label: "No SwiftLink branding" },
-        { label: "Custom preloader screen" },
-        { label: "Priority WhatsApp support" },
+        "Everything in Pro",
+        `Up to ${BUSINESS_PRODUCT_LIMIT.toLocaleString()} products`,
+        `Up to ${MAX_STORES_PER_USER} stores`,
+        "Connect your own domain",
+        "No SwiftLink branding",
+        "Custom preloader screen",
+        "Priority WhatsApp support",
       ],
-      cta: "Upgrade to Business",
+      cta: "Go Business",
+      isPro: false,
+      shape: "rounded-[14px_44px_44px_44px]",
     },
   ];
 
   return (
-    <section id="pricing" className="scroll-mt-20 border-t border-app-border px-5 py-20 sm:px-8 sm:py-28">
-      <div className="mx-auto w-full max-w-6xl">
-        <InView className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-app-accent-text">
-            Pricing
-          </span>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-            Simple plans for ambitious brands.
-          </h2>
-          <p className="mt-4 text-base text-app-text-muted">
-            Start free, upgrade when you outgrow it, and keep 100% of your revenue either way.
-          </p>
+    <section id="pricing" className="scroll-mt-24 w-[min(1180px,calc(100%-32px))] mx-auto py-16">
+      <div>
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#5be3a0]">
+          Pricing
+        </span>
+        <h2 className="mt-2.5 text-[clamp(32px,5.5vw,58px)] font-extrabold tracking-tight text-[#e4f0e9] leading-[1.05]">
+          Simple plans for ambitious brands.
+        </h2>
+        <p className="mt-3 text-base sm:text-lg text-[#9db4a8] max-w-xl">
+          Start free, upgrade when you outgrow it, and keep 100% of your revenue either way.
+        </p>
 
-          {/* Billing Interval Switch */}
-          <div className="mt-8 flex justify-center">
-            <div className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-surface p-1">
-              <button
-                type="button"
-                onClick={() => setInterval("monthly")}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-xs font-semibold transition",
-                  interval === "monthly"
-                    ? "bg-app-accent text-app-accent-fg"
-                    : "text-app-text-muted hover:text-app-text"
-                )}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => setInterval("yearly")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition",
-                  interval === "yearly"
-                    ? "bg-app-accent text-app-accent-fg"
-                    : "text-app-text-muted hover:text-app-text"
-                )}
-              >
-                <span>Yearly</span>
-                <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-                  Pay for 10 mos, get 12
-                </span>
-              </button>
-            </div>
-          </div>
-        </InView>
-
-        <div className="mt-12 grid gap-5 lg:grid-cols-3 lg:items-start">
-          {plans.map((plan, index) => (
-            <InView
-              key={plan.name}
-              delay={index * 0.08}
+        {/* Billing Segment Toggle */}
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="inline-flex gap-1 bg-[#08110d] p-1 rounded-full border border-[#182a22]">
+            <button
+              type="button"
+              onClick={() => setIsYearly(false)}
               className={cn(
-                "flex flex-col rounded-2xl border p-6 sm:p-7",
-                plan.featured
-                  ? "border-app-accent bg-app-surface shadow-lg lg:-mt-4"
-                  : "border-app-border bg-app-surface",
+                "h-10 px-5 rounded-full text-xs font-extrabold transition-all m3-spring-btn",
+                !isYearly ? "bg-[#5be3a0] text-[#00391f]" : "text-[#9db4a8] hover:text-[#e4f0e9]"
               )}
             >
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-app-text-muted">
-                  {plan.name}
-                </h3>
-                {plan.featured && (
-                  <span className="rounded-full bg-app-accent-subtle px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-app-accent-text">
-                    Most popular
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-semibold tracking-tight tabular-nums text-app-text">
-                  {plan.price}
-                </span>
-                {plan.period && <span className="text-sm text-app-text-subtle">{plan.period}</span>}
-              </div>
-
-              <p className="mt-3 text-sm text-app-text-muted">{plan.description}</p>
-
-              <ul className="mt-6 flex flex-col gap-3">
-                {plan.features.map((feature) => (
-                  <li key={feature.label} className="flex items-center gap-3 text-sm text-app-text">
-                    <CheckCircle2
-                      width={15}
-                      height={15}
-                      className="shrink-0 text-app-accent-text"
-                      aria-hidden="true"
-                    />
-                    <span className="text-app-text-muted">{feature.label}</span>
-                    {feature.soon && (
-                      <span className="ml-auto shrink-0 rounded-full border border-app-border px-2 py-0.5 text-[10px] font-medium text-app-text-subtle">
-                        Soon
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={`/signup?mode=signup&plan=${plan.name.toLowerCase()}`}
-                className={cn(
-                  "mt-8 inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors",
-                  plan.featured
-                    ? "bg-app-accent text-app-accent-fg hover:bg-app-accent-hover"
-                    : "border border-app-border text-app-text hover:bg-app-surface-2",
-                )}
-              >
-                {plan.cta}
-              </Link>
-            </InView>
-          ))}
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsYearly(true)}
+              className={cn(
+                "h-10 px-5 rounded-full text-xs font-extrabold transition-all m3-spring-btn",
+                isYearly ? "bg-[#5be3a0] text-[#00391f]" : "text-[#9db4a8] hover:text-[#e4f0e9]"
+              )}
+            >
+              Yearly
+            </button>
+          </div>
+          <span className="text-xs font-bold text-[#5be3a0]">Pay for 10 months, get 12</span>
         </div>
+      </div>
+
+      <div className="mt-10 grid gap-4 md:grid-cols-3 items-stretch">
+        {plans.map((p) => (
+          <div
+            key={p.name}
+            className={cn(
+              "p-8 flex flex-col gap-2 transition-all duration-300",
+              p.shape,
+              p.isPro
+                ? "bg-[#5be3a0] text-[#00391f] shadow-2xl md:-mt-2"
+                : "bg-[#101d17] border border-[#182a22] text-[#e4f0e9]"
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <small className={cn("text-xs font-bold uppercase tracking-wider", p.isPro ? "text-[#00391f]" : "text-[#9db4a8]")}>
+                {p.badge}
+              </small>
+              {p.isPro && (
+                <span className="text-[11px] font-extrabold px-3 py-0.5 rounded-full bg-[#00391f] text-[#5be3a0]">
+                  Most popular
+                </span>
+              )}
+            </div>
+
+            <div className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              {p.price}
+              <span className="text-base font-normal opacity-75">{p.period}</span>
+            </div>
+
+            <p className={cn("text-xs leading-relaxed mt-1", p.isPro ? "opacity-90" : "text-[#9db4a8]")}>
+              {p.desc}
+            </p>
+
+            <ul className="my-6 space-y-2.5 text-sm flex-1">
+              {p.features.map((f) => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <Check size={16} strokeWidth={3} className={cn("mt-0.5 shrink-0", p.isPro ? "text-[#00391f]" : "text-[#5be3a0]")} />
+                  <span className={p.isPro ? "font-semibold" : "text-[#e4f0e9]"}>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href={`/signup?mode=signup&plan=${p.name.toLowerCase()}`}
+              className={cn(
+                "w-full h-12 rounded-full font-extrabold text-sm flex items-center justify-center transition-all m3-spring-btn",
+                p.isPro
+                  ? "bg-[#00391f] text-[#5be3a0] hover:bg-[#062617]"
+                  : "bg-[#182a22] text-[#e4f0e9] border border-[#27402f] hover:bg-[#203629]"
+              )}
+            >
+              {p.cta}
+            </Link>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-// ─── Closing CTA ──────────────────────────────────────────────────────────────
-function CTASection() {
+// ─── Closing CTA Banner ───────────────────────────────────────────────────────
+function ClosingCTA() {
   return (
-    <section className="border-t border-app-border px-5 py-20 sm:px-8 sm:py-28">
-      <div className="mx-auto w-full max-w-4xl">
-        <InView className="relative overflow-hidden rounded-3xl border border-app-border bg-app-surface-2 px-6 py-14 text-center sm:px-12">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background: "radial-gradient(60% 90% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
-            }}
-          />
-          <div className="relative">
-            <h2 className="text-3xl font-semibold tracking-tight text-app-text sm:text-4xl">
-              Your storefront is one link away.
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-base text-app-text-muted">
-              Join the merchants selling on WhatsApp with SwiftLink. Free to start, no card needed.
-            </p>
-            <div className="mt-8 flex justify-center">
-              <Link
-                href="/signup?mode=signup"
-                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-app-accent px-6 py-3.5 text-sm font-semibold text-app-accent-fg shadow-sm transition-colors hover:bg-app-accent-hover"
-              >
-                Get started free
-                <ArrowRight
-                  width={16}
-                  height={16}
-                  aria-hidden="true"
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-            </div>
+    <section className="w-[min(1180px,calc(100%-32px))] mx-auto my-16">
+      <div className="relative overflow-hidden bg-[#0f5133] text-[#e4f0e9] rounded-[clamp(40px,7vw,70px)] p-12 sm:p-20 text-center border border-[#5be3a0]/30 shadow-2xl">
+        {/* Dual Morphing Blobs */}
+        <div
+          aria-hidden="true"
+          className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#5be3a0]/20 blur-2xl m3-blob pointer-events-none"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-28 -right-24 w-80 h-80 rounded-full bg-[#5be3a0]/20 blur-2xl m3-blob pointer-events-none"
+          style={{ animationDelay: "-4s" }}
+        />
+
+        <div className="relative z-10 max-w-xl mx-auto">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#bdf3d6]">
+            Your storefront is one link away.
+          </h2>
+          <p className="mt-4 text-base sm:text-lg text-[#bdf3d6]/90 leading-relaxed">
+            Join the merchants selling on WhatsApp with SwiftLink. Free to start, no card needed.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/signup?mode=signup"
+              className="inline-flex items-center justify-center gap-2.5 h-[56px] px-8 rounded-full bg-[#5be3a0] text-[#00391f] font-extrabold text-base transition-all m3-spring-btn hover:bg-[#4ad993] shadow-lg"
+            >
+              <span>Get started free</span>
+              <ArrowRight size={18} strokeWidth={2.5} />
+            </Link>
           </div>
-        </InView>
+        </div>
       </div>
     </section>
   );
@@ -924,90 +920,60 @@ function CTASection() {
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
-  const productLinks = [
-    { href: "#templates", label: "Templates" },
-    { href: "#features", label: "Capabilities" },
-    { href: "#how-it-works", label: "Workflow" },
-    { href: "#pricing", label: "Pricing" },
-  ];
-
   return (
-    <footer className="border-t border-app-border px-5 py-14 sm:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="grid gap-10 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2">
-              <Logo size="sm" showWordmark={true} />
-            </div>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-app-text-muted">
-              The storefront builder for merchants who do business on WhatsApp.
-            </p>
-          </div>
+    <footer className="w-[min(1180px,calc(100%-32px))] mx-auto py-12 border-t border-[#182a22] grid gap-8 sm:grid-cols-3 text-sm">
+      <div>
+        <Link href="#top" className="inline-flex items-center gap-2 m3-spring-btn">
+          <Logo size="sm" showWordmark={true} wordmarkClassName="font-extrabold tracking-tight text-xl text-[#e4f0e9]" />
+        </Link>
+        <p className="mt-3 text-xs text-[#9db4a8] leading-relaxed max-w-xs">
+          The storefront builder for merchants who do business on WhatsApp.
+        </p>
+      </div>
 
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-app-text-subtle">
-              Product
-            </h3>
-            <ul className="mt-4 flex flex-col gap-3">
-              {productLinks.map((link) => (
-                <li key={link.href}>
-                  <a href={link.href} className="text-sm text-app-text-muted transition-colors hover:text-app-text">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-app-text-subtle">
-              Company
-            </h3>
-            <ul className="mt-4 flex flex-col gap-3">
-              <li>
-                <Link href="/terms" className="text-sm text-app-text-muted transition-colors hover:text-app-text">
-                  Terms of service
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="text-sm text-app-text-muted transition-colors hover:text-app-text">
-                  Privacy &amp; cookies
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="mailto:support@swiftlink.pro"
-                  className="text-sm text-app-text-muted transition-colors hover:text-app-text"
-                >
-                  Support
-                </a>
-              </li>
-            </ul>
-          </div>
+      <div>
+        <h6 className="text-xs font-bold uppercase tracking-wider text-[#9db4a8] mb-3">
+          Product
+        </h6>
+        <div className="flex flex-col gap-2 text-xs font-semibold text-[#9db4a8]">
+          <a href="#templates" className="hover:text-[#e4f0e9] transition-colors">Templates</a>
+          <a href="#features" className="hover:text-[#e4f0e9] transition-colors">Capabilities</a>
+          <a href="#how" className="hover:text-[#e4f0e9] transition-colors">Workflow</a>
+          <a href="#pricing" className="hover:text-[#e4f0e9] transition-colors">Pricing</a>
         </div>
+      </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-app-border pt-6 sm:flex-row">
-          <p className="text-xs text-app-text-subtle">© 2026 SwiftLink</p>
-          <p className="text-xs text-app-text-subtle">Built for merchants who sell where their customers are.</p>
+      <div>
+        <h6 className="text-xs font-bold uppercase tracking-wider text-[#9db4a8] mb-3">
+          Company
+        </h6>
+        <div className="flex flex-col gap-2 text-xs font-semibold text-[#9db4a8]">
+          <Link href="/terms" className="hover:text-[#e4f0e9] transition-colors">Terms of service</Link>
+          <Link href="/privacy" className="hover:text-[#e4f0e9] transition-colors">Privacy and cookies</Link>
+          <a href="mailto:support@swiftlink.pro" className="hover:text-[#e4f0e9] transition-colors">Support</a>
         </div>
+      </div>
+
+      <div className="sm:col-span-3 pt-6 border-t border-[#182a22] text-xs text-[#9db4a8] flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p>© 2026 SwiftLink. All rights reserved.</p>
+        <p>Built for merchants who sell where their customers are.</p>
       </div>
     </footer>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Landing Page ────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const isV2 = FEATURE_FLAGS.landingV2;
-
   return (
-    <main className="min-h-[100dvh] bg-app-bg font-sans text-app-text">
+    <main className="min-h-[100dvh] bg-[#08110d] font-sans text-[#e4f0e9] selection:bg-[#5be3a0]/30 selection:text-[#5be3a0]">
       <Navbar />
-      {isV2 ? <HeroV2 /> : <HeroLegacy />}
-      <Templates />
-      <Features />
-      <HowItWorks />
-      <Pricing />
-      <CTASection />
+      <HeroSection />
+      <FactsSection />
+      <TemplatesSection />
+      <BentoFeaturesSection />
+      <HowItWorksSection />
+      <PricingSection />
+      <ClosingCTA />
       <Footer />
     </main>
   );

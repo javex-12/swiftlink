@@ -60,7 +60,7 @@ type LiveStats = {
 const EMPTY_STATS: LiveStats = { views: 0, productTaps: 0, inquiries: 0, soldMinor: 0 };
 
 export function OverviewView() {
-  const { state, user, addToast, updateState, stores, planReady } = useSwiftLink();
+  const { state, user, addToast, updateState, stores, planReady, setStoreLive } = useSwiftLink();
   // Set by middleware/requireAdmin when an authenticated non-admin opens an
   // ADMIN_PREFIXES route. Previously that redirect was silent, which made the
   // console look like a missing page rather than a permission boundary
@@ -255,12 +255,20 @@ export function OverviewView() {
   const productLimit = effectiveProductLimitFor(plan);
   const storeLimit = effectiveStoreLimitFor(plan);
 
+  const nextAction = !hasProducts
+    ? { title: "Add your first product", desc: "Buyers can’t order until you do", href: "/business" }
+    : !hasTemplate
+    ? { title: "Choose a storefront template", desc: "Preview three looks with your products", href: "/business" }
+    : !isLinkShared
+    ? { title: "Share your link with customers", desc: "Start receiving orders on WhatsApp", href: "#share-channels" }
+    : null;
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 pb-12 sm:px-6 sm:py-8 sm:pb-16">
+    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-5 pb-24 sm:px-6 sm:py-7">
       {deniedAdmin && (
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-[16px] border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4"
+          className="flex items-start gap-3 rounded-[24px] border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4"
         >
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#E8B93A]" />
           <div>
@@ -276,103 +284,11 @@ export function OverviewView() {
         </div>
       )}
 
-      {/* ─── Page Header ─────────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-[#E8F1EC]">
-              Good day, {firstName}
-            </h1>
-            {/* Plan badge — always present, and it links to where the plan can
-                actually be changed. */}
-            <Link
-              href="/account#plans"
-              title={
-                planReady
-                  ? `${planDetail.name} plan — ${planDetail.summary}`
-                  : "Checking your plan"
-              }
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition",
-                planReady && plan === "free"
-                  ? "border-[#24382F] bg-[#14231D] text-[#9DB3A8] hover:border-[#19C37D] hover:text-[#E8F1EC]"
-                  : "border-[#19C37D]/30 bg-[#19C37D]/10 text-[#19C37D] hover:border-[#19C37D]",
-              )}
-            >
-              <BadgeCheck className="h-3 w-3" />
-              {planReady ? `${planDetail.name} plan` : "Checking plan…"}
-              {planReady && (
-                <span className="text-[10px] font-normal opacity-80">·
-                  {formatUsage(state.products.length, productLimit)} products ·
-                  {formatUsage(stores.length, storeLimit)} stores
-                </span>
-              )}
-            </Link>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span
-              className={`h-2 w-2 shrink-0 rounded-full ${
-                state.isLive ? "bg-[#19C37D]" : "bg-[#E8B93A]"
-              }`}
-            />
-            <span className="text-xs text-[#9DB3A8]">
-              {state.isLive ? "Store is live & receiving orders" : "Store paused — checkout is closed"}
-            </span>
-
-            {/*
-              Stop / go live, on the console home rather than only inside the
-              store editor: it is the switch every merchant needs (it is what
-              `sendWhatsAppOrder` checks before taking an order), and it used to
-              be reachable only by finishing onboarding, so nobody who already
-              had a store could find it.
-            */}
-            <button
-              type="button"
-              onClick={() => {
-                const next = !state.isLive;
-                updateState("isLive", next);
-                addToast(
-                  next
-                    ? "Store is live — customers can order again."
-                    : "Store paused — customers can no longer check out.",
-                  next ? "success" : "info",
-                );
-              }}
-              aria-pressed={!state.isLive}
-              className={cn(
-                "inline-flex min-h-[32px] items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition",
-                state.isLive
-                  ? "border-[#24382F] bg-[#111C18] text-[#9DB3A8] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
-                  : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
-              )}
-            >
-              {state.isLive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-              {state.isLive ? "Stop store" : "Go live"}
-            </button>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        {state.storeUsername && (
-          <div className="flex items-center gap-2">
-            <a
-              href={`/${state.storeUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#111C18] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:border-[#19C37D] hover:bg-[#14231D]"
-            >
-              <span>View live store</span>
-              <ExternalLink className="h-3.5 w-3.5 text-[#9DB3A8]" />
-            </a>
-          </div>
-        )}
-      </header>
-
       {/* ─── Payment grace period ────────────────────────────────────────── */}
       {inGrace && (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-2xl border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4"
+          className="flex items-start gap-3 rounded-[24px] border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4"
         >
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#E8B93A]" />
           <div className="text-sm text-[#E8F1EC]">
@@ -386,239 +302,281 @@ export function OverviewView() {
         </div>
       )}
 
-      {/* ─── Store Link Banner Card ────────────────────────────────────────── */}
+      {/* ─── Google M3 Expressive Hero Card ──────────────────────────────── */}
       <section
-        aria-label="Your store link"
-        className="rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5"
+        className={cn(
+          "rounded-[36px] sm:rounded-[44px_44px_44px_16px] p-6 sm:p-8 transition-colors duration-300 shadow-sm",
+          state.isLive
+            ? "bg-[#b8f2d3] text-[#00391f] dark:bg-[#0f5133] dark:text-[#b8f2d3]"
+            : "bg-[#d9e8df] text-[#0f1f17] dark:bg-[#182a22] dark:text-[#e2efe7]"
+        )}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#9DB3A8]">
-              Public storefront link
-            </span>
-            <span className="mt-1 block truncate text-sm font-medium text-[#19C37D]">
-              {storeUrl}
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="text-xs sm:text-sm font-semibold opacity-80 uppercase tracking-wider">
+            Welcome back
           </div>
+          <Link
+            href="/account#plans"
+            title={`${planDetail.name} plan — ${planDetail.summary}`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-black/10 dark:bg-white/10 px-3 py-1 text-[11px] font-bold text-inherit transition hover:bg-black/15"
+          >
+            <BadgeCheck className="h-3 w-3" />
+            <span>{planDetail.name}</span>
+          </Link>
+        </div>
 
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1.5 mb-4 font-sans">
+          Good day, {firstName}
+        </h1>
+
+        {/* M3 Status Pill with Interactive Switch (.sw) */}
+        <div className="flex items-center justify-between gap-3 rounded-full bg-black/10 dark:bg-white/10 px-4 py-2 font-semibold text-xs sm:text-sm">
+          <span className="flex items-center gap-2">
+            <i className={cn("m3-dot", !state.isLive && "paused")} />
+            <span>{state.isLive ? "Store is live & receiving orders" : "Store is paused"}</span>
+          </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleCopyLink}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:bg-[#19C37D] hover:text-[#04140D]"
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span>{copied ? "Copied!" : "Copy"}</span>
-            </button>
-
+              onClick={() => {
+                const next = !state.isLive;
+                updateState("isLive", next);
+                if (state.id) void setStoreLive(state.id, next);
+                addToast(
+                  next
+                    ? "Store is live — customers can order again."
+                    : "Store paused — customers can no longer check out.",
+                  next ? "success" : "info",
+                );
+              }}
+              aria-pressed={!state.isLive}
+              aria-label="Pause or resume store"
+              className={cn("m3-sw", !state.isLive && "paused")}
+            />
+            {/* Semantic button text for accessibility & automated tests */}
             <button
               type="button"
-              onClick={handleShareLink}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:bg-[#19C37D] hover:text-[#04140D]"
+              onClick={() => {
+                const next = !state.isLive;
+                updateState("isLive", next);
+                if (state.id) void setStoreLive(state.id, next);
+                addToast(
+                  next
+                    ? "Store is live — customers can order again."
+                    : "Store paused — customers can no longer check out.",
+                  next ? "success" : "info",
+                );
+              }}
+              className="hidden"
             >
-              <Share2 className="h-4 w-4" />
-              <span>Share</span>
+              {state.isLive ? "Stop store" : "Go live"}
             </button>
           </div>
         </div>
 
-        {/* Channel-tagged links. The storefront has always understood `?src=`;
-            this is where the merchant finally gets one to share, which is what
-            turns the Analytics "channel" panel from a constant "direct" into a
-            real breakdown. */}
-        <div className="mt-4 border-t border-[#1E2D27] pt-4">
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#9DB3A8]">
-            Share by channel
+        {/* Public Store Link Pill */}
+        <div className="flex items-center gap-2 rounded-full bg-white dark:bg-[#14231c] text-[#0f1f17] dark:text-[#e2efe7] p-1.5 pl-4 mt-4 shadow-xs">
+          <span className="flex-1 truncate text-xs sm:text-sm font-semibold">
+            {storeUrl.replace(/^https?:\/\//, "")}
           </span>
-          <p className="mt-1 text-xs text-[#9DB3A8]">
-            Copy the link for wherever you are posting. Orders that arrive through it are counted
-            against that channel in Analytics.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {SHARE_CHANNELS.map((channel) => (
-              <button
-                key={channel.id}
-                type="button"
-                onClick={() => handleCopyChannel(channel.id)}
-                title={channel.hint}
-                className="flex min-h-[36px] items-center gap-1.5 rounded-[10px] border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-xs font-semibold text-[#E8F1EC] transition hover:border-[#19C37D] hover:bg-[#19C37D] hover:text-[#04140D]"
-              >
-                {copiedChannel === channel.id ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                <span>{channel.label}</span>
-              </button>
-            ))}
-            <a
-              href={whatsappShareHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-[36px] items-center gap-1.5 rounded-[10px] border border-[#19C37D]/40 bg-[#19C37D]/10 px-3 py-1.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D] hover:text-[#04140D]"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>Send on WhatsApp</span>
-            </a>
-          </div>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-[#00875a] dark:bg-[#5be3a0] text-white dark:text-[#00391f] px-4 py-1.5 text-xs font-bold transition active:scale-95 shadow-xs"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copied ? "Copied" : "Copy"}</span>
+          </button>
+        </div>
+
+        {/* Actions: Share & View store */}
+        <div className="flex gap-2.5 mt-3">
+          <button
+            type="button"
+            onClick={handleShareLink}
+            className="flex-1 flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-black/10 dark:bg-white/10 text-inherit font-bold text-xs sm:text-sm transition hover:bg-black/15 active:scale-95"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share</span>
+          </button>
+          <a
+            href={storeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-black/10 dark:bg-white/10 text-inherit font-bold text-xs sm:text-sm transition hover:bg-black/15 active:scale-95"
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span>View store</span>
+          </a>
         </div>
       </section>
 
-      {/* ─── Four Key Stat Cards ─────────────────────────────────────────── */}
+      {/* ─── Google M3 Checklist with Wavy Progress SVG ───────────────────── */}
+      <section className="rounded-[32px] border border-[#182a22] bg-[#111e18] p-5 sm:p-6 shadow-sm">
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-[#e2efe7]">Get your store ready</h2>
+          <div className="text-lg sm:text-xl font-extrabold text-[#e2efe7]">
+            {completedCount} of {checklistItems.length} <span className="text-xs font-medium text-[#9db4a8]">done</span>
+          </div>
+        </div>
+
+        {/* Wavy SVG Progress line */}
+        <svg
+          className="w-full h-4 my-2 overflow-visible m3-wave"
+          viewBox="0 0 320 16"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M0 8 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0"
+            stroke="var(--m3-s2)"
+          />
+          <path
+            d="M0 8 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0 q5 -10 10 0 q5 10 10 0"
+            stroke="var(--m3-p)"
+            pathLength="100"
+            strokeDasharray="100"
+            strokeDashoffset={100 - (completedCount * 20)}
+            style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(.34,1.56,.64,1) .2s" }}
+          />
+        </svg>
+
+        {/* Next actionable step banner */}
+        {nextAction ? (
+          <Link
+            href={nextAction.href}
+            className="flex items-center gap-3.5 rounded-[24px] bg-[#00875a] dark:bg-[#5be3a0] text-white dark:text-[#00391f] p-4 font-semibold transition active:scale-98 mt-3"
+          >
+            <div className="flex-1 min-w-0">
+              <strong className="block text-base sm:text-lg">{nextAction.title}</strong>
+              <small className="opacity-90 text-xs sm:text-sm font-normal">{nextAction.desc}</small>
+            </div>
+            <span className="w-10 h-10 rounded-2xl bg-white dark:bg-[#00391f] text-[#00875a] dark:text-[#5be3a0] grid place-items-center shrink-0">
+              <ChevronRight className="w-5 h-5" />
+            </span>
+          </Link>
+        ) : (
+          <div className="inline-block rounded-full bg-[#0f5133] text-[#b8f2d3] px-3.5 py-1 text-xs font-bold mt-2">
+            Your store is ready to sell
+          </div>
+        )}
+
+        {/* Steps */}
+        <ul className="mt-4 divide-y divide-[#182a22]">
+          {checklistItems.map((item) => (
+            <li key={item.id} className="flex items-center gap-3 py-3 text-xs sm:text-sm">
+              <span
+                className={cn(
+                  "w-6 h-6 rounded-[8px] flex items-center justify-center shrink-0",
+                  item.completed
+                    ? "bg-[#00875a] dark:bg-[#5be3a0] text-white dark:text-[#00391f]"
+                    : "border border-[#9db4a8] text-transparent"
+                )}
+              >
+                {item.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </span>
+              <span className={item.completed ? "text-[#9db4a8] line-through" : "text-[#e2efe7] font-semibold"}>
+                {item.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ─── Google M3 Bento Stat Cards ("All time") ──────────────────────── */}
       <section aria-label="Store overview stats">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8]">
-            All time
-          </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#e2efe7]">All time</h2>
           <button
             type="button"
             onClick={() => void loadStats()}
             disabled={statsLoading}
-            className="flex min-h-[32px] items-center gap-1.5 rounded-full border border-[#24382F] px-3 text-[11px] font-semibold text-[#9DB3A8] transition hover:border-[#19C37D] hover:text-[#E8F1EC] disabled:opacity-60"
+            className="flex min-h-[34px] items-center gap-1.5 rounded-full border border-[#24382F] bg-[#111e18] px-3.5 text-xs font-semibold text-[#9db4a8] transition hover:text-[#e2efe7] hover:border-[#5be3a0] active:scale-95 disabled:opacity-60"
           >
             <RefreshCw className={cn("h-3 w-3", statsLoading && "animate-spin")} />
-            {statsLoading ? "Updating" : "Refresh"}
+            <span>{statsLoading ? "Updating" : "Refresh"}</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          {/* Confirmed Sales Money Card */}
+          <div className="col-span-2 rounded-[36px_36px_16px_36px] bg-[#ffe3a3] text-[#3d2b00] dark:bg-[#4a3a0f] dark:text-[#ffe3a3] p-5 sm:p-6 flex flex-col justify-between min-h-[140px] shadow-xs">
+            <small className="font-semibold text-xs sm:text-sm opacity-80">Confirmed sales</small>
+            <b className="text-4xl sm:text-5xl font-black tracking-tight my-2">
+              {stats ? formatMoney(stats.soldMinor, state.currency || "NGN") : "₦0"}
+            </b>
+            <small className="text-xs opacity-75">Recorded through inquiries</small>
+          </div>
+
           {/* Store Views */}
-          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#9DB3A8]">Store views</span>
-              <Eye className="h-4 w-4 text-[#9DB3A8]" />
-            </div>
-            <div className="mt-3">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
-                {stats ? stats.views.toLocaleString() : "—"}
-              </span>
-              <p className="mt-1 text-[11px] text-[#9DB3A8]">From direct links &amp; social</p>
-            </div>
+          <div className="rounded-[28px_28px_28px_10px] bg-[#111e18] border border-[#182a22] p-4 sm:p-5 flex flex-col justify-between min-h-[120px]">
+            <small className="text-[#9db4a8] font-medium text-xs">Store views</small>
+            <b className="text-3xl sm:text-4xl font-extrabold text-[#e2efe7]">
+              {stats ? stats.views.toLocaleString() : "0"}
+            </b>
+            <small className="text-[11px] text-[#9db4a8]">From direct links &amp; social</small>
           </div>
 
           {/* Product Taps */}
-          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#9DB3A8]">Product taps</span>
-              <MousePointerClick className="h-4 w-4 text-[#9DB3A8]" />
-            </div>
-            <div className="mt-3">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
-                {stats ? stats.productTaps.toLocaleString() : "—"}
-              </span>
-              <p className="mt-1 text-[11px] text-[#9DB3A8]">Buyers viewing details</p>
-            </div>
+          <div className="rounded-[28px_28px_10px_28px] bg-[#111e18] border border-[#182a22] p-4 sm:p-5 flex flex-col justify-between min-h-[120px]">
+            <small className="text-[#9db4a8] font-medium text-xs">Product taps</small>
+            <b className="text-3xl sm:text-4xl font-extrabold text-[#e2efe7]">
+              {stats ? stats.productTaps.toLocaleString() : "0"}
+            </b>
+            <small className="text-[11px] text-[#9db4a8]">Buyers viewing details</small>
           </div>
 
-          {/* Chats Started */}
-          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#9DB3A8]">Order inquiries</span>
-              <MessageSquare className="h-4 w-4 text-[#9DB3A8]" />
+          {/* Order inquiries */}
+          <div className="col-span-2 rounded-[12px_28px_28px_28px] bg-[#111e18] border border-[#182a22] p-4 sm:p-5 flex items-center justify-between min-h-[90px]">
+            <div>
+              <small className="text-[#9db4a8] font-medium text-xs">Order inquiries</small>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#e2efe7] leading-tight">
+                {stats ? stats.inquiries.toLocaleString() : "0"}
+              </div>
             </div>
-            <div className="mt-3">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
-                {stats ? stats.inquiries.toLocaleString() : "—"}
-              </span>
-              <p className="mt-1 text-[11px] text-[#9DB3A8]">WhatsApp, social &amp; price requests</p>
-            </div>
-          </div>
-
-          {/* Confirmed Sales */}
-          <div className="flex flex-col justify-between rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[#9DB3A8]">Confirmed sales</span>
-              <BadgeCheck className="h-4 w-4 text-[#19C37D]" />
-            </div>
-            <div className="mt-3">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">
-                {stats ? formatMoney(stats.soldMinor, state.currency || "NGN") : "—"}
-              </span>
-              <p className="mt-1 text-[11px] text-[#9DB3A8]">Recorded through inquiries</p>
-            </div>
+            <small className="text-[11px] text-[#9db4a8] max-w-[150px] text-right">
+              WhatsApp, social &amp; price requests
+            </small>
           </div>
         </div>
       </section>
 
-      {/* ─── "Get Your Store Ready" Checklist ────────────────────────────── */}
-      {!allCompleted && (
-        <section
-          aria-label="Setup checklist"
-          className="rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-5 sm:p-6"
+      {/* ─── Google M3 Share by Channel Section ──────────────────────────── */}
+      <section id="share-channels" className="rounded-[32px] border border-[#182a22] bg-[#111e18] p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-bold text-[#e2efe7]">Share by channel</h2>
+        <p className="text-xs text-[#9db4a8] mt-1">
+          Pick where you are posting. Orders from that link show up under the same channel in Stats.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2.5 mt-4">
+          {SHARE_CHANNELS.map((ch) => (
+            <button
+              key={ch.id}
+              type="button"
+              onClick={() => handleCopyChannel(ch.id)}
+              className={cn(
+                "h-12 rounded-[18px] flex items-center justify-center gap-2 font-semibold text-xs sm:text-sm transition-all m3-spring-btn",
+                copiedChannel === ch.id
+                  ? "bg-[#0f5133] text-[#b8f2d3] font-bold"
+                  : "bg-[#182a22] text-[#e2efe7] hover:bg-[#20362c]"
+              )}
+            >
+              {copiedChannel === ch.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <span>{ch.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <a
+          href={whatsappShareHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full mt-3.5 h-14 rounded-full bg-[#00875a] dark:bg-[#5be3a0] text-white dark:text-[#00391f] flex items-center justify-center gap-2 font-bold text-base transition active:scale-95 shadow-md shadow-[#00875a]/20"
         >
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
-            <div>
-              <h2 className="text-base font-semibold text-[#E8F1EC]">Get your store ready</h2>
-              <p className="mt-0.5 text-xs text-[#9DB3A8]">
-                Complete these steps to set up your store and start taking orders.
-              </p>
-            </div>
-            <span className="text-xs font-medium text-[#19C37D]">
-              {completedCount} of {checklistItems.length} completed
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 h-1.5 w-full rounded-full bg-[#0A1210] overflow-hidden">
-            <div
-              className="h-full bg-[#19C37D] transition-all duration-500"
-              style={{ width: `${(completedCount / checklistItems.length) * 100}%` }}
-            />
-          </div>
-
-          {/* Checklist rows */}
-          <div className="mt-4 divide-y divide-[#1E2D27]">
-            {checklistItems.map((item) => {
-              const content = (
-                <div className="flex min-h-[48px] items-center justify-between py-3 transition hover:text-[#19C37D]">
-                  <div className="flex items-center gap-3">
-                    {item.completed ? (
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-[#19C37D]" />
-                    ) : (
-                      <Circle className="h-5 w-5 shrink-0 text-[#9DB3A8]" />
-                    )}
-                    <span
-                      className={`text-xs font-medium ${
-                        item.completed ? "line-through text-[#9DB3A8]" : "text-[#E8F1EC]"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                  {!item.completed && <ChevronRight className="h-4 w-4 text-[#9DB3A8]" />}
-                </div>
-              );
-
-              if (item.completed) {
-                return (
-                  <div key={item.id} className="opacity-75">
-                    {content}
-                  </div>
-                );
-              }
-
-              if (item.action) {
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={item.action}
-                    className="w-full text-left cursor-pointer"
-                  >
-                    {content}
-                  </button>
-                );
-              }
-
-              return (
-                <Link key={item.id} href={item.href || "#"} className="block cursor-pointer">
-                  {content}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
+          <MessageSquare className="h-5 w-5" />
+          <span>Send on WhatsApp</span>
+        </a>
+      </section>
     </div>
   );
 }

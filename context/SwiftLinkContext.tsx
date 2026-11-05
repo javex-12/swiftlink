@@ -1089,6 +1089,7 @@ export function SwiftLinkProvider({
                         const nextState = normalizeShopState(active);
                         setState(nextState);
                         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
+                        setPlanReady(true);
                     } else {
                         const nextState = normalizeShopState({
                           id: u.id,
@@ -1197,16 +1198,9 @@ export function SwiftLinkProvider({
     }
   }, [pathname, router, isSupabaseActive, state.bizName, loadingOverlay]);
 
-  useEffect(() => {
-    if (!isOwner || pathname !== "/pro" || typeof window === "undefined") return;
-    if (!localStorage.getItem("swiftlink_tour_done")) {
-      const t = setTimeout(() => {
-        setCurrentTourStep(0);
-        setTourOpen(true);
-      }, 1000);
-      return () => clearTimeout(t);
-    }
-  }, [isOwner, pathname]);
+  // Auto-launching the tour was removed: users should not have an unsolicited "Welcome to SwiftLink" banner interrupt them after signup.
+  // The tour remains accessible on-demand when explicitly triggered.
+
 
   const processImageFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

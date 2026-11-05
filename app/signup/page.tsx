@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Mail, Loader2 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { getPublicStoreSlug, cn } from "@/lib/utils";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
@@ -144,13 +144,13 @@ function GoogleButton({
 }
 
 
-/** Segmented switch between the two forms. */
+/** Segmented switch between the two forms with Google M3 Expressive pill shapes. */
 function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
   return (
     <div
       role="group"
       aria-label="Sign in or create an account"
-      className="grid grid-cols-2 gap-1 rounded-xl border border-app-border bg-app-surface-2 p-1"
+      className="grid grid-cols-2 gap-1 rounded-full border border-[#182a22] bg-[#111e18] p-1.5"
     >
       {(["login", "signup"] as const).map((value) => (
         <button
@@ -159,11 +159,10 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => 
           onClick={() => onChange(value)}
           aria-pressed={mode === value}
           className={cn(
-            "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-ring",
+            "rounded-full px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-300",
             mode === value
-              ? "bg-app-surface text-app-text shadow-xs"
-              : "text-app-text-muted hover:text-app-text",
+              ? "bg-[#0f5133] text-[#b8f2d3] shadow-sm"
+              : "text-[#9db4a8] hover:text-[#e2efe7]",
           )}
         >
           {value === "login" ? "Sign in" : "Create account"}
@@ -257,6 +256,7 @@ function AuthPage() {
           bizDesc: legacy.bizDesc || "",
           bizColor: legacy.bizColor || "#047857",
           publishedStoreSlug: slug,
+          onboarding_step: 5,
         };
 
         if (existing?.id) {
@@ -285,6 +285,8 @@ function AuthPage() {
         }
 
         localStorage.setItem("swiftlink_state", JSON.stringify(nextState));
+        localStorage.setItem("swiftlink_onboarding_dismissed", "true");
+        localStorage.setItem("swiftlink_tour_done", "true");
       } catch (err) {
         // A store-provisioning failure must not block the session itself; the
         // dashboard provisions on first load as a fallback.
@@ -376,49 +378,44 @@ function AuthPage() {
   const isSignup = mode === "signup";
 
   return (
-    <div className="relative min-h-[100dvh] bg-app-bg font-sans text-app-text">
-      {/* Decorative wash, token-driven so it follows the console theme. */}
+    <div className="relative min-h-[100dvh] bg-[#0a130f] font-sans text-[#e2efe7] selection:bg-[#19C37D]/30">
+      {/* Decorative ambient emerald wash */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
         style={{
           background:
-            "radial-gradient(60% 100% at 50% 0%, var(--app-accent-subtle), transparent 70%)",
+            "radial-gradient(ellipse 75% 55% at 50% -15%, rgba(15, 81, 51, 0.45), transparent 70%)",
         }}
       />
 
-      <div className="relative z-10 flex min-h-[100dvh] flex-col">
-        <header className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Logo size="sm" showWordmark={true} />
+      <div className="relative z-10 flex min-h-[100dvh] flex-col justify-between">
+        <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
+          <Link href="/" className="inline-flex items-center gap-2 m3-spring-btn">
+            <Logo size="md" showWordmark={true} />
           </Link>
         </header>
 
-        <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8">
-          {/* One calm, centred column — the design decision recorded in
-              docs/03-DECISIONS.md D12. A template-preview rail used to sit
-              beside the form; it pushed the sign-in action sideways on every
-              width and advertised "Editorial, Boutique and Bold" long after
-              the template set grew to ten. */}
-          <div className="mx-auto w-full max-w-[420px]">
+        <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6">
+          <div className="mx-auto w-full max-w-[440px]">
             <AnimatePresence mode="wait">
               {step === "form" ? (
                 <motion.div
                   key={`${mode}-form`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                  className="rounded-2xl border border-app-border bg-app-surface p-6 shadow-sm sm:p-8"
+                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+                  className="rounded-[36px] sm:rounded-[44px] border border-[#182a22] bg-[#14231c]/95 backdrop-blur-xl p-6 sm:p-8 shadow-2xl"
                 >
-                  <div className="space-y-1.5">
-                    <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                  <div className="space-y-1.5 text-center sm:text-left">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e2efe7]">
                       {isSignup ? "Create your store" : "Welcome back"}
                     </h1>
-                    <p className="text-sm text-app-text-muted">
+                    <p className="text-xs sm:text-sm text-[#9db4a8]">
                       {isSignup
                         ? "Set up your WhatsApp storefront in minutes."
-                        : "Sign in to open your workspace."}
+                        : "Sign in to manage your store and orders."}
                     </p>
                   </div>
 
@@ -433,32 +430,30 @@ function AuthPage() {
                   </div>
 
                   {!isSupabaseConfigured() && (
-                    <div className="mt-5 rounded-lg border border-app-warning bg-app-warning-subtle p-4 text-sm">
-                      <p className="font-medium text-app-warning">Running without a database</p>
-                      <p className="mt-1 text-app-text-muted">
-                        Add your Supabase credentials to <code>.env.local</code> to sign in for real.
+                    <div className="mt-5 rounded-[20px] border border-[#ffe3a3]/30 bg-[#4a3a0f]/40 p-4 text-xs text-[#ffe3a3]">
+                      <p className="font-bold">Running without a database</p>
+                      <p className="mt-1 text-[#ffe3a3]/80">
+                        Add Supabase credentials to sign in for real.
                       </p>
-                      <Button
+                      <button
                         type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="mt-3"
+                        className="mt-3 rounded-full bg-[#ffe3a3] text-[#3d2b00] px-4 py-1.5 font-bold text-xs"
                         onClick={() => {
                           localStorage.setItem("swiftlink_demo_login", "true");
                           router.push("/pro");
                         }}
                       >
                         Continue in demo mode
-                      </Button>
+                      </button>
                     </div>
                   )}
 
                   {error && (
                     <div
                       role="alert"
-                      className="mt-5 flex items-start gap-2.5 rounded-lg border border-app-danger bg-app-danger-subtle p-3.5 text-sm text-app-danger"
+                      className="mt-5 flex items-start gap-2.5 rounded-[20px] border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-300"
                     >
-                      <AlertCircle width={16} height={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                      <AlertCircle width={16} height={16} className="mt-0.5 shrink-0 text-rose-400" aria-hidden="true" />
                       <span>{error}</span>
                     </div>
                   )}
@@ -466,28 +461,41 @@ function AuthPage() {
                   <form onSubmit={handleEmailAuth} className="mt-6 flex flex-col gap-4" noValidate>
                     {isSignup && (
                       <>
-                        <Field label="Your name" required>
-                          <Input
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                            Your name
+                          </label>
+                          <input
+                            type="text"
                             value={form.ownerName}
                             onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
                             autoComplete="name"
                             placeholder="Ada Eze"
                             required
+                            className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-3 text-sm text-[#e2efe7] placeholder-[#9db4a8]/50 outline-none transition focus:border-[#5be3a0]"
                           />
-                        </Field>
-                        <Field label="Store name" required>
-                          <Input
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                            Store name
+                          </label>
+                          <input
+                            type="text"
                             value={form.bizName}
                             onChange={(e) => setForm({ ...form, bizName: e.target.value })}
                             autoComplete="organization"
                             placeholder="Ada's Fabrics"
                             required
+                            className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-3 text-sm text-[#e2efe7] placeholder-[#9db4a8]/50 outline-none transition focus:border-[#5be3a0]"
                           />
-                        </Field>
-                        <Field label="WhatsApp number" required hint="Customers reach you here for orders.">
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                            WhatsApp number
+                          </label>
                           <div className="flex gap-2">
                             <CountrySelector value={countryCode} onChange={setCountryCode} />
-                            <Input
+                            <input
                               type="tel"
                               inputMode="tel"
                               value={form.phone}
@@ -495,44 +503,59 @@ function AuthPage() {
                               autoComplete="tel-national"
                               placeholder="808 000 0000"
                               required
+                              className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-3 text-sm text-[#e2efe7] placeholder-[#9db4a8]/50 outline-none transition focus:border-[#5be3a0]"
                             />
                           </div>
-                        </Field>
+                          <span className="block mt-1 text-[11px] text-[#9db4a8] ml-1">Customers reach you here for orders.</span>
+                        </div>
                       </>
                     )}
 
-                    <Field label="Email" required>
-                      <Input
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                        Email
+                      </label>
+                      <input
                         type="email"
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
                         autoComplete="email"
                         placeholder="you@example.com"
                         required
+                        className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-3 text-sm text-[#e2efe7] placeholder-[#9db4a8]/50 outline-none transition focus:border-[#5be3a0]"
                       />
-                    </Field>
+                    </div>
 
-                    <Field
-                      label="Password"
-                      required
-                      hint={isSignup ? "At least 8 characters." : undefined}
-                    >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 ml-1">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-[#9db4a8]">
+                          Password
+                        </label>
+                        {!isSignup && (
+                          <Link
+                            href="/reset-password"
+                            className="text-xs font-semibold text-[#5be3a0] hover:underline"
+                          >
+                            Forgot?
+                          </Link>
+                        )}
+                      </div>
                       <div className="relative">
-                        <Input
+                        <input
                           type={showPassword ? "text" : "password"}
                           value={form.password}
                           onChange={(e) => setForm({ ...form, password: e.target.value })}
                           autoComplete={isSignup ? "new-password" : "current-password"}
                           minLength={isSignup ? 8 : undefined}
                           placeholder="••••••••"
-                          className="pr-11"
                           required
+                          className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-3 pr-11 text-sm text-[#e2efe7] placeholder-[#9db4a8]/50 outline-none transition focus:border-[#5be3a0]"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           aria-label={showPassword ? "Hide password" : "Show password"}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-subtle transition-colors hover:text-app-text"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9db4a8] transition-colors hover:text-[#e2efe7]"
                         >
                           {showPassword ? (
                             <EyeOff width={16} height={16} aria-hidden="true" />
@@ -541,33 +564,29 @@ function AuthPage() {
                           )}
                         </button>
                       </div>
-                    </Field>
+                      {isSignup && <span className="block mt-1 text-[11px] text-[#9db4a8] ml-1">At least 8 characters.</span>}
+                    </div>
 
-                    {!isSignup && (
-                      <div className="-mt-1 text-right">
-                        <Link
-                          href="/reset-password"
-                          className="text-xs font-medium text-app-accent-text hover:underline"
-                        >
-                          Forgot password?
-                        </Link>
-                      </div>
-                    )}
-
-                    <Button type="submit" block size="lg" loading={loading === "email"}>
-                      {loading === "email" ? null : (
+                    <button
+                      type="submit"
+                      disabled={loading === "email"}
+                      className="mt-2 w-full h-12 rounded-full bg-[#19C37D] text-[#00391f] font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#19C37D]/20 hover:bg-[#16B070] active:scale-[0.98] transition cursor-pointer disabled:opacity-60"
+                    >
+                      {loading === "email" ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#00391f]" />
+                      ) : (
                         <>
-                          {isSignup ? "Create account" : "Sign in"}
+                          <span>{isSignup ? "Create account" : "Sign in"}</span>
                           <ArrowRight width={16} height={16} aria-hidden="true" />
                         </>
                       )}
-                    </Button>
+                    </button>
                   </form>
 
                   <div className="mt-6 flex items-center gap-4" aria-hidden="true">
-                    <div className="h-px flex-1 bg-app-border" />
-                    <span className="text-xs text-app-text-subtle">or</span>
-                    <div className="h-px flex-1 bg-app-border" />
+                    <div className="h-px flex-1 bg-[#27402f]" />
+                    <span className="text-xs font-semibold text-[#9db4a8]">or</span>
+                    <div className="h-px flex-1 bg-[#27402f]" />
                   </div>
 
                   <div className="mt-6">
@@ -581,9 +600,9 @@ function AuthPage() {
                     />
                   </div>
 
-                  <p className="mt-6 text-center text-xs text-app-text-subtle">
+                  <p className="mt-6 text-center text-xs text-[#9db4a8]">
                     By continuing you agree to our{" "}
-                    <Link href="/terms" className="font-medium text-app-accent-text hover:underline">
+                    <Link href="/terms" className="font-semibold text-[#5be3a0] hover:underline">
                       Terms
                     </Link>
                   </p>
@@ -591,37 +610,38 @@ function AuthPage() {
               ) : (
                 <motion.div
                   key="verify"
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25 }}
-                  className="flex flex-col items-center gap-5 rounded-2xl border border-app-border bg-app-surface p-8 text-center shadow-sm"
+                  className="flex flex-col items-center gap-5 rounded-[44px] border border-[#182a22] bg-[#14231c] p-8 text-center shadow-2xl"
                 >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-app-accent-subtle">
-                    <Mail width={26} height={26} className="text-app-accent-text" aria-hidden="true" />
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#0f5133] text-[#b8f2d3] shadow-inner">
+                    <Mail width={28} height={28} aria-hidden="true" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Check your inbox</h1>
-                    <p className="mt-2 text-sm text-app-text-muted">
+                    <h1 className="text-2xl font-bold tracking-tight text-[#e2efe7]">Check your inbox</h1>
+                    <p className="mt-2 text-sm text-[#9db4a8]">
                       We sent a verification link to{" "}
-                      <span className="font-medium text-app-text">{form.email}</span>
+                      <span className="font-semibold text-[#e2efe7]">{form.email}</span>
                     </p>
                   </div>
-                  <Button
-                    variant="secondary"
+                  <button
+                    type="button"
                     onClick={() => {
                       setStep("form");
                       setMode("login");
                     }}
+                    className="h-11 px-6 rounded-full border border-[#27402f] bg-[#111e18] text-xs font-bold text-[#e2efe7] hover:bg-[#182a22] transition"
                   >
                     Back to sign in
-                  </Button>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <p className="mt-6 text-center text-xs text-app-text-subtle">
+            <p className="mt-6 text-center text-xs text-[#9db4a8]">
               Prefer to look around first?{" "}
-              <Link href="/" className="font-medium text-app-accent-text hover:underline">
+              <Link href="/" className="font-semibold text-[#5be3a0] hover:underline">
                 Explore SwiftLink
               </Link>
             </p>
@@ -629,15 +649,15 @@ function AuthPage() {
         </main>
 
         <footer className="px-5 pb-6 pt-2 sm:px-8">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-app-text-subtle">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#9db4a8]">
             <span>© 2026 SwiftLink</span>
-            <Link href="/terms" className="hover:text-app-text">
+            <Link href="/terms" className="hover:text-[#e2efe7] transition">
               Terms
             </Link>
-            <Link href="/privacy" className="hover:text-app-text">
+            <Link href="/privacy" className="hover:text-[#e2efe7] transition">
               Privacy
             </Link>
-            <a href="mailto:support@swiftlink.pro" className="hover:text-app-text">
+            <a href="mailto:support@swiftlink.pro" className="hover:text-[#e2efe7] transition">
               Support
             </a>
           </div>

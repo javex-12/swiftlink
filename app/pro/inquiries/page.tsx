@@ -462,8 +462,8 @@ export default function InquiriesPage() {
           </div>
         )}
 
-        {/* Filter controls with 44px+ touch targets */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#1E2D27] pb-4">
+        {/* Filter controls with M3 Expressive pill shapes */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#182a22] pb-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.key;
@@ -473,16 +473,21 @@ export default function InquiriesPage() {
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  "flex min-h-[44px] items-center gap-2 rounded-[12px] px-4 py-2.5 text-xs font-semibold transition-colors",
+                  "flex min-h-[44px] items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-300",
                   active
-                    ? "bg-[#14231D] text-[#19C37D] border border-[#24382F]"
-                    : "text-[#9DB3A8] hover:bg-[#14231D] hover:text-[#E8F1EC]",
+                    ? "rounded-full bg-[#0f5133] text-[#b8f2d3] shadow-xs"
+                    : "rounded-[16px] bg-[#111e18] text-[#9db4a8] hover:bg-[#182a22] hover:text-[#e2efe7]",
                 )}
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.label}</span>
                 {tab.count > 0 && (
-                  <span className="rounded-full bg-[#0A1210] px-1.5 py-0.5 text-[10px] tabular-nums">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums",
+                      active ? "bg-[#b8f2d3]/20 text-[#b8f2d3]" : "bg-[#182a22] text-[#9db4a8]",
+                    )}
+                  >
                     {tab.count}
                   </span>
                 )}
@@ -925,12 +930,12 @@ function ActionButton({
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[18px] border border-[#1E2D27] bg-[#111C18] p-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14231D] text-[#19C37D] border border-[#24382F]">
-        <MessageSquare className="h-6 w-6" />
+    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[40px] border border-[#182a22] bg-[#111e18] p-8 text-center">
+      <div className="relative flex h-24 w-24 items-center justify-center rounded-[42%_58%_55%_45%/50%_45%_55%_50%] bg-[#0f5133] text-[#b8f2d3] shadow-inner animate-[morph_6s_ease-in-out_infinite]">
+        <MessageSquare className="h-10 w-10" />
       </div>
-      <h2 className="mt-4 text-base font-semibold text-[#E8F1EC]">{title}</h2>
-      <p className="mt-1.5 max-w-sm text-xs text-[#9DB3A8] leading-relaxed">{body}</p>
+      <h2 className="mt-5 text-xl font-bold tracking-tight text-[#e2efe7]">{title}</h2>
+      <p className="mt-2 max-w-sm text-xs sm:text-sm text-[#9db4a8] leading-relaxed">{body}</p>
     </div>
   );
 }

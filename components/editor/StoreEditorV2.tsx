@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ShopState, Product, ProductAttribute } from "@/lib/schema";
-import { supabase } from "@/lib/supabase-client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 import { formatMajorMoney } from "@/lib/currency";
 import { normalizePhoneNumber, splitPhoneNumber, cleanPastedNationalNumber } from "@/lib/phone";
@@ -79,7 +79,7 @@ interface OptionRow {
 }
 
 export function StoreEditorV2() {
-  const { state: globalState, stores, saveFullState, saveDraft, discardDraft, drafts, addToast, user, openUpgradeModal, switchStore } = useSwiftLink();
+  const { state: globalState, stores, saveFullState, saveDraft, discardDraft, drafts, addToast, user, openUpgradeModal, switchStore, updateState, setStoreLive } = useSwiftLink();
 
   // Local working copy of store state
   const [localState, setLocalState] = useState<ShopState>(() => JSON.parse(JSON.stringify(globalState)));
@@ -109,6 +109,10 @@ export function StoreEditorV2() {
     const currentGlobal = (globalState.storeUsername || "").trim().toLowerCase();
     if (!handle || handle === currentGlobal) {
       setHandleStatus("idle");
+      return;
+    }
+    if (!isSupabaseConfigured()) {
+      setHandleStatus("available");
       return;
     }
     setHandleStatus("checking");
@@ -755,11 +759,13 @@ export function StoreEditorV2() {
                     onClick={() => {
                       const next = !localState.isLive;
                       setLocalState((prev) => ({ ...prev, isLive: next }));
+                      updateState("isLive", next);
+                      if (localState.id) void setStoreLive(localState.id, next);
                       addToast(
                         next
-                          ? "Store is live. Press Save to publish it."
-                          : "Store paused — customers can no longer order. Press Save to publish it.",
-                        "info",
+                          ? "Store is live — customers can order."
+                          : "Store paused — customers can no longer order.",
+                        next ? "success" : "info",
                       );
                     }}
                     title={
@@ -768,7 +774,7 @@ export function StoreEditorV2() {
                         : "Open this store to customers"
                     }
                     className={cn(
-                      "inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition",
+                      "inline-flex min-h-[26px] shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition active:scale-95",
                       localState.isLive
                         ? "border-[#24382F] bg-[#0A1210] text-[#9DB3A8] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
                         : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
@@ -2013,7 +2019,6 @@ export function StoreEditorV2() {
                         : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
                     )}
                   >
-                    <Sun className="h-4 w-4" />
                     <span>Light Mode</span>
                     {localState.storefrontTheme?.background === "light" && (
                       <Check className="h-3.5 w-3.5 text-[#19C37D]" />
@@ -2030,7 +2035,6 @@ export function StoreEditorV2() {
                         : "border-[#1E2D27] bg-[#0A1210] text-[#9DB3A8] hover:border-[#5C7C6D]"
                     )}
                   >
-                    <Moon className="h-4 w-4" />
                     <span>Dark Mode</span>
                     {localState.storefrontTheme?.background !== "light" && (
                       <Check className="h-3.5 w-3.5 text-[#19C37D]" />
@@ -2899,7 +2903,7 @@ function ProductEditModal({
       onWheel={(e) => e.stopPropagation()}
     >
       <div
-        className="relative flex w-full h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[850px] sm:max-w-2xl flex-col rounded-none sm:rounded-2xl border-0 sm:border border-[#1E2D27] bg-[#111C18] text-[#E8F1EC] shadow-2xl overflow-hidden"
+        className="relative flex w-full h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[850px] sm:max-w-2xl min-h-0 flex-col rounded-none sm:rounded-2xl border-0 sm:border border-[#1E2D27] bg-[#111C18] text-[#E8F1EC] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Fixed Header */}
@@ -2923,8 +2927,8 @@ function ProductEditModal({
         </div>
 
         {/* Scrollable Form Body with contained scroll */}
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
-          <div ref={modalScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6 overscroll-contain">
+        <form onSubmit={handleSubmit} className="flex flex-1 min-h-0 flex-col overflow-hidden">
+          <div ref={modalScrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5 space-y-6 overscroll-contain custom-scrollbar">
             {/* Feedback notification toast */}
             {stockToast && (
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-400 flex items-center justify-between">
@@ -3498,7 +3502,7 @@ function ProductEditModal({
           </div>
 
           {/* Fixed Footer Actions - Always visible across mobile, tablet, and desktop */}
-          <div className="sticky bottom-0 z-30 flex shrink-0 items-center justify-between sm:justify-end gap-3 border-t border-[#1E2D27] bg-[#0E1714] px-4 sm:px-6 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] shadow-2xl">
+          <div className="shrink-0 flex items-center justify-between sm:justify-end gap-3 border-t border-[#1E2D27] bg-[#0E1714] px-4 sm:px-6 py-3.5 pb-[max(1rem,env(safe-area-inset-bottom,16px))] z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
             <button
               type="button"
               onClick={onClose}

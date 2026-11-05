@@ -186,20 +186,22 @@ export function TemplatePreviewModal({
           </div>
 
           {/* Row 2: controls */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:justify-end">
-            {appearanceToggle(appearance, setAppearance)}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-end w-full sm:w-auto">
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+              {appearanceToggle(appearance, setAppearance)}
 
-            {!isNarrowViewport && deviceToggle(device, setDevice)}
+              {!isNarrowViewport && deviceToggle(device, setDevice)}
 
-            {hasVendorProducts && (
-              <button
-                type="button"
-                onClick={() => setUseSampleData((value) => !value)}
-                className="min-h-[36px] rounded-lg border border-[#24382F] bg-[#0A1210] px-3 text-[11px] font-semibold text-[#9DB3A8] transition hover:text-[#E8F1EC]"
-              >
-                {useSampleData ? "Use my products" : "Use sample products"}
-              </button>
-            )}
+              {hasVendorProducts && (
+                <button
+                  type="button"
+                  onClick={() => setUseSampleData((value) => !value)}
+                  className="min-h-[36px] flex-1 sm:flex-initial rounded-lg border border-[#24382F] bg-[#0A1210] px-3 text-[11px] font-semibold text-[#9DB3A8] transition hover:text-[#E8F1EC] text-center truncate"
+                >
+                  {useSampleData ? "My products" : "Sample products"}
+                </button>
+              )}
+            </div>
 
             {(() => {
               const isAllowed = isTemplateAllowedOnPlan(activeTemplateId, vendorState.plan);
@@ -211,7 +213,7 @@ export function TemplatePreviewModal({
                       onSelectTemplate(activeTemplateId);
                       onClose();
                     }}
-                    className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] sm:flex-initial"
+                    className="flex min-h-[40px] w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] bg-[#19C37D] px-4 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] active:scale-95"
                   >
                     <Check className="h-3.5 w-3.5" />
                     Use this template
@@ -224,7 +226,7 @@ export function TemplatePreviewModal({
                   onClick={() => {
                     onSelectTemplate(activeTemplateId);
                   }}
-                  className="flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-xs font-bold text-black transition hover:opacity-95 shadow-md sm:flex-initial"
+                  className="flex min-h-[40px] w-full sm:w-auto items-center justify-center gap-1.5 rounded-[12px] bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-xs font-bold text-black transition hover:opacity-95 shadow-md active:scale-95"
                 >
                   <Lock className="h-3.5 w-3.5" />
                   Upgrade to Pro to Use

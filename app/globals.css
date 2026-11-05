@@ -16,6 +16,8 @@
  *     `.image-upload-label`.
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -255,3 +257,138 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Google Material 3 (M3) Expressive Design Tokens & Classes
+   Matching /public/assets/aistudio/SwiftLink_Inquiries_and_Store___M3_Expressive_3a403ccf.html
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --m3-bg: #f2f9f4;
+  --m3-s1: #e6f1ea;
+  --m3-s2: #d9e8df;
+  --m3-card: #ffffff;
+  --m3-on: #0f1f17;
+  --m3-var: #47594f;
+  --m3-line: #c4d6cb;
+  --m3-p: #00875a;
+  --m3-onp: #ffffff;
+  --m3-pc: #b8f2d3;
+  --m3-onpc: #00391f;
+  --m3-m: #ffe3a3;
+  --m3-onm: #3d2b00;
+  --m3-spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.dark, [data-theme="dark"], :root[data-theme="dark"] {
+  --m3-bg: #0a130f;
+  --m3-s1: #111e18;
+  --m3-s2: #182a22;
+  --m3-card: #14231c;
+  --m3-on: #e2efe7;
+  --m3-var: #9db4a8;
+  --m3-line: #27402f;
+  --m3-p: #5be3a0;
+  --m3-onp: #00391f;
+  --m3-pc: #0f5133;
+  --m3-onpc: #b8f2d3;
+  --m3-m: #4a3a0f;
+  --m3-onm: #ffe3a3;
+}
+
+/* M3 Spring Button */
+.m3-spring-btn {
+  font-family: "Outfit", system-ui, sans-serif;
+  transition: transform .35s var(--m3-spring), border-radius .35s var(--m3-spring), background .2s;
+}
+.m3-spring-btn:active {
+  transform: scale(.93);
+  border-radius: 14px !important;
+}
+
+/* M3 Switch (.sw) */
+.m3-sw {
+  width: 58px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--m3-p);
+  position: relative;
+  flex: none;
+  cursor: pointer;
+  border: 0;
+  transition: background .3s;
+}
+.m3-sw::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 28px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--m3-onp);
+  transition: left .4s var(--m3-spring);
+}
+.m3-sw.paused {
+  background: var(--m3-var);
+}
+.m3-sw.paused::after {
+  left: 4px;
+}
+
+/* Pulsing Status Dot */
+@keyframes m3-pulse {
+  0% { box-shadow: 0 0 0 0 var(--m3-p); }
+  70%, 100% { box-shadow: 0 0 0 9px transparent; }
+}
+.m3-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--m3-p);
+  display: inline-block;
+  animation: m3-pulse 2s infinite;
+}
+.m3-dot.paused {
+  background: var(--m3-var);
+  animation: none;
+}
+
+/* Morphing Blob Animation */
+@keyframes m3-morph {
+  0%, 100% { border-radius: 42% 58% 55% 45%/50% 45% 55% 50%; }
+  50% { border-radius: 58% 42% 40% 60%/45% 58% 42% 55%; }
+}
+.m3-blob {
+  border-radius: 42% 58% 55% 45%/50% 45% 55% 50%;
+  animation: m3-morph 6s ease-in-out infinite;
+}
+
+/* Wavy line progress */
+.m3-wave path {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+/* Navigation Pill */
+.m3-nav-pill {
+  width: 58px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  transition: background .25s, width .35s var(--m3-spring);
+}
+/* Floating badges animation */
+@keyframes m3-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(-1.5deg); }
+}
+.m3-float {
+  animation: m3-float 5s ease-in-out infinite;
+}
+.m3-float-delayed {
+  animation: m3-float 5s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+

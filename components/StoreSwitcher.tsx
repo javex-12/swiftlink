@@ -219,15 +219,15 @@ export function StoreSwitcher() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex min-h-[44px] w-full min-w-0 items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-3.5 py-2 text-xs font-semibold text-[#E8F1EC] transition-all hover:border-[#19C37D]"
+        className="flex min-h-[38px] w-full min-w-0 items-center gap-2 rounded-full border border-[#27402f] bg-[#182a22] px-3.5 py-1.5 text-xs font-semibold text-[#E8F1EC] transition-all hover:bg-[#20362c] active:scale-95 shadow-xs"
       >
-        <Store size={14} className="shrink-0 text-[#19C37D]" />
-        <span className="truncate">{state.bizName || "Switch Store"}</span>
-        <span className="ml-auto shrink-0 text-[10px] font-medium tabular-nums text-[#9DB3A8]">
+        <Store size={13} className="shrink-0 text-[#19C37D]" />
+        <span className="truncate max-w-[100px] xs:max-w-[130px] font-bold">{state.bizName || "Switch Store"}</span>
+        <span className="ml-auto shrink-0 text-[10px] font-semibold tabular-nums text-[#9DB3A8]">
           {allStores.length}/{formatLimit(storeLimit)}
         </span>
         <ChevronDown
-          size={14}
+          size={13}
           className={cn("shrink-0 text-[#9DB3A8] transition-transform", open && "rotate-180")}
         />
       </button>

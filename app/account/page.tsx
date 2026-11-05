@@ -90,14 +90,15 @@ export default function AccountPage() {
    * differently — and usage is shown against the *enforced* limits, which is
    * what a merchant actually hits.
    */
-  const plan = normalizePlan(accountPlanFor(stores.length ? stores : [state])) as keyof typeof PLAN_DETAILS;
-  const planDetail = PLAN_DETAILS[plan];
+  const plan = normalizePlan(accountPlanFor(stores && stores.length ? stores : [state])) as keyof typeof PLAN_DETAILS;
+  const planDetail = PLAN_DETAILS[plan] || PLAN_DETAILS.free;
   const productLimit = effectiveProductLimitFor(plan);
   const storeLimit = effectiveStoreLimitFor(plan);
-  const allStores = stores.length > 0 ? stores : [state];
+  const allStores = stores && stores.length > 0 ? stores : [state];
   const totalVisibleProducts = allStores.reduce((sum, s) => {
-    const prods = s.id === state.id ? state.products : s.products;
-    return sum + (prods || []).filter((p) => p.visible !== false).length;
+    if (!s) return sum;
+    const prods = s.id === state?.id ? state?.products : s.products;
+    return sum + (prods || []).filter((p) => p && p.visible !== false).length;
   }, 0);
   const usage = [
     {
@@ -106,7 +107,7 @@ export default function AccountPage() {
       limit: productLimit,
       icon: Package,
     },
-    { label: "Stores", used: stores.length, limit: storeLimit, icon: Store },
+    { label: "Stores", used: (stores || []).length, limit: storeLimit, icon: Store },
   ];
   /*
    * Only the catalogue being full is worth flagging. Every single-store plan
@@ -120,18 +121,18 @@ export default function AccountPage() {
    * storefront currently shows, so saving without touching anything is a no-op;
    * the choice is only sent when the merchant actually changes it.
    */
-  const hiddenProducts = state.products.filter((product) => product.visible === false);
-  const visibleProductIds = state.products
-    .filter((product) => product.visible !== false)
+  const hiddenProducts = (state?.products || []).filter((product) => product && product.visible === false);
+  const visibleProductIds = (state?.products || [])
+    .filter((product) => product && product.visible !== false)
     .map((product) => product.id);
   const [pickedIds, setPickedIds] = useState<number[]>(visibleProductIds);
   useEffect(() => {
     setPickedIds(
-      state.products.filter((product) => product.visible !== false).map((product) => product.id),
+      (state?.products || []).filter((product) => product && product.visible !== false).map((product) => product.id),
     );
     // Re-seed when the merchant moves to a different store; not on every save.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.id]);
+  }, [state?.id]);
   const togglePicked = (id: number) =>
     setPickedIds((prev) => {
       if (prev.includes(id)) return prev.filter((value) => value !== id);
@@ -139,8 +140,8 @@ export default function AccountPage() {
       return [...prev, id];
     });
   const needsChoice =
-    (!isUnlimited(productLimit) && hiddenProducts.length > 0) || stores.length > storeLimit;
-  const formatPrice = (value: number) => `${state.currency || "₦"}${Number(value).toLocaleString()}`;
+    (!isUnlimited(productLimit) && hiddenProducts.length > 0) || (stores || []).length > storeLimit;
+  const formatPrice = (value: number) => `${state?.currency || "₦"}${Number(value || 0).toLocaleString()}`;
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,154 +169,107 @@ export default function AccountPage() {
   }, [isSupabaseActive, user]);
 
   const stats = [
-    { label: "Active Products", value: state.products.length, icon: Package, color: "text-[#19C37D]" },
-    { label: "Categories", value: state.categories.length, icon: Globe, color: "text-[#60A5FA]" },
-    { label: "Public Status", value: state.isLive ? "Live" : "Paused", icon: CheckCircle2, color: state.isLive ? "text-[#19C37D]" : "text-[#E8B93A]" },
+    { label: "Active Products", value: (state?.products || []).length, icon: Package, color: "text-[#19C37D]" },
+    { label: "Categories", value: (state?.categories || []).length, icon: Globe, color: "text-[#60A5FA]" },
+    { label: "Public Status", value: state?.isLive ? "Live" : "Paused", icon: CheckCircle2, color: state?.isLive ? "text-[#19C37D]" : "text-[#E8B93A]" },
   ];
 
   return (
     <ProLayout>
-      <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-        {/* Top Back Navigation & Header Section */}
-        <div>
-          <Link
-            href="/pro"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#E8F1EC] transition hover:bg-[#19C37D] hover:text-[#04140D] mb-6"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Overview</span>
-          </Link>
+      <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 pb-16">
+        {/* Top Back Navigation */}
+        <Link
+          href="/pro"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#182a22] bg-[#111e18] px-5 py-2 text-xs font-semibold text-[#e2efe7] transition hover:bg-[#0f5133] hover:text-[#b8f2d3]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Overview</span>
+        </Link>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#1E2D27] pb-5">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#E8F1EC]">Settings</h1>
-                {state.plan && state.plan !== "free" && (
-                  <span className="rounded-full border border-[#24382F] bg-[#14231D] px-2.5 py-0.5 text-[11px] font-medium text-[#19C37D]">
-                    {state.plan.charAt(0).toUpperCase() + state.plan.slice(1)} Plan
-                  </span>
-                )}
-              </div>
-              <p className="text-xs sm:text-sm text-[#9DB3A8] mt-1">Manage your store identity and preferences.</p>
-            </div>
+        {/* M3 Header (.head) */}
+        <div className="flex items-start justify-between gap-4 border-b border-[#182a22] pb-5">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#e2efe7]">Settings</h1>
+            <p className="mt-1 text-xs sm:text-sm text-[#9db4a8]">Your account, plan and store options.</p>
           </div>
+          <span className="rounded-full bg-[#0f5133] text-[#b8f2d3] font-bold text-xs px-3.5 py-1">
+            {planDetail.name}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar Column */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Profile Card */}
-            <div className="bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm text-center">
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-              <div className="relative w-24 h-24 mx-auto mb-4 group">
-                <button
-                  type="button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="block w-full h-full rounded-[18px] bg-[#14231D] border-2 border-[#1E2D27] overflow-hidden shadow-inner cursor-pointer relative"
-                  aria-label="Upload profile image"
-                >
-                  {state.bizImage ? (
-                    <img src={state.bizImage} className="w-full h-full object-cover" alt="Profile" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User size={32} className="text-[#9DB3A8]" />
-                    </div>
-                  )}
-                  <div className={cn("absolute inset-0 bg-black/50 flex items-center justify-center rounded-[18px] transition-opacity", uploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                    {uploadingAvatar ? (
-                      <div className="w-6 h-6 border-2 border-[#19C37D] border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Camera size={20} className="text-[#E8F1EC]" />
-                    )}
-                  </div>
-                </button>
-                <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-[#19C37D] text-[#04140D] rounded-full flex items-center justify-center shadow-lg border border-[#111C18] pointer-events-none">
-                  <CheckCircle2 size={15} />
+        {/* M3 Hero Profile Card (.hero) */}
+        <section className="rounded-[44px_44px_44px_16px] bg-[#0f5133] text-[#b8f2d3] p-6 sm:p-8 shadow-lg">
+          <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          <div className="flex items-center gap-4 sm:gap-6">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="relative flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center overflow-hidden rounded-[28px] bg-[#00391f] text-[#5be3a0] shadow-inner transition hover:scale-105 active:scale-95 cursor-pointer border border-[#5be3a0]/30"
+              aria-label="Upload profile image"
+            >
+              {state.bizImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={state.bizImage} className="h-full w-full object-cover" alt="Profile" />
+              ) : (
+                <User size={36} className="text-[#b8f2d3]" />
+              )}
+              {uploadingAvatar && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#5be3a0] border-t-transparent" />
                 </div>
-              </div>
-              <p className="text-[11px] text-[#9DB3A8] mb-2">Tap to change photo</p>
-              <h3 className="text-base font-bold text-[#E8F1EC] tracking-tight truncate">{state.bizName || "New Merchant"}</h3>
-              <p className="text-xs text-[#9DB3A8] mt-1 mb-6 truncate">{authLabel}</p>
-              
-              <div className="grid grid-cols-3 gap-2 border-t border-[#1E2D27] pt-5">
-                {stats.map(s => (
-                  <div key={s.label}>
-                    <p className="text-sm font-bold text-[#E8F1EC] leading-none">{s.value}</p>
-                    <p className="text-[10px] text-[#9DB3A8] uppercase tracking-wider mt-1">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Plan Status */}
-            <div className="bg-[#111C18] p-6 rounded-[18px] border border-[#1E2D27] relative overflow-hidden">
-              <div className="relative z-10">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9DB3A8]">Your Plan</span>
-                <div className="flex items-center gap-2 mt-1 mb-3">
-                  {/*
-                    Never name a tier before the server has: the local mirror
-                    can hold an old plan, and printing it then correcting it is
-                    the flicker this replaced.
-                  */}
-                  <h2 className="text-lg font-bold text-[#E8F1EC]">
-                    {planReady ? `${planDetail.name} plan` : "Checking your plan…"}
-                  </h2>
-                  {planReady && atLimit && (
-                    <span className="rounded-full bg-[#E8B93A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#E8B93A]">At limit</span>
-                  )}
-                </div>
-                <p className="text-xs text-[#9DB3A8] leading-relaxed mb-4">{planDetail.summary}</p>
-                {plan === "business" ? (
-                  /*
-                    Business is the top tier, so there is nothing above it. A
-                    "compare and upgrade" button here led to a panel that could
-                    only offer it what it already had.
-                  */
-                  <span className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[12px] border border-[#19C37D]/30 bg-[#19C37D]/10 px-3 text-[11px] font-semibold text-[#19C37D]">
-                    <BadgeCheck size={12} /> Highest plan
-                  </span>
-                ) : (
-                  <Link
-                    href="#plans"
-                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[12px] border border-[#24382F] bg-[#14231D] px-3 text-[11px] font-semibold text-[#E8F1EC] transition hover:border-[#19C37D]"
-                  >
-                    <ArrowUpRight size={12} />
-                    Upgrade plan
-                  </Link>
-                )}
-              </div>
+              )}
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Signed in as</div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#ffffff] truncate">
+                {state.ownerName || "Merchant"}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#b8f2d3]/90 mt-0.5 truncate">
+                {state.bizName || "SwiftLink Store"} · {authLabel}
+              </p>
             </div>
           </div>
 
-          {/* Main Column */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* M3 Metric Pills (.pst) */}
+          <div className="grid grid-cols-3 gap-2.5 mt-6">
+            <div className="rounded-[20px] bg-black/15 p-3.5 text-center">
+              <b className="block text-xl sm:text-2xl font-extrabold text-[#ffffff]">{(state?.products || []).length}</b>
+              <small className="text-[11px] opacity-80 font-medium">Active products</small>
+            </div>
+            <div className="rounded-[20px] bg-black/15 p-3.5 text-center">
+              <b className="block text-xl sm:text-2xl font-extrabold text-[#ffffff]">{(state?.categories || []).length}</b>
+              <small className="text-[11px] opacity-80 font-medium">Categories</small>
+            </div>
+            <div className="rounded-[20px] bg-black/15 p-3.5 text-center">
+              <b className="block text-xl sm:text-2xl font-extrabold text-[#ffffff]">{state?.isLive ? "Live" : "Paused"}</b>
+              <small className="text-[11px] opacity-80 font-medium">Public status</small>
+            </div>
+          </div>
+        </section>
+
+        {/* Main Settings Sections */}
+        <div className="space-y-8">
             {/*
               Plans — the current plan, usage against the *enforced* limits, and
               every tier. Upgrades are self-serve through Paystack's hosted
               checkout (see SubscriptionPanel); the feedback button is still there
               for merchants who would rather talk to a person first.
             */}
-            <section
-              id="plans"
-              className="scroll-mt-20 bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
-                  <BadgeCheck size={18} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-[#E8F1EC]">Plan and usage</h3>
-                  <p className="text-xs text-[#9DB3A8]">
-                    {planReady ? (
-                      <>
-                        You are on <strong className="text-[#E8F1EC]">{planDetail.name}</strong> ({planDetail.price}).
-                      </>
-                    ) : (
-                      "Checking the plan on your account…"
-                    )}
-                  </p>
+        <div className="space-y-3">
+          <h2 className="text-xl font-bold tracking-tight text-[#e2efe7]">Plan and usage</h2>
+          <section
+            id="plans"
+            className="scroll-mt-20 rounded-[32px] border border-[#182a22] bg-[#111e18] p-6 sm:p-8 shadow-sm"
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-[#182a22]">
+              <div>
+                <small className="text-xs font-semibold uppercase tracking-wider text-[#9db4a8]">Your plan</small>
+                <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e2efe7] mt-0.5">
+                  {planDetail.name}
                 </div>
               </div>
+              <b className="text-lg sm:text-xl font-extrabold text-[#5be3a0]">{planDetail.price} / month</b>
+            </div>
 
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {usage.map((u) => {
@@ -445,7 +399,7 @@ export default function AccountPage() {
                       Products shown on your storefront: {pickedIds.length} of {Math.min(productLimit, state.products.length)}
                     </p>
                     <div className="mt-2 max-h-60 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
-                      {state.products.map((product) => {
+                      {(state?.products || []).map((product) => {
                         const picked = pickedIds.includes(product.id);
                         const full = !picked && pickedIds.length >= productLimit;
                         return (
@@ -483,7 +437,7 @@ export default function AccountPage() {
                       type="button"
                       disabled={pickedIds.length === 0}
                       onClick={() => {
-                        updateState("products", applyProductVisibility(state.products, pickedIds));
+                        updateState("products", applyProductVisibility(state?.products || [], pickedIds));
                         addToast(
                           `${pickedIds.length} product${pickedIds.length === 1 ? "" : "s"} will show on your storefront.`,
                           "success",
@@ -491,13 +445,13 @@ export default function AccountPage() {
                       }}
                       className="mt-3 flex min-h-[40px] items-center justify-center gap-2 rounded-[12px] bg-[#19C37D] px-4 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] disabled:opacity-40"
                     >
-                      Save my {Math.min(productLimit, state.products.length)} products
+                      Save my {Math.min(productLimit, (state?.products || []).length)} products
                     </button>
                   </div>
                 </div>
               )}
 
-              {stores.length > 1 && (
+              {(stores || []).length > 1 && (
                 <div className="mt-6 border-t border-[#1E2D27] pt-5">
                   <p className="text-[11px] font-semibold text-[#E8F1EC]">Your stores</p>
                   <p className="mt-1 text-[11px] text-[#9DB3A8]">
@@ -559,135 +513,128 @@ export default function AccountPage() {
               )}
             </section>
 
-            {/*
-              Custom domain. The panel writes an owner-scoped row and asks the
-              server to check DNS; routing itself lives in middleware.ts, so a
-              merchant's hostname serves the same canonical storefront.
-            */}
-            <section
-              id="domain"
-              className="scroll-mt-20 bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
-                  <Globe size={18} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-[#E8F1EC]">Your own domain</h3>
-                  <p className="text-xs text-[#9DB3A8]">
-                    Point a domain you already own at your store instead of using the shared link.
-                  </p>
-                </div>
-              </div>
-              <DomainSettings
-                currentPlan={plan}
-                storeId={state.id}
-                storeHandle={state.storeUsername}
-              />
-            </section>
-
-            {/*
-              Store visibility — the open/closed switch, in Settings so it is
-              reachable by every user from the console and not only from inside
-              the store editor.
-            */}
-            <div className="bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
-                  {state.isLive ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                </div>
-                <h3 className="font-semibold text-sm text-[#E8F1EC]">Store visibility</h3>
-              </div>
-              <p className="text-xs text-[#9DB3A8] leading-relaxed">
-                {state.isLive
-                  ? "Your storefront is live and customers can send orders to WhatsApp."
-                  : "Your store is paused. The page still loads, but customers cannot check out."}
-              </p>
-              <button
-                type="button"
-                aria-pressed={!state.isLive}
-                onClick={() => {
-                  const next = !state.isLive;
-                  updateState("isLive", next);
-                  addToast(
-                    next
-                      ? "Store is live — customers can order again."
-                      : "Store paused — customers can no longer check out.",
-                    next ? "success" : "info",
-                  );
-                }}
-                className={cn(
-                  "mt-4 flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-2 rounded-[12px] border px-4 text-xs font-semibold transition",
-                  state.isLive
-                    ? "border-[#24382F] bg-[#14231D] text-[#E8F1EC] hover:border-[#FF8A8A]/60 hover:text-[#FF8A8A]"
-                    : "border-[#19C37D] bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
-                )}
-              >
-                {state.isLive ? <Pause size={15} /> : <Play size={15} />}
-                {state.isLive ? "Stop store" : "Go live"}
-              </button>
-            </div>
-
-            {/* Identity Settings */}
-            <div className="bg-[#111C18] p-6 sm:p-8 rounded-[18px] border border-[#1E2D27] shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-9 h-9 rounded-[10px] bg-[#14231D] border border-[#24382F] flex items-center justify-center text-[#19C37D]">
-                  <User size={18} />
-                </div>
-                <h3 className="font-semibold text-sm text-[#E8F1EC]">Store Identity</h3>
-              </div>
-              
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9DB3A8]">Your Full Name (Owner)</label>
-                    <div className="flex items-center gap-2 bg-[#14231D] px-3.5 py-2.5 rounded-[12px] border border-[#24382F] focus-within:border-[#19C37D]">
-                      <User size={15} className="text-[#9DB3A8]" />
-                      <input 
-                        type="text" 
-                        value={state.ownerName || ""} 
-                        onChange={(e) => updateState("ownerName", e.target.value)}
-                        placeholder="e.g. Michael Dosunmu"
-                        className="bg-transparent flex-1 font-medium text-xs outline-none text-[#E8F1EC] placeholder:text-[#9DB3A8]/50"
-                      />
+            {/* Store Controls Section */}
+            <div className="mt-8 space-y-3">
+              <h2 className="text-xl font-bold tracking-tight text-[#e2efe7]">Store</h2>
+              <div className="rounded-[32px] border border-[#182a22] bg-[#111e18] p-3 space-y-2">
+                {/* Store visibility with interactive toggle */}
+                <div className="flex items-center justify-between gap-4 p-4 rounded-[24px] bg-[#14231c]">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#19C37D]">
+                      <Store size={20} />
+                    </div>
+                    <div>
+                      <b className="block text-sm font-bold text-[#e2efe7]">Store visibility</b>
+                      <small className="text-xs text-[#9db4a8]">
+                        {state.isLive ? "Live. Buyers can send orders" : "Paused. Buyers cannot order"}
+                      </small>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9DB3A8]">Store / Brand Name</label>
-                    <div className="flex items-center gap-2 bg-[#14231D] px-3.5 py-2.5 rounded-[12px] border border-[#24382F] focus-within:border-[#19C37D]">
-                      <Globe size={15} className="text-[#9DB3A8]" />
-                      <input 
-                        type="text" 
-                        value={state.bizName || ""} 
+
+                  <button
+                    type="button"
+                    aria-pressed={!state.isLive}
+                    onClick={() => {
+                      const next = !state.isLive;
+                      updateState("isLive", next);
+                      addToast(
+                        next
+                          ? "Store is live — customers can order again."
+                          : "Store paused — customers can no longer check out.",
+                        next ? "success" : "info",
+                      );
+                    }}
+                    className={cn(
+                      "flex min-h-[38px] items-center justify-center gap-1.5 rounded-full px-4 text-xs font-bold transition active:scale-95",
+                      state.isLive
+                        ? "border border-[#27402f] bg-[#0a130f] text-[#9db4a8] hover:text-[#ff8a8a]"
+                        : "bg-[#19C37D] text-[#04140D] hover:bg-[#16B070]",
+                    )}
+                  >
+                    {state.isLive ? <Pause size={13} /> : <Play size={13} />}
+                    {state.isLive ? "Stop store" : "Go live"}
+                  </button>
+                </div>
+
+                {/* Custom Domain Section */}
+                <div id="domain" className="p-5 rounded-[24px] bg-[#14231c] space-y-3">
+                  <div className="flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#60A5FA]">
+                      <Globe size={20} />
+                    </div>
+                    <div>
+                      <b className="block text-sm font-bold text-[#e2efe7]">Your own domain</b>
+                      <small className="text-xs text-[#9db4a8]">Point a domain you own at your store</small>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <DomainSettings
+                      currentPlan={plan}
+                      storeId={state.id}
+                      storeHandle={state.storeUsername}
+                    />
+                  </div>
+                </div>
+
+                {/* Store Details Input Group */}
+                <div className="p-5 rounded-[24px] bg-[#14231c] space-y-4">
+                  <div className="flex items-center gap-3.5 mb-2">
+                    <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#19C37D]">
+                      <BadgeCheck size={20} />
+                    </div>
+                    <div>
+                      <b className="block text-sm font-bold text-[#e2efe7]">Store identity</b>
+                      <small className="text-xs text-[#9db4a8]">Brand name and WhatsApp order destination</small>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                        Store / Brand Name
+                      </label>
+                      <input
+                        type="text"
+                        value={state.bizName || ""}
                         onChange={(e) => updateState("bizName", e.target.value)}
                         placeholder="e.g. CyderStore"
-                        className="bg-transparent flex-1 font-medium text-xs outline-none text-[#E8F1EC] placeholder:text-[#9DB3A8]/50"
+                        className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-2.5 text-sm text-[#e2efe7] outline-none transition focus:border-[#5be3a0]"
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9DB3A8]">Store Handle (Custom Link)</label>
-                    <div className="flex items-center gap-2 bg-[#14231D] px-3.5 py-2.5 rounded-[12px] border border-[#24382F] focus-within:border-[#19C37D]">
-                      <span className="text-xs font-medium text-[#9DB3A8]">/</span>
-                      <input 
-                        type="text" 
-                        value={state.storeUsername || ""} 
-                        onChange={(e) => updateState("storeUsername", e.target.value)}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                        Store Handle (swiftlink.pro/...)
+                      </label>
+                      <input
+                        type="text"
+                        value={state.storeUsername || ""}
+                        onChange={(e) => updateState("storeUsername", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                         placeholder="your-brand"
-                        className="bg-transparent flex-1 font-medium text-xs outline-none text-[#E8F1EC] placeholder:text-[#9DB3A8]/50"
+                        className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-2.5 text-sm text-[#e2efe7] outline-none transition focus:border-[#5be3a0]"
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9DB3A8]">WhatsApp Order Phone</label>
-                    <div className="flex items-center gap-2 bg-[#14231D] px-3.5 py-2.5 rounded-[12px] border border-[#24382F] focus-within:border-[#19C37D]">
-                      <Smartphone size={15} className="text-[#9DB3A8]" />
-                      <input 
-                        type="tel" 
-                        value={state.phone ? (state.phone.startsWith("+") ? state.phone : formatDisplayPhone(state.phone)) : ""} 
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                        Owner Name
+                      </label>
+                      <input
+                        type="text"
+                        value={state.ownerName || ""}
+                        onChange={(e) => updateState("ownerName", e.target.value)}
+                        placeholder="e.g. Michael Dosunmu"
+                        className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-2.5 text-sm text-[#e2efe7] outline-none transition focus:border-[#5be3a0]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-[#9db4a8] mb-1.5 ml-1">
+                        WhatsApp Order Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={state.phone ? (state.phone.startsWith("+") ? state.phone : formatDisplayPhone(state.phone)) : ""}
                         onChange={(e) => updateState("phone", e.target.value)}
                         onBlur={(e) => {
                           const val = e.target.value.trim();
@@ -706,7 +653,7 @@ export default function AccountPage() {
                           }
                         }}
                         placeholder="+234 808 000 0000"
-                        className="bg-transparent flex-1 font-medium text-xs outline-none text-[#E8F1EC] placeholder:text-[#9DB3A8]/50"
+                        className="w-full rounded-[20px] border-2 border-[#27402f] bg-[#0a130f] px-4 py-2.5 text-sm text-[#e2efe7] outline-none transition focus:border-[#5be3a0]"
                       />
                     </div>
                   </div>
@@ -714,40 +661,72 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Account & Data Actions */}
-            <div className="bg-[#111C18] rounded-[18px] border border-[#1E2D27] p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <Lock className="text-[#19C37D]" size={18} />
-                <h3 className="font-semibold text-sm text-[#E8F1EC]">Account & Data Safety</h3>
-              </div>
-              <p className="text-xs text-[#9DB3A8] leading-relaxed mb-5">
-                Manage your session or schedule account removal. Deleted accounts enter a 30-day grace period before data is permanently wiped.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
+            {/* Account Actions Section */}
+            <div className="mt-8 space-y-3">
+              <h2 className="text-xl font-bold tracking-tight text-[#e2efe7]">Account</h2>
+              <div className="rounded-[32px] border border-[#182a22] bg-[#111e18] p-3 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="w-full flex items-center justify-between p-4 rounded-[24px] bg-[#14231c] hover:bg-[#182a22] transition text-left"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#19C37D]">
+                      <User size={20} />
+                    </div>
+                    <div>
+                      <b className="block text-sm font-bold text-[#e2efe7]">Your profile</b>
+                      <small className="text-xs text-[#9db4a8]">{state.ownerName || "Change photo and name"}</small>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-[#5be3a0]">Change</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => void authSignOut()}
-                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#14231D] border border-[#24382F] text-[#E8F1EC] rounded-[12px] text-xs font-semibold hover:border-[#5c7c6d] hover:bg-[#1E2D27] transition"
+                  className="w-full flex items-center justify-between p-4 rounded-[24px] bg-[#14231c] hover:bg-[#182a22] transition text-left"
                 >
-                  Log Out
-                </button>
-                <button
-                  type="button"
-                  disabled={actionLoading !== null}
-                  onClick={handleDeactivate}
-                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#14231D] border border-[#E8B93A]/30 text-[#E8B93A] rounded-[12px] text-xs font-semibold hover:bg-[#E8B93A]/10 transition disabled:opacity-50"
-                >
-                  {actionLoading === "deactivate" ? "Deactivating…" : "Deactivate Account"}
-                </button>
-                <button
-                  type="button"
-                  disabled={actionLoading !== null}
-                  onClick={handleDelete}
-                  className="flex-1 min-h-[44px] px-4 py-2.5 bg-[#2a1414] border border-[#FF8A8A]/30 text-[#FF8A8A] rounded-[12px] text-xs font-semibold hover:bg-[#3d1818] transition disabled:opacity-50"
-                >
-                  {actionLoading === "delete" ? "Scheduling…" : "Delete Account (30 Days)"}
+                  <div className="flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#9db4a8]">
+                      <Lock size={20} />
+                    </div>
+                    <div>
+                      <b className="block text-sm font-bold text-[#e2efe7]">Sign out</b>
+                      <small className="text-xs text-[#9db4a8]">{authLabel}</small>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-[#9db4a8]">Exit</span>
                 </button>
               </div>
+            </div>
+
+            {/* Danger Zone Section */}
+            <div className="mt-8 space-y-3">
+              <h2 className="text-xl font-bold tracking-tight text-[#ff8a8a]">Danger zone</h2>
+              <section className="rounded-[32px] border border-rose-500/20 bg-[#141212] p-6 shadow-sm">
+                <p className="text-xs sm:text-sm text-[#9db4a8] leading-relaxed">
+                  Deleted accounts enter a 30-day grace period before data is permanently wiped. Storefronts are taken offline immediately.
+                </p>
+                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    disabled={actionLoading !== null}
+                    onClick={handleDeactivate}
+                    className="flex-1 min-h-[44px] px-5 py-2.5 rounded-full border border-[#ffe3a3]/30 bg-[#4a3a0f]/40 text-[#ffe3a3] text-xs font-bold hover:bg-[#4a3a0f] transition disabled:opacity-50"
+                  >
+                    {actionLoading === "deactivate" ? "Deactivating…" : "Deactivate Account"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading !== null}
+                    onClick={handleDelete}
+                    className="flex-1 min-h-[44px] px-5 py-2.5 rounded-full bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition disabled:opacity-50"
+                  >
+                    {actionLoading === "delete" ? "Scheduling…" : "Delete account (30 days)"}
+                  </button>
+                </div>
+              </section>
             </div>
           </div>
         </div>

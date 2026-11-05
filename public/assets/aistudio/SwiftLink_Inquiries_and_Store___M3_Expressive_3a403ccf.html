@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SwiftLink Inquiries and Store – M3 Expressive</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#f2f9f4;--s1:#e6f1ea;--s2:#d9e8df;--card:#ffffff;
+  --on:#0f1f17;--var:#47594f;--line:#c4d6cb;
+  --p:#00875a;--onp:#ffffff;--pc:#b8f2d3;--onpc:#00391f;
+  --m:#ffe3a3;--onm:#3d2b00;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a130f;--s1:#111e18;--s2:#182a22;--card:#14231c;
+    --on:#e2efe7;--var:#9db4a8;--line:#27402f;
+    --p:#5be3a0;--onp:#00391f;--pc:#0f5133;--onpc:#b8f2d3;
+    --m:#4a3a0f;--onm:#ffe3a3;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a130f;--s1:#111e18;--s2:#182a22;--card:#14231c;
+  --on:#e2efe7;--var:#9db4a8;--line:#27402f;
+  --p:#5be3a0;--onp:#00391f;--pc:#0f5133;--onpc:#b8f2d3;
+  --m:#4a3a0f;--onm:#ffe3a3;
+}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--on);font-family:"Outfit",system-ui,sans-serif;font-size:16px;line-height:1.4;padding-bottom:110px}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none;transition:transform .35s var(--spring),border-radius .35s var(--spring),background .2s}
+button:active{transform:scale(.93);border-radius:14px!important}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--p);outline-offset:2px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 0 10px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+.logo b{width:38px;height:38px;border-radius:14px 14px 14px 6px;background:var(--p);color:var(--onp);display:grid;place-items:center;font-size:18px}
+.storechip{display:flex;align-items:center;gap:8px;background:var(--s2);padding:10px 14px 10px 12px;border-radius:999px;font-weight:600}
+.storechip small{color:var(--var);font-weight:500}
+h1{font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--var);margin-top:6px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-top:8px}
+.acts{display:flex;gap:8px}
+.icon-btn{width:48px;height:48px;border-radius:18px;background:var(--s2);display:grid;place-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 22px;border-radius:999px;font-weight:700}
+.filled{background:var(--p);color:var(--onp)}
+.tonal{background:var(--s2)}
+.outl{box-shadow:inset 0 0 0 2px var(--line)}
+.seg{display:flex;gap:4px;background:var(--s1);padding:5px;border-radius:999px;margin:18px 0}
+.seg button{flex:1;height:44px;border-radius:999px;font-weight:600;color:var(--var);display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button.on{background:var(--p);color:var(--onp);border-radius:999px 999px 999px 999px}
+.seg em{font-style:normal;background:color-mix(in srgb,currentColor 18%,transparent);padding:1px 8px;border-radius:99px;font-size:13px}
+.scroll{display:flex;gap:8px;overflow-x:auto;margin:18px -16px 16px;padding:0 16px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.fchip{height:44px;padding:0 18px;border-radius:16px;background:var(--s1);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px;flex:none}
+.fchip.on{background:var(--pc);color:var(--onpc);border-radius:999px}
+.empty{background:var(--s1);border-radius:40px;padding:36px 24px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty h3{font-size:24px;font-weight:700;margin-top:14px}
+.empty p{color:var(--var);max-width:290px}
+.blob{width:112px;height:112px;background:var(--pc);color:var(--onpc);display:grid;place-items:center;border-radius:42% 58% 55% 45%/50% 45% 55% 50%;animation:morph 6s ease-in-out infinite}
+.blob svg{width:44px;height:44px}
+@keyframes morph{50%{border-radius:58% 42% 40% 60%/45% 58% 42% 55%}}
+.stack{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:14px}
+.ghost{color:var(--var);font-weight:600;margin:16px auto 0;display:block;padding:10px 16px}
+.inq{background:var(--s1);border-radius:28px;padding:16px 18px;margin-bottom:10px}
+.inq:nth-child(2){border-radius:28px 28px 28px 10px}
+.rowb{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.av{width:44px;height:44px;border-radius:16px;background:var(--pc);color:var(--onpc);display:grid;place-items:center;font-weight:800;flex:none}
+.inq strong{display:block}.inq small{color:var(--var)}
+.tag{padding:4px 12px;border-radius:99px;font-size:13px;font-weight:700;background:var(--m);color:var(--onm)}
+.tag.ok{background:var(--pc);color:var(--onpc)}
+.item{margin:12px 0;padding:12px 14px;border-radius:18px;background:var(--bg);display:flex;justify-content:space-between;gap:8px}
+.mini{height:42px;padding:0 18px;font-size:15px;width:100%}
+.shead{display:flex;gap:14px;align-items:center;margin-top:6px}
+.logo2{width:64px;height:64px;border-radius:24px 24px 24px 10px;background:var(--p);color:var(--onp);display:grid;place-items:center;font-size:28px;font-weight:800;flex:none}
+.shead h1{font-size:28px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;background:var(--pc);color:var(--onpc);font-weight:700;font-size:14px}
+.pill.off{background:var(--s2);color:var(--var)}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.link{color:var(--var);font-size:15px}
+h2{font-size:22px;font-weight:700;margin:28px 4px 12px;display:flex;justify-content:space-between;align-items:center}
+h2 small{color:var(--var);font-weight:500;font-size:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod{background:var(--s1);border-radius:28px;overflow:hidden}
+.prod .ph{height:96px;background:var(--pc);display:grid;place-items:center;color:var(--onpc)}
+.prod div.t{padding:12px 14px}.prod b{display:block}.prod small{color:var(--var)}
+.cats{display:flex;gap:8px;flex-wrap:wrap}
+.cin{display:flex;gap:8px;margin-top:12px}
+input,textarea{width:100%;font:inherit;color:var(--on);background:var(--bg);border:2px solid var(--line);border-radius:20px;padding:13px 16px}
+textarea{border-radius:24px;resize:vertical;min-height:110px}
+.list{background:var(--s1);border-radius:32px;overflow:hidden;padding:6px}
+.li{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:12px 12px;border-radius:24px}
+.li:active{background:var(--s2)}
+.li .ic{width:44px;height:44px;border-radius:16px;background:var(--s2);display:grid;place-items:center;flex:none}
+.li:nth-child(odd) .ic{border-radius:50%}
+.li div{flex:1;min-width:0}.li b{display:block}.li small{color:var(--var)}
+.li>svg{color:var(--var)}
+.tpls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tpl{aspect-ratio:3/4;border-radius:28px;background:var(--s2);position:relative;display:flex;align-items:flex-end;padding:12px;font-weight:700;text-align:left}
+.tpl.on{background:var(--p);color:var(--onp);border-radius:28px 28px 28px 8px}
+.tpl .ck{position:absolute;top:10px;right:10px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-radius:36px 36px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .5s var(--spring);z-index:30}
+.sheet.show{transform:none}
+.sheet .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+.sheet h3{font-size:24px;font-weight:800;margin-bottom:4px}
+.fld{margin-top:14px}.fld label{display:block;font-weight:600;margin:0 4px 6px}
+.fld small{color:var(--var);display:block;margin:6px 4px 0}
+.vars{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.vars button{height:38px;padding:0 14px;border-radius:12px;background:var(--pc);color:var(--onpc);font-weight:600}
+.bub{background:var(--pc);color:var(--onpc);border-radius:22px 22px 22px 6px;padding:14px 16px;white-space:pre-wrap;margin-top:8px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--s1);padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-around;border-radius:28px 28px 0 0;z-index:10}
+nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--var);flex:1}
+nav button i{width:60px;height:34px;border-radius:999px;display:grid;place-items:center;transition:background .25s,width .35s var(--spring)}
+nav button.on{color:var(--on)}
+nav button.on i{background:var(--pc);color:var(--onpc);width:68px}
+.toast{position:fixed;left:50%;bottom:112px;transform:translate(-50%,30px) scale(.9);background:var(--on);color:var(--bg);padding:12px 20px;border-radius:18px;font-weight:600;opacity:0;pointer-events:none;transition:all .4s var(--spring);z-index:40;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+.hero{background:var(--pc);color:var(--onpc);border-radius:44px 44px 44px 16px;padding:24px 22px 22px;margin-top:6px;transition:background .3s}
+.hero h1{font-size:40px;margin:2px 0 16px}
+.hi{font-weight:500;opacity:.8}
+.status{display:flex;align-items:center;justify-content:space-between;gap:12px;background:color-mix(in srgb,var(--onpc) 10%,transparent);border-radius:999px;padding:8px 8px 8px 16px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--p);display:inline-block;margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--p)}70%,100%{box-shadow:0 0 0 9px transparent}}
+.sw{width:58px;height:34px;border-radius:999px;background:var(--p);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:4px;left:28px;width:26px;height:26px;border-radius:50%;background:var(--onp);transition:left .4s var(--spring)}
+.paused .sw{background:var(--var)}.paused .sw::after{left:4px}.paused .dot{background:var(--var);animation:none}
+.hero.paused{background:var(--s2);color:var(--on)}
+.lk{display:flex;align-items:center;gap:8px;background:var(--card);color:var(--on);border-radius:999px;padding:6px 6px 6px 18px;margin-top:14px}
+.lk span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.hr{display:flex;gap:10px;margin-top:12px}.hr .btn{flex:1;background:color-mix(in srgb,currentColor 12%,transparent);color:inherit}
+.card{background:var(--s1);border-radius:32px;padding:20px}
+.prog{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}.prog b{font-size:32px;font-weight:800}.prog span{color:var(--var)}
+.wave{width:100%;height:16px;display:block;margin:2px 0 14px;overflow:visible}.wave path{fill:none;stroke-width:4;stroke-linecap:round}
+.next{width:100%;display:flex;align-items:center;gap:14px;text-align:left;background:var(--p);color:var(--onp);border-radius:28px;padding:16px 16px 16px 20px}
+.next div{flex:1}.next strong{display:block;font-size:19px}.next small{opacity:.85}
+.next .go{width:44px;height:44px;border-radius:16px;background:var(--onp);color:var(--p);display:grid;place-items:center}
+.steps{list-style:none;padding:0;margin-top:10px}.steps li{display:flex;align-items:center;gap:12px;padding:11px 4px;color:var(--var)}
+.steps .ck{width:24px;height:24px;border-radius:9px;background:var(--p);color:var(--onp);display:grid;place-items:center;flex:none}
+.steps .ck svg{width:15px;height:15px;stroke-width:3}.steps .todo .ck{background:none;border:2px solid var(--var)}.steps .todo{color:var(--on);font-weight:600}
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st{background:var(--s1);padding:18px;display:flex;flex-direction:column;justify-content:space-between;min-height:128px}
+.st small{color:var(--var);font-weight:500}.st b{font-size:38px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.st.money{grid-column:1/-1;background:var(--m);color:var(--onm);border-radius:40px 40px 16px 40px;min-height:140px}
+.st.money small{color:inherit;opacity:.8}.st.money b{font-size:54px}
+.a{border-radius:32px 32px 32px 12px}.b{border-radius:32px 32px 12px 32px}.c{border-radius:12px 32px 32px 32px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.chip{height:52px;border-radius:20px;background:var(--card);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
+.chip.on{background:var(--pc);color:var(--onpc);border-radius:26px}
+.help{color:var(--var);font-size:15px}.wa{width:100%;margin-top:12px;height:56px;font-size:17px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:110px;margin-top:14px}.bars i{flex:1;border-radius:99px;background:var(--p);min-height:4px}
+.chr{display:flex;align-items:center;gap:12px;margin-top:14px}.chr span{width:84px;font-weight:600}.chr b{width:24px;text-align:right}
+.tr{flex:1;height:14px;border-radius:99px;background:var(--s2);overflow:hidden}.tr i{display:block;height:100%;border-radius:99px;background:var(--p)}
+.pulse{display:flex;gap:14px;align-items:flex-start;background:var(--pc);color:var(--onpc);border-radius:32px 32px 32px 10px;padding:18px;margin-top:10px}
+.pulse p{margin-top:2px}
+.prow{display:grid;grid-template-columns:1.4fr .8fr 1fr;gap:8px;padding:11px 0;border-bottom:1px solid var(--line)}.prow.hd{color:var(--var);font-weight:600}
+.pv{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .5s var(--spring);padding-top:env(safe-area-inset-top,0px);visibility:hidden}
+.pv.show{transform:none;visibility:visible}
+.pvt{padding:10px 16px 12px;background:var(--s1);border-radius:0 0 28px 28px;flex:none}.pvt .seg button{padding:0 18px}
+.fw{flex:1;overflow:auto}
+.fr{--fb:#fff;--ft:#14202b;--fm:#5d6b78;--fc:#eef2f6;--fa:#13b878;--fo:#fff;--fh:"Outfit",sans-serif;--fr:20px;--fw:700;--tt:none;background:var(--fb);color:var(--ft);min-height:100%;display:flex;flex-direction:column;font-family:"Outfit",sans-serif}
+.fr.d{--fb:#0f1a2e;--ft:#eef2f8;--fm:#8c9bb0;--fc:#1b2a42}
+.fr.t0{--fh:"Noto Serif",Georgia,serif;--fr:16px}.fr.t1{--fa:#d9627f;--fr:30px;--fw:600}.fr.t2{--fa:#ffd23f;--fo:#111;--fr:6px;--fw:900;--tt:uppercase}
+.fann{text-align:center;font-size:13px;color:var(--fm);padding:10px;border-bottom:1px solid var(--fc)}
+.fhd{display:flex;align-items:center;gap:10px;padding:14px 18px}
+.flogo{width:36px;height:36px;border-radius:50%;background:var(--fa);color:var(--fo);display:grid;place-items:center;font-weight:800}
+.fname{flex:1;font-family:var(--fh);font-size:20px;font-weight:var(--fw);text-transform:var(--tt)}
+.fic{width:42px;height:42px;border-radius:50%;background:var(--fa);color:var(--fo);display:grid;place-items:center}
+.fhero{padding:26px 20px 18px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}.t1 .fhero{align-items:center;text-align:center}
+.fbadge{background:var(--fc);color:var(--fa);font-weight:700;font-size:13px;padding:6px 14px;border-radius:99px}
+.fh{font-family:var(--fh);font-weight:var(--fw);text-transform:var(--tt);font-size:38px;line-height:1.05}
+.fhero p{color:var(--fm);font-size:17px}.fbtns{display:flex;gap:10px;flex-wrap:wrap}
+.fb1,.fb2{height:50px;padding:0 22px;border-radius:var(--fr);display:inline-flex;align-items:center;font-weight:700}
+.t1 .fb1,.t1 .fb2{border-radius:999px}.fb1{background:var(--fa);color:var(--fo)}.fb2{background:var(--fc)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 18px 24px}
+.fp{background:var(--fc);border-radius:var(--fr);overflow:hidden;padding-bottom:12px}
+.fp .ph{height:110px;display:grid;place-items:center;color:var(--fm)}.fp b,.fp small{display:block;padding:0 12px}.fp small{color:var(--fm)}
+.fp .o{margin:10px 12px 0;display:block;text-align:center;font-size:13px;font-weight:700;padding:8px;border-radius:calc(var(--fr)/2);background:var(--fa);color:var(--fo)}
+.fnav{position:sticky;bottom:0;margin-top:auto;display:flex;justify-content:space-around;background:var(--fb);border-top:1px solid var(--fc);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));font-size:11px;font-weight:700;color:var(--fm);text-transform:uppercase}
+.fnav span{display:flex;flex-direction:column;align-items:center;gap:3px}.fnav .on{color:var(--ft)}
+.pst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.pst div{background:color-mix(in srgb,var(--onpc) 10%,transparent);border-radius:20px;padding:12px 6px;text-align:center}
+.pst b{display:block;font-size:22px}.pst small{font-size:12px;opacity:.8}
+.plans{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:16px -20px 0;padding:0 20px 4px;scrollbar-width:none}
+.plans::-webkit-scrollbar{display:none}
+.plan{flex:0 0 78%;scroll-snap-align:center;background:var(--card);border-radius:28px;padding:18px}
+.plan.cur{background:var(--p);color:var(--onp);border-radius:28px 28px 28px 10px}
+.plan h4{font-size:22px;font-weight:800}
+.plan ul{list-style:none;padding:0;margin-top:12px;display:grid;gap:9px;font-size:15px}
+.plan li{display:flex;gap:8px;align-items:flex-start}.plan li svg{margin-top:2px}
+.danger{color:#d92d33;box-shadow:inset 0 0 0 2px color-mix(in srgb,#d92d33 55%,transparent)}
+.dfill{background:#d92d33;color:#fff}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo"><b>S</b>SwiftLink</div>
+    <button class="storechip" data-a="toast" data-m="Opens store switcher">PoloG <small>2/10</small><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+  <main id="main"></main>
+</div>
+<div class="scrim" id="scrim" data-a="close"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="pv" id="pv"></div>
+<div class="toast" id="toast"></div>
+<nav id="nav"></nav>
+
+<script>
+(function(){
+var P={
+ chat:'M4 4h16v12H8l-4 4z',bag:'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2',plus:'M12 5v14M5 12h14',
+ down:'M12 4v11M7 11l5 5 5-5M5 20h14',ref:'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',chev:'M9 6l6 6-6 6',
+ ck:'M5 12l5 5 9-10',copy:'M9 9h11v11H9zM5 15V5a1 1 0 0 1 1-1h10',user:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+ eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+ home:'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',store:'M4 4h16l1 5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 12v8h14v-8',
+ stats:'M4 20h16M7 16v-5M12 16V6M17 16v-8',gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2 1-2 3-2-1-2 1-.5 2h-5L9 16l-2-1-2 1-2-3 2-1-1-2 1-2-2-1 2-3 2 1 2-1 .5-2h5l.5 2 2 1 2-1 2 3-2 1z',
+ tag:'M3 8a2 2 0 0 0 0 8v2h18v-2a2 2 0 0 1 0-8V6H3zM9 9l6 6',q:'M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17v.01',up:'M12 16V5M7 9l5-5 5 5M5 20h14'};
+function ic(n,s){return '<svg class="i" viewBox="0 0 24 24"'+(s?' style="'+s+'"':'')+'><path d="'+P[n]+'"/></svg>'}
+var URL_='swiftlink.pro/polog';
+var SAMPLE=function(){return [
+ {n:'Ada O.',p:'Ankara set (Size: M)',a:'₦15,000',c:'WhatsApp',t:'12 min ago',ok:0},
+ {n:'Tunde B.',p:'Leather slides',a:'₦8,500',c:'Instagram',t:'2 hrs ago',ok:1},
+ {n:'Chioma E.',p:'Price request: bulk order',a:'Ask',c:'TikTok',t:'Yesterday',ok:0}]};
+var S={page:'home',f:'all',sample:false,tab:'products',live:true,prods:[],cats:['All'],tpl:0,items:SAMPLE(),tc:0,sh:1,ch:'',n:3,pv:{open:0,t:0,dark:1}};
+var $=function(i){return document.getElementById(i)},tt;
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show')},1800)}
+function copy(x,m){try{navigator.clipboard.writeText(x).then(function(){},function(){})}catch(e){}toast(m)}
+
+/* ---------- Inquiries ---------- */
+function inq(){
+ var it=S.items,sales=it.filter(function(x){return x.ok});
+ var F=[['all','Inquiries',it.length],['sales','Sales',sales.length],['cust','Customers',S.sample?3:0],['vis','Visitors',1]];
+ var h='<div class="head"><div><h1>Inquiries &amp; orders</h1><p class="sub">Every “Order on WhatsApp” tap in PoloG, plus the sales you confirmed.</p></div></div>';
+ h+='<div class="acts" style="margin-top:14px"><button class="icon-btn" data-a="toast" data-m="Exporting your inquiries" aria-label="Download">'+ic('down')+'</button><button class="icon-btn" data-a="toast" data-m="Up to date" aria-label="Refresh">'+ic('ref')+'</button></div>';
+ h+='<div class="scroll">'+F.map(function(f){return '<button class="fchip'+(S.f==f[0]?' on':'')+'" data-a="f" data-v="'+f[0]+'">'+f[1]+(f[2]?' <em style="font-style:normal;opacity:.7">'+f[2]+'</em>':'')+'</button>'}).join('')+'</div>';
+ var list=S.f=='sales'?sales:it;
+ if(S.f=='vis'){
+  h+='<div class="inq"><div class="rowb"><div><strong>Direct link</strong><small>1 store view so far</small></div><span class="tag ok">1</span></div></div>';
+ } else if(S.f=='cust'){
+  h+=S.sample?it.map(function(x){return '<div class="inq"><div class="rowb"><div class="rowb" style="justify-content:flex-start"><span class="av">'+x.n[0]+'</span><div><strong>'+x.n+'</strong><small>via '+x.c+'</small></div></div><span class="tag'+(x.ok?' ok':'')+'">'+(x.ok?'Bought':'Asked')+'</span></div></div>'}).join(''):empty('user','No customers yet','Buyers show up here after their first order.');
+ } else if(S.sample&&list.length){
+  h+=list.map(function(x,i){return '<div class="inq"><div class="rowb"><div class="rowb" style="justify-content:flex-start"><span class="av">'+x.n[0]+'</span><div><strong>'+x.n+'</strong><small>'+x.c+' · '+x.t+'</small></div></div><span class="tag'+(x.ok?' ok':'')+'">'+(x.ok?'Confirmed':'New')+'</span></div><div class="item"><span>'+x.p+'</span><b>'+x.a+'</b></div>'+(x.ok?'':'<button class="btn filled mini" data-a="confirm" data-v="'+i+'">Confirm sale</button>')+'</div>'}).join('');
+ } else {
+  h+=S.f=='sales'?empty('ck','No confirmed sales yet','Open an inquiry and tap Confirm sale. It lands here and in your Stats.'):empty('chat','Nothing yet. Let’s get you seen','When a buyer taps “Order on WhatsApp” in PoloG, it lands here on its own.',1);
+ }
+ h+='<button class="ghost" data-a="sample">'+(S.sample?'Hide sample data':'Preview with sample data')+'</button>';
+ return h;
+}
+function empty(i,t,p,cta){return '<div class="empty"><div class="blob">'+ic(i,'width:44px;height:44px')+'</div><h3>'+t+'</h3><p>'+p+'</p>'+(cta?'<div class="stack"><button class="btn filled" data-a="copylink">'+ic('copy')+'Copy store link</button><button class="btn tonal" data-a="toast" data-m="Opens WhatsApp with your link">Send on WhatsApp</button></div>':'')+'</div>'}
+
+/* ---------- Store ---------- */
+function store(){
+ var h='<div class="shead"><div class="logo2">P</div><div style="min-width:0"><h1>PoloG</h1><div class="pills"><button class="pill'+(S.live?'':' off')+'" data-a="live"><i></i>'+(S.live?'Live':'Paused')+'</button><span class="pill off">'+ic('ck','width:14px;height:14px')+' Saved</span></div></div></div>';
+ h+='<p class="link" style="margin:10px 4px 0">'+URL_+'</p>';
+ h+='<div class="seg"><button class="'+(S.tab=='products'?'on':'')+'" data-a="tab" data-v="products">Products <em>'+S.prods.length+'</em></button><button class="'+(S.tab=='design'?'on':'')+'" data-a="tab" data-v="design">Design</button><button data-a="pv">'+ic('eye','width:18px;height:18px')+'Preview</button></div>';
+ if(S.tab=='design'){
+  h+='<h2 style="margin-top:6px">Storefront template</h2><div class="tpls">'+['Editorial','Boutique','Bold'].map(function(n,i){return '<button class="tpl'+(S.tpl==i?' on':'')+'" data-a="tpl" data-v="'+i+'">'+(S.tpl==i?'<span class="ck">'+ic('ck')+'</span>':'')+n+'</button>'}).join('')+'</div><button class="btn tonal" style="width:100%;margin-top:14px" data-a="pv">'+ic('eye')+'Preview with my products</button>';
+  return h;
+ }
+ if(!S.prods.length){
+  h+='<div class="empty"><div class="blob">'+ic('bag')+'</div><h3>Add your first product</h3><p>Buyers can’t order until there’s something to order.</p><div class="stack"><button class="btn filled" data-a="toast" data-m="Opens Add product">'+ic('plus')+'Add product</button><button class="btn tonal" data-a="stock">Add 4 stock ideas</button></div></div>';
+ } else {
+  h+='<div class="rowb" style="margin:0 4px 12px"><b style="font-size:20px">'+S.prods.length+' products</b><button class="btn filled mini" style="width:auto" data-a="toast" data-m="Opens Add product">'+ic('plus','width:18px;height:18px')+'Add</button></div><div class="grid2">'+S.prods.map(function(p,i){return '<div class="prod" style="'+(i%3==0?'border-radius:28px 28px 28px 10px':'')+'"><div class="ph">'+ic('bag','width:34px;height:34px')+'</div><div class="t"><b>'+p[0]+'</b><small>'+p[1]+'</small></div></div>'}).join('')+'</div>';
+ }
+ h+='<h2>Categories</h2><div class="cats">'+S.cats.map(function(c,i){return '<span class="fchip'+(i?'':' on')+'">'+c+'</span>'}).join('')+'</div><div class="cin"><input id="cin" placeholder="New category, e.g. Bags" aria-label="New category"><button class="btn tonal" data-a="addcat" style="padding:0 18px">'+ic('plus')+'</button></div>';
+ var R=[['prof','store','Store profile','PoloG · NGN · +234 808 574 1430'],['soc','user','About and socials','No socials linked yet'],['lp','eye','Link preview','Add a description and image'],['wa','chat','WhatsApp message','Default message'],['disc','tag','Discount codes','None yet'],['faq','q','FAQ','1 question']];
+ h+='<h2>Store setup</h2><div class="list">'+R.map(function(r){return '<button class="li" data-a="sheet" data-v="'+r[0]+'"><span class="ic">'+ic(r[1])+'</span><div><b>'+r[2]+'</b><small>'+r[3]+'</small></div>'+ic('chev')+'</button>'}).join('')+'</div>';
+ return h;
+}
+
+/* ---------- Sheets ---------- */
+function fld(l,ph,v,note){return '<div class="fld"><label>'+l+'</label><input placeholder="'+ph+'" value="'+(v||'')+'">'+(note?'<small>'+note+'</small>':'')+'</div>'}
+var SH={
+ prof:['Store profile','Basic info buyers see when they visit.',
+  '<div class="fld"><label>Logo or photo</label><button class="btn tonal" style="width:100%" data-a="toast" data-m="Opens your photos">'+ic('up')+'Upload photo</button></div>'+fld('Business name','','PoloG')+fld('Currency','','NGN (₦) – Nigerian Naira')+fld('WhatsApp number','','+234 8085741430','Where orders arrive. Format: 2348085741430')+fld('Store link','','swiftlink.pro/polog','Your shareable link for bio and status.')],
+ soc:['About and socials','Help customers know who you are.',
+  '<div class="fld"><label>About the store</label><textarea>Store launched on SwiftLink.</textarea></div>'+fld('Instagram','@ yourbrand')+fld('TikTok','@ yourbrand')+fld('Facebook','@ yourbrand or facebook.com/yourbrand')+fld('X / Twitter','@ yourbrand')+fld('Location and delivery','','Lagos and nationwide delivery')],
+ lp:['Link preview','What people see when you share your link on WhatsApp, X or iMessage.',
+  '<div class="fld"><label>Description <span id="cc" style="float:right;font-weight:500;color:var(--var)">0/160</span></label><textarea id="ld" maxlength="160" placeholder="Premium Products"></textarea><small>Aim for 50 to 160 characters.</small></div><div class="fld"><label>Preview image</label><button class="btn tonal" style="width:100%" data-a="toast" data-m="Opens your photos">'+ic('up')+'Upload social image</button><small>Best size: 1200 × 630 px.</small></div>'],
+ wa:['WhatsApp message','The message buyers send when they tap “Order on WhatsApp”.',
+  '<div class="vars">'+['product','price','option','store','total'].map(function(v){return '<button data-a="var" data-v="{'+v+'}">+ {'+v+'}</button>'}).join('')+'<button style="background:var(--s2);color:var(--on)" data-a="reset">Reset</button></div><div class="fld"><textarea id="wt" maxlength="500"></textarea><small id="wc"></small></div><div class="fld"><label>What the buyer sends</label><div class="bub" id="wp"></div></div>'],
+ disc:['Discount codes','Buyers apply a code in their bag and it rides along in the order message.',
+  '<div class="empty" style="margin-top:14px"><div class="blob">'+ic('tag')+'</div><h3>No codes yet</h3><p>A code like WELCOME10 turns a one-off buyer into a repeat one.</p><div class="stack"><button class="btn filled" data-a="toast" data-m="Opens New code">'+ic('plus')+'New code</button></div></div>'],
+ faq:['FAQ','Questions buyers see on your storefront.',
+  '<div class="inq" style="margin-top:14px"><strong>How does ordering on WhatsApp work?</strong><small>Browse, add what you want, then send your order to the seller.</small></div><button class="btn tonal" style="width:100%" data-a="toast" data-m="Opens Add question">'+ic('plus')+'Add question</button>']
+};
+var DEF='Hi, I would like to order:\n{cart_details}\n\nTotal: {total}';
+function wp(){var t=$('wt').value;$('wc').textContent=t.length+'/500';
+ $('wp').textContent=t.replace(/\{cart_details\}/g,'Sample Product (Size: Medium)').replace(/\{product\}/g,'Sample Product').replace(/\{price\}/g,'₦15,000').replace(/\{option\}/g,'Size: Medium').replace(/\{store\}/g,'PoloG').replace(/\{total\}/g,'₦15,000')}
+function open(k){var s=SH[k],e=$('sheet');
+ e.innerHTML='<div class="grab"></div><h3>'+s[0]+'</h3><p class="sub">'+s[1]+'</p>'+s[2]+'<button class="btn filled" style="width:100%;margin-top:20px" data-a="close">Done</button>';
+ $('scrim').classList.add('show');e.classList.add('show');e.scrollTop=0;
+ if(k=='wa'){$('wt').value=DEF;$('wt').oninput=wp;wp()}
+ if(k=='lp'){$('ld').oninput=function(){$('cc').textContent=$('ld').value.length+'/160'}}}
+function close(){$('scrim').classList.remove('show');$('sheet').classList.remove('show')}
+
+/* ---------- Home ---------- */
+P.x='M6 6l12 12M18 6L6 18';
+var K0={s:'₦0',v:1,t:0,i:0},K1={s:'₦62,500',v:230,t:48,i:12};
+function wave(){var d='M0 8',x=0,u=1;while(x<320){d+=' q5 '+(u?-10:10)+' 10 0';x+=10;u=!u}return d}
+function home(){
+ var k=S.sample?K1:K0,D=wave();
+ var st=[['Name your store and pick a link',1],['Connect WhatsApp order number',1],['Add your first product',S.prods.length>0],['Choose a storefront template',!!S.tc],['Share your link with customers',!!S.sh]];
+ var n=st.filter(function(x){return x[1]}).length;S.n=n;
+ var nx=!st[2][1]?['Add your first product','Buyers can’t order until you do','gostore']:!st[3][1]?['Choose a storefront template','Preview three looks with your products','pv']:null;
+ var h='<section class="hero'+(S.live?'':' paused')+'"><div class="hi">Welcome back</div><h1>Hey, Michael</h1><div class="status"><span><i class="dot"></i>'+(S.live?'Store is live':'Store is paused')+'</span><button class="sw" data-a="live" aria-label="Pause or resume store"></button></div><div class="lk"><span>'+URL_+'</span><button class="btn filled" data-a="copylink">Copy</button></div><div class="hr"><button class="btn" data-a="share">Share</button><button class="btn" data-a="pv">View store</button></div></section>';
+ h+='<h2>Get your store ready</h2><section class="card"><div class="prog"><b>'+n+' of 5</b><span>done</span></div><svg class="wave" viewBox="0 0 320 16" preserveAspectRatio="none" aria-hidden="true"><path d="'+D+'" stroke="var(--s2)"/><path id="wa" d="'+D+'" stroke="var(--p)" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="transition:stroke-dashoffset 1.2s var(--spring) .2s"/></svg>';
+ h+=nx?'<button class="next" data-a="'+nx[2]+'"><div><strong>'+nx[0]+'</strong><small>'+nx[1]+'</small></div><span class="go">'+ic('chev')+'</span></button>':'<div class="tag ok" style="display:inline-block">Your store is ready to sell</div>';
+ h+='<ul class="steps">'+st.map(function(s){return '<li class="'+(s[1]?'done':'todo')+'"><span class="ck">'+(s[1]?ic('ck'):'')+'</span>'+s[0]+'</li>'}).join('')+'</ul></section>';
+ h+='<h2>All time <button class="icon-btn" data-a="toast" data-m="Up to date" aria-label="Refresh">'+ic('ref')+'</button></h2><section class="bento"><div class="st money"><small>Confirmed sales</small><b>'+k.s+'</b><small>Recorded through inquiries</small></div><div class="st a"><small>Store views</small><b>'+k.v+'</b></div><div class="st b"><small>Product taps</small><b>'+k.t+'</b></div><div class="st c" style="grid-column:1/-1;min-height:96px;flex-direction:row;align-items:center"><div><small>Order inquiries</small><br><b>'+k.i+'</b></div><small style="max-width:140px;text-align:right">WhatsApp, social and price requests</small></div></section>';
+ h+='<h2>Share by channel</h2><section class="card"><p class="help">Pick where you’re posting. Orders from that link show up under the same channel in Stats.</p><div class="chips">'+['WhatsApp','Instagram','TikTok','Other'].map(function(c){return '<button class="chip'+(S.ch==c?' on':'')+'" data-a="copych" data-v="'+c+'">'+ic('copy','width:18px;height:18px')+c+'</button>'}).join('')+'</div><button class="btn filled wa" data-a="toast" data-m="Opens WhatsApp with your link">Send on WhatsApp</button></section>';
+ return h;
+}
+
+/* ---------- Stats ---------- */
+function stats(){
+ var s=S.sample,B=[2,0,1,3,4,2,0,5,6,3,2,1,0,4,7,5,3,2,6,8,4,3,0,2,5,7,9,6,4,8];
+ var h='<div class="head"><div><h1>Analytics &amp; performance</h1><p class="sub">Buyer activity from your storefront, last 30 days.</p></div></div><div class="acts" style="margin-top:14px"><button class="btn tonal" data-a="toast" data-m="Up to date">'+ic('ref')+'Refresh</button></div>';
+ h+='<div class="bento" style="margin-top:18px"><div class="st money"><small>Confirmed sales</small><b>'+(s?'₦62,500':'₦0')+'</b><small>'+(s?'4 sales recorded through inquiries':'Recorded through inquiries')+'</small></div><div class="st a"><small>Orders</small><b>'+(s?12:0)+'</b><small>All channels</small></div><div class="st b"><small>Product taps</small><b>'+(s?48:0)+'</b><small>Order-intent taps</small></div><div class="st c" style="grid-column:1/-1;min-height:96px;flex-direction:row;align-items:center"><div><small>Conversion rate</small><br><b>'+(s?'33.3%':'—')+'</b></div><small style="max-width:140px;text-align:right">Inquiries that became sales</small></div></div>';
+ h+='<h2>Inquiry activity</h2><div class="card"><p class="help">Inquiries per day</p><div class="bars">'+B.map(function(v){return '<i style="height:'+(s?Math.max(6,v*11):4)+'px'+(s?'':';background:var(--s2)')+'"></i>'}).join('')+'</div>'+(s?'':'<p class="help" style="margin-top:12px">Your first inquiry will light this up.</p>')+'</div>';
+ var C=[['WhatsApp',7],['Instagram',3],['TikTok',2]];
+ h+='<h2>Where buyers came from</h2><div class="card"><p class="help">Orders per channel, compared with the 15 days before</p>'+(s?C.map(function(c){return '<div class="chr"><span>'+c[0]+'</span><div class="tr"><i style="width:'+(c[1]/7*100)+'%"></i></div><b>'+c[1]+'</b></div>'}).join(''):'<p style="margin-top:10px">No orders yet. Share your link and every channel a buyer picks is counted here.</p><button class="btn filled mini" style="margin-top:14px" data-a="copylink">'+ic('copy','width:18px;height:18px')+'Copy store link</button>')+'</div>';
+ h+='<div class="pulse">'+ic('stats')+'<div><b>Store pulse</b><p>'+(s?'WhatsApp brings most of your orders. Post there when you add something new.':'Share your link on WhatsApp, Instagram, Facebook or TikTok to start receiving orders.')+'</p></div></div>';
+ h+='<h2>Discount codes</h2><div class="card"><p class="help">Redemptions from orders placed with a code, last 30 days</p>'+(s?'<div class="item"><b>WELCOME10</b><span>3 redemptions</span></div>':'<p style="margin-top:10px">No code used yet. A discount is the cheapest reason for a customer to come back.</p><button class="btn tonal mini" style="margin-top:14px" data-a="gocodes">'+ic('tag','width:18px;height:18px')+'Create a code</button>')+'</div>';
+ var PP=[['Ankara set','14','₦15,000'],['Leather slides','9','₦8,500'],['Tote bag','5','₦12,000']];
+ h+='<h2>Product performance</h2><div class="card"><div class="prow hd"><span>Product</span><span>Inquiries</span><span>Price</span></div>'+(s?PP.map(function(r){return '<div class="prow"><b>'+r[0]+'</b><span>'+r[1]+'</span><span>'+r[2]+'</span></div>'}).join(''):'<p class="help" style="text-align:center;padding:18px 0 4px">No buyer activity recorded yet</p>')+'</div>';
+ h+='<button class="ghost" data-a="sample">'+(S.sample?'Hide sample data':'Preview with sample data')+'</button>';
+ return h;
+}
+
+/* ---------- Storefront preview ---------- */
+var TN=['Editorial','Boutique','Bold'],HEAD=['Timeless quality for daily life','Something lovely, made for you','New drop. No waiting.'],PR=[['Ankara set','₦15,000'],['Leather slides','₦8,500'],['Tote bag','₦12,000'],['Linen shirt','₦9,800']];
+function pv(){
+ var q=S.pv,e=$('pv');
+ if(!q.open){e.classList.remove('show');document.body.style.overflow='';return}
+ var cur=S.tc&&S.tpl==q.t;
+ e.innerHTML='<div class="pvt"><div class="rowb"><div class="rowb" style="justify-content:flex-start"><span class="dot"></span><div><b>'+TN[q.t]+'</b><br><small style="color:var(--var)">Sample products</small></div></div><button class="icon-btn" data-a="pvclose" aria-label="Close preview">'+ic('x')+'</button></div>'+
+ '<div class="rowb" style="margin-top:12px"><div class="seg" style="margin:0;flex:none"><button class="'+(q.dark?'':'on')+'" data-a="pvd" data-v="0">Light</button><button class="'+(q.dark?'on':'')+'" data-a="pvd" data-v="1">Dark</button></div><button class="btn '+(cur?'tonal':'filled')+'" style="flex:1" data-a="'+(cur?'toast':'pvuse')+'" data-m="This is already your template">'+(cur?'Current template':'Use this template')+'</button></div>'+
+ '<div class="scroll" style="margin:12px -16px 0">'+TN.map(function(n,i){return '<button class="fchip'+(q.t==i?' on':'')+'" data-a="pvt" data-v="'+i+'">'+n+'</button>'}).join('')+'</div></div>'+
+ '<div class="fw"><div class="fr t'+q.t+(q.dark?' d':'')+'"><div class="fann">Direct WhatsApp checkout · Official storefront</div><div class="fhd"><span class="flogo">P</span><b class="fname">PoloG</b><span class="fic">'+ic('bag')+'</span></div><div class="fhero"><span class="fbadge">Curated collection</span><p class="fh">'+HEAD[q.t]+'</p><p>Instant order confirmation on WhatsApp.</p><div class="fbtns"><span class="fb1">Explore collection</span><span class="fb2">Learn more</span></div></div><div class="fgrid">'+PR.map(function(p){return '<div class="fp"><div class="ph">'+ic('bag','width:34px;height:34px')+'</div><b>'+p[0]+'</b><small>'+p[1]+'</small><span class="o">Order on WhatsApp</span></div>'}).join('')+'</div><div class="fnav"><span class="on">'+ic('home')+'Store</span><span>'+ic('eye')+'Search</span><span>'+ic('chat')+'Reviews</span><span>'+ic('bag')+'Cart</span></div></div></div>';
+ e.classList.add('show');document.body.style.overflow='hidden';
+}
+
+/* ---------- Settings ---------- */
+S.plan=2;P.globe='M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18';P.out='M9 4H5v16h4M16 8l4 4-4 4M20 12H9';
+var PL=[['Free','₦0',['Up to 10 products','1 store','WhatsApp checkout','Price requests for services','3 starter templates','SwiftLink branding shown'],10,1],['Pro','₦5,000',['Everything in Free','Up to 500 products','Up to 3 stores','All storefront templates','Discount codes','Detailed analytics','CSV export','SwiftLink branding shown'],500,3],['Business','₦12,000',['Everything in Pro','Up to 1,000 products','Up to 10 stores','Connect your own domain','No SwiftLink branding','Custom preloader screen','Priority WhatsApp support'],1000,10]];
+SH.me=['Your profile','How you appear in your account.','<div class="fld"><label>Photo</label><button class="btn tonal" style="width:100%" data-a="toast" data-m="Opens your photos">'+ic('up')+'Change photo</button></div>'+fld('Full name','Your full name')+fld('Email','you@email.com')];
+SH.dom=['Your own domain','Point a domain you already own at your store instead of the shared link.',fld('Domain','shop.yourbrand.com')+'<button class="btn filled" style="width:100%;margin-top:14px" data-a="toast" data-m="Checking your domain">'+ic('plus')+'Add domain</button><p class="help" style="margin-top:12px">No domain connected yet. Your store stays reachable at /polog either way.</p>'];
+SH.del=['Delete account','Deleted accounts enter a 30-day grace period before data is permanently wiped.','<button class="btn dfill" style="width:100%;margin-top:18px" data-a="toast" data-m="Disabled in this prototype">Delete account (30 days)</button><p class="help" style="margin-top:10px;text-align:center">Changed your mind? Tap Done to keep everything.</p>'];
+function lrow(i,t,s,a,v){return '<button class="li" data-a="'+a+'" data-v="'+v+'" data-m="'+v+'"><span class="ic">'+ic(i)+'</span><div><b>'+t+'</b><small>'+s+'</small></div>'+ic('chev')+'</button>'}
+function settings(){
+ var pl=PL[S.plan],used=Math.min(2,pl[4]),top=S.plan==2,nx=PL[S.plan+1];
+ var h='<div class="head"><div><h1>Settings</h1><p class="sub">Your account, plan and store options.</p></div><span class="tag ok" style="margin-top:8px">'+pl[0]+'</span></div>';
+ h+='<section class="hero" style="margin-top:18px"><div class="rowb" style="justify-content:flex-start;gap:16px"><button class="blob" style="width:84px;height:84px;flex:none;background:var(--p);color:var(--onp)" data-a="sheet" data-v="me" aria-label="Edit profile">'+ic('user','width:36px;height:36px')+'</button><div><div class="hi">Signed in as</div><h1 style="font-size:30px;margin:0">Michael</h1><small>PoloG</small></div></div><div class="pst"><div><b>'+S.prods.length+'</b><small>Active products</small></div><div><b>'+(S.cats.length-1)+'</b><small>Categories</small></div><div><b>'+(S.live?'Live':'Paused')+'</b><small>Public status</small></div></div></section>';
+ h+='<h2>Plan and usage</h2><section class="card"><div class="rowb"><div><small class="help">Your plan</small><div style="font-size:30px;font-weight:800;line-height:1.1">'+pl[0]+'</div></div><b>'+pl[1]+(S.plan?' / month':'')+'</b></div>';
+ h+=[['Products',S.prods.length,pl[3]],['Stores',used,pl[4]]].map(function(u){return '<div style="margin-top:14px"><div class="rowb"><span>'+u[0]+'</span><b>'+u[1]+' of '+u[2]+'</b></div><div class="tr" style="margin-top:6px"><i style="width:'+Math.max(3,u[1]/u[2]*100)+'%"></i></div></div>'}).join('');
+ h+='<div class="plans">'+PL.map(function(p,i){return '<div class="plan'+(i==S.plan?' cur':'')+'"><div class="rowb"><h4>'+p[0]+'</h4>'+(i==S.plan?'<span class="tag ok">Current</span>':(i==1?'<span class="tag">Most popular</span>':''))+'</div><b>'+p[1]+(i?' / month':'')+'</b><ul>'+p[2].map(function(f){return '<li>'+ic('ck','width:16px;height:16px;stroke-width:3')+f+'</li>'}).join('')+'</ul></div>'}).join('')+'</div>';
+ h+=top?'<div class="pulse" style="margin-top:16px">'+ic('ck')+'<div><b>Business is the highest plan</b><p>Every feature is included. Nothing to upgrade.</p></div></div>':'<button class="btn filled" style="width:100%;margin-top:16px" data-a="toast" data-m="Opens payment for '+nx[0]+'">Upgrade to '+nx[0]+' · '+nx[1]+' / month</button>';
+ h+='<button class="btn tonal" style="width:100%;margin-top:10px" data-a="toast" data-m="Opens WhatsApp support">'+ic('chat')+'Ask about your plan</button><p class="help" style="margin-top:14px">Plan changes apply as soon as payment is confirmed. Nothing is deleted at a limit: extra products are hidden and extra stores are paused until you upgrade.</p></section>';
+ h+='<h2>Store</h2><div class="list"><div class="li'+(S.live?'':' paused')+'"><span class="ic">'+ic('eye')+'</span><div><b>Store visibility</b><small>'+(S.live?'Live. Buyers can send orders':'Paused. Buyers can’t order')+'</small></div><button class="sw" data-a="live" aria-label="Pause or resume store"></button></div>'+(S.plan==2?lrow('globe','Your own domain','Not connected yet','sheet','dom'):lrow('globe','Your own domain','Included in Business','toast','Custom domains are on the Business plan'))+lrow('store','Store details','PoloG · /polog','sheet','prof')+'</div>';
+ h+='<h2>Account</h2><div class="list">'+lrow('user','Your profile','Name, email and photo','sheet','me')+lrow('down','Install SwiftLink Pro','Add it to your home screen','toast','Opens the install prompt')+lrow('out','Sign out','','toast','Signed out (prototype)')+'</div>';
+ h+='<h2>Danger zone</h2><section class="card"><p class="help">Deleted accounts enter a 30-day grace period before data is permanently wiped.</p><button class="btn danger" style="width:100%;margin-top:14px" data-a="sheet" data-v="del">Delete account</button></section>';
+ h+='<p class="help" style="text-align:center;margin-top:26px">Prototype only: preview as</p><div class="scroll" style="justify-content:center;margin-top:8px">'+PL.map(function(p,i){return '<button class="fchip'+(S.plan==i?' on':'')+'" data-a="plan" data-v="'+i+'">'+p[0]+'</button>'}).join('')+'</div>';
+ return h;
+}
+
+/* ---------- Nav + render ---------- */
+var N=[['home','home','Home'],['inq','chat','Inquiries'],['store','store','Store'],['stats','stats','Stats'],['set','gear','Settings']];
+function nav(){$('nav').innerHTML=N.map(function(n){return '<button class="'+(S.page==n[0]?'on':'')+'" data-a="nav" data-v="'+n[0]+'"><i>'+ic(n[1])+'</i>'+n[2]+'</button>'}).join('')}
+function render(){$('main').innerHTML=({home:home,inq:inq,store:store,stats:stats,set:settings})[S.page]();nav();var w=$('wa');if(w)setTimeout(function(){w.style.strokeDashoffset=100-20*S.n},60);var pl=document.querySelector('.plans');if(pl)pl.scrollLeft=S.plan*pl.scrollWidth/3}
+document.addEventListener('click',function(e){
+ var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,v=b.dataset.v;
+ if(a=='nav'){S.page=v;render();window.scrollTo(0,0)}
+ else if(a=='f'){S.f=v;render()}
+ else if(a=='sample'){S.sample=!S.sample;S.items=SAMPLE();render()}
+ else if(a=='confirm'){S.items[v].ok=1;render();toast('Sale confirmed')}
+ else if(a=='copylink'){copy('https://'+URL_,'Link copied')}
+ else if(a=='tab'){S.tab=v;render()}
+ else if(a=='live'){S.live=!S.live;render();toast(S.live?'Store is live again':'Store paused. Buyers can’t order')}
+ else if(a=='stock'){S.prods=[['Stock idea 1','₦0'],['Stock idea 2','₦0'],['Stock idea 3','₦0'],['Stock idea 4','₦0']];render();toast('4 stock ideas added')}
+ else if(a=='addcat'){var i=$('cin'),x=i.value.trim();if(x){S.cats.push(x);render();toast('Category added')}}
+ else if(a=='tpl'){S.tpl=+v;S.tc=1;render()}
+ else if(a=='sheet'){open(v)}
+ else if(a=='close'){close()}
+ else if(a=='var'){var t=$('wt');t.value+=(t.value&&!/\s$/.test(t.value)?' ':'')+v;wp()}
+ else if(a=='reset'){$('wt').value=DEF;wp()}
+ else if(a=='pv'){S.pv.open=1;S.pv.t=S.tpl;pv()}
+ else if(a=='pvclose'){S.pv.open=0;pv()}
+ else if(a=='pvt'){S.pv.t=+v;pv()}
+ else if(a=='pvd'){S.pv.dark=+v;pv()}
+ else if(a=='pvuse'){S.tpl=S.pv.t;S.tc=1;S.pv.open=0;pv();render();toast(TN[S.tpl]+' template applied')}
+ else if(a=='gostore'){S.page='store';S.tab='products';render();window.scrollTo(0,0)}
+ else if(a=='gocodes'){S.page='store';render();open('disc')}
+ else if(a=='copych'){S.ch=v;render();copy('https://'+URL_+'?ref='+v.toLowerCase(),v+' link copied')}
+ else if(a=='share'){if(navigator.share){navigator.share({url:'https://'+URL_}).catch(function(){})}else{copy('https://'+URL_,'Link copied')}}
+ else if(a=='plan'){S.plan=+v;render()}
+ else if(a=='toast'){toast(b.dataset.m)}
+});
+render();
+})();
+</script>
+</body>
+</html>

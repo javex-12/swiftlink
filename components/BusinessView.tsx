@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { ShopState, PageSection, Product, StoreReview } from "@/lib/schema";
-import { supabase } from "@/lib/supabase-client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase-client";
 import { cn, getShopPath, isDarkColor } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -217,6 +217,10 @@ export function BusinessView() {
   useEffect(() => {
     if (!handleInput || handleInput === globalState.storeUsername) {
        setHandleStatus("idle");
+       return;
+    }
+    if (!isSupabaseConfigured()) {
+       setHandleStatus("available");
        return;
     }
     const cleanHandle = handleInput.toLowerCase().replace(/[^a-z0-9-]/g, "");

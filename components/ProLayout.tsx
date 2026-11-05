@@ -76,14 +76,14 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area: Padding bottom accounts for bottom bar height + safe area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))] md:pb-0">
-        {/* Mobile Header (<768px) with shared Logo */}
-        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#1E2D27] bg-[#111C18]/95 px-4 backdrop-blur-md">
-          <Link href="/pro" className="flex shrink-0 items-center gap-2">
-            <Logo size="sm" showWordmark={true} />
+        {/* Mobile Header (<768px) with M3 Expressive Logo & Storechip */}
+        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#182a22] bg-[#0a130f]/95 px-4 backdrop-blur-md">
+          <Link href="/pro" className="flex shrink-0 items-center gap-2 m3-spring-btn">
+            <Logo size="sm" showWordmark={true} wordmarkClassName="font-extrabold tracking-tight text-lg text-[#e2efe7]" />
           </Link>
           {/* Multi-store switching was unreachable from a phone. */}
           {canHaveMultipleStores && (
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-[200px]">
               <StoreSwitcher />
             </div>
           )}
@@ -94,10 +94,10 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile Bottom Tab Bar (<768px) with 44px Minimum Touch Targets & Non-Shifting Indicator */}
+      {/* Mobile Bottom Tab Bar with Google M3 Expressive Navigation Pills */}
       <nav
         aria-label="Mobile navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch justify-around bg-[#111C18]/95 backdrop-blur-xl border-t border-[#1E2D27] px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] shadow-2xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-[#111e18]/95 backdrop-blur-xl border-t border-[#182a22] px-2 pt-2 pb-[max(0.6rem,calc(env(safe-area-inset-bottom,0px)+6px))] shadow-2xl rounded-t-[28px]"
       >
         {mobileNavItems.map((item) => {
           const active = isTabActive(item);
@@ -108,16 +108,22 @@ export function ProLayout({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center min-h-[48px] min-w-[44px] flex-1 py-1.5 transition-colors",
-                active ? "text-[#19C37D]" : "text-[#9DB3A8] hover:text-[#E8F1EC]"
+                "group relative flex flex-col items-center justify-center min-h-[48px] min-w-[44px] flex-1 py-1 transition-all m3-spring-btn",
+                active ? "text-[#e2efe7]" : "text-[#9db4a8] hover:text-[#e2efe7]"
               )}
             >
-              {/* Absolute top indicator bar: does NOT shift label or icon layout */}
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-[#19C37D]" />
               )}
-              <Icon className="h-5 w-5 shrink-0" />
-              <span className="mt-1 text-[11px] font-medium tracking-tight">
+              <i
+                className={cn(
+                  "m3-nav-pill",
+                  active && "active"
+                )}
+              >
+                <Icon className={cn("h-5 w-5 shrink-0 transition-transform", active ? "scale-105 stroke-[2.2]" : "stroke-[1.8]")} />
+              </i>
+              <span className={cn("mt-1 text-[11px] tracking-tight transition-colors", active ? "font-bold text-[#e2efe7]" : "font-medium text-[#9db4a8]")}>
                 {item.label}
               </span>
             </Link>

@@ -410,31 +410,52 @@ export function AnalyticsView() {
         </div>
       )}
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {tiles.map((tile, i) => {
-          const Icon = tile.icon;
-          return (
-            <motion.div
-              key={tile.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-[#111C18] p-4 sm:p-5 rounded-[18px] border border-[#1E2D27] shadow-sm flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={cn("w-9 h-9 rounded-[10px] border border-[#24382F] flex items-center justify-center bg-[#14231D]", tile.color)}>
-                  <Icon size={18} />
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-medium text-[#9DB3A8] mb-1">{tile.label}</p>
-                <h3 className="text-2xl font-bold text-[#E8F1EC] tracking-tight">{tile.value}</h3>
-                <p className="mt-1 text-[10px] text-[#9DB3A8]">{tile.hint}</p>
-              </div>
-            </motion.div>
-          );
-        })}
+      {/* Google M3 Expressive Bento Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {/* Money Card: Confirmed Sales */}
+        <div className="lg:col-span-3 bg-[#4a3a0f] text-[#ffe3a3] border border-[#ffe3a3]/20 rounded-[40px_40px_16px_40px] p-6 sm:p-7 flex flex-col justify-between shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider opacity-90">Confirmed Sales</span>
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-[#ffe3a3]/20 text-[#ffe3a3]">
+              {metrics.soldCount} {metrics.soldCount === 1 ? "sale" : "sales"} recorded
+            </span>
+          </div>
+          <div className="my-2.5">
+            <b className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
+              {formatMoney(metrics.revenueMinor, currency)}
+            </b>
+          </div>
+          <p className="text-xs font-medium opacity-85">
+            Total revenue recorded and verified through customer order inquiries.
+          </p>
+        </div>
+
+        {/* Card A: Orders */}
+        <div className="bg-[#111e18] border border-[#182a22] rounded-[32px_32px_32px_12px] p-5 sm:p-6 flex flex-col justify-between min-h-[140px]">
+          <span className="text-xs font-bold text-[#9db4a8]">Orders</span>
+          <div className="my-1">
+            <b className="text-3xl sm:text-4xl font-extrabold text-[#e2efe7] tracking-tight">{metrics.orderCount.toLocaleString()}</b>
+          </div>
+          <small className="text-[11px] text-[#9db4a8]">All channels · last {RANGE_DAYS} days</small>
+        </div>
+
+        {/* Card B: Product Taps */}
+        <div className="bg-[#111e18] border border-[#182a22] rounded-[32px_32px_12px_32px] p-5 sm:p-6 flex flex-col justify-between min-h-[140px]">
+          <span className="text-xs font-bold text-[#9db4a8]">Product Taps</span>
+          <div className="my-1">
+            <b className="text-3xl sm:text-4xl font-extrabold text-[#e2efe7] tracking-tight">{metrics.productTaps.toLocaleString()}</b>
+          </div>
+          <small className="text-[11px] text-[#9db4a8]">Order-intent clicks on catalog items</small>
+        </div>
+
+        {/* Card C: Conversion Rate */}
+        <div className="bg-[#111e18] border border-[#182a22] rounded-[16px_32px_32px_32px] p-5 sm:p-6 flex flex-col justify-between min-h-[140px]">
+          <span className="text-xs font-bold text-[#9db4a8]">Conversion Rate</span>
+          <div className="my-1">
+            <b className="text-3xl sm:text-4xl font-extrabold text-[#5be3a0] tracking-tight">{metrics.conversion.toFixed(1)}%</b>
+          </div>
+          <small className="text-[11px] text-[#9db4a8]">Inquiries converted to confirmed sales</small>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
