@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Copy, Globe, Loader2, Trash2, TriangleAlert } from "lucide-react";
-import { supabase } from "@/lib/supabase-client";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cnameTarget, domainProblem, normalizeDomain, verificationRecordName } from "@/lib/domains";
 import type { Plan } from "@/lib/plans";
@@ -45,18 +45,23 @@ export function DomainSettings({
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id || !isSupabaseConfigured()) {
       setLoading(false);
       return;
     }
-    const { data, error: loadError } = await supabase
-      .from("store_domains")
-      .select("id, domain, verified_at, ssl_status, verification_token")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: true });
-    if (loadError) setError(loadError.message);
-    setRows((data as DomainRow[] | null) ?? []);
-    setLoading(false);
+    try {
+      const { data, error: loadError } = await supabase
+        .from("store_domains")
+        .select("id, domain, verified_at, ssl_status, verification_token")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: true });
+      if (loadError) setError(loadError.message);
+      setRows((data as DomainRow[] | null) ?? []);
+    } catch {
+      // In offline / demo mode, avoid throwing unhandled error
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
 
   useEffect(() => {
@@ -72,6 +77,10 @@ export function DomainSettings({
     }
     if (!user?.id || !storeId) {
       setError("No store to attach the domain to yet.");
+      return;
+    }
+    if (!isSupabaseConfigured()) {
+      setError("Custom domains are not available in demo mode.");
       return;
     }
     const domain = normalizeDomain(value)!;
@@ -130,6 +139,10 @@ export function DomainSettings({
 
   const remove = async (row: DomainRow) => {
     if (!window.confirm(`Remove ${row.domain}? Customers using it will stop reaching your store.`)) {
+      return;
+    }
+    if (!isSupabaseConfigured()) {
+      addToast("Custom domains are not available in demo mode.", "error");
       return;
     }
     setBusy(row.domain);

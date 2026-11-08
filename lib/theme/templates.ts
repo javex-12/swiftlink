@@ -111,9 +111,9 @@ export const websiteTemplateSeeds: TemplateSeed[] = [
     description:
       "A warm, artisanal boutique layout suited for gifts, beauty, and curated goods.",
     tagline: "",
-    swatch: "#9a3412",
-    brandColor: "#9a3412",
-    darkBrandColor: "#ea580c",
+    swatch: "#be185d",
+    brandColor: "#be185d",
+    darkBrandColor: "#f472b6",
     shape: {
       fontPair: "friendly",
       radius: "rounded",

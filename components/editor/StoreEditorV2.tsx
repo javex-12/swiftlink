@@ -71,6 +71,9 @@ import {
   Moon,
   Sparkles,
   ChevronDown,
+  HelpCircle,
+  ChevronRight,
+  User,
 } from "lucide-react";
 
 interface OptionRow {
@@ -90,6 +93,7 @@ export function StoreEditorV2() {
   const [previewMode, setPreviewMode] = useState<"light" | "dark">(() => (globalState.storefrontTheme?.background === "light" ? "light" : "dark"));
   const [previewCartCount, setPreviewCartCount] = useState<number>(1);
   const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [activeSheet, setActiveSheet] = useState<"prof" | "soc" | "lp" | "wa" | "disc" | "faq" | null>(null);
 
   const effectivePlan = useMemo(() => {
     return accountPlanFor(stores && stores.length ? stores : [localState]);
@@ -974,610 +978,192 @@ export function StoreEditorV2() {
         {/* ============================================================== */}
         {activeTab === "products" && (
           <div className="space-y-8">
-            {/* Section 1: Store Profile */}
+            {/* Products Catalogue Section */}
             <section
-              aria-labelledby="store-profile-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+              aria-labelledby="products-list-heading"
+              className="rounded-3xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
             >
-              <div className="border-b border-[#1E2D27] pb-4">
-                <h2 id="store-profile-heading" className="text-base font-semibold text-[#E8F1EC]">
-                  Store profile
-                </h2>
-                <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Basic information buyers see when visiting your store.
-                </p>
-              </div>
-
-              <div className="mt-6 grid gap-6 md:grid-cols-12">
-                {/* Photo / Avatar */}
-                <div className="md:col-span-4 lg:col-span-3">
-                  <label className="block text-xs font-medium text-[#E8F1EC]">Store Logo or Photo</label>
-                  <div className="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#5C7C6D]/40 bg-[#0A1210] p-4 text-center">
-                    <div className="relative flex h-24 w-24 overflow-hidden rounded-xl border border-[#1E2D27] bg-[#14231D]">
-                      {localState.bizImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={localState.bizImage}
-                          alt={localState.bizName || "Store logo"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xl font-bold text-[#19C37D]">
-                          {(localState.bizName || "S").slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                      {isUploadingLogo && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                          <Loader2 className="h-5 w-5 animate-spin text-[#19C37D]" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 w-full">
-                      <label className="flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-xs font-medium text-[#E8F1EC] transition hover:bg-[#1E2D27]">
-                        <Upload className="h-3.5 w-3.5 text-[#19C37D]" />
-                        <span>Upload photo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={isUploadingLogo}
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleLogoUpload(e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </label>
-                      {localState.bizImage && (
-                        <button
-                          type="button"
-                          onClick={() => updateField("bizImage", "")}
-                          className="text-xs text-[#9DB3A8] hover:text-[#FF8A8A]"
-                        >
-                          Remove photo
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Name, Phone, and Link */}
-                <div className="space-y-4 md:col-span-8 lg:col-span-9">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs font-medium text-[#E8F1EC]">Business Name</label>
-                      <input
-                        type="text"
-                        value={localState.bizName || ""}
-                        onChange={(e) => updateField("bizName", e.target.value)}
-                        placeholder="e.g. Modern Craft Co"
-                        className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#E8F1EC]">Store Currency</label>
-                      <select
-                        value={localState.currency || "NGN"}
-                        onChange={(e) => updateField("currency", e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                      >
-                        <option value="NGN">NGN (₦) - Nigerian Naira</option>
-                        <option value="GHS">GHS (₵) - Ghanaian Cedi</option>
-                        <option value="KES">KES (KSh) - Kenyan Shilling</option>
-                        <option value="ZAR">ZAR (R) - South African Rand</option>
-                        <option value="USD">USD ($) - US Dollar</option>
-                        <option value="GBP">GBP (£) - British Pound</option>
-                        <option value="EUR">EUR (€) - Euro</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs font-medium text-[#E8F1EC]">WhatsApp Number</label>
-                      {(() => {
-                        const parsed = splitPhoneNumber(localState.phone || "");
-                        const callingCode = parsed.callingCode || "+234";
-                        const nationalNum = parsed.nationalNumber || "";
-                        return (
-                          <>
-                            <div className="mt-1.5 flex gap-2">
-                              <CountrySelector
-                                value={parsed.countryCode || "NG"}
-                                onChange={(newCallingCode) => {
-                                  const rawDigits = nationalNum.replace(/^0+/, "");
-                                  updateField("phone", `${newCallingCode}${rawDigits}`);
-                                }}
-                              />
-                              <input
-                                type="tel"
-                                value={nationalNum}
-                                onChange={(e) => {
-                                  const cleaned = cleanPastedNationalNumber(e.target.value, callingCode);
-                                  updateField("phone", `${callingCode}${cleaned.nationalNumber}`);
-                                }}
-                                placeholder="808 123 4567"
-                                className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                              />
-                            </div>
-                            <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                              Where customer orders arrive on WhatsApp. {localState.phone ? `Format: ${localState.phone}` : "e.g. +234 808 123 4567"}
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-medium text-[#E8F1EC]">Store Link Handle</label>
-                        {handleStatus === "checking" && (
-                          <span className="flex items-center gap-1 text-[10px] text-[#9DB3A8]">
-                            <Loader2 className="h-3 w-3 animate-spin text-[#19C37D]" /> Checking...
-                          </span>
-                        )}
-                        {handleStatus === "available" && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-[#19C37D]">
-                            <Check className="h-3 w-3" /> Available
-                          </span>
-                        )}
-                        {handleStatus === "taken" && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
-                            <X className="h-3 w-3" /> Already Taken
-                          </span>
-                        )}
-                      </div>
-                      <div className={cn(
-                        "mt-1.5 flex items-center rounded-xl border bg-[#0A1210] px-3 py-2 text-sm transition focus-within:border-[#19C37D]",
-                        handleStatus === "taken" ? "border-rose-500/80" : handleStatus === "available" ? "border-[#19C37D]" : "border-[#5C7C6D]"
-                      )}>
-                        <span className="select-none text-xs text-[#9DB3A8]">swiftlink.pro/</span>
-                        <input
-                          type="text"
-                          value={localState.storeUsername || ""}
-                          onChange={(e) => {
-                            const clean = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
-                            updateField("storeUsername", clean);
-                          }}
-                          placeholder="your-store"
-                          className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
-                        />
-                      </div>
-                      {handleStatus === "taken" ? (
-                        <p className="mt-1 text-[11px] font-medium text-rose-400">
-                          Handle &quot;@{localState.storeUsername}&quot; is already owned by another store. Store links are unique like domain names.
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                          Your unique shareable link for bio and status.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Section 2: About & Socials */}
-            <section
-              aria-labelledby="about-socials-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
-            >
-              <div className="border-b border-[#1E2D27] pb-4">
-                <h2 id="about-socials-heading" className="text-base font-semibold text-[#E8F1EC]">
-                  About and socials
-                </h2>
-                <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Help customers know who you are and where else to find you.
-                </p>
-              </div>
-
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-[#E8F1EC]">About the Store / Bio</label>
-                  <textarea
-                    rows={3}
-                    value={localState.bio || localState.aboutUs || ""}
-                    onChange={(e) => {
-                      updateField("bio", e.target.value);
-                      updateField("aboutUs", e.target.value);
-                    }}
-                    placeholder="We sell handmade leather shoes and bags from Lagos, Nigeria."
-                    className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                  />
-                </div>
-
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">Instagram Handle</label>
-                  <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
-                    <span className="text-xs text-[#9DB3A8]">@</span>
-                    <input
-                      type="text"
-                      value={localState.socials?.instagram || ""}
-                      onChange={(e) =>
-                        updateField("socials", {
-                          ...localState.socials,
-                          instagram: e.target.value.replace(/^@/, ""),
-                        })
-                      }
-                      placeholder="yourbrand"
-                      className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">TikTok Handle</label>
-                  <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
-                    <span className="text-xs text-[#9DB3A8]">@</span>
-                    <input
-                      type="text"
-                      value={localState.socials?.tiktok || ""}
-                      onChange={(e) =>
-                        updateField("socials", {
-                          ...localState.socials,
-                          tiktok: e.target.value.replace(/^@/, ""),
-                        })
-                      }
-                      placeholder="yourbrand"
-                      className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">Facebook Handle</label>
-                  <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
-                    <span className="text-xs text-[#9DB3A8]">@</span>
-                    <input
-                      type="text"
-                      value={localState.socials?.facebook || ""}
-                      onChange={(e) =>
-                        updateField("socials", {
-                          ...localState.socials,
-                          facebook: e.target.value.replace(/^@/, ""),
-                        })
-                      }
-                      placeholder="yourbrand or facebook.com/yourbrand"
-                      className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">X / Twitter Handle</label>
-                  <div className="mt-1.5 flex items-center rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3 py-2 text-sm focus-within:border-[#19C37D]">
-                    <span className="text-xs text-[#9DB3A8]">@</span>
-                    <input
-                      type="text"
-                      value={localState.socials?.twitter || ""}
-                      onChange={(e) =>
-                        updateField("socials", {
-                          ...localState.socials,
-                          twitter: e.target.value.replace(/^@/, ""),
-                        })
-                      }
-                      placeholder="yourbrand"
-                      className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">Location / Delivery Areas</label>
-                  <input
-                    type="text"
-                    value={localState.deliveryAreas || localState.location || ""}
-                    onChange={(e) => {
-                      updateField("deliveryAreas", e.target.value);
-                      updateField("location", e.target.value);
-                    }}
-                    placeholder="Lagos and nationwide delivery"
-                    className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/*
-              Section: Discount codes.
-
-              Sold as a Pro feature, so the section is a locked panel on Free —
-              the codes a free store already saved keep working on the storefront
-              (never take away what was given), but no new ones can be added.
-            */}
-            {normalizePlan(localState.plan) === "free" ? (
-              <ProGate
-                feature="Discount codes"
-                description="Create percentage or fixed-amount codes, set minimum order values and expiry dates, and see redemptions per code. Available on Pro and Business."
-              />
-            ) : (
-              <DiscountCodesSection
-                codes={sanitizeDiscountCodes(localState.discountCodes)}
-                currency={localState.currency || "₦"}
-                storeId={localState.id ?? null}
-                onChange={(next) => updateField("discountCodes", next)}
-              />
-            )}
-
-            {/* Section: Frequently Asked Questions (FAQ) */}
-            <section
-              aria-labelledby="faq-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
-                <div>
-                  <h2 id="faq-heading" className="text-base font-semibold text-[#E8F1EC]">
-                    Frequently Asked Questions (FAQ)
+                  <h2 id="products-list-heading" className="text-lg font-bold text-[#E8F1EC]">
+                    {localState.products.length} {localState.products.length === 1 ? "product" : "products"}
                   </h2>
-                  <p className="mt-1 text-xs text-[#9DB3A8]">
-                    Customize assistance questions customers see on your storefront.
+                  <p className="mt-0.5 text-xs text-[#9DB3A8]">
+                    {visibleProductCount(localState.products)} visible · Manage your store inventory and pricing
                   </p>
                 </div>
-                {!isAddingFaq && (
+
+                {/* Primary buttons: 1-tap Live preview & Add product */}
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsAddingFaq(true)}
-                    className="flex min-h-[36px] items-center gap-1.5 rounded-xl border border-[#19C37D]/30 bg-[#14231D] px-3.5 py-1.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
+                    onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
+                    className="flex min-h-[40px] items-center gap-2 rounded-full border border-[#19C37D]/40 bg-[#19C37D]/10 px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20 active:scale-98"
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Add Question</span>
+                    <Eye className="h-4 w-4" />
+                    <span>Preview</span>
                   </button>
-                )}
-              </div>
-
-              {/* FAQ items list */}
-              <div className="mt-6 space-y-3">
-                {((localState.faqItems && localState.faqItems.length > 0)
-                  ? localState.faqItems
-                  : [
-                      {
-                        q: "How does ordering on WhatsApp work?",
-                        a: "Browse the catalog, add what you want to your cart, then tap Order on WhatsApp. Your items and quantities are formatted into a message and sent straight to the store.",
-                      },
-                      {
-                        q: "How do I arrange payment and delivery?",
-                        a: "Payment and delivery are agreed directly with the store on WhatsApp.",
-                      },
-                      {
-                        q: "Can I ask about an item before ordering?",
-                        a: "Yes. Message the store on WhatsApp with any question about sizing, stock or condition.",
-                      },
-                    ]
-                ).map((faq, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start justify-between gap-3 rounded-xl border border-[#24382F] bg-[#0A1210] p-3.5 transition"
+                  <button
+                    type="button"
+                    onClick={openAddProductModal}
+                    className="flex min-h-[40px] items-center gap-2 rounded-full bg-[#19C37D] px-5 py-2 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] active:scale-98 shadow-md shadow-[#19C37D]/20"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-semibold text-[#E8F1EC]">{faq.q}</p>
-                      <p className="mt-1 text-xs text-[#9DB3A8] leading-relaxed">{faq.a}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFaq(index)}
-                      className="text-[#9DB3A8] hover:text-[#FF8A8A] p-1 transition"
-                      title="Remove question"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-
-                {/* Add new FAQ card */}
-                {isAddingFaq && (
-                  <div className="mt-4 rounded-xl border border-[#19C37D]/40 bg-[#14231D]/40 p-4 space-y-3">
-                    <p className="text-xs font-semibold text-[#19C37D]">New FAQ Question</p>
-                    <input
-                      type="text"
-                      value={newFaqQuestion}
-                      onChange={(e) => setNewFaqQuestion(e.target.value)}
-                      placeholder="e.g. Do you ship outside Lagos?"
-                      className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                    />
-                    <textarea
-                      rows={2}
-                      value={newFaqAnswer}
-                      onChange={(e) => setNewFaqAnswer(e.target.value)}
-                      placeholder="e.g. Yes, we deliver nationwide within 2-4 business days."
-                      className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                    />
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingFaq(false);
-                          setNewFaqQuestion("");
-                          setNewFaqAnswer("");
-                        }}
-                        className="rounded-xl border border-[#24382F] bg-[#0A1210] px-3 py-1.5 text-xs font-medium text-[#9DB3A8] hover:text-[#E8F1EC]"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleAddFaq}
-                        className="rounded-xl bg-[#19C37D] px-4 py-1.5 text-xs font-semibold text-[#04140D] hover:bg-[#16B070]"
-                      >
-                        Save FAQ
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Section: Social Share & SEO (Link Preview) */}
-            <section
-              aria-labelledby="seo-og-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
-            >
-              <div className="border-b border-[#1E2D27] pb-4">
-                <h2 id="seo-og-heading" className="text-base font-semibold text-[#E8F1EC]">
-                  Social Share & Link Preview
-                </h2>
-                <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Control what image and description appear when you share your store link on WhatsApp, X, or iMessage.
-                </p>
-              </div>
-
-              <div className="mt-6 space-y-5">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-medium text-[#E8F1EC]">Store Share Description</label>
-                    <span className="text-[11px] text-[#9DB3A8]">
-                      {(localState.ogDescription || "").length}/160 chars
-                    </span>
-                  </div>
-                  <textarea
-                    rows={2}
-                    maxLength={160}
-                    value={localState.ogDescription || ""}
-                    onChange={(e) => updateField("ogDescription", e.target.value)}
-                    placeholder={localState.tagline || "Discover handcrafted fashion and lifestyle products. Shop and order directly on WhatsApp."}
-                    className="mt-1.5 w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                  />
-                  <p className="mt-1 text-[11px] text-[#9DB3A8]">
-                    Recommended length: 50–160 characters. Appears as the snippet under your store link.
-                  </p>
+                    <Plus className="h-4 w-4 stroke-[2.5]" />
+                    <span>Add product</span>
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">Social Preview Image (OG Image)</label>
-                  <p className="mt-0.5 text-[11px] text-[#9DB3A8]">
-                    Displayed on social card previews. Recommended size: 1200 × 630px.
-                  </p>
-                  <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <div className="relative h-24 w-40 shrink-0 overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210] flex items-center justify-center">
-                      {(localState.ogImage || localState.bizImage) ? (
-                        <img
-                          src={localState.ogImage || localState.bizImage}
-                          alt="Social preview"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-[#9DB3A8]">No preview image</span>
-                      )}
+              {hiddenProductCount(localState.products) > 0 && (
+                <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4">
+                  <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-[#E8B93A]" />
+                  <div className="text-xs text-[#E8F1EC]">
+                    <p className="font-semibold">
+                      {hiddenProductCount(localState.products)} hidden{" "}
+                      {hiddenProductCount(localState.products) === 1 ? "product" : "products"}
+                    </p>
+                    <p className="mt-0.5 text-[#9DB3A8]">
+                      Hidden products are kept — nothing is deleted — but they do not appear on your
+                      storefront. Show a hidden product to bring it back (your plan allows up to{" "}
+                      {effectiveProductLimitFor(localState.plan)} visible products).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Products Grid / Cards */}
+              <div className="mt-6">
+                {localState.products.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#1E2D27] py-14 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#14231D] text-[#19C37D]">
+                      <ShoppingBag className="h-7 w-7" />
                     </div>
-
-                    <div className="flex flex-col gap-2">
-                      <label className="cursor-pointer inline-flex min-h-[38px] items-center gap-2 rounded-xl border border-[#19C37D]/30 bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20">
-                        {isUploadingOg ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
-                        )}
-                        <span>{isUploadingOg ? "Uploading…" : "Upload Social Image"}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={isUploadingOg}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleOgImageUpload(file);
-                          }}
-                        />
-                      </label>
-                      {localState.ogImage && (
-                        <button
-                          type="button"
-                          onClick={() => updateField("ogImage", undefined)}
-                          className="text-left text-[11px] text-[#FF8A8A] hover:underline"
+                    <h3 className="mt-4 text-base font-bold text-[#E8F1EC]">Add your first product</h3>
+                    <p className="mt-1 text-xs text-[#9DB3A8] max-w-sm">
+                      Buyers cannot order until there is something to order. Add items manually or start instantly with ready-to-sell stock ideas.
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={openAddProductModal}
+                        className="flex min-h-[44px] items-center gap-2 rounded-full bg-[#19C37D] px-6 py-2.5 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add product</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePopulateStockIdeas}
+                        className="flex min-h-[44px] items-center gap-2 rounded-full border border-[#19C37D]/40 bg-[#14231D] px-5 py-2.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
+                      >
+                        <Tag className="h-4 w-4" />
+                        <span>Add 4 stock ideas</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
+                    {localState.products.map((product, idx) => {
+                      const cover = product.images?.[0] || product.image;
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => openEditProductModal(product.id)}
+                          className={cn(
+                            "group relative flex flex-col justify-between overflow-hidden border border-[#1E2D27] bg-[#0A1210] p-3 text-left transition hover:border-[#19C37D]/60 hover:bg-[#14231D]/40 cursor-pointer",
+                            idx % 3 === 0 ? "rounded-[28px_28px_28px_10px]" : "rounded-[28px]",
+                            !isProductVisible(product) && "opacity-60"
+                          )}
                         >
-                          Reset to store logo
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+                          <div>
+                            {/* Product Image / Placeholder */}
+                            <div className="relative aspect-square w-full overflow-hidden rounded-[20px] bg-[#14231D]">
+                              {cover ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={cover}
+                                  alt={product.name}
+                                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[#5C7C6D]">
+                                  <ShoppingBag className="h-8 w-8" />
+                                </div>
+                              )}
+                              {product.outOfStock && (
+                                <span className="absolute top-2 left-2 rounded-full bg-rose-500/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                  Sold out
+                                </span>
+                              )}
+                              {!isProductVisible(product) && (
+                                <span className="absolute top-2 right-2 rounded-full bg-[#E8B93A] px-2 py-0.5 text-[10px] font-bold text-[#04140D] shadow-xs">
+                                  Hidden
+                                </span>
+                              )}
+                            </div>
 
-            {/* Section: WhatsApp Checkout Message Template */}
-            <section
-              aria-labelledby="whatsapp-message-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
-            >
-              <div className="border-b border-[#1E2D27] pb-4">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-[#19C37D]" />
-                  <h2 id="whatsapp-message-heading" className="text-base font-semibold text-[#E8F1EC]">
-                    WhatsApp Order Message Template
-                  </h2>
-                </div>
-                <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Customize the default message customers send when clicking &quot;Order on WhatsApp&quot;.
-                </p>
-              </div>
+                            {/* Product Details */}
+                            <div className="mt-3">
+                              <h3 className="truncate text-sm font-bold text-[#E8F1EC]">
+                                {product.name}
+                              </h3>
+                              <p className="mt-0.5 text-xs font-semibold tabular-nums text-[#19C37D]">
+                                {formatMajorMoney(product.price, localState.currency)}
+                              </p>
+                              {product.category && (
+                                <span className="mt-1 inline-block rounded-md bg-[#14231D] px-2 py-0.5 text-[10px] font-medium text-[#9DB3A8]">
+                                  {product.category}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-              <div className="mt-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-[#E8F1EC]">
-                    Insert Variables (tap to add):
-                  </label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {ALLOWED_TEMPLATE_VARIABLES.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => {
-                          const current = localState.waTemplate || DEFAULT_WA_TEMPLATE;
-                          const separator = current.endsWith(" ") || current.endsWith("\n") || !current ? "" : " ";
-                          updateField("waTemplate", `${current}${separator}${v}`);
-                        }}
-                        className="rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-xs font-medium text-[#19C37D] transition hover:border-[#19C37D] hover:bg-[#19C37D]/10"
-                      >
-                        + {v}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => updateField("waTemplate", DEFAULT_WA_TEMPLATE)}
-                      className="flex items-center gap-1 rounded-lg border border-[#24382F] bg-[#14231D] px-2.5 py-1 text-xs font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      <span>Reset default</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <textarea
-                    rows={3}
-                    value={localState.waTemplate || DEFAULT_WA_TEMPLATE}
-                    onChange={(e) => updateField("waTemplate", e.target.value)}
-                    placeholder={DEFAULT_WA_TEMPLATE}
-                    className="w-full rounded-xl border border-[#5C7C6D] bg-[#0A1210] p-3 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
-                  />
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-[#9DB3A8]">
-                    <span>Allowed: &#123;product&#125;, &#123;price&#125;, &#123;option&#125;, &#123;store&#125;</span>
-                    <span>{(localState.waTemplate || DEFAULT_WA_TEMPLATE).length}/500 chars</span>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-[#24382F] bg-[#0A1210] p-3.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9DB3A8]">
-                    Buyer WhatsApp Message Preview
-                  </span>
-                  <div className="mt-2 rounded-lg border border-[#1E2D27] bg-[#14231D] p-3 text-xs text-[#E8F1EC]/90 whitespace-pre-line leading-relaxed">
-                    {renderWhatsAppOrderMessage(localState.waTemplate || DEFAULT_WA_TEMPLATE, {
-                      product: localState.products[0]?.name || "Sample Product",
-                      price: formatMajorMoney(localState.products[0]?.price || 15000, localState.currency || "NGN"),
-                      store: localState.bizName || "My Store",
-                      option: "Size: Medium",
+                          {/* Quick Actions */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-3 flex items-center justify-between border-t border-[#1E2D27]/80 pt-2.5 text-xs"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStock(product.id)}
+                              className={cn(
+                                "text-[11px] font-semibold transition hover:underline",
+                                product.outOfStock ? "text-[#FF8A8A]" : "text-[#19C37D]"
+                              )}
+                            >
+                              {product.outOfStock ? "Sold out" : "In stock"}
+                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleVisibility(product.id)}
+                                title={isProductVisible(product) ? "Hide" : "Show"}
+                                className="text-[#9DB3A8] hover:text-[#E8F1EC] p-1"
+                              >
+                                {isProductVisible(product) ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProduct(product.id)}
+                                title="Delete product"
+                                className="text-[#9DB3A8] hover:text-[#FF8A8A] p-1"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
                     })}
                   </div>
-                </div>
+                )}
               </div>
             </section>
 
-            {/* Section 3: Categories */}
+            {/* Categories Section */}
             <section
               aria-labelledby="categories-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+              className="rounded-3xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
             >
               <div className="border-b border-[#1E2D27] pb-4">
                 <h2 id="categories-heading" className="text-base font-semibold text-[#E8F1EC]">
@@ -1591,10 +1177,15 @@ export function StoreEditorV2() {
               <div className="mt-6 space-y-4">
                 {/* Active categories tags */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {categories.map((cat) => (
+                  {categories.map((cat, idx) => (
                     <div
                       key={cat}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#24382F] bg-[#14231D] px-3 py-1.5 text-xs font-medium text-[#E8F1EC]"
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+                        idx === 0
+                          ? "bg-[#19C37D] text-[#04140D]"
+                          : "border border-[#24382F] bg-[#14231D] text-[#E8F1EC]"
+                      )}
                     >
                       <span>{cat}</span>
                       {cat !== "All" && (
@@ -1623,13 +1214,13 @@ export function StoreEditorV2() {
                         handleAddCategory();
                       }
                     }}
-                    placeholder="New category name (e.g. Bags)"
-                    className="flex-1 rounded-xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    placeholder="New category, e.g. Bags"
+                    className="flex-1 rounded-full border border-[#5C7C6D] bg-[#0A1210] px-4 py-2 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
                   />
                   <button
                     type="button"
                     onClick={handleAddCategory}
-                    className="flex min-h-[40px] items-center gap-1 rounded-xl border border-[#24382F] bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
+                    className="flex min-h-[40px] items-center gap-1 rounded-full border border-[#24382F] bg-[#14231D] px-5 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Add</span>
@@ -1638,194 +1229,140 @@ export function StoreEditorV2() {
               </div>
             </section>
 
-            {/* Section 4: Products List */}
+            {/* Store Setup List (M3 Expressive) */}
             <section
-              aria-labelledby="products-list-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+              aria-labelledby="store-setup-heading"
+              className="rounded-3xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#1E2D27] pb-4">
-                <div>
-                  <h2 id="products-list-heading" className="text-base font-semibold text-[#E8F1EC]">
-                    Products
-                  </h2>
-                  <p className="mt-1 text-xs text-[#9DB3A8]">
-                    {visibleProductCount(localState.products)} visible · {localState.products.length}{" "}
-                    {localState.products.length === 1 ? "item" : "items"} in your store
-                  </p>
-                </div>
-
-                {/* Primary buttons: 1-tap Live preview & Add product */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
-                    className="flex min-h-[44px] items-center gap-2 rounded-xl border border-[#19C37D]/40 bg-[#19C37D]/10 px-4 py-2.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20 active:scale-98"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>Template preview</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openAddProductModal}
-                    className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[#19C37D] px-5 py-2.5 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] active:scale-98 shadow-md shadow-[#19C37D]/20"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add product</span>
-                  </button>
-                </div>
+              <div className="border-b border-[#1E2D27] pb-4">
+                <h2 id="store-setup-heading" className="text-base font-semibold text-[#E8F1EC]">
+                  Store setup
+                </h2>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Customize your brand profile, contact links, WhatsApp template, and policies.
+                </p>
               </div>
 
-              {hiddenProductCount(localState.products) > 0 && (
-                <div className="mt-5 flex items-start gap-3 rounded-xl border border-[#E8B93A]/30 bg-[#E8B93A]/10 p-4">
-                  <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-[#E8B93A]" />
-                  <div className="text-xs text-[#E8F1EC]">
-                    <p className="font-semibold">
-                      {hiddenProductCount(localState.products)} hidden{" "}
-                      {hiddenProductCount(localState.products) === 1 ? "product" : "products"}
-                    </p>
-                    <p className="mt-0.5 text-[#9DB3A8]">
-                      Hidden products are kept — nothing is deleted — but they do not appear on your
-                      storefront. Show a hidden product to bring it back (your plan allows up to{" "}
-                      {effectiveProductLimitFor(localState.plan)} visible products).
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Products Table / Cards */}
-              <div className="mt-6">
-                {localState.products.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1E2D27] py-14 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14231D] text-[#19C37D]">
-                      <ShoppingBag className="h-6 w-6" />
+              <div className="mt-4 divide-y divide-[#1E2D27]">
+                {/* 1. Store profile */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("prof")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <Store className="h-5 w-5" />
                     </div>
-                    <p className="mt-4 text-sm font-semibold text-[#E8F1EC]">No products yet</p>
-                    <p className="mt-1 text-xs text-[#9DB3A8] max-w-sm">
-                      Add a product to start sharing your store and receiving orders on WhatsApp, or start instantly with ready-to-sell stock ideas.
-                    </p>
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={openAddProductModal}
-                        className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[#19C37D] px-5 py-2.5 text-xs font-semibold text-[#04140D] transition hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20"
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Add product</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handlePopulateStockIdeas}
-                        className="flex min-h-[44px] items-center gap-2 rounded-xl border border-[#19C37D]/40 bg-[#14231D] px-5 py-2.5 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10"
-                      >
-                        <Tag className="h-4 w-4" />
-                        <span>Add 4 Stock Ideas (1-Tap)</span>
-                      </button>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">Store profile</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {localState.bizName || "Store"} · {localState.currency || "NGN"} · {localState.phone || "Add WhatsApp"}
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  <div className="divide-y divide-[#1E2D27]">
-                    {localState.products.map((product) => {
-                      const cover = product.images?.[0] || product.image;
-                      return (
-                        <div
-                          key={product.id}
-                          className={cn(
-                            "flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between transition hover:bg-[#14231D]/40 rounded-xl px-2",
-                            !isProductVisible(product) && "opacity-55"
-                          )}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {/* Product Cover Thumbnail */}
-                            <div className="relative flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#1E2D27] bg-[#0A1210]">
-                              {cover ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={cover} alt={product.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#9DB3A8]">
-                                  No photo
-                                </div>
-                              )}
-                            </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
 
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h3 className="truncate text-sm font-semibold text-[#E8F1EC]">
-                                  {product.name}
-                                </h3>
-                                {product.category && (
-                                  <span className="shrink-0 rounded-md bg-[#14231D] px-2 py-0.5 text-[10px] font-medium text-[#9DB3A8]">
-                                    {product.category}
-                                  </span>
-                                )}
-                                {!isProductVisible(product) && (
-                                  <span className="shrink-0 rounded-md bg-[#E8B93A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#E8B93A]">
-                                    Hidden
-                                  </span>
-                                )}
-                              </div>
-                              <p className="mt-0.5 text-xs font-semibold tabular-nums text-[#19C37D]">
-                                {formatMajorMoney(product.price, localState.currency)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Status and Action Buttons */}
-                          <div className="flex items-center gap-3 self-end sm:self-auto">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStock(product.id)}
-                              className={cn(
-                                "flex min-h-[36px] items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium transition",
-                                product.outOfStock
-                                  ? "border border-[#FF8A8A]/30 bg-[#FF8A8A]/10 text-[#FF8A8A]"
-                                  : "border border-[#19C37D]/30 bg-[#14231D] text-[#19C37D]"
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "h-1.5 w-1.5 rounded-full",
-                                  product.outOfStock ? "bg-[#FF8A8A]" : "bg-[#19C37D]"
-                                )}
-                              />
-                              <span>{product.outOfStock ? "Sold out" : "In stock"}</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleToggleVisibility(product.id)}
-                              title={isProductVisible(product) ? "Hide from storefront" : "Show on storefront"}
-                              aria-label={isProductVisible(product) ? "Hide from storefront" : "Show on storefront"}
-                              className="flex min-h-[36px] items-center rounded-lg border border-[#24382F] bg-[#14231D] p-2 text-[#9DB3A8] transition hover:text-[#E8F1EC]"
-                            >
-                              {isProductVisible(product) ? (
-                                <Eye className="h-4 w-4" />
-                              ) : (
-                                <EyeOff className="h-4 w-4" />
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => openEditProductModal(product.id)}
-                              className="flex min-h-[36px] items-center rounded-lg border border-[#24382F] bg-[#14231D] px-3.5 py-1 text-xs font-medium text-[#E8F1EC] transition hover:bg-[#1E2D27]"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="flex min-h-[36px] items-center rounded-lg p-2 text-[#9DB3A8] transition hover:text-[#FF8A8A]"
-                              title="Delete product"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                {/* 2. About and socials */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("soc")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">About and socials</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {localState.socials?.instagram ? `@${localState.socials.instagram}` : localState.bio ? localState.bio.slice(0, 36) + "..." : "No socials linked yet"}
+                      </p>
+                    </div>
                   </div>
-                )}
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
+
+                {/* 3. Link preview */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("lp")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <Eye className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">Link preview</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {localState.ogDescription ? localState.ogDescription.slice(0, 40) + "..." : "Add a description and social image"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
+
+                {/* 4. WhatsApp message */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("wa")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <MessageSquare className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">WhatsApp message</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        Order format message and variables
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
+
+                {/* 5. Discount codes */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("disc")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <Tag className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">Discount codes</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {(localState.discountCodes || []).length > 0 ? `${localState.discountCodes?.length} codes active` : "None yet"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
+
+                {/* 6. FAQ */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("faq")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <HelpCircle className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">FAQ</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {(localState.faqItems || []).length > 0 ? `${localState.faqItems?.length} questions` : "3 questions"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
               </div>
             </section>
           </div>
@@ -1839,18 +1376,74 @@ export function StoreEditorV2() {
             {/* Section 1: Template selection */}
             <section
               aria-labelledby="template-selection-heading"
-              className="rounded-2xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
+              className="rounded-3xl border border-[#1E2D27] bg-[#111C18] p-5 sm:p-7 shadow-xs"
             >
               <div className="border-b border-[#1E2D27] pb-4">
-                <h2 id="template-selection-heading" className="text-base font-semibold text-[#E8F1EC]">
-                  Store templates
+                <h2 id="template-selection-heading" className="text-lg font-bold text-[#E8F1EC]">
+                  Storefront template
                 </h2>
                 <p className="mt-1 text-xs text-[#9DB3A8]">
-                  Pick a look for your store. Each template works in light and dark mode.
+                  Pick a look for your store. Clean typography, product showcase, and WhatsApp checkout built-in.
                 </p>
               </div>
 
-              <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {/* 3 M3 Expressive Starter Looks (Editorial, Boutique, Bold) */}
+              <div className="mt-6">
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+                  {[
+                    { id: "editorial", name: "Editorial", swatch: "#19C37D", desc: "Minimalist fashion magazine" },
+                    { id: "boutique", name: "Boutique", swatch: "#be185d", desc: "Warm luxury beauty" },
+                    { id: "bold", name: "Bold", swatch: "#f59e0b", desc: "High-contrast urban" },
+                  ].map((tpl) => {
+                    const isSelected = (localState.websiteTemplateId || "editorial") === tpl.id;
+                    return (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => handleAutoSaveTemplate(tpl.id as WebsiteTemplateId)}
+                        className={cn(
+                          "relative flex aspect-[3/4] flex-col justify-end p-3.5 sm:p-4 text-left transition active:scale-98 cursor-pointer border",
+                          isSelected
+                            ? "rounded-[28px_28px_28px_8px] border-[#19C37D] bg-[#19C37D] text-[#04140D] shadow-lg shadow-[#19C37D]/20"
+                            : "rounded-[28px] border-[#1E2D27] bg-[#14231D] text-[#E8F1EC] hover:border-[#5C7C6D]"
+                        )}
+                      >
+                        {isSelected && (
+                          <span className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#04140D] text-[#19C37D]">
+                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          </span>
+                        )}
+                        <span
+                          className="h-3 w-3 rounded-full mb-2"
+                          style={{ backgroundColor: tpl.swatch }}
+                        />
+                        <span className="font-bold text-sm sm:text-base leading-tight">{tpl.name}</span>
+                        <span className={cn(
+                          "text-[10px] sm:text-xs mt-0.5 line-clamp-1",
+                          isSelected ? "text-[#04140D]/80 font-medium" : "text-[#9DB3A8]"
+                        )}>
+                          {tpl.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewTemplateId(localState.websiteTemplateId || "editorial")}
+                  className="mt-4 flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full border border-[#19C37D]/40 bg-[#14231D] py-3 text-xs sm:text-sm font-bold text-[#19C37D] transition hover:bg-[#19C37D]/10 active:scale-98 shadow-xs"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>Preview with my products</span>
+                </button>
+              </div>
+
+              <div className="mt-8 border-t border-[#1E2D27] pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9DB3A8]">
+                  All Available Templates ({websiteTemplates.length})
+                </h3>
+                <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {websiteTemplates.map((template) => {
                   const isSelected = (localState.websiteTemplateId || "editorial") === template.id;
                   return (
@@ -1913,6 +1506,7 @@ export function StoreEditorV2() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             </section>
 
@@ -2468,6 +2062,584 @@ export function StoreEditorV2() {
           </div>
         )}
       </main>
+
+      {/* ─── M3 EXPRESSIVE BOTTOM SHEET MODAL (STORE SETUP) ─── */}
+      {activeSheet && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+          onClick={() => setActiveSheet(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-t-[36px] border-t border-[#24382F] bg-[#14231D] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-8 duration-300"
+          >
+            {/* Grab handle */}
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-[#344E41]" />
+
+            {/* 1. Store profile sheet */}
+            {activeSheet === "prof" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">Store profile</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Basic information buyers see when visiting your storefront.
+                </p>
+
+                <div className="mt-6 space-y-5">
+                  {/* Logo or photo */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Logo or Photo</label>
+                    <div className="mt-2 flex items-center gap-4">
+                      <div className="relative flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#1E2D27] bg-[#0A1210]">
+                        {localState.bizImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={localState.bizImage}
+                            alt={localState.bizName || "Store logo"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xl font-bold text-[#19C37D]">
+                            {(localState.bizName || "S").slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                        {isUploadingLogo && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#19C37D]" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="flex min-h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#19C37D]/30 bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/10">
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>Upload photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={isUploadingLogo}
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleLogoUpload(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                        {localState.bizImage && (
+                          <button
+                            type="button"
+                            onClick={() => updateField("bizImage", "")}
+                            className="text-left text-xs text-[#9DB3A8] hover:text-[#FF8A8A]"
+                          >
+                            Remove photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Business Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Business Name</label>
+                    <input
+                      type="text"
+                      value={localState.bizName || ""}
+                      onChange={(e) => updateField("bizName", e.target.value)}
+                      placeholder="e.g. PoloG"
+                      className="mt-1.5 w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                  </div>
+
+                  {/* Store Currency */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Currency</label>
+                    <select
+                      value={localState.currency || "NGN"}
+                      onChange={(e) => updateField("currency", e.target.value)}
+                      className="mt-1.5 w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    >
+                      <option value="NGN">NGN (₦) - Nigerian Naira</option>
+                      <option value="GHS">GHS (₵) - Ghanaian Cedi</option>
+                      <option value="KES">KES (KSh) - Kenyan Shilling</option>
+                      <option value="ZAR">ZAR (R) - South African Rand</option>
+                      <option value="USD">USD ($) - US Dollar</option>
+                      <option value="GBP">GBP (£) - British Pound</option>
+                      <option value="EUR">EUR (€) - Euro</option>
+                    </select>
+                  </div>
+
+                  {/* WhatsApp Number */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">WhatsApp Number</label>
+                    {(() => {
+                      const parsed = splitPhoneNumber(localState.phone || "");
+                      const callingCode = parsed.callingCode || "+234";
+                      const nationalNum = parsed.nationalNumber || "";
+                      return (
+                        <>
+                          <div className="mt-1.5 flex gap-2">
+                            <CountrySelector
+                              value={parsed.countryCode || "NG"}
+                              onChange={(newCallingCode) => {
+                                const rawDigits = nationalNum.replace(/^0+/, "");
+                                updateField("phone", `${newCallingCode}${rawDigits}`);
+                              }}
+                            />
+                            <input
+                              type="tel"
+                              value={nationalNum}
+                              onChange={(e) => {
+                                const cleaned = cleanPastedNationalNumber(e.target.value, callingCode);
+                                updateField("phone", `${callingCode}${cleaned.nationalNumber}`);
+                              }}
+                              placeholder="808 123 4567"
+                              className="w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                            />
+                          </div>
+                          <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                            Where customer orders arrive on WhatsApp. Format: 2348081234567
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Store Link Handle */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-[#E8F1EC]">Store Link</label>
+                      {handleStatus === "checking" && (
+                        <span className="flex items-center gap-1 text-[10px] text-[#9DB3A8]">
+                          <Loader2 className="h-3 w-3 animate-spin text-[#19C37D]" /> Checking...
+                        </span>
+                      )}
+                      {handleStatus === "available" && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#19C37D]">
+                          <Check className="h-3 w-3" /> Available
+                        </span>
+                      )}
+                      {handleStatus === "taken" && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400">
+                          <X className="h-3 w-3" /> Already Taken
+                        </span>
+                      )}
+                    </div>
+                    <div className={cn(
+                      "mt-1.5 flex items-center rounded-2xl border bg-[#0A1210] px-3.5 py-2.5 text-sm transition focus-within:border-[#19C37D]",
+                      handleStatus === "taken" ? "border-rose-500/80" : handleStatus === "available" ? "border-[#19C37D]" : "border-[#5C7C6D]"
+                    )}>
+                      <span className="select-none text-xs text-[#9DB3A8]">swiftlink.pro/</span>
+                      <input
+                        type="text"
+                        value={localState.storeUsername || ""}
+                        onChange={(e) => {
+                          const clean = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                          updateField("storeUsername", clean);
+                        }}
+                        placeholder="your-store"
+                        className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-[#9DB3A8]">
+                      Your shareable link for bio and status.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. About and socials sheet */}
+            {activeSheet === "soc" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">About and socials</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Help customers know who you are and where else to find you.
+                </p>
+
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">About the store</label>
+                    <textarea
+                      rows={3}
+                      value={localState.bio || localState.aboutUs || ""}
+                      onChange={(e) => {
+                        updateField("bio", e.target.value);
+                        updateField("aboutUs", e.target.value);
+                      }}
+                      placeholder="Store launched on SwiftLink."
+                      className="mt-1.5 w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Instagram</label>
+                    <div className="mt-1.5 flex items-center rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-sm focus-within:border-[#19C37D]">
+                      <span className="text-xs text-[#9DB3A8]">@</span>
+                      <input
+                        type="text"
+                        value={localState.socials?.instagram || ""}
+                        onChange={(e) =>
+                          updateField("socials", {
+                            ...localState.socials,
+                            instagram: e.target.value.replace(/^@/, ""),
+                          })
+                        }
+                        placeholder="yourbrand"
+                        className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">TikTok</label>
+                    <div className="mt-1.5 flex items-center rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-sm focus-within:border-[#19C37D]">
+                      <span className="text-xs text-[#9DB3A8]">@</span>
+                      <input
+                        type="text"
+                        value={localState.socials?.tiktok || ""}
+                        onChange={(e) =>
+                          updateField("socials", {
+                            ...localState.socials,
+                            tiktok: e.target.value.replace(/^@/, ""),
+                          })
+                        }
+                        placeholder="yourbrand"
+                        className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Facebook</label>
+                    <div className="mt-1.5 flex items-center rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-sm focus-within:border-[#19C37D]">
+                      <span className="text-xs text-[#9DB3A8]">@</span>
+                      <input
+                        type="text"
+                        value={localState.socials?.facebook || ""}
+                        onChange={(e) =>
+                          updateField("socials", {
+                            ...localState.socials,
+                            facebook: e.target.value.replace(/^@/, ""),
+                          })
+                        }
+                        placeholder="yourbrand or facebook.com/yourbrand"
+                        className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">X / Twitter</label>
+                    <div className="mt-1.5 flex items-center rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-3.5 py-2 text-sm focus-within:border-[#19C37D]">
+                      <span className="text-xs text-[#9DB3A8]">@</span>
+                      <input
+                        type="text"
+                        value={localState.socials?.twitter || ""}
+                        onChange={(e) =>
+                          updateField("socials", {
+                            ...localState.socials,
+                            twitter: e.target.value.replace(/^@/, ""),
+                          })
+                        }
+                        placeholder="yourbrand"
+                        className="ml-1 w-full bg-transparent text-sm text-[#E8F1EC] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Location and delivery</label>
+                    <input
+                      type="text"
+                      value={localState.deliveryAreas || localState.location || ""}
+                      onChange={(e) => {
+                        updateField("deliveryAreas", e.target.value);
+                        updateField("location", e.target.value);
+                      }}
+                      placeholder="Lagos and nationwide delivery"
+                      className="mt-1.5 w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Link preview sheet */}
+            {activeSheet === "lp" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">Link preview</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  What people see when you share your link on WhatsApp, X or iMessage.
+                </p>
+
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-[#E8F1EC]">Description</label>
+                      <span className="text-[11px] font-medium text-[#9DB3A8]">
+                        {(localState.ogDescription || "").length}/160
+                      </span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      maxLength={160}
+                      value={localState.ogDescription || ""}
+                      onChange={(e) => updateField("ogDescription", e.target.value)}
+                      placeholder="Premium Products"
+                      className="mt-1.5 w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] px-4 py-2.5 text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                    <p className="mt-1 text-[11px] text-[#9DB3A8]">Aim for 50 to 160 characters.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">Preview image</label>
+                    <p className="mt-0.5 text-[11px] text-[#9DB3A8]">Best size: 1200 × 630 px.</p>
+                    <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="relative h-24 w-40 shrink-0 overflow-hidden rounded-2xl border border-[#1E2D27] bg-[#0A1210] flex items-center justify-center">
+                        {(localState.ogImage || localState.bizImage) ? (
+                          <img
+                            src={localState.ogImage || localState.bizImage}
+                            alt="Social preview"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-[#9DB3A8]">No preview image</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="cursor-pointer inline-flex min-h-[38px] items-center gap-2 rounded-full border border-[#19C37D]/30 bg-[#14231D] px-4 py-2 text-xs font-semibold text-[#19C37D] transition hover:bg-[#19C37D]/20">
+                          {isUploadingOg ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          <span>{isUploadingOg ? "Uploading…" : "Upload social image"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={isUploadingOg}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleOgImageUpload(file);
+                            }}
+                          />
+                        </label>
+                        {localState.ogImage && (
+                          <button
+                            type="button"
+                            onClick={() => updateField("ogImage", undefined)}
+                            className="text-left text-[11px] text-[#FF8A8A] hover:underline"
+                          >
+                            Reset to store logo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. WhatsApp message sheet */}
+            {activeSheet === "wa" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">WhatsApp message</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  The message buyers send when they tap &quot;Order on WhatsApp&quot;.
+                </p>
+
+                <div className="mt-6 space-y-4">
+                  {/* Variables */}
+                  <div className="flex flex-wrap gap-2">
+                    {ALLOWED_TEMPLATE_VARIABLES.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => {
+                          const current = localState.waTemplate || DEFAULT_WA_TEMPLATE;
+                          const separator = current.endsWith(" ") || current.endsWith("\n") || !current ? "" : " ";
+                          updateField("waTemplate", `${current}${separator}${v}`);
+                        }}
+                        className="rounded-full border border-[#24382F] bg-[#14231D] px-3 py-1 text-xs font-semibold text-[#19C37D] transition hover:border-[#19C37D]"
+                      >
+                        + {v}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => updateField("waTemplate", DEFAULT_WA_TEMPLATE)}
+                      className="rounded-full border border-[#24382F] bg-[#0A1210] px-3 py-1 text-xs font-medium text-[#9DB3A8] transition hover:text-[#E8F1EC]"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div>
+                    <textarea
+                      rows={4}
+                      maxLength={500}
+                      value={localState.waTemplate || DEFAULT_WA_TEMPLATE}
+                      onChange={(e) => updateField("waTemplate", e.target.value)}
+                      className="w-full rounded-2xl border border-[#5C7C6D] bg-[#0A1210] p-3.5 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                    />
+                    <div className="mt-1 text-right text-[11px] text-[#9DB3A8]">
+                      {(localState.waTemplate || DEFAULT_WA_TEMPLATE).length}/500
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#E8F1EC]">What the buyer sends</label>
+                    <div className="mt-1.5 rounded-[22px_22px_22px_6px] bg-[#19C37D]/15 p-4 text-xs text-[#E8F1EC] leading-relaxed whitespace-pre-wrap border border-[#19C37D]/20">
+                      {renderWhatsAppOrderMessage(localState.waTemplate || DEFAULT_WA_TEMPLATE, {
+                        product: localState.products[0]?.name || "Sample Product",
+                        price: formatMajorMoney(localState.products[0]?.price || 15000, localState.currency || "NGN"),
+                        store: localState.bizName || "PoloG",
+                        option: "Size: Medium",
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. Discount codes sheet */}
+            {activeSheet === "disc" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">Discount codes</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  Buyers apply a code in their bag and it rides along in the order message.
+                </p>
+
+                <div className="mt-6">
+                  {normalizePlan(localState.plan) === "free" ? (
+                    <ProGate
+                      feature="Discount codes"
+                      description="A code like WELCOME10 turns a one-off buyer into a repeat one. Upgrade to Pro to create custom coupon codes."
+                    />
+                  ) : (
+                    <DiscountCodesSection
+                      codes={sanitizeDiscountCodes(localState.discountCodes)}
+                      currency={localState.currency || "₦"}
+                      storeId={localState.id ?? null}
+                      onChange={(next) => updateField("discountCodes", next)}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 6. FAQ sheet */}
+            {activeSheet === "faq" && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#E8F1EC]">FAQ</h3>
+                    <p className="mt-1 text-xs text-[#9DB3A8]">
+                      Questions buyers see on your storefront.
+                    </p>
+                  </div>
+                  {!isAddingFaq && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingFaq(true)}
+                      className="flex items-center gap-1.5 rounded-full border border-[#19C37D]/30 bg-[#14231D] px-3.5 py-1.5 text-xs font-semibold text-[#19C37D] hover:bg-[#19C37D]/10"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add question</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {((localState.faqItems && localState.faqItems.length > 0)
+                    ? localState.faqItems
+                    : [
+                        {
+                          q: "How does ordering on WhatsApp work?",
+                          a: "Browse, add what you want, then send your order to the seller.",
+                        },
+                      ]
+                  ).map((faq, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start justify-between gap-3 rounded-2xl border border-[#24382F] bg-[#0A1210] p-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <strong className="block text-sm font-semibold text-[#E8F1EC]">{faq.q}</strong>
+                        <small className="mt-1 block text-xs text-[#9DB3A8] leading-relaxed">{faq.a}</small>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFaq(index)}
+                        className="text-[#9DB3A8] hover:text-[#FF8A8A] p-1"
+                        title="Remove question"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add new FAQ card */}
+                  {isAddingFaq && (
+                    <div className="mt-4 rounded-2xl border border-[#19C37D]/40 bg-[#0A1210] p-4 space-y-3">
+                      <p className="text-xs font-bold text-[#19C37D]">New Question</p>
+                      <input
+                        type="text"
+                        value={newFaqQuestion}
+                        onChange={(e) => setNewFaqQuestion(e.target.value)}
+                        placeholder="e.g. Do you ship outside Lagos?"
+                        className="w-full rounded-xl border border-[#5C7C6D] bg-[#14231D] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                      />
+                      <textarea
+                        rows={2}
+                        value={newFaqAnswer}
+                        onChange={(e) => setNewFaqAnswer(e.target.value)}
+                        placeholder="e.g. Yes, we deliver nationwide within 2-4 business days."
+                        className="w-full rounded-xl border border-[#5C7C6D] bg-[#14231D] px-3.5 py-2 text-xs sm:text-sm text-[#E8F1EC] outline-none transition focus:border-[#19C37D]"
+                      />
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingFaq(false);
+                            setNewFaqQuestion("");
+                            setNewFaqAnswer("");
+                          }}
+                          className="rounded-full border border-[#24382F] bg-[#0A1210] px-4 py-1.5 text-xs font-medium text-[#9DB3A8] hover:text-[#E8F1EC]"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAddFaq}
+                          className="rounded-full bg-[#19C37D] px-5 py-1.5 text-xs font-semibold text-[#04140D] hover:bg-[#16B070]"
+                        >
+                          Save FAQ
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Done button */}
+            <div className="mt-8 pt-4 border-t border-[#1E2D27]">
+              <button
+                type="button"
+                onClick={() => setActiveSheet(null)}
+                className="w-full rounded-full bg-[#19C37D] py-3 text-sm font-bold text-[#04140D] hover:bg-[#16B070] transition shadow-md shadow-[#19C37D]/20 active:scale-98"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── ADD / EDIT PRODUCT MODAL ─── */}
       {productModalOpen && (

@@ -988,34 +988,32 @@ function EditorialSite(props: TemplateSiteProps & { template: WebsiteTemplate })
           </div>
         </div>
 
-        {/*
-          No hero photograph. The banner is carried by the template's own type
-          and colour: a stock shot made every template look like the same site
-          with a different picture, and merchants' real photos were usually a
-          logo or a blurry phone snap that cheapened the page. The panel keeps
-          the two-column rhythm with facts instead.
-        */}
+        {/* Editorial Hero Visual Presentation */}
         <div className="md:col-span-5">
-          <div className="flex h-full flex-col justify-between gap-6 rounded-2xl border border-t-border bg-t-surface-alt p-6 shadow-sm">
-            <div>
-              <p className="font-t-display text-2xl font-bold text-t-text break-words">
-                {state.bizName || template.name}
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-t-text-muted">
-                {state.tagline || template.tagline}
-              </p>
-            </div>
-            <dl className="grid grid-cols-2 gap-4 border-t border-t-border pt-5">
-              <div>
-                <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Items</dt>
-                <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">{products.length}</dd>
+          {(() => {
+            const heroImg = state.heroImage || products.find(p => p.image || (p.images && p.images[0]))?.image || products[0]?.images?.[0] || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80";
+            return (
+              <div className="relative aspect-[4/5] sm:aspect-square md:aspect-[4/5] overflow-hidden rounded-[28px] border border-t-border bg-t-surface-alt shadow-lg group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={heroImg}
+                  alt={state.bizName || template.name}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-white">
+                  <span className="inline-block rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white mb-2 self-start">
+                    Editorial Selection
+                  </span>
+                  <p className="font-t-display text-xl sm:text-2xl font-bold leading-tight drop-shadow-sm">
+                    {state.bizName || template.name}
+                  </p>
+                  <p className="text-xs text-white/80 mt-1 line-clamp-1">
+                    {state.tagline || template.tagline || `${products.length} products available for instant order`}
+                  </p>
+                </div>
               </div>
-              <div>
-                <dt className="text-[11px] uppercase tracking-wider text-t-text-muted">Order via</dt>
-                <dd className="mt-0.5 font-t-display text-xl font-bold text-t-text">WhatsApp</dd>
-              </div>
-            </dl>
-          </div>
+            );
+          })()}
         </div>
       </section>
 

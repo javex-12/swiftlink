@@ -56,6 +56,36 @@ export function getSupabaseBrowserClient(): SupabaseBrowserClient {
   return client;
 }
 
+function createStubClient(): any {
+  const handler: ProxyHandler<any> = {
+    get(_target, prop) {
+      if (prop === "then") {
+        return (resolve: (val: any) => void) => resolve({ data: null, error: null });
+      }
+      if (prop === "catch") {
+        return () => new Proxy(() => {}, handler);
+      }
+      if (prop === "getSession") {
+        return async () => ({ data: { session: null }, error: null });
+      }
+      if (prop === "getUser") {
+        return async () => ({ data: { user: null }, error: null });
+      }
+      if (prop === "onAuthStateChange") {
+        return () => ({ data: { subscription: { unsubscribe: () => {} } } });
+      }
+      if (prop === "getPublicUrl") {
+        return () => ({ data: { publicUrl: "" } });
+      }
+      return new Proxy(() => {}, handler);
+    },
+    apply(_target, _thisArg, _args) {
+      return new Proxy(() => {}, handler);
+    },
+  };
+  return new Proxy(() => {}, handler);
+}
+
 /**
  * Backwards-compatible singleton for existing call sites.
  *
@@ -66,6 +96,9 @@ export function getSupabaseBrowserClient(): SupabaseBrowserClient {
  */
 export const supabase: SupabaseBrowserClient = new Proxy({} as SupabaseBrowserClient, {
   get(_target, prop) {
+    if (!isSupabaseConfigured()) {
+      return createStubClient()[prop as string];
+    }
     const real = getSupabaseBrowserClient() as unknown as Record<string | symbol, unknown>;
     const value = real[prop];
     return typeof value === "function" ? value.bind(real) : value;

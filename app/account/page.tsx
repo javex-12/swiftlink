@@ -451,7 +451,7 @@ export default function AccountPage() {
                 </div>
               )}
 
-              {(stores || []).length > 1 && (
+              {stores.length > 1 && (
                 <div className="mt-6 border-t border-[#1E2D27] pt-5">
                   <p className="text-[11px] font-semibold text-[#E8F1EC]">Your stores</p>
                   <p className="mt-1 text-[11px] text-[#9DB3A8]">
