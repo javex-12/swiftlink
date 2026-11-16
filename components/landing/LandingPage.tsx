@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+} from "framer-motion";
 import {
   ArrowRight,
   Check,
-  CheckCircle2,
-  Clock,
-  Layers,
-  Layout,
   Menu,
   MessageSquare,
   Package,
+  Send,
   ShoppingBag,
-  Sparkles,
-  TrendingUp,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -42,7 +43,7 @@ import {
  * 
  * Accurately matching /public/assets/aistudio/SwiftLink_Landing_Page___M3_Expressive_853db5e7.html:
  * - Floating top pill navbar with real SwiftLink Logo
- * - Hero with "Built for WhatsApp sellers" pulsing pill and wavy headline
+ * - Hero with multi-channel social kicker, wavy stroke reveal, and 3D showcase
  * - Interactive phone stage with 4 product taps and animated WhatsApp chat order sheet
  * - 3 Facts curved cards (1 link, 100% revenue money card, ₦0 to start)
  * - Interactive Storefront Templates browser with Light/Dark toggle and Editorial/Boutique/Bold tabs
@@ -178,89 +179,236 @@ function Navbar() {
   );
 }
 
-// ─── Hero Section with Interactive Phone & Chat Animation ─────────────────────
+// ─── Hero Section with Interactive 3D Phone & Multi-Channel Chat Showcase ───
 const DEMO_PRODUCTS = [
-  { name: "Linen Shirt", price: "₦9,500", gradient: "linear-gradient(135deg,#eadcc2,#cdb48a)" },
-  { name: "Leather Tote", price: "₦14,000", gradient: "linear-gradient(135deg,#b98a62,#7d5336)" },
-  { name: "Silk Scarf", price: "₦6,000", gradient: "linear-gradient(135deg,#f3b9c8,#d9627f)" },
-  { name: "Canvas Sneakers", price: "₦18,000", gradient: "linear-gradient(135deg,#bcd6c9,#6ea58a)" },
-];
+  {
+    name: "Linen Shirt",
+    price: "₦9,500",
+    tag: "Apparel",
+    gradient: "linear-gradient(135deg,#eadcc2,#cdb48a)",
+  },
+  {
+    name: "Leather Tote",
+    price: "₦14,000",
+    tag: "Bags",
+    gradient: "linear-gradient(135deg,#b98a62,#7d5336)",
+  },
+  {
+    name: "Silk Scarf",
+    price: "₦6,000",
+    tag: "Accessories",
+    gradient: "linear-gradient(135deg,#f3b9c8,#d9627f)",
+  },
+  {
+    name: "Canvas Sneakers",
+    price: "₦18,000",
+    tag: "Footwear",
+    gradient: "linear-gradient(135deg,#bcd6c9,#6ea58a)",
+  },
+] as const;
+
+const DEMO_CHANNELS = [
+  {
+    id: "whatsapp",
+    label: "WhatsApp",
+    cta: "Order on WhatsApp",
+    sheetHeader: "WhatsApp · Kemi Studio",
+    buyerPrefix: "Hi! I'd like to order",
+    merchantReply: "In stock! Confirming delivery details now.",
+    accent: "#5be3a0",
+  },
+  {
+    id: "instagram",
+    label: "Instagram",
+    cta: "Message on Instagram",
+    sheetHeader: "Instagram DM · Kemi Studio",
+    buyerPrefix: "Saw this on your IG link — is",
+    merchantReply: "Yes! Ready to dispatch today. Want me to reserve it?",
+    accent: "#f3b9c8",
+  },
+  {
+    id: "tiktok",
+    label: "TikTok",
+    cta: "Order via TikTok",
+    sheetHeader: "TikTok Bio · Kemi Studio",
+    buyerPrefix: "Came from your TikTok video for",
+    merchantReply: "Awesome! Same price as listed — sending checkout link.",
+    accent: "#ffe3a3",
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    cta: "Message on Facebook",
+    sheetHeader: "Messenger · Kemi Studio",
+    buyerPrefix: "Hello! Checking availability for",
+    merchantReply: "Available in your size. Express pickup or doorstep delivery?",
+    accent: "#9fd6ff",
+  },
+] as const;
 
 function HeroSection() {
+  const shouldReduceMotion = useReducedMotion();
   const [activeProductIndex, setActiveProductIndex] = useState<number>(-1);
+  const [activeChannelIndex, setActiveChannelIndex] = useState<number>(0);
   const [showChat, setShowChat] = useState<boolean>(false);
+  const [typingIn, setTypingIn] = useState<boolean>(false);
   const [bubble1In, setBubble1In] = useState<boolean>(false);
   const [bubble2In, setBubble2In] = useState<boolean>(false);
   const [userTouched, setUserTouched] = useState<boolean>(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const triggerOrderDemo = (index: number) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setActiveProductIndex(index);
-    setBubble1In(false);
-    setBubble2In(false);
-    setShowChat(true);
+  // Pointer-driven 3D tilt springs (compositor transforms only)
+  const rawRotateX = useMotionValue(0);
+  const rawRotateY = useMotionValue(0);
+  const rotateX = useSpring(rawRotateX, { stiffness: 180, damping: 24, mass: 0.6 });
+  const rotateY = useSpring(rawRotateY, { stiffness: 180, damping: 24, mass: 0.6 });
 
-    setTimeout(() => setBubble1In(true), 400);
-    setTimeout(() => setBubble2In(true), 1300);
+  const clearScheduledTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
 
-    timerRef.current = setTimeout(() => {
-      setShowChat(false);
-      setActiveProductIndex(-1);
-    }, 4500);
-  };
+  const triggerOrderDemo = useCallback(
+    (productIndex: number, channelIdx?: number) => {
+      clearScheduledTimers();
+      if (typeof channelIdx === "number") {
+        setActiveChannelIndex(channelIdx);
+      }
+      setActiveProductIndex(productIndex);
+      setTypingIn(true);
+      setBubble1In(false);
+      setBubble2In(false);
+      setShowChat(true);
 
-  // Auto-cycle demo when idle
+      const t1 = setTimeout(() => {
+        setTypingIn(false);
+        setBubble1In(true);
+      }, 450);
+
+      const t2 = setTimeout(() => {
+        setBubble2In(true);
+      }, 1350);
+
+      const t3 = setTimeout(() => {
+        setShowChat(false);
+        setActiveProductIndex(-1);
+      }, 4800);
+
+      timersRef.current.push(t1, t2, t3);
+    },
+    [clearScheduledTimers]
+  );
+
+  // Auto-cycle showcase across products and social channels when idle
   useEffect(() => {
     if (userTouched) return;
     let step = 0;
+    const initialTimer = setTimeout(() => {
+      triggerOrderDemo(0, 0);
+      step = 1;
+    }, 900);
+
     const interval = setInterval(() => {
-      triggerOrderDemo(step % DEMO_PRODUCTS.length);
+      triggerOrderDemo(step % DEMO_PRODUCTS.length, step % DEMO_CHANNELS.length);
       step++;
     }, 6000);
-    return () => clearInterval(interval);
-  }, [userTouched]);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+      clearScheduledTimers();
+    };
+  }, [userTouched, triggerOrderDemo, clearScheduledTimers]);
+
+  useEffect(() => clearScheduledTimers, [clearScheduledTimers]);
+
+  const handleStageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width - 0.5;
+    const yPct = (e.clientY - rect.top) / rect.height - 0.5;
+    rawRotateY.set(xPct * 12);
+    rawRotateX.set(-yPct * 12);
+  };
+
+  const handleStageMouseLeave = () => {
+    rawRotateX.set(0);
+    rawRotateY.set(0);
+  };
+
+  const activeChannel = DEMO_CHANNELS[activeChannelIndex];
+  const activeProduct =
+    activeProductIndex >= 0 ? DEMO_PRODUCTS[activeProductIndex] : DEMO_PRODUCTS[1];
 
   return (
-    <section id="top" className="w-[min(1180px,calc(100%-32px))] mx-auto pt-32 sm:pt-40 pb-16 grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
-      <div>
-        {/* Pill Badge */}
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#0f5133] text-[#bdf3d6] px-4 py-1.5 text-sm font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#5be3a0] m3-dot" />
-          <span>Built for WhatsApp sellers</span>
-        </div>
-
-        {/* Headline */}
-        <h1 className="mt-5 text-[clamp(44px,7.5vw,94px)] font-extrabold leading-[1.0] tracking-tight text-[#e4f0e9]">
-          Stop sending prices{" "}
-          <em className="text-[#5be3a0] not-italic underline decoration-wavy underline-offset-[8px]">
-            one by one.
-          </em>
-        </h1>
-
-        {/* Lead Subtitle */}
-        <p className="mt-6 text-lg sm:text-xl text-[#9db4a8] max-w-[520px] leading-relaxed">
-          Put your products on one clean store link. Buyers browse, tap, and land in your WhatsApp chat, ready to order.
+    <section
+      id="top"
+      className="relative w-[min(1180px,calc(100%-32px))] mx-auto pt-32 sm:pt-40 pb-20 grid lg:grid-cols-[1.12fr_0.88fr] gap-12 lg:gap-10 items-center"
+    >
+      {/* Left Column: Typography & Conversion Actions */}
+      <motion.div
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* Clean unboxed editorial kicker (zero pill badge, zero pulsing dot) */}
+        <p className="text-sm font-semibold tracking-wide text-[#5be3a0] flex flex-wrap items-center gap-2">
+          <span>Social storefront builder</span>
+          <span aria-hidden="true" className="text-[#27402f]">·</span>
+          <span className="text-[#bdf3d6]/90">Instagram, TikTok, WhatsApp &amp; Facebook</span>
         </p>
 
-        {/* CTA Buttons */}
+        {/* Display Headline with Kinetic SVG Underline */}
+        <h1 className="mt-4 [text-wrap:balance] text-[clamp(42px,6.8vw,86px)] font-extrabold leading-[0.98] tracking-tight text-[#e4f0e9]">
+          Stop sending prices{" "}
+          <span className="relative inline-block text-[#5be3a0]">
+            <span>one by one.</span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 280 18"
+              fill="none"
+              className="absolute -bottom-2 left-0 w-full h-[14px] overflow-visible pointer-events-none"
+            >
+              <motion.path
+                d="M3 12C48 3 94 17 140 9C186 1 232 15 277 7"
+                stroke="#5be3a0"
+                strokeWidth="4.5"
+                strokeLinecap="round"
+                initial={shouldReduceMotion ? { pathLength: 1 } : { pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.85, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              />
+            </svg>
+          </span>
+        </h1>
+
+        {/* Concrete Value Proposition */}
+        <p className="mt-7 text-lg sm:text-xl text-[#9db4a8] max-w-[540px] leading-relaxed">
+          Put your whole catalog on one fast link for Instagram, TikTok, WhatsApp, Facebook, or your bio. Buyers browse, pick items, and send ready-to-confirm orders straight to you.
+        </p>
+
+        {/* Primary & Secondary Actions */}
         <div className="mt-8 flex flex-wrap items-center gap-3.5">
           <Link
             href="/signup?mode=signup"
-            className="inline-flex items-center justify-center gap-2.5 h-[56px] px-8 rounded-full bg-[#5be3a0] text-[#00391f] font-extrabold text-base transition-all m3-spring-btn hover:bg-[#4ad993] shadow-md hover:rounded-[20px]"
+            className="group relative overflow-hidden inline-flex items-center justify-center gap-2.5 h-[56px] px-8 rounded-full bg-[#5be3a0] text-[#00391f] font-extrabold text-base transition-all m3-spring-btn hover:bg-[#4ad993] shadow-[0_14px_34px_-10px_rgba(91,227,160,0.55)] hover:rounded-[20px] whitespace-nowrap shrink-0"
           >
             <span>Create your store free</span>
-            <ArrowRight size={18} strokeWidth={2.5} />
+            <ArrowRight
+              size={18}
+              strokeWidth={2.5}
+              className="transition-transform duration-200 group-hover:translate-x-1"
+            />
           </Link>
           <a
             href="#templates"
-            className="inline-flex items-center justify-center h-[56px] px-7 rounded-full bg-[#182a22] text-[#e4f0e9] border border-[#27402f] font-bold text-base transition-all m3-spring-btn hover:bg-[#203629] hover:rounded-[20px]"
+            className="inline-flex items-center justify-center h-[56px] px-7 rounded-full bg-[#182a22] text-[#e4f0e9] border border-[#27402f] font-bold text-base transition-all m3-spring-btn hover:bg-[#203629] hover:rounded-[20px] whitespace-nowrap shrink-0"
           >
             See the templates
           </a>
         </div>
 
-        {/* Ticks */}
+        {/* Clean Unboxed Trust Line */}
         <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-[#9db4a8]">
           <span className="inline-flex items-center gap-1.5">
             <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
@@ -275,107 +423,254 @@ function HeroSection() {
             Live in minutes
           </span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Stage: Phone + Morphing Blob + Interactive Chat Sheet */}
-      <div className="relative grid place-items-center min-h-[580px] select-none">
-        {/* Morphing Blob Background */}
+      {/* Right Column: Pointer-Tracked 3D Stage + Interactive Multi-Channel Storefront */}
+      <div
+        onMouseMove={handleStageMouseMove}
+        onMouseLeave={handleStageMouseLeave}
+        className="relative flex flex-col items-center justify-center min-h-[620px] select-none"
+        style={{ perspective: 1100 }}
+      >
+        {/* Architectural Grid & Aurora Backdrop */}
         <div
           aria-hidden="true"
-          className="absolute w-[340px] h-[340px] sm:w-[420px] sm:h-[420px] rounded-full bg-[#0f5133]/60 blur-xl m3-blob"
+          className="absolute inset-4 rounded-[48px] pointer-events-none opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(rgba(91,227,160,0.22) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+            maskImage: "radial-gradient(circle at center, black 35%, transparent 75%)",
+            WebkitMaskImage:
+              "radial-gradient(circle at center, black 35%, transparent 75%)",
+          }}
         />
+        <div
+          aria-hidden="true"
+          className="absolute w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-[#0f5133]/55 blur-2xl m3-blob pointer-events-none"
+        />
+        {!shouldReduceMotion && (
+          <motion.div
+            aria-hidden="true"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 42, repeat: Infinity, ease: "linear" }}
+            className="absolute w-[390px] h-[390px] sm:w-[470px] sm:h-[470px] rounded-full border border-dashed border-[#5be3a0]/20 pointer-events-none"
+          />
+        )}
 
-        {/* Floating Badge 1 */}
-        <div className="absolute left-0 sm:-left-3 top-24 z-20 bg-[#14231c] border border-[#27402f] rounded-[20px] px-4 py-2.5 font-bold text-sm text-[#e4f0e9] shadow-2xl flex items-center gap-2 m3-float">
-          <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
-          <span>Order received</span>
-        </div>
-
-        {/* Floating Badge 2 */}
-        <div className="absolute right-0 sm:-right-3 bottom-28 z-20 bg-[#14231c] border border-[#27402f] rounded-[20px] px-4 py-2.5 font-bold text-sm text-[#e4f0e9] shadow-2xl flex items-center gap-2 m3-float-delayed">
-          <Check size={16} strokeWidth={3} className="text-[#5be3a0]" />
-          <span>One link. Whole shop.</span>
-        </div>
-
-        {/* Phone Shell */}
-        <div className="relative w-[292px] h-[590px] bg-[#0b0f0d] rounded-[46px] p-2.5 border-2 border-[#27402f] shadow-[0_40px_80px_-30px_rgba(0,40,20,0.6)] z-10">
-          <div className="bg-[#14231c] rounded-[38px] h-full overflow-hidden relative p-3.5 flex flex-col">
-            {/* Header */}
-            <div className="text-center pt-2 pb-2">
-              <div className="w-12 h-12 rounded-[18px_18px_18px_6px] bg-[#5be3a0] text-[#00391f] grid place-items-center font-extrabold text-lg mx-auto mb-1.5 shadow-sm">
-                K
-              </div>
-              <b className="block text-sm font-bold text-[#e4f0e9]">Kemi Studio</b>
-              <small className="text-[11px] text-[#9db4a8]">Clothing, bags and good goods.</small>
-            </div>
-
-            {/* Chat on WhatsApp bar */}
-            <div className="flex items-center justify-center gap-2 bg-[#5be3a0] text-[#00391f] rounded-full h-10 font-bold text-xs my-2 shadow-sm">
-              <MessageSquare size={14} className="fill-current" />
-              <span>Chat on WhatsApp</span>
-            </div>
-
-            {/* 2x2 Product Grid */}
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              {DEMO_PRODUCTS.map((p, i) => (
-                <button
-                  key={p.name}
-                  type="button"
-                  onClick={() => {
-                    setUserTouched(true);
-                    triggerOrderDemo(i);
-                  }}
-                  className={cn(
-                    "text-left p-2 rounded-[20px] transition-all m3-spring-btn",
-                    activeProductIndex === i
-                      ? "bg-[#0f5133] border border-[#5be3a0] scale-[0.96]"
-                      : "bg-[#101d17] border border-[#182a22] hover:border-[#27402f]"
-                  )}
-                >
-                  <i
-                    className="block h-[78px] rounded-[14px] mb-1.5"
-                    style={{ background: p.gradient }}
-                  />
-                  <b className="block text-xs font-bold text-[#e4f0e9] truncate">{p.name}</b>
-                  <small className="text-[11px] font-extrabold text-[#5be3a0]">{p.price}</small>
-                </button>
-              ))}
-            </div>
-
-            {/* Sliding WhatsApp Chat Sheet */}
-            <div
-              className={cn(
-                "absolute inset-x-0 bottom-0 bg-[#0d2a1c] text-[#e4f0e9] rounded-t-[28px] p-4 pb-5 border-t border-[#182a22] transition-transform duration-500 shadow-2xl",
-                showChat ? "translate-y-0" : "translate-y-[105%]"
-              )}
-            >
-              <h6 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-[#bdf3d6]">
-                <MessageSquare size={13} className="fill-current" />
-                <span>WhatsApp · Kemi Studio</span>
-              </h6>
-              {/* Buyer message */}
-              <div
+        {/* Interactive Channel Switcher Control */}
+        <div
+          role="tablist"
+          aria-label="Preview customer order channel"
+          className="relative z-30 mb-4 inline-flex items-center gap-1 p-1 rounded-full bg-[#101d17]/95 backdrop-blur-md border border-[#27402f] shadow-lg"
+        >
+          {DEMO_CHANNELS.map((ch, idx) => {
+            const isSelected = activeChannelIndex === idx;
+            return (
+              <button
+                key={ch.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => {
+                  setUserTouched(true);
+                  triggerOrderDemo(
+                    activeProductIndex >= 0 ? activeProductIndex : idx % DEMO_PRODUCTS.length,
+                    idx
+                  );
+                }}
                 className={cn(
-                  "max-w-[88%] p-2.5 px-3 rounded-[16px_16px_4px_16px] bg-[#1f7a52] text-xs font-medium text-white ml-auto transition-all duration-300",
-                  bubble1In ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                  "px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap shrink-0",
+                  isSelected
+                    ? "bg-[#5be3a0] text-[#00391f]"
+                    : "text-[#9db4a8] hover:text-[#e4f0e9]"
                 )}
               >
-                {activeProductIndex >= 0
-                  ? `Hi, I am interested in ${DEMO_PRODUCTS[activeProductIndex].name} (${DEMO_PRODUCTS[activeProductIndex].price})`
-                  : "Hi, I would like to order."}
+                {ch.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 3D Tilting Showcase Shell */}
+        <motion.div
+          style={shouldReduceMotion ? undefined : { rotateX, rotateY }}
+          initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-20 will-change-transform"
+        >
+          {/* Floating Order Event Card */}
+          <motion.div
+            animate={shouldReduceMotion ? undefined : { y: [0, -8, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            className="hidden sm:flex items-center gap-2.5 absolute -left-16 top-20 z-30 bg-[#14231c]/95 backdrop-blur-md border border-[#27402f] rounded-[20px] px-4 py-2.5 text-xs font-bold text-[#e4f0e9] shadow-2xl"
+          >
+            <span className="w-6 h-6 rounded-full bg-[#0f5133] text-[#5be3a0] grid place-items-center shrink-0">
+              <Check size={13} strokeWidth={3} />
+            </span>
+            <div>
+              <div className="text-[#e4f0e9]">Instant order</div>
+              <div className="text-[11px] font-medium text-[#9db4a8] tabular-nums">
+                {activeProduct.price} · {activeChannel.label}
               </div>
-              {/* Merchant reply */}
+            </div>
+          </motion.div>
+
+          {/* Floating Store Reach Card */}
+          <motion.div
+            animate={shouldReduceMotion ? undefined : { y: [0, 8, 0] }}
+            transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+            className="hidden sm:flex items-center gap-2.5 absolute -right-14 bottom-24 z-30 bg-[#14231c]/95 backdrop-blur-md border border-[#27402f] rounded-[20px] px-4 py-2.5 text-xs font-bold text-[#e4f0e9] shadow-2xl"
+          >
+            <span className="w-6 h-6 rounded-full bg-[#5be3a0] text-[#00391f] grid place-items-center shrink-0">
+              <Package size={13} strokeWidth={2.5} />
+            </span>
+            <div>
+              <div className="text-[#e4f0e9]">1 link, whole shop</div>
+              <div className="text-[11px] font-medium text-[#9db4a8]">Tap any item to preview</div>
+            </div>
+          </motion.div>
+
+          {/* Phone Shell */}
+          <div className="relative w-[296px] h-[590px] bg-[#0b0f0d] rounded-[46px] p-2.5 border-2 border-[#27402f] shadow-[0_40px_90px_-25px_rgba(0,40,20,0.75)]">
+            <div className="bg-[#14231c] rounded-[38px] h-full overflow-hidden relative p-3.5 flex flex-col">
+              {/* Dynamic Island */}
               <div
-                className={cn(
-                  "max-w-[88%] p-2.5 px-3 rounded-[16px_16px_16px_4px] bg-[#1c2b24] text-xs font-medium text-[#e4f0e9] mt-2 transition-all duration-300",
-                  bubble2In ? "opacity-100 scale-100" : "opacity-0 scale-90"
-                )}
-              >
-                Hi! Yes, it’s available. Sending details now.
+                aria-hidden="true"
+                className="w-20 h-4 bg-[#08110d] rounded-full mx-auto mb-2.5 border border-[#182a22]"
+              />
+
+              {/* Store Header */}
+              <div className="text-center pb-2">
+                <div className="w-11 h-11 rounded-[16px_16px_16px_6px] bg-[#5be3a0] text-[#00391f] grid place-items-center font-extrabold text-lg mx-auto mb-1.5 shadow-sm">
+                  K
+                </div>
+                <b className="block text-sm font-bold text-[#e4f0e9]">Kemi Studio</b>
+                <small className="text-[11px] text-[#9db4a8]">
+                  Clothing, bags and curated essentials
+                </small>
               </div>
+
+              {/* Channel Action Bar */}
+              <button
+                type="button"
+                onClick={() => {
+                  setUserTouched(true);
+                  triggerOrderDemo(
+                    activeProductIndex >= 0 ? activeProductIndex : 0,
+                    activeChannelIndex
+                  );
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-[#5be3a0] hover:bg-[#4ad993] text-[#00391f] rounded-full h-10 font-bold text-xs my-2 shadow-sm transition-colors m3-spring-btn"
+              >
+                <MessageSquare size={14} className="fill-current" />
+                <span>{activeChannel.cta}</span>
+              </button>
+
+              {/* Interactive 2x2 Product Grid */}
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {DEMO_PRODUCTS.map((p, i) => {
+                  const isActive = activeProductIndex === i;
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => {
+                        setUserTouched(true);
+                        triggerOrderDemo(i, activeChannelIndex);
+                      }}
+                      className={cn(
+                        "text-left p-2 rounded-[20px] transition-all m3-spring-btn",
+                        isActive
+                          ? "bg-[#0f5133] border border-[#5be3a0] scale-[0.97]"
+                          : "bg-[#101d17] border border-[#182a22] hover:border-[#27402f]"
+                      )}
+                    >
+                      <div
+                        className="relative h-[76px] rounded-[14px] mb-1.5 overflow-hidden"
+                        style={{ background: p.gradient }}
+                      />
+                      <span className="block text-[10px] font-semibold text-[#9db4a8] tracking-wide">
+                        {p.tag}
+                      </span>
+                      <b className="block text-xs font-bold text-[#e4f0e9] truncate">{p.name}</b>
+                      <small className="text-[11px] font-extrabold text-[#5be3a0] tabular-nums">
+                        {p.price}
+                      </small>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sliding Animated Order Drawer */}
+              <AnimatePresence>
+                {showChat && (
+                  <motion.div
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0.05 }
+                        : { type: "spring", stiffness: 320, damping: 30 }
+                    }
+                    className="absolute inset-x-0 bottom-0 bg-[#0d2a1c] text-[#e4f0e9] rounded-t-[28px] p-4 pb-5 border-t border-[#27402f] shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between mb-2.5">
+                      <h6 className="text-xs font-bold flex items-center gap-1.5 text-[#bdf3d6]">
+                        <Send size={12} />
+                        <span>{activeChannel.sheetHeader}</span>
+                      </h6>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearScheduledTimers();
+                          setShowChat(false);
+                          setActiveProductIndex(-1);
+                        }}
+                        aria-label="Dismiss order preview"
+                        className="text-[11px] font-semibold text-[#9db4a8] hover:text-white px-1.5 py-0.5 rounded"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    {typingIn && !bubble1In && (
+                      <div className="inline-flex items-center gap-1 px-3 py-2 rounded-full bg-[#1f7a52]/60 text-white text-[11px]">
+                        <span>Preparing order message...</span>
+                      </div>
+                    )}
+
+                    {/* Buyer message */}
+                    {bubble1In && (
+                      <motion.div
+                        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.94, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="max-w-[90%] p-2.5 px-3 rounded-[16px_16px_4px_16px] bg-[#1f7a52] text-xs font-medium text-white ml-auto"
+                      >
+                        {`${activeChannel.buyerPrefix} ${activeProduct.name} (${activeProduct.price}).`}
+                      </motion.div>
+                    )}
+
+                    {/* Merchant reply */}
+                    {bubble2In && (
+                      <motion.div
+                        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.94, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="max-w-[90%] p-2.5 px-3 rounded-[16px_16px_16px_4px] bg-[#1c2b24] text-xs font-medium text-[#e4f0e9] mt-2"
+                      >
+                        {activeChannel.merchantReply}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -901,7 +1196,7 @@ function ClosingCTA() {
             Your storefront is one link away.
           </h2>
           <p className="mt-4 text-base sm:text-lg text-[#bdf3d6]/90 leading-relaxed">
-            Join the merchants selling on WhatsApp with SwiftLink. Free to start, no card needed.
+            Join small business sellers across Instagram, TikTok, WhatsApp, and Facebook on SwiftLink. Free to start, no card needed.
           </p>
           <div className="mt-8 flex justify-center">
             <Link
@@ -927,7 +1222,7 @@ function Footer() {
           <Logo size="sm" showWordmark={true} wordmarkClassName="font-extrabold tracking-tight text-xl text-[#e4f0e9]" />
         </Link>
         <p className="mt-3 text-xs text-[#9db4a8] leading-relaxed max-w-xs">
-          The storefront builder for merchants who do business on WhatsApp.
+          The storefront builder for small businesses selling across social media.
         </p>
       </div>
 

@@ -6,7 +6,6 @@ import {
   Float,
   MeshDistortMaterial,
   MeshWobbleMaterial,
-  Environment,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -214,7 +213,12 @@ export default function ThreeScene() {
         <pointLight position={[-10, -10, -10]} intensity={1} color="#10b981" />
         <Suspense fallback={null}>
           <Scene />
-          {!isMobile && <Environment preset="city" />}
+          {!isMobile && (
+            <>
+              <hemisphereLight args={["#b8f2d3", "#08110d", 0.65]} />
+              <directionalLight position={[-6, 8, 5]} intensity={0.9} color="#5be3a0" />
+            </>
+          )}
         </Suspense>
       </Canvas>
     </div>

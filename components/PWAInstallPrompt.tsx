@@ -17,26 +17,31 @@ export function PWAInstallPrompt() {
       return;
     }
 
+    let showTimer: ReturnType<typeof setTimeout> | null = null;
+
     // Listen for the beforeinstallprompt event
-    const handler = (e: Event) => {
+    const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      if (showTimer) clearTimeout(showTimer);
       // Show the prompt after a short delay so it doesn't interrupt immediate load
-      setTimeout(() => setShowPrompt(true), 3000);
+      showTimer = setTimeout(() => setShowPrompt(true), 3000);
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
-
-    // Check if already installed
-    window.addEventListener("appinstalled", () => {
+    const handleAppInstalled = () => {
       setShowPrompt(false);
       setDeferredPrompt(null);
-    });
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
+      if (showTimer) clearTimeout(showTimer);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, []);
+  }, [pathname]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;

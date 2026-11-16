@@ -93,7 +93,49 @@ export function StoreEditorV2() {
   const [previewMode, setPreviewMode] = useState<"light" | "dark">(() => (globalState.storefrontTheme?.background === "light" ? "light" : "dark"));
   const [previewCartCount, setPreviewCartCount] = useState<number>(1);
   const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [activeSheet, setActiveSheet] = useState<"prof" | "soc" | "lp" | "wa" | "disc" | "faq" | null>(null);
+  const [activeSheet, setActiveSheet] = useState<"prof" | "soc" | "lp" | "wa" | "disc" | "faq" | "hero" | null>(null);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [sheetDragY, setSheetDragY] = useState(0);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const handleSheetTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleSheetTouchMove = (e: React.TouchEvent) => {
+    if (touchStartYRef.current === null) return;
+    const delta = e.touches[0].clientY - touchStartYRef.current;
+    if (delta > 0) {
+      setSheetDragY(delta);
+    }
+  };
+
+  const handleSheetTouchEnd = () => {
+    if (sheetDragY > 60) {
+      setActiveSheet(null);
+    }
+    setSheetDragY(0);
+    touchStartYRef.current = null;
+  };
+
+  // Prevent background scroll bleed when bottom sheet modal is open
+  useEffect(() => {
+    if (activeSheet || productModalOpen || previewTemplateId) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [activeSheet, productModalOpen, previewTemplateId]);
 
   const effectivePlan = useMemo(() => {
     return accountPlanFor(stores && stores.length ? stores : [localState]);
@@ -105,7 +147,7 @@ export function StoreEditorV2() {
       const prods = s.id === localState.id ? localState.products : s.products;
       return sum + visibleProductCount(prods || []);
     }, 0);
-  }, [stores, localState.id, localState.products]);
+  }, [stores, localState]);
 
   // Debounced store handle uniqueness check against Supabase
   useEffect(() => {
@@ -212,7 +254,7 @@ export function StoreEditorV2() {
   // The draft is the merchant's working copy. It is written to this device and
   // (when possible) to their private `store_drafts` row — never to the live
   // store, so customers never see unpublished work.
-  const storeKey = useMemo(() => storeDraftKey(localState), [localState.id, localState.ownerId]);
+  const storeKey = useMemo(() => storeDraftKey(localState), [localState]);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftSynced, setDraftSynced] = useState(false);
   const [draftSaving, setDraftSaving] = useState(false);
@@ -374,7 +416,7 @@ export function StoreEditorV2() {
         addToast(`Template applied to store.`, "info");
       }
     },
-    [localState, saveFullState, saveDraft, addToast]
+    [localState, saveFullState, saveDraft, addToast, openUpgradeModal]
   );
 
   // Direct auto-save action whenever a merchant toggles light / dark mode
@@ -591,9 +633,7 @@ export function StoreEditorV2() {
     updateField("categories", categories.filter((c) => c !== catToRemove));
   };
 
-  // Product modal state
-  const [productModalOpen, setProductModalOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  // Product modal open handler
 
   const openAddProductModal = () => {
     // Only *visible* products count against the plan, so hidden ones left by a
@@ -1363,6 +1403,26 @@ export function StoreEditorV2() {
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
                 </button>
+
+                {/* 7. Hero section image */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSheet("hero")}
+                  className="flex w-full items-center justify-between py-4 text-left transition hover:bg-[#14231D]/50 px-2 rounded-2xl group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#14231D] text-[#19C37D] group-hover:bg-[#19C37D] group-hover:text-[#04140D] transition">
+                      <ImageIcon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#E8F1EC]">Hero section image</h3>
+                      <p className="truncate text-xs text-[#9DB3A8]">
+                        {localState.heroImage ? "Custom banner active" : "Using template default"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9DB3A8] group-hover:text-[#19C37D] group-hover:translate-x-0.5 transition" />
+                </button>
               </div>
             </section>
           </div>
@@ -2073,10 +2133,22 @@ export function StoreEditorV2() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-t-[36px] border-t border-[#24382F] bg-[#14231D] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-8 duration-300"
+            style={{
+              transform: sheetDragY > 0 ? `translateY(${sheetDragY}px)` : undefined,
+              transition: sheetDragY === 0 ? "transform 0.2s cubic-bezier(0.2, 0, 0, 1)" : "none",
+            }}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y rounded-t-[36px] border-t border-[#24382F] bg-[#14231D] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-8 duration-300"
           >
-            {/* Grab handle */}
-            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-[#344E41]" />
+            {/* Grab handle with swipe-down touch interaction */}
+            <div
+              onTouchStart={handleSheetTouchStart}
+              onTouchMove={handleSheetTouchMove}
+              onTouchEnd={handleSheetTouchEnd}
+              className="mx-auto mb-3 -mt-2 cursor-grab active:cursor-grabbing py-2 select-none"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-[#344E41] hover:bg-[#5C7C6D] transition" />
+              <p className="mt-1 text-center text-[9px] uppercase tracking-wider text-[#5C7C6D]">Swipe down to close</p>
+            </div>
 
             {/* 1. Store profile sheet */}
             {activeSheet === "prof" && (
@@ -2623,6 +2695,73 @@ export function StoreEditorV2() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* 7. Hero section image sheet */}
+            {activeSheet === "hero" && (
+              <div>
+                <h3 className="text-xl font-bold text-[#E8F1EC]">Hero section image</h3>
+                <p className="mt-1 text-xs text-[#9DB3A8]">
+                  The large banner image displayed on storefront templates that feature a hero section (such as Noir, Coast, and Editorial).
+                </p>
+
+                <div className="mt-6 space-y-5">
+                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-[#1E2D27] bg-[#0A1210]">
+                    {localState.heroImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={localState.heroImage}
+                        alt="Store hero banner"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-[#9DB3A8]">
+                        <ImageIcon className="h-8 w-8 text-[#5C7C6D]" />
+                        <span className="text-xs">No custom hero image selected yet. Templates will show their default hero graphic.</span>
+                      </div>
+                    )}
+                    {isUploadingHero && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#19C37D]" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full bg-[#19C37D] px-6 py-2.5 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] shadow-md shadow-[#19C37D]/20 active:scale-98">
+                      <Upload className="h-4 w-4" />
+                      <span>{localState.heroImage ? "Change hero banner" : "Upload hero banner"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingHero}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleHeroUpload(e.target.files[0]);
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+
+                    {localState.heroImage && (
+                      <button
+                        type="button"
+                        onClick={() => updateField("heroImage", "")}
+                        className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border border-[#24382F] bg-[#0A1210] px-5 py-2.5 text-xs font-semibold text-[#FF8A8A] transition hover:bg-[#FF8A8A]/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Reset to default</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-[#9DB3A8] leading-relaxed">
+                    Recommended dimensions: 1600 × 900 px. If no custom image is chosen, the website template keeps its designed visual theme untouched.
+                  </p>
                 </div>
               </div>
             )}

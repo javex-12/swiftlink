@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const TOUR_STEP_META = [
   {
     title: "Welcome to SwiftLink",
-    desc: "Your command center for WhatsApp commerce. Let's get you set up in seconds.",
+    desc: "Your command center for social commerce. Let's get you set up in seconds.",
     selector: null,
   },
   {

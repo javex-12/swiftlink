@@ -21,10 +21,15 @@ import type { PaidPlan } from "./paystack";
 export function serviceClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!url || !key || !url.startsWith("http") || url.includes("dummy-project") || url.includes("your-project")) return null;
+  try {
+    new URL(url);
+    return createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  } catch {
+    return null;
+  }
 }
 
 export type SessionUser = { id: string; email: string };
@@ -33,9 +38,10 @@ export type SessionUser = { id: string; email: string };
 export async function currentSessionUser(): Promise<SessionUser | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return null;
+  if (!url || !anon || !url.startsWith("http") || url.includes("dummy-project") || url.includes("your-project")) return null;
 
   try {
+    new URL(url);
     const cookieStore = await cookies();
     const supabase = createServerClient(url, anon, {
       cookies: {

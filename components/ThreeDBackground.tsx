@@ -7,18 +7,19 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        const container = containerRef.current;
+        if (!container) return;
 
         const scene = new THREE.Scene();
-        const initialWidth = containerRef.current.clientWidth || 800;
-        const initialHeight = containerRef.current.clientHeight || 550;
+        const initialWidth = container.clientWidth || 800;
+        const initialHeight = container.clientHeight || 550;
         const camera = new THREE.PerspectiveCamera(75, initialWidth / initialHeight, 0.1, 1000);
         camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(initialWidth, initialHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        containerRef.current.appendChild(renderer.domElement);
+        container.appendChild(renderer.domElement);
 
         let animationFrameId: number;
         let objects: any[] = [];
@@ -390,9 +391,8 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
         animate();
 
         const handleResize = () => {
-            if (!containerRef.current) return;
-            const w = containerRef.current.clientWidth || 800;
-            const h = containerRef.current.clientHeight || 550;
+            const w = container.clientWidth || 800;
+            const h = container.clientHeight || 550;
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
             renderer.setSize(w, h);
@@ -404,7 +404,7 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
             resizeObserver = new ResizeObserver(() => {
                 handleResize();
             });
-            resizeObserver.observe(containerRef.current);
+            resizeObserver.observe(container);
         }
 
         return () => {
@@ -425,7 +425,9 @@ export function ThreeDBackground({ type, accentColor }: { type: number, accentCo
                 }
             });
             renderer.dispose();
-            if (containerRef.current) containerRef.current.removeChild(renderer.domElement);
+            if (renderer.domElement.parentNode === container) {
+                container.removeChild(renderer.domElement);
+            }
         };
     }, [type, accentColor]);
 

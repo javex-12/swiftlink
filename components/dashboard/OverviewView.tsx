@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { supabase } from "@/lib/supabase-client";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { formatMoney } from "@/lib/currency";
 import { confirmedSalesMinor } from "@/lib/inquiry-revenue";
 import { cn, getSmartFirstName } from "@/lib/utils";
@@ -70,18 +71,23 @@ export function OverviewView() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedChannel, setCopiedChannel] = useState<ShareChannel | null>(null);
-  const [linkShared, setLinkShared] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("swiftlink_link_shared") === "true";
+  const [linkShared, setLinkShared] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("swiftlink_link_shared") === "true") {
+        setLinkShared(true);
+      }
+    } catch {
+      // Ignore storage access errors in restricted frames
     }
-    return false;
-  });
+  }, []);
 
   const firstName = getSmartFirstName(state.ownerName, user?.email, state.bizName);
 
   const loadStats = useCallback(async () => {
     const storeId = state.id;
-    if (!storeId) {
+    if (!storeId || !isSupabaseConfigured()) {
       setStats(EMPTY_STATS);
       return;
     }

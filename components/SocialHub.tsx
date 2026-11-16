@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -164,13 +164,14 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const fetchStats = async (profileId: string) => {
+  const fetchStats = useCallback(async (profileId: string) => {
+    if (!isSupabaseConfigured()) return;
     const { count } = await supabase.from("store_reviews").select("*", { count: 'exact', head: true }).eq("user_id", profileId);
     setStats({ posts: count || 0 });
-  };
+  }, []);
 
-  const fetchProfile = async () => {
-    if (!user) { setCheckingProfile(false); return; }
+  const fetchProfile = useCallback(async () => {
+    if (!user || !isSupabaseConfigured()) { setCheckingProfile(false); return; }
     const { data } = await supabase.from("social_profiles").select("*").eq("id", user.id).maybeSingle();
     if (data) {
       setMyProfile(data as UserProfile);
@@ -178,16 +179,20 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
       setEditBio(data.bio || "");
       setEditAvatar(data.avatar_url);
       setOnboarding(false);
-      fetchStats(user.id);
+      void fetchStats(user.id);
     } else {
       setOnboarding(true);
     }
     setCheckingProfile(false);
-  };
+  }, [user, fetchStats]);
 
-  const fetchReviews = async (append = false) => {
+  const reviewsLengthRef = useRef(0);
+  reviewsLengthRef.current = reviews.length;
+
+  const fetchReviews = useCallback(async (append = false) => {
+    if (!isSupabaseConfigured()) { setLoading(false); return; }
     const limit = 20;
-    const from = append ? reviews.length : 0;
+    const from = append ? reviewsLengthRef.current : 0;
     const to = from + limit - 1;
 
     // Step 1: fetch posts plainly (no embedded join)
@@ -228,17 +233,17 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     setReviews(prev => append ? [...prev, ...normalized] : normalized);
     setHasMore(raw.length === limit);
     setLoading(false);
-  };
+  }, []);
 
   const handleUpdateProfile = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
     const { error } = await supabase.from("social_profiles").update({ display_name: editName.trim(), bio: editBio.trim(), avatar_url: editAvatar }).eq("id", user.id);
     if (!error) { setMyProfile(prev => ({ ...prev!, display_name: editName, bio: editBio, avatar_url: editAvatar })); setEditingProfile(false); addToast("Profile Updated!", "success"); }
     else { addToast("Update failed: " + error.message, "error"); }
   };
 
-  const fetchNotifications = async () => {
-    if (!user) return;
+  const fetchNotifications = useCallback(async () => {
+    if (!user || !isSupabaseConfigured()) return;
     // Step 1: fetch notifications plainly
     const { data } = await supabase
       .from("social_notifications")
@@ -265,36 +270,37 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
         actor: actorMap[n.actor_id] || null
     }));
     setNotifications(enriched);
-  };
+  }, [user]);
 
   const fetchComments = async (postId: string) => {
+    if (!isSupabaseConfigured()) { setLoadingComments(false); return; }
     setLoadingComments(true);
     const { data } = await supabase.from("store_review_comments").select("*").eq("review_id", postId).order("created_at", { ascending: true });
     if (data) setComments(data);
     setLoadingComments(false);
   };
 
-  const fetchMessages = async (recipientId: string) => {
-    if (!user) return;
+  const fetchMessages = useCallback(async (recipientId: string) => {
+    if (!user || !isSupabaseConfigured()) return;
     const { data } = await supabase.from("social_messages").select("*").or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`).order("created_at", { ascending: true });
     if (data) setDirectMessages(data);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchProfile(); }, [user]);
-  useEffect(() => { fetchReviews(); }, [storeId]);
-  useEffect(() => { if (tab === "activity") fetchNotifications(); }, [tab, user]);
+  useEffect(() => { void fetchProfile(); }, [fetchProfile]);
+  useEffect(() => { void fetchReviews(); }, [fetchReviews, storeId]);
+  useEffect(() => { if (tab === "activity") void fetchNotifications(); }, [tab, fetchNotifications]);
   useEffect(() => {
-    if (activeChat) {
-      fetchMessages(activeChat.id);
-      const channel = supabase.channel(`chat-${activeChat.id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "social_messages" }, () => fetchMessages(activeChat.id)).subscribe();
+    if (activeChat && isSupabaseConfigured()) {
+      void fetchMessages(activeChat.id);
+      const channel = supabase.channel(`chat-${activeChat.id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "social_messages" }, () => void fetchMessages(activeChat.id)).subscribe();
       return () => { supabase.removeChannel(channel); };
     }
-  }, [activeChat]);
+  }, [activeChat, fetchMessages]);
 
   const handleSendMessage = async () => {
-    if (!chatText.trim() || !activeChat || !user) return;
+    if (!chatText.trim() || !activeChat || !user || !isSupabaseConfigured()) return;
     const { error } = await supabase.from("social_messages").insert({ sender_id: user.id, recipient_id: activeChat.id, content: chatText.trim() });
-    if (!error) { setChatText(""); fetchMessages(activeChat.id); }
+    if (!error) { setChatText(""); void fetchMessages(activeChat.id); }
   };
 
   const handleInteraction = async (id: string, type: "like" | "dislike") => {
@@ -314,6 +320,8 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
      * database. The reactions looked like a working feature that silently reset
      * on every reload.
      */
+    if (!isSupabaseConfigured()) return;
+
     const { error: reactionError } = await supabase
       .from("store_reviews")
       .update({ likes: nl, dislikes: nd })
@@ -364,6 +372,8 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     setMessage(""); setAttachments([]); setTaggingProduct(null); setTab("feed"); addToast("Shared!", "success");
     setSubmitting(false);
 
+    if (!isSupabaseConfigured()) return;
+
     const { error, data } = await supabase.from("store_reviews").insert(newPostObj).select("id").single();
     if (error) { 
        addToast("Failed: " + error.message, "error"); 
@@ -384,6 +394,8 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
     setComments(prev => [...prev, optimisticComment]);
     setNewComment("");
 
+    if (!isSupabaseConfigured()) return;
+
     const { error } = await supabase.from("store_review_comments").insert(commentObj);
     if (error) {
        addToast("Failed to post reply: " + error.message, "error");
@@ -399,7 +411,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file || !user) return; setUploading(true);
+    const file = e.target.files?.[0]; if (!file || !user || !isSupabaseConfigured()) return; setUploading(true);
     const path = `social/${user.id}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from("social_media").upload(path, file);
     if (!error) { const { data: { publicUrl } } = supabase.storage.from("social_media").getPublicUrl(path); setAttachments(prev => [...prev, publicUrl]); }
@@ -407,7 +419,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, isSetup: boolean) => {
-    const file = e.target.files?.[0]; if (!file || !user) return; setUploading(true);
+    const file = e.target.files?.[0]; if (!file || !user || !isSupabaseConfigured()) return; setUploading(true);
     const path = `avatars/${user.id}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from("social_media").upload(path, file, { upsert: true });
     if (!error) { 
@@ -537,11 +549,24 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                         <div className="flex items-center gap-2"><span className="font-black text-[16px] dark:text-white">{r.author_name}</span>{r.author_is_verified && <Verified size={14} className="text-blue-500 fill-blue-500" />}</div>
                       </div>
                       <p className="text-[16px] text-slate-700 dark:text-zinc-300 leading-relaxed font-medium">{parseMessage(r.message)}</p>
-                      {r.tagging_product && (
-                        <div className="mt-4 p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/10 flex items-center gap-4"><img src={state.products.find(p => p.id === r.tagging_product)?.image} className="w-12 h-12 rounded-xl object-cover" /><div className="flex-1 min-w-0"><p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Tagged</p><p className="font-bold truncate dark:text-white text-sm">{state.products.find(p => p.id === r.tagging_product)?.name}</p></div></div>
-                      )}
+                      {r.tagging_product && (() => {
+                        const tagged = state.products.find(p => p.id === r.tagging_product);
+                        return (
+                          <div className="mt-4 p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/10 flex items-center gap-4">
+                            {tagged?.image ? (
+                              <img src={tagged.image} alt={tagged.name || "Tagged product"} className="w-12 h-12 rounded-xl object-cover" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-500"><Package size={18} /></div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Tagged</p>
+                              <p className="font-bold truncate dark:text-white text-sm">{tagged?.name || "Product"}</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {r.attachments && r.attachments.length > 0 && (
-                        <div className="mt-5 grid grid-cols-2 gap-3 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-zinc-800">{r.attachments.map((img, idx) => <img key={idx} src={img} onClick={(e) => { e.stopPropagation(); setActiveImage(img); }} className="w-full h-56 object-cover hover:scale-110 transition-transform duration-700" />)}</div>
+                        <div className="mt-5 grid grid-cols-2 gap-3 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-zinc-800">{r.attachments.map((img, idx) => <img key={idx} src={img} alt={`Post attachment ${idx + 1}`} onClick={(e) => { e.stopPropagation(); setActiveImage(img); }} className="w-full h-56 object-cover hover:scale-110 transition-transform duration-700" />)}</div>
                       )}
                       <div className="flex items-center gap-10 mt-6 pt-2" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleVibe(r.id, "like")} className={cn("flex items-center gap-2.5 transition-all active:scale-75", interactions[r.id] === "like" ? "text-rose-500" : "text-slate-400")}><Heart size={20} className={interactions[r.id] === "like" ? "fill-current" : ""} strokeWidth={2.5} /><span className="text-xs font-black">{r.likes > 0 ? r.likes : ""}</span></button>
@@ -573,8 +598,24 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                     <p className="text-xl font-black dark:text-white tracking-tight">{myProfile?.display_name || "Guest"}</p>
                     <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="What's the latest?" className="w-full bg-transparent border-none outline-none text-2xl md:text-3xl font-medium dark:text-zinc-300 placeholder:text-slate-200 dark:placeholder:text-zinc-800 resize-none min-h-[300px]" autoFocus />
                     <div className="flex gap-2 flex-wrap">
-                       {attachments.map((img, idx) => (<div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border"><img src={img} className="w-full h-full object-cover" /><button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"><X size={10} /></button></div>))}
-                       {taggingProduct && (<div className="relative w-48 h-24 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 p-3 flex gap-3 items-center"><img src={state.products.find(p => p.id === taggingProduct)?.image} className="w-16 h-16 rounded-xl object-cover" /><div className="flex-1 min-w-0"><p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Tagged</p><p className="text-xs font-bold truncate dark:text-white">{state.products.find(p => p.id === taggingProduct)?.name}</p></div><button onClick={() => setTaggingProduct(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1"><X size={10} /></button></div>)}
+                       {attachments.map((img, idx) => (<div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border"><img src={img} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" /><button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"><X size={10} /></button></div>))}
+                       {taggingProduct && (() => {
+                         const tagged = state.products.find(p => p.id === taggingProduct);
+                         return (
+                           <div className="relative w-48 h-24 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 p-3 flex gap-3 items-center">
+                             {tagged?.image ? (
+                               <img src={tagged.image} alt={tagged.name || "Tagged product"} className="w-16 h-16 rounded-xl object-cover" />
+                             ) : (
+                               <div className="w-16 h-16 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-500"><Package size={20} /></div>
+                             )}
+                             <div className="flex-1 min-w-0">
+                               <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Tagged</p>
+                               <p className="text-xs font-bold truncate dark:text-white">{tagged?.name || "Product"}</p>
+                             </div>
+                             <button onClick={() => setTaggingProduct(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1"><X size={10} /></button>
+                           </div>
+                         );
+                       })()}
                     </div>
                   </div>
                </div>
@@ -586,7 +627,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
                   </div>
                   <button onClick={handlePost} disabled={submitting || !message.trim()} className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded-3xl font-black text-[11px] uppercase tracking-widest shadow-2xl disabled:opacity-50 transition-transform active:scale-95 flex items-center gap-3">{submitting ? <Loader2 className="animate-spin" size={18} /> : <><Send size={18} /> Post Feed</>}</button>
                </div>
-               {showProductPicker && (<div className="absolute inset-x-6 bottom-32 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border p-6 z-50"><h3 className="font-black italic uppercase mb-4 dark:text-white">Tag Product</h3><div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">{state.products.map(p => (<button key={p.id} onClick={() => { setTaggingProduct(p.id); setShowProductPicker(false); }} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-left"><img src={p.image} className="w-12 h-12 rounded-xl object-cover" /><div className="flex-1"><p className="font-bold text-sm dark:text-white">{p.name}</p></div></button>))}</div></div>)}
+               {showProductPicker && (<div className="absolute inset-x-6 bottom-32 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border p-6 z-50"><h3 className="font-black italic uppercase mb-4 dark:text-white">Tag Product</h3><div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">{state.products.map(p => (<button key={p.id} onClick={() => { setTaggingProduct(p.id); setShowProductPicker(false); }} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-left">{p.image ? <img src={p.image} alt={p.name} className="w-12 h-12 rounded-xl object-cover" /> : <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center"><Package size={16} /></div>}<div className="flex-1"><p className="font-bold text-sm dark:text-white">{p.name}</p></div></button>))}</div></div>)}
             </motion.div>
           )}
 
@@ -631,7 +672,7 @@ export function SocialHub({ storeId, accentColor, defaultTab = "feed", onBack }:
       </main>
 
       <AnimatePresence>
-        {activeImage && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4"><button onClick={() => setActiveImage(null)} className="absolute top-8 right-8 text-white p-2 hover:bg-white/10 rounded-full transition-colors"><X size={32} /></button><img src={activeImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" /></motion.div>)}
+        {activeImage && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4"><button onClick={() => setActiveImage(null)} className="absolute top-8 right-8 text-white p-2 hover:bg-white/10 rounded-full transition-colors"><X size={32} /></button><img src={activeImage} alt="Expanded attachment preview" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" /></motion.div>)}
         {activeThread && (
           <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed inset-0 z-[100] bg-white dark:bg-black flex flex-col">
              <header className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-zinc-900 flex items-center gap-4"><button onClick={() => setActiveThread(null)}><ChevronLeft size={24} className="dark:text-white" /></button><h2 className="text-lg font-black dark:text-white italic uppercase">Thread</h2></header>

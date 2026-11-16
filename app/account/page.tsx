@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
-import { supabase } from "@/lib/supabase-client";
-import { ProLayout } from "@/components/ProLayout";import {
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
+import { compressImageBeforeUpload } from "@/lib/image-compress";
+import { ProLayout } from "@/components/ProLayout";
+import {
   User, Package, Globe, Smartphone, Store, BadgeCheck, ArrowUpRight, MessageCircle,
-  CheckCircle2, AlertCircle, Camera, ArrowLeft, Pause, Play, Lock
+  CheckCircle2, AlertCircle, Camera, ArrowLeft, Pause, Play, Lock, Image as ImageIcon,
+  Loader2, Upload, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDisplayPhone, normalizePhoneNumber } from "@/lib/phone";
@@ -37,11 +40,13 @@ export default function AccountPage() {
     }
     setActionLoading("deactivate");
     try {
-      if (user?.id) {
+      if (isSupabaseConfigured() && user?.id) {
         await supabase
           .from("stores")
           .update({ is_live: false, state_json: { ...state, isLive: false } })
           .eq("owner_id", user.id);
+      } else {
+        updateState("isLive", false);
       }
       addToast("Account deactivated and store paused.", "info");
       await authSignOut();
@@ -62,7 +67,7 @@ export default function AccountPage() {
     }
     setActionLoading("delete");
     try {
-      if (user?.id) {
+      if (isSupabaseConfigured() && user?.id) {
         await supabase
           .from("stores")
           .update({
@@ -74,6 +79,8 @@ export default function AccountPage() {
             },
           })
           .eq("owner_id", user.id);
+      } else {
+        updateState("isLive", false);
       }
       addToast("Account scheduled for deletion. Data will be completely wiped in 30 days.", "info");
       await authSignOut();
@@ -145,21 +152,88 @@ export default function AccountPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  const validateImageUpload = (file: File): string | null => {
+    if (!file.type.startsWith("image/")) {
+      return "Please select a valid image file (PNG, JPG, WebP).";
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return "Image must be smaller than 5 MB.";
+    }
+    return null;
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploadingAvatar(true);
-    const path = `${user.id}/profile/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true });
-    if (error) { 
-      addToast('Upload failed: ' + error.message, 'error'); 
-      setUploadingAvatar(false); 
-      return; 
+    if (!file) return;
+    const validationError = validateImageUpload(file);
+    if (validationError) {
+      addToast(validationError, "error");
+      return;
     }
-    const { data: { publicUrl } } = supabase.storage.from('branding').getPublicUrl(path);
-    updateState('bizImage', publicUrl);
-    addToast('Profile picture updated!', 'success');
-    setUploadingAvatar(false);
+    setUploadingAvatar(true);
+    if (!isSupabaseConfigured() || !user) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          updateState("bizImage", event.target.result as string);
+          addToast("Profile picture updated (local demo mode).", "success");
+        }
+        setUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    try {
+      const path = `${user.id}/profile/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("branding").getPublicUrl(path);
+      updateState("bizImage", publicUrl);
+      addToast("Profile picture updated!", "success");
+    } catch (err: any) {
+      addToast("Upload failed: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const heroInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHeroBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validationError = validateImageUpload(file);
+    if (validationError) {
+      addToast(validationError, "error");
+      return;
+    }
+    setUploadingHero(true);
+    if (!isSupabaseConfigured() || !user) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          updateState("heroImage", event.target.result as string);
+          addToast("Hero banner updated (local demo mode).", "success");
+        }
+        setUploadingHero(false);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    try {
+      const { file: compressed } = await compressImageBeforeUpload(file, 1600, 0.85);
+      const path = `${user.id}/branding/hero_${Date.now()}_${compressed.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const { error } = await supabase.storage.from("branding").upload(path, compressed, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("branding").getPublicUrl(path);
+      updateState("heroImage", publicUrl);
+      addToast("Hero banner image updated!", "success");
+    } catch (err: any) {
+      addToast("Upload failed: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setUploadingHero(false);
+    }
   };
 
   const authLabel = useMemo(() => {
@@ -554,6 +628,78 @@ export default function AccountPage() {
                     {state.isLive ? <Pause size={13} /> : <Play size={13} />}
                     {state.isLive ? "Stop store" : "Go live"}
                   </button>
+                </div>
+
+                {/* Hero Section Image Customizer */}
+                <div id="hero-image" className="p-5 rounded-[24px] bg-[#14231c] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <div className="h-11 w-11 rounded-[16px] bg-[#182a22] flex items-center justify-center shrink-0 text-[#19C37D]">
+                        <ImageIcon size={20} />
+                      </div>
+                      <div>
+                        <b className="block text-sm font-bold text-[#e2efe7]">Hero section image</b>
+                        <small className="text-xs text-[#9db4a8]">Banner for templates featuring a hero layout (Noir, Coast, Editorial)</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative aspect-[16/9] w-full max-w-xl overflow-hidden rounded-[20px] border border-[#27402f] bg-[#0a130f]">
+                    {state.heroImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={state.heroImage}
+                        alt="Store hero banner"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-center text-[#9db4a8]">
+                        <ImageIcon className="h-8 w-8 text-[#5c7c6d]" />
+                        <span className="text-xs">No custom image uploaded yet. The storefront template will display its default hero design.</span>
+                      </div>
+                    )}
+                    {uploadingHero && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#19C37D]" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => heroInputRef.current?.click()}
+                      disabled={uploadingHero}
+                      className="flex min-h-[38px] items-center gap-2 rounded-full bg-[#19C37D] px-5 py-2 text-xs font-bold text-[#04140D] transition hover:bg-[#16B070] shadow-sm shadow-[#19C37D]/20 active:scale-95"
+                    >
+                      <Upload size={14} />
+                      <span>{state.heroImage ? "Change hero image" : "Upload hero image"}</span>
+                    </button>
+                    <input
+                      ref={heroInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleHeroBannerUpload}
+                    />
+
+                    {state.heroImage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateState("heroImage", "");
+                          addToast("Hero banner reset to template default.", "info");
+                        }}
+                        className="flex min-h-[38px] items-center gap-1.5 rounded-full border border-[#27402f] bg-[#0a130f] px-4 py-2 text-xs font-semibold text-[#ff8a8a] transition hover:bg-[#ff8a8a]/10"
+                      >
+                        <Trash2 size={13} />
+                        <span>Reset to default</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#9db4a8]">
+                    Leave as default to keep the template&apos;s crafted graphics, or upload your own 16:9 banner photo.
+                  </p>
                 </div>
 
                 {/* Custom Domain Section */}

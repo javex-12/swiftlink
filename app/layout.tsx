@@ -6,6 +6,7 @@ import {
   Cinzel,
   DM_Sans,
   Bricolage_Grotesque,
+  Outfit,
 } from "next/font/google";
 import { AppChrome } from "@/components/AppChrome";
 import { SwiftLinkProvider } from "@/context/SwiftLinkContext";
@@ -26,6 +27,12 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-bricolage",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-outfit",
 });
 
 /**
@@ -178,7 +185,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} ${instrumentSerif.variable} ${cinzel.variable}`}
+      className={`dark ${dmSans.variable} ${bricolage.variable} ${outfit.variable} ${jakarta.variable} ${instrumentSerif.variable} ${cinzel.variable}`}
     >
       <head>
         {/* Fonts are self-hosted by next/font — no third-party stylesheet here.

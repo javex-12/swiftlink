@@ -103,7 +103,7 @@ export function BusinessView() {
     if (!isDirty) {
       setLocalState(globalState);
     }
-  }, [globalState.id]); // Only sync when switching stores
+  }, [globalState, isDirty]); // Sync when global store updates while clean
 
   // Handle Tab Switch Warning
   const handleTabChange = (tab: any) => {
@@ -117,7 +117,7 @@ export function BusinessView() {
 
   const submitReply = async (reviewId: string) => {
     const replyMessage = replyInputs[reviewId]?.trim();
-    if (!replyMessage) return;
+    if (!replyMessage || !isSupabaseConfigured()) return;
 
     const { data, error } = await supabase.from("store_review_comments").insert({
         review_id: reviewId,
@@ -178,7 +178,7 @@ export function BusinessView() {
 
   // Upload Engine
   const uploadImageDirect = async (file: File, pathPrefix: string) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured()) return null;
     setIsUploading(true);
     const path = `${user.id}/${pathPrefix}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
     const { error } = await supabase.storage.from('branding').upload(path, file);
@@ -231,14 +231,15 @@ export function BusinessView() {
             setHandleStatus("taken");
         } else {
             setHandleStatus("available");
-            updateLocalState("storeUsername", cleanHandle);
+            setLocalState(prev => ({ ...prev, storeUsername: cleanHandle }));
+            setIsDirty(true);
         }
     }, 600);
     return () => clearTimeout(timeoutId);
-  }, [handleInput, localState.id]);
+  }, [handleInput, localState.id, globalState.storeUsername]);
 
   useEffect(() => {
-    if (activeTab !== "inbox" || !localState.id) return;
+    if (activeTab !== "inbox" || !localState.id || !isSupabaseConfigured()) return;
     setReviewsLoading(true);
     supabase.from("store_reviews").select("*").eq("store_id", localState.id).neq("type", "post").order("created_at", { ascending: false }).limit(50)
       .then(async ({ data }) => {
@@ -265,7 +266,7 @@ export function BusinessView() {
           }
           setReviewsLoading(false);
       });
-  }, [activeTab, localState.id]);
+  }, [activeTab, localState.id, user]);
 
   const categories = localState.categories || [];
   const isProUser = localState.plan === "pro" || localState.plan === "business";
@@ -713,7 +714,7 @@ export function BusinessView() {
                                         <button key={store.id} onClick={() => { switchStore(store.id!); setShowStoreDropdown(false); }} className={cn("w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl transition-all", localState.id === store.id ? "bg-[#00c885]/20 text-[#00c885]" : "hover:bg-white/5 text-slate-300")}>
                                             <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0">
                                                 <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-slate-400 shrink-0 overflow-hidden">
-                                                    {store.bizImage ? <img src={store.bizImage} className="w-full h-full object-cover" /> : <Store size={14} />}
+                                                    {store.bizImage ? <img src={store.bizImage} alt={store.bizName || "Store logo"} className="w-full h-full object-cover" /> : <Store size={14} />}
                                                 </div>
                                                 <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-tight truncate">{store.bizName}</p></div>
                                             </div>
@@ -729,7 +730,7 @@ export function BusinessView() {
                         )}
                     </AnimatePresence>
                 </div>
-                <button onClick={() => window.open(`${window.location.origin}${getShopPath(localState)}`, "_blank")} className="p-3 sm:p-3.5 bg-[#07130e] border border-emerald-500/20 text-[#00c885] rounded-full hover:bg-white/10 transition-all shadow-md shrink-0" title="Live Preview"><ExternalLink size={16} className="sm:w-4 sm:h-4" /></button>
+                <button onClick={() => window.open(`${window.location.origin}${getShopPath(localState)}`, "_blank", "noopener,noreferrer")} className="p-3 sm:p-3.5 bg-[#07130e] border border-emerald-500/20 text-[#00c885] rounded-full hover:bg-white/10 transition-all shadow-md shrink-0" title="Live Preview"><ExternalLink size={16} className="sm:w-4 sm:h-4" /></button>
             </div>
         </div>
 
@@ -1099,7 +1100,7 @@ export function BusinessView() {
                                     <label className="text-[10px] font-black uppercase text-slate-400">Hero Image</label>
                                     <label className="block w-full h-24 bg-[#14231D] border-2 border-dashed border-[#1E2D27] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
                                         {localState.heroImage ? (
-                                            <img src={localState.heroImage} className="w-full h-full object-cover" />
+                                            <img src={localState.heroImage} alt="Hero banner preview" className="w-full h-full object-cover" />
                                         ) : (
                                             <span className="text-[10px] font-black uppercase text-slate-400">Upload Hero Image</span>
                                         )}
@@ -1175,7 +1176,7 @@ export function BusinessView() {
                                 <label className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 ml-1">Meta Share Image (OG Image)</label>
                                 <label className="block w-full h-40 bg-[#14231D] border-2 border-dashed border-[#1E2D27] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 overflow-hidden relative">
                                     {localState.ogImage ? (
-                                        <img src={localState.ogImage} className="w-full h-full object-cover" />
+                                        <img src={localState.ogImage} alt="Social share image preview" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="flex flex-col items-center gap-1">
                                             <span className="text-[10px] font-black uppercase text-slate-400">Upload OG/Meta Image</span>

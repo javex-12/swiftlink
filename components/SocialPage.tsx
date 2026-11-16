@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -67,12 +67,16 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
   const [composeName, setComposeName] = useState("");
   const [composeMessage, setComposeMessage] = useState("");
   const [submittingPost, setSubmittingPost] = useState(false);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
   const postsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const commentsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || !isSupabaseConfigured()) {
+      setLoading(false);
+      return;
+    }
 
     const fetchInitialData = async () => {
       // Fetch posts (reviews)
@@ -179,7 +183,9 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes, dislikes: newDislikes } : p));
 
     // Persist
-    await supabase.from("store_reviews").update({ likes: newLikes, dislikes: newDislikes }).eq("id", postId);
+    if (isSupabaseConfigured()) {
+      await supabase.from("store_reviews").update({ likes: newLikes, dislikes: newDislikes }).eq("id", postId);
+    }
   };
 
   const handleComment = async (postId: string) => {
@@ -204,7 +210,8 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
     const textToSubmit = commentText;
     setCommentText("");
     
-    // We swallow errors silently for this demo if table doesn't exist yet, but we'll alert if there's an RLS issue
+    if (!isSupabaseConfigured()) return;
+
     try {
       const { error } = await supabase.from("store_review_comments").insert({
         review_id: postId,
@@ -212,15 +219,15 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
         message: textToSubmit.trim(),
       });
       if (error) {
-        alert("Failed to save comment: " + error.message);
+        setErrorBanner("Failed to save comment: " + error.message);
         // Revert optimistic update
         setComments(prev => ({
           ...prev,
           [postId]: prev[postId].filter(c => c.id !== tempId)
         }));
       }
-    } catch(e: any) {
-      alert("Error saving comment: " + e.message);
+    } catch (e: any) {
+      setErrorBanner("Error saving comment: " + (e?.message || "Unknown error"));
     }
   };
 
@@ -251,11 +258,16 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
     setComposeMessage("");
     setComposeName("");
 
+    if (!isSupabaseConfigured()) {
+      setSubmittingPost(false);
+      return;
+    }
+
     const { error } = await supabase.from("store_reviews").insert(newPostObj);
     setSubmittingPost(false);
     
     if (error) {
-      alert("Failed to save post: " + error.message + "\n\n(Tip: Check your Supabase RLS policies for store_reviews!)");
+      setErrorBanner("Failed to save post: " + error.message);
       // Revert optimistic update
       setPosts(prev => prev.filter(p => p.id !== tempId));
       return;
@@ -278,6 +290,15 @@ export function SocialPage({ storeId, accentColor = "#10b981", onBack }: SocialP
           </div>
         </div>
       </header>
+
+      {errorBanner && (
+        <div role="alert" className="mx-auto mt-3 flex w-[calc(100%-2rem)] max-w-2xl items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-400">
+          <span>{errorBanner}</span>
+          <button type="button" onClick={() => setErrorBanner(null)} aria-label="Dismiss error" className="rounded-lg p-1 hover:bg-rose-500/20">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Main Feed Scroll Area */}
       <main className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">

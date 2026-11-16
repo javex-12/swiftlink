@@ -256,7 +256,7 @@ function StorefrontMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition md:hidden",
+          "hidden",
           focusRing,
           MENU_TRIGGER_TONE[tone],
         )}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
+import { toCsv, downloadCsv, csvFilename } from "@/lib/csv";
 import { 
   Shield, 
   Users, 
@@ -110,6 +111,7 @@ export function AdminView() {
   const [removingAdminId, setRemovingAdminId] = useState<string | null>(null);
 
   const fetchAdmins = async () => {
+    if (!isSupabaseConfigured()) return;
     try {
       const { data } = await supabase.from("system_admins").select("*").order("created_at", { ascending: true });
       if (data) setAdminsList(data);
@@ -120,6 +122,10 @@ export function AdminView() {
 
   const handleAddAdmin = async () => {
     if (!newAdminEmail.trim()) return;
+    if (!isSupabaseConfigured()) {
+      addToast("Admin role changes require a connected Supabase project.", "info");
+      return;
+    }
     setAddingAdmin(true);
     try {
       // Look up user by email in auth.users via RPC (requires searching profiles)
@@ -156,6 +162,7 @@ export function AdminView() {
       addToast("You cannot remove yourself from admin access.", "error");
       return;
     }
+    if (!isSupabaseConfigured()) return;
     setRemovingAdminId(adminId);
     try {
       const { error } = await supabase.from("system_admins").delete().eq("id", adminId);
@@ -175,8 +182,10 @@ export function AdminView() {
   const handleSetUserPlan = async (storeId: string, newPlan: "free" | "pro" | "business") => {
     setUpdatingStoreId(storeId);
     try {
-      const { error } = await supabase.rpc("set_user_plan", { store_id_param: storeId, new_plan: newPlan });
-      if (error) throw error;
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase.rpc("set_user_plan", { store_id_param: storeId, new_plan: newPlan });
+        if (error) throw error;
+      }
       setStores(prev => prev.map(s => s.id === storeId ? { ...s, plan: newPlan, state_json: { ...s.state_json, plan: newPlan } } : s));
       addToast(`User plan updated to ${newPlan.toUpperCase()} successfully.`, "success");
     } catch (e: any) {
@@ -194,8 +203,10 @@ export function AdminView() {
     if (!window.confirm(confirmMsg)) return;
     setUpdatingStoreId(storeId);
     try {
-      const { error } = await supabase.rpc("set_account_status", { store_id_param: storeId, new_status: newStatus });
-      if (error) throw error;
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase.rpc("set_account_status", { store_id_param: storeId, new_status: newStatus });
+        if (error) throw error;
+      }
       setStores(prev => prev.map(s => s.id === storeId ? { ...s, account_status: newStatus } : s));
       addToast(`Store account status changed to ${newStatus.toUpperCase()}.`, "success");
     } catch (e: any) {
@@ -228,46 +239,74 @@ export function AdminView() {
   // Simulated Mock data fallbacks for wowed first-impressions
   const mockData = useMemo(() => {
     const mockProfiles: ProfileDB[] = [
-      { id: "u1", username: "chidi_styles", display_name: "Chidi Stores Ltd", avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", is_verified: true, bio: "Premium fashion merchant based in Lekki Phase 1." },
-      { id: "u2", username: "yomi_kicks", display_name: "Yomi Sneaker Lounge", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", is_verified: false, bio: "Deadstock sneakers & street wear delivered nationwide." },
-      { id: "u3", username: "amara_spices", display_name: "Amara's Kitchen", avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", is_verified: true, bio: "Home cooked organic food & catering services." },
-      { id: "u4", username: "bolaji_tech", display_name: "Bolaji Gadgets", avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100", is_verified: false, bio: "Certified pre-owned iPhones and MacBooks in Lagos." },
-      { id: "u5", username: "tunde_bakes", display_name: "Tunde Pastry Shop", avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100", is_verified: false, bio: "Custom cakes, cupcakes & croissants in Abuja." }
+      { id: "u1", username: "chidi_styles", display_name: "Chidi Stores Ltd", avatar_url: "", is_verified: true, bio: "Luxury fashion & bespoke native tailoring based in Lekki Phase 1, Lagos." },
+      { id: "u2", username: "yomi_kicks", display_name: "Yomi Sneaker Lounge", avatar_url: "", is_verified: true, bio: "Deadstock sneakers & authentic streetwear delivered nationwide from Port Harcourt." },
+      { id: "u3", username: "amara_spices", display_name: "Amara's Gourmet", avatar_url: "", is_verified: true, bio: "Organic spices, meal boxes & artisan pantry staples in Victoria Island, Lagos." },
+      { id: "u4", username: "bolaji_tech", display_name: "Bolaji Gadgets", avatar_url: "", is_verified: true, bio: "Certified pre-owned iPhones, MacBooks & DJI drones in Ikeja Computer Village." },
+      { id: "u5", username: "tunde_bakes", display_name: "Tunde Pastry Shop", avatar_url: "", is_verified: false, bio: "Custom wedding cakes, sourdough & French pastries in Wuse 2, Abuja." },
+      { id: "u6", username: "luxeglow", display_name: "LuxeGlow Skincare", avatar_url: "", is_verified: true, bio: "Dermatologist-approved organic body butters & SPF in Lagos." },
+      { id: "u7", username: "zarahome", display_name: "Zara Home & Living", avatar_url: "", is_verified: false, bio: "Minimalist ceramic vases, woven rugs and linen sets." },
+      { id: "u8", username: "afriprint", display_name: "Afriprint Fabrics", avatar_url: "", is_verified: true, bio: "Authentic wholesale Ankara, Kampala & Guinea brocade in Ibadan." },
+      { id: "u9", username: "urbandrip", display_name: "Urban Drip Vintage", avatar_url: "", is_verified: false, bio: "Curated 90s graphic tees, varsity jackets & oversized cargo pants in Yaba." },
+      { id: "u10", username: "safarileather", display_name: "Safari Leather Co", avatar_url: "", is_verified: true, bio: "Handcrafted full-grain leather bags, belts and wallets from Kano." },
+      { id: "u11", username: "kairo_kids", display_name: "Kairo Kids Boutique", avatar_url: "", is_verified: false, bio: "Organic cotton baby apparel & educational wooden toys in Abuja." },
+      { id: "u12", username: "fitpro_supps", display_name: "FitPro Nutrition", avatar_url: "", is_verified: true, bio: "Whey isolates, creatine monohydrate & gym accessories in Lagos." }
     ];
 
     const mockStores: StoreDB[] = [
-      { id: "s1", owner_id: "u1", biz_name: "Chidi Styles", store_username: "chidi_styles", phone: "+2348012345678", sections: [], state_json: {}, updated_at: new Date(Date.now() - 3600000).toISOString() },
-      { id: "s2", owner_id: "u2", biz_name: "Yomi Sneakers", store_username: "yomi_kicks", phone: "+2348098765432", sections: [], state_json: {}, updated_at: new Date(Date.now() - 7200000).toISOString() },
-      { id: "s3", owner_id: "u3", biz_name: "Amara's Gourmet", store_username: "amara_spices", phone: "+2348123456789", sections: [], state_json: {}, updated_at: new Date(Date.now() - 15000000).toISOString() },
-      { id: "s4", owner_id: "u4", biz_name: "Bolaji Electronics", store_username: "bolaji_tech", phone: "+2347012345678", sections: [], state_json: {}, updated_at: new Date(Date.now() - 86400000).toISOString() }
+      { id: "s1", owner_id: "u1", biz_name: "Chidi Styles", store_username: "chidi_styles", phone: "+2348012345678", plan: "business", account_status: "active", sections: [], state_json: { plan: "business", isLive: true, gmv: 8450000, inquiries: 342, category: "Fashion & Tailoring", city: "Lagos", dominantChannel: "Instagram (62%)" }, updated_at: new Date(Date.now() - 1200000).toISOString() },
+      { id: "s2", owner_id: "u2", biz_name: "Yomi Sneaker Lounge", store_username: "yomi_kicks", phone: "+2348098765432", plan: "business", account_status: "active", sections: [], state_json: { plan: "business", isLive: true, gmv: 6820000, inquiries: 289, category: "Sneakers & Streetwear", city: "Port Harcourt", dominantChannel: "TikTok (54%)" }, updated_at: new Date(Date.now() - 3600000).toISOString() },
+      { id: "s3", owner_id: "u3", biz_name: "Amara's Gourmet", store_username: "amara_spices", phone: "+2348123456789", plan: "pro", account_status: "active", sections: [], state_json: { plan: "pro", isLive: true, gmv: 4150000, inquiries: 218, category: "Artisan Pantry & Food", city: "Lagos", dominantChannel: "WhatsApp (48%)" }, updated_at: new Date(Date.now() - 7200000).toISOString() },
+      { id: "s4", owner_id: "u4", biz_name: "Bolaji Gadgets", store_username: "bolaji_tech", phone: "+2347012345678", plan: "business", account_status: "active", sections: [], state_json: { plan: "business", isLive: true, gmv: 9140000, inquiries: 194, category: "Electronics & Phones", city: "Lagos", dominantChannel: "Facebook (38%)" }, updated_at: new Date(Date.now() - 14400000).toISOString() },
+      { id: "s5", owner_id: "u5", biz_name: "Tunde Pastry Shop", store_username: "tunde_bakes", phone: "+2348033334455", plan: "pro", account_status: "active", sections: [], state_json: { plan: "pro", isLive: true, gmv: 2340000, inquiries: 165, category: "Bakery & Desserts", city: "Abuja", dominantChannel: "Instagram (51%)" }, updated_at: new Date(Date.now() - 21600000).toISOString() },
+      { id: "s6", owner_id: "u6", biz_name: "LuxeGlow Skincare", store_username: "luxeglow", phone: "+2348055556677", plan: "pro", account_status: "active", sections: [], state_json: { plan: "pro", isLive: true, gmv: 3780000, inquiries: 241, category: "Beauty & Skincare", city: "Lagos", dominantChannel: "TikTok (68%)" }, updated_at: new Date(Date.now() - 28800000).toISOString() },
+      { id: "s7", owner_id: "u7", biz_name: "Zara Home & Living", store_username: "zarahome", phone: "+2348144445566", plan: "free", account_status: "active", sections: [], state_json: { plan: "free", isLive: true, gmv: 1420000, inquiries: 84, category: "Home Décor", city: "Lagos", dominantChannel: "Instagram (45%)" }, updated_at: new Date(Date.now() - 36000000).toISOString() },
+      { id: "s8", owner_id: "u8", biz_name: "Afriprint Fabrics", store_username: "afriprint", phone: "+2348166667788", plan: "pro", account_status: "active", sections: [], state_json: { plan: "pro", isLive: true, gmv: 2890000, inquiries: 172, category: "Textiles & Ankara", city: "Ibadan", dominantChannel: "WhatsApp (58%)" }, updated_at: new Date(Date.now() - 43200000).toISOString() },
+      { id: "s9", owner_id: "u9", biz_name: "Urban Drip Vintage", store_username: "urbandrip", phone: "+2348022223344", plan: "free", account_status: "active", sections: [], state_json: { plan: "free", isLive: true, gmv: 980000, inquiries: 92, category: "Vintage Streetwear", city: "Lagos", dominantChannel: "X / Twitter (41%)" }, updated_at: new Date(Date.now() - 50400000).toISOString() },
+      { id: "s10", owner_id: "u10", biz_name: "Safari Leather Co", store_username: "safarileather", phone: "+2348088889900", plan: "business", account_status: "active", sections: [], state_json: { plan: "business", isLive: true, gmv: 3120000, inquiries: 135, category: "Leather Goods", city: "Kano", dominantChannel: "Instagram (52%)" }, updated_at: new Date(Date.now() - 57600000).toISOString() },
+      { id: "s11", owner_id: "u11", biz_name: "Kairo Kids Boutique", store_username: "kairo_kids", phone: "+2348077778899", plan: "free", account_status: "active", sections: [], state_json: { plan: "free", isLive: true, gmv: 850000, inquiries: 76, category: "Kids & Toys", city: "Abuja", dominantChannel: "Instagram (49%)" }, updated_at: new Date(Date.now() - 64800000).toISOString() },
+      { id: "s12", owner_id: "u12", biz_name: "FitPro Nutrition", store_username: "fitpro_supps", phone: "+2348188881122", plan: "pro", account_status: "active", sections: [], state_json: { plan: "pro", isLive: true, gmv: 2380000, inquiries: 144, category: "Fitness & Nutrition", city: "Lagos", dominantChannel: "TikTok (59%)" }, updated_at: new Date(Date.now() - 72000000).toISOString() }
     ];
 
     const mockEvents: EventDB[] = [
-      { id: "e1", store_id: "s1", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Lagos" }, created_at: new Date(Date.now() - 120000).toISOString() },
-      { id: "e2", store_id: "s1", event_type: "product_click", product_id: 101, metadata: { productName: "Ankara Flare Gown" }, created_at: new Date(Date.now() - 340000).toISOString() },
-      { id: "e3", store_id: "s2", event_type: "view", product_id: null, metadata: { device: "Desktop", city: "Port Harcourt" }, created_at: new Date(Date.now() - 600000).toISOString() },
-      { id: "e4", store_id: "s1", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 32000, items: 1 }, created_at: new Date(Date.now() - 900000).toISOString() },
-      { id: "e5", store_id: "s3", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Abuja" }, created_at: new Date(Date.now() - 1500000).toISOString() },
-      { id: "e6", store_id: "s3", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 15500, items: 3 }, created_at: new Date(Date.now() - 1800000).toISOString() },
-      { id: "e7", store_id: "s2", event_type: "product_click", product_id: 204, metadata: { productName: "Jordan 4 Retro Black Cat" }, created_at: new Date(Date.now() - 2400000).toISOString() },
-      { id: "e8", store_id: "s4", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Ibadan" }, created_at: new Date(Date.now() - 3600000).toISOString() },
-      { id: "e9", store_id: "s4", event_type: "product_click", product_id: 401, metadata: { productName: "iPhone 13 Pro 128GB" }, created_at: new Date(Date.now() - 4200000).toISOString() },
-      { id: "e10", store_id: "s2", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 140000, items: 1 }, created_at: new Date(Date.now() - 7200000).toISOString() },
-      { id: "e11", store_id: "s1", event_type: "store_transferred", product_id: null, metadata: { from: "u5", to: "u1", email: "chidi_styles@gmail.com" }, created_at: new Date(Date.now() - 18000000).toISOString() }
+      { id: "e1", store_id: "s1", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Lagos", channel: "Instagram" }, created_at: new Date(Date.now() - 120000).toISOString() },
+      { id: "e2", store_id: "s1", event_type: "product_click", product_id: 101, metadata: { productName: "Ankara Silk Flare Gown", channel: "Instagram" }, created_at: new Date(Date.now() - 340000).toISOString() },
+      { id: "e3", store_id: "s2", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Port Harcourt", channel: "TikTok" }, created_at: new Date(Date.now() - 600000).toISOString() },
+      { id: "e4", store_id: "s1", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 48000, items: 2, buyer: "Kemi Adeyemi", channel: "Instagram" }, created_at: new Date(Date.now() - 900000).toISOString() },
+      { id: "e5", store_id: "s3", event_type: "view", product_id: null, metadata: { device: "Mobile", city: "Abuja", channel: "WhatsApp" }, created_at: new Date(Date.now() - 1500000).toISOString() },
+      { id: "e6", store_id: "s3", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 24500, items: 3, buyer: "Zainab Bello", channel: "WhatsApp" }, created_at: new Date(Date.now() - 1800000).toISOString() },
+      { id: "e7", store_id: "s2", event_type: "product_click", product_id: 204, metadata: { productName: "Jordan 4 Retro Black Cat", channel: "TikTok" }, created_at: new Date(Date.now() - 2400000).toISOString() },
+      { id: "e8", store_id: "s4", event_type: "view", product_id: null, metadata: { device: "Desktop", city: "Ibadan", channel: "Facebook" }, created_at: new Date(Date.now() - 3600000).toISOString() },
+      { id: "e9", store_id: "s4", event_type: "product_click", product_id: 401, metadata: { productName: "iPhone 15 Pro Max 256GB", channel: "Facebook" }, created_at: new Date(Date.now() - 4200000).toISOString() },
+      { id: "e10", store_id: "s2", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 165000, items: 1, buyer: "David Okon", channel: "TikTok" }, created_at: new Date(Date.now() - 7200000).toISOString() },
+      { id: "e11", store_id: "s6", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 32000, items: 2, buyer: "Tolani Balogun", channel: "TikTok" }, created_at: new Date(Date.now() - 9800000).toISOString() },
+      { id: "e12", store_id: "s8", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 54000, items: 4, buyer: "Fatima Aliyu", channel: "WhatsApp" }, created_at: new Date(Date.now() - 12400000).toISOString() },
+      { id: "e13", store_id: "s10", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 85000, items: 1, buyer: "Emeka Nwosu", channel: "Instagram" }, created_at: new Date(Date.now() - 15600000).toISOString() },
+      { id: "e14", store_id: "s9", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 22000, items: 1, buyer: "Folarin Cole", channel: "X / Twitter" }, created_at: new Date(Date.now() - 19200000).toISOString() },
+      { id: "e15", store_id: "s12", event_type: "whatsapp_checkout", product_id: null, metadata: { total: 46000, items: 2, buyer: "Dr. Bamidele", channel: "TikTok" }, created_at: new Date(Date.now() - 23000000).toISOString() }
     ];
 
     const mockFeedbacks: FeedbackDB[] = [
-      { id: "f1", user_id: "u1", store_id: "s1", type: "bug", message: "The product image selector glitches when choosing a second image on Android devices.", metadata: { path: "/business", userAgent: "Mozilla/Android" }, upvotes: 4, public_replies: [{ author: "Support Admin", text: "Under investigation. We are looking into Android asset sizing constraints.", time: "10m ago" }], is_public: true, status: "in_progress", created_at: new Date(Date.now() - 4 * 3600000).toISOString() },
-      { id: "f2", user_id: "u2", store_id: "s2", type: "feature", message: "Would love to see an automated Paystack payment integration alongside WhatsApp checkout for faster orders.", metadata: { path: "/pro" }, upvotes: 12, public_replies: [], is_public: true, status: "pending", created_at: new Date(Date.now() - 18 * 3600000).toISOString() },
-      { id: "f3", user_id: "u3", store_id: "s3", type: "general", message: "This dashboard is incredibly easy to use. Setting up my food storefront took less than 5 minutes!", metadata: { path: "/" }, upvotes: 1, public_replies: [], is_public: false, status: "resolved", created_at: new Date(Date.now() - 2 * 86400000).toISOString() }
+      { id: "f1", user_id: "u1", store_id: "s1", type: "feature", message: "Instagram and TikTok direct story deep-linking works wonderfully. Would love automated order delivery tracking next.", metadata: { path: "/business" }, upvotes: 18, public_replies: [{ author: "Support Admin", text: "Delivery tracking is on the active roadmap.", time: "2h ago" }], is_public: true, status: "in_progress", created_at: new Date(Date.now() - 4 * 3600000).toISOString() },
+      { id: "f2", user_id: "u2", store_id: "s2", type: "feature", message: "Our TikTok bio conversion doubled after switching to the Bold template. Fast WhatsApp checkout is key.", metadata: { path: "/pro" }, upvotes: 24, public_replies: [], is_public: true, status: "resolved", created_at: new Date(Date.now() - 18 * 3600000).toISOString() },
+      { id: "f3", user_id: "u6", store_id: "s6", type: "general", message: "Setting up our skincare catalogue took under 10 minutes. Customers love browsing directly on phone.", metadata: { path: "/" }, upvotes: 8, public_replies: [], is_public: true, status: "resolved", created_at: new Date(Date.now() - 2 * 86400000).toISOString() }
     ];
 
     return { mockProfiles, mockStores, mockEvents, mockFeedbacks };
   }, []);
 
   // Fetch Database tables from Supabase
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!isAdmin) return;
+    if (!isSupabaseConfigured()) {
+      setStores(mockData.mockStores);
+      setProfiles(mockData.mockProfiles);
+      setFeedbacks(mockData.mockFeedbacks);
+      setEvents(mockData.mockEvents);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     setRefreshing(true);
 
     try {
@@ -313,16 +352,21 @@ export function AdminView() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [isAdmin, mockData]);
 
   useEffect(() => {
     if (isAdmin) {
-      fetchData();
+      void fetchData();
     }
-  }, [isAdmin]);
+  }, [isAdmin, fetchData]);
 
   // Toggle user verified badge
   const toggleVerification = async (profileId: string, currentStatus: boolean) => {
+    if (!isSupabaseConfigured()) {
+      setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, is_verified: !currentStatus } : p));
+      addToast("Profile status updated (Local Sync).", "success");
+      return;
+    }
     try {
       const { error } = await supabase
         .from("social_profiles")
@@ -344,6 +388,11 @@ export function AdminView() {
 
   // Feedback administration actions
   const updateFeedbackStatus = async (feedbackId: string, newStatus: string) => {
+    if (!isSupabaseConfigured()) {
+      setFeedbacks(prev => prev.map(f => f.id === feedbackId ? { ...f, status: newStatus } : f));
+      addToast("Status updated (Local Sync).", "success");
+      return;
+    }
     try {
       const { error } = await supabase
         .from("user_feedback")
@@ -376,6 +425,14 @@ export function AdminView() {
 
     const nextReplies = [...(item.public_replies || []), newReply];
 
+    if (!isSupabaseConfigured()) {
+      setFeedbacks(prev => prev.map(f => f.id === feedbackId ? { ...f, public_replies: nextReplies } : f));
+      setReplyMessage("");
+      setReplyingToId(null);
+      addToast("Reply applied (Local Sync).", "success");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("user_feedback")
@@ -405,7 +462,7 @@ export function AdminView() {
       id: selectedMerchantId,
       username: "unknown_merchant",
       display_name: "Unknown Merchant",
-      avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+      avatar_url: "",
       is_verified: false,
       bio: "No profile data loaded."
     };
@@ -491,57 +548,31 @@ export function AdminView() {
 
 
   const exportStoresCsv = () => {
-    const headers = ["ID", "Store Name", "Username", "Owner Name", "Phone", "Plan", "Status", "Live", "Products Count", "Last Updated"];
-    const rows = filteredStores.map(s => {
-      const owner = profiles.find(p => p.id === s.owner_id);
-      const plan = s.plan || s.state_json?.plan || "free";
-      const status = s.account_status || "active";
-      const isLive = s.state_json?.isLive !== false ? "Live" : "Paused";
-      const prodCount = s.state_json?.products?.length || 0;
-      return [
-        `"${s.id}"`,
-        `"${(s.biz_name || "").replace(/"/g, '""')}"`,
-        `"${s.store_username || ""}"`,
-        `"${(owner?.display_name || s.owner_id || "").replace(/"/g, '""')}"`,
-        `"${s.phone || ""}"`,
-        `"${plan}"`,
-        `"${status}"`,
-        `"${isLive}"`,
-        prodCount,
-        `"${s.updated_at}"`,
-      ].join(",");
-    });
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `swiftlink_stores_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = toCsv(filteredStores, [
+      { header: "ID", value: (s) => s.id },
+      { header: "Store Name", value: (s) => s.biz_name || "" },
+      { header: "Username", value: (s) => s.store_username || "" },
+      { header: "Owner Name", value: (s) => profiles.find((p) => p.id === s.owner_id)?.display_name || s.owner_id || "" },
+      { header: "Phone", value: (s) => s.phone || "" },
+      { header: "Plan", value: (s) => s.plan || s.state_json?.plan || "free" },
+      { header: "Status", value: (s) => s.account_status || "active" },
+      { header: "Live", value: (s) => (s.state_json?.isLive !== false ? "Live" : "Paused") },
+      { header: "Products Count", value: (s) => s.state_json?.products?.length || 0 },
+      { header: "Last Updated", value: (s) => s.updated_at },
+    ]);
+    downloadCsv(csvFilename("swiftlink_stores"), csv);
   };
 
   const exportMerchantsCsv = () => {
-    const headers = ["ID", "Username", "Display Name", "Verified", "Bio", "Owned Stores Count"];
-    const rows = filteredProfiles.map(p => {
-      const storeCount = stores.filter(s => s.owner_id === p.id).length;
-      return [
-        `"${p.id}"`,
-        `"${p.username || ""}"`,
-        `"${(p.display_name || "").replace(/"/g, '""')}"`,
-        p.is_verified ? "Yes" : "No",
-        `"${(p.bio || "").replace(/"/g, '""')}"`,
-        storeCount,
-      ].join(",");
-    });
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `swiftlink_merchants_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = toCsv(filteredProfiles, [
+      { header: "ID", value: (p) => p.id },
+      { header: "Username", value: (p) => p.username || "" },
+      { header: "Display Name", value: (p) => p.display_name || "" },
+      { header: "Verified", value: (p) => (p.is_verified ? "Yes" : "No") },
+      { header: "Bio", value: (p) => p.bio || "" },
+      { header: "Owned Stores Count", value: (p) => stores.filter((s) => s.owner_id === p.id).length },
+    ]);
+    downloadCsv(csvFilename("swiftlink_merchants"), csv);
   };
 
   // Overall Global Statistics
@@ -768,7 +799,12 @@ export function AdminView() {
       <div className="border-b border-[#1E2D27] flex flex-wrap gap-1">
         {[
           { id: "overview", label: "Overview", icon: TrendingUp },
-          ].map((tab) => (
+          { id: "stores", label: "Stores & Inquiries", icon: Store },
+          { id: "merchants", label: "Merchants", icon: Users },
+          { id: "timeline", label: "Live Telemetry", icon: Activity },
+          { id: "feedback", label: "Feedback & Bugs", icon: MessageSquare },
+          { id: "admins", label: "Permissions", icon: Shield },
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id as any); setGlobalSearch(""); if (tab.id === "admins") fetchAdmins(); }}
@@ -1157,7 +1193,13 @@ export function AdminView() {
                           <tr key={p.id} className="hover:bg-slate-50/40 dark:hover:bg-white/[0.01] transition-colors">
                             <td className="py-5 px-4 sm:px-6">
                               <div className="flex items-center gap-3">
-                                <img src={p.avatar_url} className="w-10 h-10 rounded-xl object-cover border border-[#1E2D27]" alt="" />
+                                {p.avatar_url ? (
+                                  <img src={p.avatar_url} className="w-10 h-10 rounded-xl object-cover border border-[#1E2D27]" alt={p.display_name} />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-xl bg-[#0f5133] text-[#5be3a0] border border-[#1E2D27] flex items-center justify-center text-xs font-black">
+                                    {(p.display_name || p.username || "M").slice(0, 2).toUpperCase()}
+                                  </div>
+                                )}
                                 <div>
                                   <span className="text-xs font-black text-[#E8F1EC] uppercase tracking-wider block">{p.display_name}</span>
                                   <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">{storesCount} store{storesCount !== 1 ? "s" : ""} owned</span>
@@ -1260,7 +1302,13 @@ export function AdminView() {
                                   onClick={() => setSelectedMerchantId(ownerObj.id)}
                                   className="flex items-center gap-2 hover:underline text-left"
                                 >
-                                  <img src={ownerObj.avatar_url} className="w-6 h-6 rounded-lg object-cover" alt="" />
+                                  {ownerObj.avatar_url ? (
+                                    <img src={ownerObj.avatar_url} className="w-6 h-6 rounded-lg object-cover" alt={ownerObj.display_name} />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-lg bg-[#0f5133] text-[#5be3a0] flex items-center justify-center text-[9px] font-black shrink-0">
+                                      {(ownerObj.display_name || "M").slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
                                   <div>
                                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 block">{ownerObj.display_name}</span>
                                     <span className="text-[8px] text-slate-400 font-mono">{s.phone}</span>
@@ -1487,7 +1535,13 @@ export function AdminView() {
               {/* Header profile banner */}
               <div className="p-6 md:p-8 bg-slate-50/50 dark:bg-[#0c0e12] border-b border-[#1E2D27] flex items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-4 min-w-0">
-                  <img src={merchantDrillDown.profile.avatar_url} className="w-16 h-16 rounded-2xl object-cover border-2 border-[#1E2D27]" alt="" />
+                  {merchantDrillDown.profile.avatar_url ? (
+                    <img src={merchantDrillDown.profile.avatar_url} className="w-16 h-16 rounded-2xl object-cover border-2 border-[#1E2D27]" alt={merchantDrillDown.profile.display_name} />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-[#0f5133] text-[#5be3a0] border-2 border-[#1E2D27] flex items-center justify-center text-lg font-black shrink-0">
+                      {(merchantDrillDown.profile.display_name || "M").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

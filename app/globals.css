@@ -16,8 +16,6 @@
  *     `.image-upload-label`.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -297,7 +295,7 @@
 
 /* M3 Spring Button */
 .m3-spring-btn {
-  font-family: "Outfit", system-ui, sans-serif;
+  font-family: var(--font-outfit, "Outfit"), system-ui, sans-serif;
   transition: transform .35s var(--m3-spring), border-radius .35s var(--m3-spring), background .2s;
 }
 .m3-spring-btn:active {

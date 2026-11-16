@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, CreditCard, Loader2, TriangleAlert } from "lucide-react";
-import { supabase } from "@/lib/supabase-client";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { useSwiftLink } from "@/context/SwiftLinkContext";
 import {
   PLAN_DETAILS,
@@ -53,7 +53,7 @@ export function SubscriptionPanel({ currentPlan }: { currentPlan: Plan }) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   const loadSubscription = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || !isSupabaseConfigured()) return;
     const { data } = await supabase
       .from("account_subscriptions")
       .select("plan, status, cancel_at_period_end, current_period_end")

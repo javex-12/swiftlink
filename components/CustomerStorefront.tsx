@@ -38,7 +38,7 @@ import { TemplateSite } from "@/components/storefront/template-sites";
 import { StorefrontReviews } from "@/components/storefront/StorefrontReviews";
 import { themeToCssVars } from "@/lib/theme/derive";
 import { cn, isDarkColor } from "@/lib/utils";
-import { supabase } from "@/lib/supabase-client";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase-client";
 import { CheckoutChannels } from "@/components/storefront/CheckoutChannels";
 import {
   availableCheckoutChannels,
@@ -1054,7 +1054,7 @@ export function CustomerStorefront({
 
   // ─── FETCH REVIEWS ───
   useEffect(() => {
-      if (screen !== "community" || !effectiveState?.id) return;
+      if (screen !== "community" || !effectiveState?.id || !isSupabaseConfigured()) return;
 
       setReviewsLoading(true);
 
@@ -1124,14 +1124,14 @@ export function CustomerStorefront({
 
             setReviewsLoading(false);
         });
-  }, [screen, effectiveState?.id]);
+  }, [screen, effectiveState?.id, effectiveState?.ownerId]);
 
 
   const [newCommentMessage, setNewCommentMessage] = useState<Record<string, string>>({});
 
   const submitComment = async (reviewId: string) => {
       const msg = newCommentMessage[reviewId]?.trim();
-      if (preview || !msg || !effectiveState?.id) return;
+      if (preview || !msg || !effectiveState?.id || !isSupabaseConfigured()) return;
 
       const commenterName = isStoreOwner ? (effectiveState.bizName || "Store Owner") : (user?.email?.split('@')[0] || "Buyer");
 
@@ -1722,7 +1722,7 @@ export function CustomerStorefront({
                                                 {imgs.length > 1 && (
                                                     <div className="absolute bottom-12 left-0 right-0 flex gap-2 px-4 overflow-x-auto no-scrollbar z-20">
                                                         {imgs.map((img, i) => (
-                                                            <button key={i} onClick={() => setActiveImgIdx(i)} className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${i === idx ? "border-white" : "border-transparent opacity-60"}`}><img src={img} className="w-full h-full object-cover" /></button>
+                                                            <button key={i} onClick={() => setActiveImgIdx(i)} className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${i === idx ? "border-white" : "border-transparent opacity-60"}`}><img src={img} alt={`${selectedProduct.name} view ${i + 1}`} className="w-full h-full object-cover" /></button>
                                                         ))}
                                                     </div>
                                                 )}
@@ -1825,7 +1825,7 @@ export function CustomerStorefront({
                                 </div>
                                 <div className="p-6 space-y-4">
                                     {searchQuery && filteredProducts.map(p => (
-                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 sf-surface p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black sf-ink">{p.name}</p><p className="text-sm font-black sf-accent-text">{formatProductPrice(s.currency, p)}</p></div></button>
+                                        <button key={p.id} onClick={() => { setSelectedProduct(p); changeScreen("product"); }} className="w-full flex items-center gap-4 sf-surface p-3 rounded-2xl shadow-sm border border-black/5"><img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-left"><p className="text-sm font-black sf-ink">{p.name}</p><p className="text-sm font-black sf-accent-text">{formatProductPrice(s.currency, p)}</p></div></button>
                                     ))}
                                 </div>
                             </div>
@@ -1842,7 +1842,7 @@ export function CustomerStorefront({
                                             {Object.entries(cart).map(([id, q]) => {
                                                 const p = s.products.find(x => x.id === Number(id));
                                                 if (!p || q <= 0) return null;
-                                                return <div key={id} className="sf-surface p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-black/5"><img src={p.image} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-sm font-black sf-ink">{p.name}<br /><span className="sf-accent-text">{s.currency}{(p.price * q).toLocaleString()}</span></div><div className="flex items-center gap-3 sf-ink"><button onClick={() => updateCart(p.id, -1)}><Minus size={14}/></button><span>{q}</span><button onClick={() => updateCart(p.id, 1)}><Plus size={14}/></button></div></div>
+                                                return <div key={id} className="sf-surface p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-black/5"><img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-xl" /><div className="flex-1 text-sm font-black sf-ink">{p.name}<br /><span className="sf-accent-text">{s.currency}{(p.price * q).toLocaleString()}</span></div><div className="flex items-center gap-3 sf-ink"><button onClick={() => updateCart(p.id, -1)}><Minus size={14}/></button><span>{q}</span><button onClick={() => updateCart(p.id, 1)}><Plus size={14}/></button></div></div>
                                             })}
                                             <div className="pt-10">
                                                 {/*

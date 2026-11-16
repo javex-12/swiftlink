@@ -303,6 +303,231 @@ function BoldMini({
   );
 }
 
+function StudioMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.studio;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-t-bg text-t-text font-mono", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("flex items-center justify-between border-b border-t-border", stage ? "px-8 py-3" : "px-3 py-1.5")}>
+        <span className={cn("tracking-widest uppercase font-bold", stage ? "text-sm" : "text-[9px]")}>{mock.name}</span>
+        <span className={cn("text-t-text-muted", stage ? "text-xs" : "text-[8px]")}>{"// ARCHIVE 2026"}</span>
+      </div>
+      <div className={cn("border-b border-t-border bg-t-surface-alt", stage ? "p-8" : "p-3")}>
+        <div className="flex items-center gap-2 text-[8px] text-t-accent-text tracking-widest uppercase mb-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-t-accent" />
+          <span>Curated Editions</span>
+        </div>
+        <p className={cn("font-bold tracking-tight uppercase leading-tight", stage ? "text-3xl" : "text-sm")}>
+          Design Objects & Prints
+        </p>
+      </div>
+      {size !== "strip" && (
+        <div className="grid grid-cols-2 divide-x divide-t-border">
+          {items.map((item, index) => (
+            <div key={item.name} className={cn("bg-t-bg", stage ? "p-4" : "p-2")}>
+              <div className={cn("relative overflow-hidden bg-t-surface-alt border border-t-border/50", stage ? "aspect-[4/3]" : "aspect-square")}>
+                <Swatch index={index + 5} />
+                <span className="absolute top-1 left-1 px-1 py-0.5 bg-t-bg/90 text-[7px] text-t-text-muted">
+                  #{String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-baseline justify-between gap-1">
+                <span className={cn("truncate text-[9px] font-semibold", stage ? "text-xs" : "")}>{item.name}</span>
+                <span className={cn("tabular-nums text-t-accent-text font-bold text-[8px]", stage ? "text-xs" : "")}>{money(currency, item)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MarketMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.market;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-t-bg text-t-text", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("bg-t-accent text-t-accent-fg flex items-center justify-between", stage ? "px-6 py-2 text-xs" : "px-3 py-1 text-[8px]")}>
+        <span className="font-bold uppercase tracking-wider">{mock.name}</span>
+        <span className="rounded bg-black/20 px-1.5 py-0.5 font-medium">Fast Dispatch</span>
+      </div>
+      <div className={cn("bg-t-surface border-b border-t-border", stage ? "px-6 py-3" : "px-3 py-2")}>
+        <div className="rounded-full bg-t-surface-alt border border-t-border px-2.5 py-1 flex items-center gap-1.5 text-[8px] text-t-text-muted">
+          <span className="text-[9px]">🔍</span>
+          <span>Search groceries & essentials...</span>
+        </div>
+      </div>
+      {size !== "strip" && (
+        <div className={cn("grid grid-cols-2", stage ? "gap-3 p-6" : "gap-1.5 p-2.5")}>
+          {items.map((item, index) => (
+            <div key={item.name} className="rounded-lg border border-t-border bg-t-surface p-1.5 flex flex-col justify-between">
+              <div className={cn("rounded-md overflow-hidden bg-t-surface-alt", stage ? "aspect-[4/3]" : "aspect-[5/4]")}>
+                <Swatch index={index + 7} />
+              </div>
+              <div className="mt-1.5">
+                <span className="inline-block rounded bg-emerald-500/15 text-emerald-500 font-bold text-[7px] px-1 py-0.5 mb-0.5">IN STOCK</span>
+                <p className={cn("font-bold truncate", stage ? "text-xs" : "text-[9px]")}>{item.name}</p>
+                <p className={cn("font-extrabold text-t-accent-text tabular-nums", stage ? "text-xs" : "text-[9px]")}>{money(currency, item)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoirMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.noir;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-[#070709] text-[#f4f4f5] font-serif", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("border-b border-[#27272a] bg-black/90 text-center tracking-[0.25em] uppercase text-[#a1a1aa]", stage ? "py-2.5 text-[10px]" : "py-1 text-[7px]")}>
+        Concierge Atelier
+      </div>
+      <div className={cn("text-center border-b border-[#27272a]/60", stage ? "py-8 px-6" : "py-3 px-3")}>
+        <p className={cn("tracking-widest uppercase font-light", stage ? "text-2xl" : "text-xs")}>{mock.name}</p>
+        <div className="mx-auto my-1.5 h-px w-8 bg-[#d4af37]" />
+        <p className="text-[7px] text-[#71717a] uppercase tracking-widest">Haute Horlogerie & Rare Pieces</p>
+      </div>
+      {size !== "strip" && (
+        <div className="grid grid-cols-2 divide-x divide-[#27272a]">
+          {items.map((item, index) => (
+            <div key={item.name} className={cn("bg-[#0c0c0e] p-2", stage ? "p-4" : "")}>
+              <div className={cn("relative overflow-hidden bg-[#18181b] border border-[#27272a]", stage ? "aspect-[3/4]" : "aspect-square")}>
+                <Swatch index={index + 10} />
+                <span className="absolute bottom-1 right-1 text-[7px] text-[#d4af37] font-sans font-bold bg-black/80 px-1 py-0.5 rounded">
+                  VIP
+                </span>
+              </div>
+              <p className={cn("mt-1.5 truncate text-[9px] text-[#e4e4e7]", stage ? "text-xs" : "")}>{item.name}</p>
+              <p className={cn("font-sans font-semibold text-[#d4af37] tabular-nums text-[8px]", stage ? "text-xs" : "")}>{money(currency, item)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BloomMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.bloom;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-t-bg text-t-text", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("bg-t-surface-alt/70 text-center rounded-b-2xl mx-2 border-b border-t-border/60", stage ? "py-3" : "py-1.5")}>
+        <span className="text-[8px] tracking-wider font-semibold text-t-accent-text uppercase">Hand-tied with love</span>
+        <p className={cn("font-serif font-bold leading-tight", stage ? "text-xl" : "text-xs")}>{mock.name}</p>
+      </div>
+      {size !== "strip" && (
+        <div className={cn("grid grid-cols-2 gap-2", stage ? "p-6" : "p-2.5")}>
+          {items.map((item, index) => (
+            <div key={item.name} className="rounded-2xl border border-t-border bg-t-surface p-2 shadow-xs flex flex-col items-center text-center">
+              <div className={cn("w-full overflow-hidden rounded-t-full bg-t-surface-alt", stage ? "aspect-[4/5]" : "aspect-square")}>
+                <Swatch index={index + 12} />
+              </div>
+              <p className={cn("mt-1.5 font-medium truncate w-full", stage ? "text-xs" : "text-[9px]")}>{item.name}</p>
+              <span className={cn("mt-0.5 rounded-full bg-t-accent-subtle px-2 py-0.5 font-bold text-t-accent-text text-[8px]", stage ? "text-xs" : "")}>
+                {money(currency, item)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ForgeMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.forge;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-[#121316] text-[#e6e8ec] font-mono", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("bg-[#f97316] text-[#000] font-black uppercase tracking-widest flex items-center justify-between", stage ? "px-6 py-2 text-xs" : "px-2.5 py-1 text-[8px]")}>
+        <span>{mock.name}</span>
+        <span className="border border-black px-1">INDUSTRIAL SPEC</span>
+      </div>
+      <div className={cn("border-b-2 border-[#26282e] bg-[#1a1c22]", stage ? "p-6" : "p-2.5")}>
+        <span className="text-[7px] text-[#f97316] font-bold tracking-widest uppercase">{"// HEAVY HARDWARE & GEAR"}</span>
+        <p className={cn("font-black tracking-tight uppercase leading-none mt-0.5", stage ? "text-2xl" : "text-xs")}>BUILT FOR RIGOROUS USE</p>
+      </div>
+      {size !== "strip" && (
+        <div className="grid grid-cols-2 divide-x-2 divide-[#26282e]">
+          {items.map((item, index) => (
+            <div key={item.name} className="p-2 bg-[#141519]">
+              <div className={cn("overflow-hidden border-2 border-[#26282e] bg-[#1f2128]", stage ? "aspect-square" : "aspect-[4/3]")}>
+                <Swatch index={index + 14} />
+              </div>
+              <p className={cn("mt-1.5 font-bold truncate uppercase text-[8px]", stage ? "text-xs" : "")}>{item.name}</p>
+              <p className={cn("font-black text-[#f97316] tabular-nums text-[8px]", stage ? "text-xs" : "")}>{money(currency, item)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CoastMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.coast;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-t-bg text-t-text", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("bg-gradient-to-r from-sky-500/20 to-teal-500/20 text-center border-b border-t-border", stage ? "py-4" : "py-2")}>
+        <span className="text-[8px] uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 font-bold">Resort & Summer Living</span>
+        <p className={cn("font-serif font-bold text-t-text mt-0.5", stage ? "text-2xl" : "text-sm")}>{mock.name}</p>
+      </div>
+      {size !== "strip" && (
+        <div className={cn("grid grid-cols-2 gap-2", stage ? "p-6" : "p-2.5")}>
+          {items.map((item, index) => (
+            <div key={item.name} className="rounded-xl border border-t-border bg-t-surface p-1.5 shadow-xs">
+              <div className={cn("overflow-hidden rounded-lg bg-t-surface-alt", stage ? "aspect-[4/5]" : "aspect-square")}>
+                <Swatch index={index + 16} />
+              </div>
+              <p className={cn("mt-1.5 font-medium truncate text-[9px]", stage ? "text-xs" : "")}>{item.name}</p>
+              <p className={cn("font-bold text-teal-600 dark:text-teal-400 tabular-nums text-[8px]", stage ? "text-xs" : "")}>{money(currency, item)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OasisMini({ size, currency }: { size: TemplateFrameSize; currency: string }) {
+  const mock = MOCK.oasis;
+  const stage = size === "stage";
+  const items = stage ? mock.items : mock.items.slice(0, 2);
+  return (
+    <div className={cn("bg-[#fbf7f2] dark:bg-[#1a1412] text-[#2c1d18] dark:text-[#f4ede7]", size === "strip" && "max-h-[168px] overflow-hidden")}>
+      <div className={cn("border-b border-[#e5dcd3] dark:border-[#382b26] text-center", stage ? "py-3" : "py-1.5")}>
+        <span className="text-[8px] uppercase tracking-widest text-[#9c6a46] font-bold">Artisan Market</span>
+        <p className={cn("font-serif font-bold", stage ? "text-xl" : "text-xs")}>{mock.name}</p>
+      </div>
+      {size !== "strip" && (
+        <div className={cn("grid grid-cols-2 gap-2", stage ? "p-6" : "p-2.5")}>
+          {items.map((item, index) => (
+            <div key={item.name} className="rounded-xl border border-[#e5dcd3] dark:border-[#382b26] bg-white dark:bg-[#251d1a] p-1.5">
+              <div className={cn("overflow-hidden rounded-t-[14px] bg-[#f0e7de] dark:bg-[#342722]", stage ? "aspect-[4/5]" : "aspect-square")}>
+                <Swatch index={index + 18} />
+              </div>
+              <p className={cn("mt-1 font-serif truncate text-[9px]", stage ? "text-xs" : "")}>{item.name}</p>
+              <p className={cn("font-bold text-[#b45309] dark:text-[#f59e0b] tabular-nums text-[8px]", stage ? "text-xs" : "")}>{money(currency, item)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TemplateFrame({
   id,
   appearance,
@@ -321,19 +546,22 @@ export function TemplateFrame({
   const theme = appearance === "dark" ? template.dark : template.light;
   const vars = themeToCssVars(theme) as CSSProperties;
 
-  // Pick the thumbnail by the template's own navigation shape rather than by id,
-  // so every template in the family gets a preview that matches how it behaves.
-  // (The original three map exactly as before: boutique=drawer, bold=bottom,
-  // editorial=top.)
-  const nav = template.light.nav;
-  const site =
-    nav === "drawer" ? (
-      <BoutiqueMini size={size} currency={currency} />
-    ) : nav === "bottom" ? (
-      <BoldMini size={size} currency={currency} />
-    ) : (
-      <EditorialMini size={size} currency={currency} />
-    );
+  // Render dedicated distinct visual experience per template
+  const site = (() => {
+    switch (id) {
+      case "boutique": return <BoutiqueMini size={size} currency={currency} />;
+      case "bold": return <BoldMini size={size} currency={currency} />;
+      case "studio": return <StudioMini size={size} currency={currency} />;
+      case "market": return <MarketMini size={size} currency={currency} />;
+      case "noir": return <NoirMini size={size} currency={currency} />;
+      case "bloom": return <BloomMini size={size} currency={currency} />;
+      case "forge": return <ForgeMini size={size} currency={currency} />;
+      case "coast": return <CoastMini size={size} currency={currency} />;
+      case "oasis": return <OasisMini size={size} currency={currency} />;
+      case "editorial":
+      default: return <EditorialMini size={size} currency={currency} />;
+    }
+  })();
 
   const framed = (
     <div data-theme-scope="storefront" style={vars} className="bg-t-bg text-t-text">
